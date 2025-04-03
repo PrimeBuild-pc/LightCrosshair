@@ -15,8 +15,39 @@ namespace LightCrosshair
 
         // Shape properties
         public string Shape { get; set; } = "Cross";
+
+        // Primary shape properties (outer shape in combined shapes)
         public int Size { get; set; } = 20;
         public int Thickness { get; set; } = 2;
+        public int GapSize { get; set; } = 4; // For Plus shape
+
+        // Secondary shape properties (inner shape in combined shapes)
+        public int InnerSize { get; set; } = 10;
+        public int InnerThickness { get; set; } = 2;
+        public int InnerGapSize { get; set; } = 4; // For Plus shape when used as inner shape
+
+        // These properties will be used instead of the ones below for backward compatibility
+
+        // Color properties for secondary shape
+        [JsonIgnore]
+        public Color InnerShapeEdgeColor { get; set; } = Color.Red;
+
+        [JsonConverter(typeof(ColorJsonConverter))]
+        public string InnerShapeEdgeColorJson
+        {
+            get => ColorToJson(InnerShapeEdgeColor);
+            set => InnerShapeEdgeColor = JsonToColor(value);
+        }
+
+        [JsonIgnore]
+        public Color InnerShapeInnerColor { get; set; } = Color.White;
+
+        [JsonConverter(typeof(ColorJsonConverter))]
+        public string InnerShapeInnerColorJson
+        {
+            get => ColorToJson(InnerShapeInnerColor);
+            set => InnerShapeInnerColor = JsonToColor(value);
+        }
 
         // Color properties
         [JsonIgnore]
@@ -219,12 +250,46 @@ namespace LightCrosshair
                 Name = this.Name,
                 Shape = this.Shape,
                 Size = this.Size,
+                InnerSize = this.InnerSize,
                 Thickness = this.Thickness,
+                InnerThickness = this.InnerThickness,
+                GapSize = this.GapSize,
+                InnerGapSize = this.InnerGapSize,
                 EdgeColor = this.EdgeColor,
                 InnerColor = this.InnerColor,
                 FillColor = this.FillColor,
+                InnerShapeEdgeColor = this.InnerShapeEdgeColor,
+                InnerShapeInnerColor = this.InnerShapeInnerColor,
                 HotKey = this.HotKey
             };
+        }
+
+        // Helper methods for color serialization
+        private string ColorToJson(Color color)
+        {
+            return $"{color.A},{color.R},{color.G},{color.B}";
+        }
+
+        private Color JsonToColor(string json)
+        {
+            try
+            {
+                var parts = json.Split(',');
+                if (parts.Length == 4 &&
+                    int.TryParse(parts[0], out int a) &&
+                    int.TryParse(parts[1], out int r) &&
+                    int.TryParse(parts[2], out int g) &&
+                    int.TryParse(parts[3], out int b))
+                {
+                    return Color.FromArgb(a, r, g, b);
+                }
+            }
+            catch
+            {
+                // Fallback to default color on error
+            }
+
+            return Color.Red; // Default color
         }
     }
 }
