@@ -15,10 +15,12 @@ namespace LightCrosshair
 
         // Shape properties
         public string Shape { get; set; } = "Cross";
+        public string InnerShape { get; set; } = "Dot"; // Inner shape for combined shapes
 
         // Primary shape properties (outer shape in combined shapes)
-        public int Size { get; set; } = 20;
-        public int Thickness { get; set; } = 2;
+        public int Size { get; set; } = 15; // 15% size for optimal visibility
+        public int Thickness { get; set; } = 5; // 5 pixels for better visibility
+        public int EdgeThickness { get; set; } = 1; // Edge color thickness/width
         public int GapSize { get; set; } = 4; // For Plus shape
 
         // Secondary shape properties (inner shape in combined shapes)
@@ -49,57 +51,85 @@ namespace LightCrosshair
             set => InnerShapeInnerColor = JsonToColor(value);
         }
 
+        [JsonIgnore]
+        public Color InnerShapeFillColor { get; set; } = Color.Transparent;
+
+        [JsonConverter(typeof(ColorJsonConverter))]
+        public string InnerShapeFillColorJson
+        {
+            get => ColorToJson(InnerShapeFillColor);
+            set => InnerShapeFillColor = JsonToColor(value);
+        }
+
         // Color properties
         [JsonIgnore]
-        public Color EdgeColor { get; set; } = Color.Red;
+        public Color EdgeColor { get; set; } = Color.Transparent; // Transparent edge for clean look
 
         [JsonPropertyName("EdgeColorSerialized")]
         public string EdgeColorSerialized
         {
-            get => $"{EdgeColor.R},{EdgeColor.G},{EdgeColor.B}";
+            get => $"{EdgeColor.A},{EdgeColor.R},{EdgeColor.G},{EdgeColor.B}";
             set
             {
                 try
                 {
                     var parts = value.Split(',');
-                    if (parts.Length == 3 &&
-                        int.TryParse(parts[0], out int r) &&
-                        int.TryParse(parts[1], out int g) &&
-                        int.TryParse(parts[2], out int b))
+                    if (parts.Length == 4 &&
+                        int.TryParse(parts[0], out int a) &&
+                        int.TryParse(parts[1], out int r) &&
+                        int.TryParse(parts[2], out int g) &&
+                        int.TryParse(parts[3], out int b))
                     {
-                        EdgeColor = Color.FromArgb(r, g, b);
+                        EdgeColor = Color.FromArgb(a, r, g, b);
+                    }
+                    else if (parts.Length == 3 &&
+                        int.TryParse(parts[0], out r) &&
+                        int.TryParse(parts[1], out g) &&
+                        int.TryParse(parts[2], out b))
+                    {
+                        // Backward compatibility for old format without alpha
+                        EdgeColor = Color.FromArgb(255, r, g, b);
                     }
                 }
                 catch
                 {
-                    EdgeColor = Color.Red;
+                    EdgeColor = Color.Transparent; // Default to transparent instead of red
                 }
             }
         }
 
         [JsonIgnore]
-        public Color InnerColor { get; set; } = Color.Orange;
+        public Color InnerColor { get; set; } = Color.FromArgb(0, 255, 255); // Neon Cyan for high visibility
 
         [JsonPropertyName("InnerColorSerialized")]
         public string InnerColorSerialized
         {
-            get => $"{InnerColor.R},{InnerColor.G},{InnerColor.B}";
+            get => $"{InnerColor.A},{InnerColor.R},{InnerColor.G},{InnerColor.B}";
             set
             {
                 try
                 {
                     var parts = value.Split(',');
-                    if (parts.Length == 3 &&
-                        int.TryParse(parts[0], out int r) &&
-                        int.TryParse(parts[1], out int g) &&
-                        int.TryParse(parts[2], out int b))
+                    if (parts.Length == 4 &&
+                        int.TryParse(parts[0], out int a) &&
+                        int.TryParse(parts[1], out int r) &&
+                        int.TryParse(parts[2], out int g) &&
+                        int.TryParse(parts[3], out int b))
                     {
-                        InnerColor = Color.FromArgb(r, g, b);
+                        InnerColor = Color.FromArgb(a, r, g, b);
+                    }
+                    else if (parts.Length == 3 &&
+                        int.TryParse(parts[0], out r) &&
+                        int.TryParse(parts[1], out g) &&
+                        int.TryParse(parts[2], out b))
+                    {
+                        // Backward compatibility for old format without alpha
+                        InnerColor = Color.FromArgb(255, r, g, b);
                     }
                 }
                 catch
                 {
-                    InnerColor = Color.Orange;
+                    InnerColor = Color.FromArgb(0, 255, 255); // Default to neon cyan
                 }
             }
         }
@@ -135,6 +165,9 @@ namespace LightCrosshair
         // Hotkey
         public Keys HotKey { get; set; } = Keys.None;
 
+        // Screen recording detection
+        public bool HideDuringScreenRecording { get; set; } = false;
+
         // Static methods for profile management
         private static readonly string ProfilesDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -151,8 +184,17 @@ namespace LightCrosshair
                 {
                     Directory.CreateDirectory(ProfilesDirectory);
 
-                    // Create default profile
-                    var defaultProfile = new CrosshairProfile();
+                    // Create default profile with explicit settings
+                    var defaultProfile = new CrosshairProfile
+                    {
+                        Name = "Default",
+                        Shape = "Cross",
+                        EdgeColor = Color.Transparent,
+                        InnerColor = Color.FromArgb(0, 255, 255), // Neon Cyan
+                        Size = 15,
+                        Thickness = 5,
+                        EdgeThickness = 1
+                    };
                     defaultProfile.Save();
                     profiles.Add(defaultProfile);
                     return profiles;
@@ -179,7 +221,16 @@ namespace LightCrosshair
                 // If no profiles were loaded, create a default one
                 if (profiles.Count == 0)
                 {
-                    var defaultProfile = new CrosshairProfile();
+                    var defaultProfile = new CrosshairProfile
+                    {
+                        Name = "Default",
+                        Shape = "Cross",
+                        EdgeColor = Color.Transparent,
+                        InnerColor = Color.FromArgb(0, 255, 255), // Neon Cyan
+                        Size = 15,
+                        Thickness = 5,
+                        EdgeThickness = 1
+                    };
                     defaultProfile.Save();
                     profiles.Add(defaultProfile);
                 }
@@ -187,7 +238,16 @@ namespace LightCrosshair
             catch
             {
                 // If loading fails, return a default profile
-                profiles.Add(new CrosshairProfile());
+                profiles.Add(new CrosshairProfile
+                {
+                    Name = "Default",
+                    Shape = "Cross",
+                    EdgeColor = Color.Transparent,
+                    InnerColor = Color.FromArgb(0, 255, 255), // Neon Cyan
+                    Size = 15,
+                    Thickness = 5,
+                    EdgeThickness = 1
+                });
             }
 
             return profiles;
@@ -249,9 +309,11 @@ namespace LightCrosshair
             {
                 Name = this.Name,
                 Shape = this.Shape,
+                InnerShape = this.InnerShape,
                 Size = this.Size,
                 InnerSize = this.InnerSize,
                 Thickness = this.Thickness,
+                EdgeThickness = this.EdgeThickness,
                 InnerThickness = this.InnerThickness,
                 GapSize = this.GapSize,
                 InnerGapSize = this.InnerGapSize,
@@ -260,7 +322,9 @@ namespace LightCrosshair
                 FillColor = this.FillColor,
                 InnerShapeEdgeColor = this.InnerShapeEdgeColor,
                 InnerShapeInnerColor = this.InnerShapeInnerColor,
-                HotKey = this.HotKey
+                InnerShapeFillColor = this.InnerShapeFillColor,
+                HotKey = this.HotKey,
+                HideDuringScreenRecording = this.HideDuringScreenRecording
             };
         }
 

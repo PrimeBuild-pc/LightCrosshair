@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace LightCrosshair
 {
@@ -15,6 +16,21 @@ namespace LightCrosshair
         private ProfileManager profileManager;
         private Color fillColor = Color.Transparent;
         private bool isVisible = true;
+
+        // Performance optimization fields
+        private CrosshairProfile _lastRenderedProfile;
+        private bool _needsRedraw = true;
+        private readonly object _renderLock = new object();
+        private float _dpiScaleFactor = 1.0f;
+
+        // Object pooling for graphics resources
+        private readonly Dictionary<Color, SolidBrush> _brushCache = new Dictionary<Color, SolidBrush>();
+        private readonly Dictionary<(Color, float), Pen> _penCache = new Dictionary<(Color, float), Pen>();
+
+        // Screen recording detection
+        private System.Windows.Forms.Timer _recordingDetectionTimer;
+        private bool _isRecordingDetected = false;
+        private bool _wasVisibleBeforeRecording = true;
 
         // Constants for message handling
         private const int WM_HOTKEY = 0x0312;
@@ -27,6 +43,15 @@ namespace LightCrosshair
 
         [DllImport("user32.dll")]
         private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+        [DllImport("user32.dll")]
+        private static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
         private const int GWL_EXSTYLE = -20;
         private const int WS_EX_LAYERED = 0x80000;
@@ -52,16 +77,21 @@ namespace LightCrosshair
             this.TopMost = true;
             this.Size = new Size(100, 100);
 
-            // Set transparency
-            this.BackColor = Color.Magenta;
-            this.TransparencyKey = Color.Magenta;
+            // Set transparency - use a color that won't interfere with crosshair colors
+            this.BackColor = Color.FromArgb(1, 1, 1); // Very dark color for transparency
+            this.TransparencyKey = Color.FromArgb(1, 1, 1);
 
-            // Enable double buffering
+            // Enable double buffering and performance optimizations
             this.SetStyle(
                 ControlStyles.AllPaintingInWmPaint |
                 ControlStyles.UserPaint |
-                ControlStyles.OptimizedDoubleBuffer,
+                ControlStyles.OptimizedDoubleBuffer |
+                ControlStyles.ResizeRedraw |
+                ControlStyles.SupportsTransparentBackColor,
                 true);
+
+            // Additional performance optimizations
+            this.SetStyle(ControlStyles.Selectable, false);
 
             // Initialize profile manager
             profileManager = new ProfileManager(this.Handle);
@@ -74,17 +104,264 @@ namespace LightCrosshair
             // Add paint handler
             this.Paint += Form1_Paint;
 
+            // Initialize DPI awareness
+            InitializeDpiAwareness();
+
+            // Initialize screen recording detection
+            InitializeScreenRecordingDetection();
+
             // Center the form on screen
             CenterCrosshair();
         }
 
+        private void InitializeDpiAwareness()
+        {
+            // Get current DPI scaling factor
+            using (Graphics g = this.CreateGraphics())
+            {
+                _dpiScaleFactor = g.DpiX / 96.0f; // 96 DPI is the standard
+            }
+        }
+
+        private Icon LoadApplicationIcon()
+        {
+            try
+            {
+                // First, try to load from embedded resources
+                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                var resourceName = "LightCrosshair.assets.icon.ico";
+
+                using (var stream = assembly.GetManifestResourceStream(resourceName))
+                {
+                    if (stream != null)
+                    {
+                        return new Icon(stream);
+                    }
+                }
+
+                // If embedded resource fails, try to load from file system
+                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "icon.ico");
+                if (File.Exists(iconPath))
+                {
+                    return new Icon(iconPath);
+                }
+
+                // If both fail, try alternative embedded resource name
+                resourceName = "LightCrosshair.icon.ico";
+                using (var stream = assembly.GetManifestResourceStream(resourceName))
+                {
+                    if (stream != null)
+                    {
+                        return new Icon(stream);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to load application icon: {ex.Message}");
+            }
+
+            // Fallback to system icon
+            return SystemIcons.Application;
+        }
+
+        private SolidBrush GetCachedBrush(Color color)
+        {
+            if (color.A == 0) return null; // Don't cache transparent brushes
+
+            if (!_brushCache.TryGetValue(color, out SolidBrush brush))
+            {
+                brush = new SolidBrush(color);
+                _brushCache[color] = brush;
+            }
+            return brush;
+        }
+
+        private Pen GetCachedPen(Color color, float width)
+        {
+            if (color.A == 0) return null; // Don't cache transparent pens
+
+            var key = (color, width);
+            if (!_penCache.TryGetValue(key, out Pen pen))
+            {
+                pen = new Pen(color, width);
+
+                // Enhanced pen settings for better rendering quality
+                pen.StartCap = LineCap.Round;
+                pen.EndCap = LineCap.Round;
+                pen.LineJoin = LineJoin.Round;
+
+                // Use high-quality smoothing for better anti-aliasing
+                pen.Alignment = PenAlignment.Center;
+
+                _penCache[key] = pen;
+            }
+            return pen;
+        }
+
+        private void ClearGraphicsCache()
+        {
+            foreach (var brush in _brushCache.Values)
+            {
+                brush?.Dispose();
+            }
+            _brushCache.Clear();
+
+            foreach (var pen in _penCache.Values)
+            {
+                pen?.Dispose();
+            }
+            _penCache.Clear();
+        }
+
+        // Helper methods for pixel-perfect drawing with float coordinates
+        private void DrawLineF(Graphics g, Pen pen, float x1, float y1, float x2, float y2)
+        {
+            g.DrawLine(pen,
+                (int)Math.Round(x1), (int)Math.Round(y1),
+                (int)Math.Round(x2), (int)Math.Round(y2));
+        }
+
+        private void DrawEllipseF(Graphics g, Pen pen, float x, float y, float width, float height)
+        {
+            g.DrawEllipse(pen,
+                (int)Math.Round(x), (int)Math.Round(y),
+                (int)Math.Round(width), (int)Math.Round(height));
+        }
+
+        private void FillEllipseF(Graphics g, Brush brush, float x, float y, float width, float height)
+        {
+            g.FillEllipse(brush,
+                (int)Math.Round(x), (int)Math.Round(y),
+                (int)Math.Round(width), (int)Math.Round(height));
+        }
+
+        private void InitializeScreenRecordingDetection()
+        {
+            _recordingDetectionTimer = new System.Windows.Forms.Timer();
+            _recordingDetectionTimer.Interval = 2000; // Check every 2 seconds
+            _recordingDetectionTimer.Tick += RecordingDetectionTimer_Tick;
+            _recordingDetectionTimer.Start();
+        }
+
+        private void RecordingDetectionTimer_Tick(object sender, EventArgs e)
+        {
+            if (profileManager?.CurrentProfile?.HideDuringScreenRecording == true)
+            {
+                bool isRecording = IsScreenRecordingActive();
+
+                if (isRecording && !_isRecordingDetected)
+                {
+                    // Recording started
+                    _isRecordingDetected = true;
+                    _wasVisibleBeforeRecording = this.Visible;
+                    this.Visible = false;
+                }
+                else if (!isRecording && _isRecordingDetected)
+                {
+                    // Recording stopped
+                    _isRecordingDetected = false;
+                    this.Visible = _wasVisibleBeforeRecording && isVisible;
+                }
+            }
+        }
+
+        private bool IsScreenRecordingActive()
+        {
+            try
+            {
+                // Check for common screen recording software
+                string[] recordingSoftware = {
+                    "obs64.exe",           // OBS Studio 64-bit
+                    "obs32.exe",           // OBS Studio 32-bit
+                    "XSplit.Core.exe",     // XSplit
+                    "Streamlabs OBS",      // Streamlabs OBS
+                    "NVIDIA GeForce Experience", // NVIDIA ShadowPlay
+                    "Bandicam",            // Bandicam
+                    "Camtasia",            // Camtasia
+                    "Fraps",               // Fraps
+                    "Action!",             // Action!
+                    "Dxtory",              // Dxtory
+                    "MSIAfterburner.exe"   // MSI Afterburner
+                };
+
+                foreach (string software in recordingSoftware)
+                {
+                    var processes = System.Diagnostics.Process.GetProcessesByName(
+                        software.Replace(".exe", ""));
+
+                    if (processes.Length > 0)
+                    {
+                        // Additional check for OBS - look for recording indicator
+                        if (software.StartsWith("obs"))
+                        {
+                            IntPtr obsWindow = FindWindow(null, "OBS");
+                            if (obsWindow == IntPtr.Zero)
+                                obsWindow = FindWindow(null, "OBS Studio");
+
+                            if (obsWindow != IntPtr.Zero && IsWindowVisible(obsWindow))
+                            {
+                                return true;
+                            }
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                // Check for Windows Game Bar recording
+                var gameBarProcesses = System.Diagnostics.Process.GetProcessesByName("GameBarPresenceWriter");
+                if (gameBarProcesses.Length > 0)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+            catch
+            {
+                // If detection fails, assume no recording to avoid hiding unnecessarily
+                return false;
+            }
+        }
+
         private void ProfileManager_ProfileChanged(object sender, CrosshairProfile profile)
         {
-            // Update the form when the profile changes
-            this.Invalidate();
+            // Mark that we need a redraw and invalidate only if profile actually changed
+            lock (_renderLock)
+            {
+                if (_lastRenderedProfile == null || !ProfilesEqual(_lastRenderedProfile, profile))
+                {
+                    _needsRedraw = true;
+
+                    // Update form size and recenter for optimal rendering
+                    UpdateFormSize();
+                    CenterCrosshair();
+
+                    this.Invalidate();
+                }
+            }
 
             // Update menu checkmarks
             UpdateMenuItems();
+        }
+
+        private bool ProfilesEqual(CrosshairProfile a, CrosshairProfile b)
+        {
+            return a.Shape == b.Shape &&
+                   a.Size == b.Size &&
+                   a.Thickness == b.Thickness &&
+                   a.EdgeColor == b.EdgeColor &&
+                   a.InnerColor == b.InnerColor &&
+                   a.FillColor == b.FillColor &&
+                   a.InnerShape == b.InnerShape &&
+                   a.InnerSize == b.InnerSize &&
+                   a.InnerThickness == b.InnerThickness &&
+                   a.InnerShapeEdgeColor == b.InnerShapeEdgeColor &&
+                   a.InnerShapeInnerColor == b.InnerShapeInnerColor &&
+                   a.InnerShapeFillColor == b.InnerShapeFillColor;
         }
 
         private void UpdateMenuItems(string? changedProperty = null)
@@ -114,6 +391,9 @@ namespace LightCrosshair
                         return;
                     case "Thickness":
                         UpdateThicknessMenuItems();
+                        return;
+                    case "EdgeThickness":
+                        UpdateEdgeThicknessMenuItems();
                         return;
                     case "InnerThickness":
                         // Only update inner thickness menu within inner shape menu
@@ -166,6 +446,7 @@ namespace LightCrosshair
             UpdateShapeMenuItems();
             UpdateSizeMenuItems();
             UpdateThicknessMenuItems();
+            UpdateEdgeThicknessMenuItems();
             UpdateGapSizeMenuItems();
             UpdateColorMenuItems();
             UpdateInnerShapeMenuItems();
@@ -212,8 +493,12 @@ namespace LightCrosshair
 
         private void UpdateSizeMenuItems()
         {
-            // Find the size menu
+            // Find the size menu - try both possible names
             var sizeMenu = FindMenuItemByText(contextMenu.Items, "Outer Shape Size");
+            if (sizeMenu == null)
+            {
+                sizeMenu = FindMenuItemByText(contextMenu.Items, "Size");
+            }
             if (sizeMenu == null) return;
 
             // Enable/disable based on shape type
@@ -284,6 +569,28 @@ namespace LightCrosshair
                 if (menuItem.Tag is int thickness)
                 {
                     menuItem.Checked = profileManager.CurrentProfile.Thickness == thickness;
+                }
+            }
+        }
+
+        private void UpdateEdgeThicknessMenuItems()
+        {
+            // Find the edge color menu first
+            var edgeColorMenu = FindMenuItemByText(contextMenu.Items, "Edge Color");
+            if (edgeColorMenu == null) return;
+
+            // Find the edge thickness submenu within the edge color menu
+            var edgeThicknessMenu = FindMenuItemByText(edgeColorMenu.DropDownItems, "Edge Thickness");
+            if (edgeThicknessMenu == null) return;
+
+            foreach (ToolStripItem item in edgeThicknessMenu.DropDownItems)
+            {
+                // Skip separators and non-menu items
+                if (!(item is ToolStripMenuItem menuItem)) continue;
+
+                if (menuItem.Tag is int thickness)
+                {
+                    menuItem.Checked = profileManager.CurrentProfile.EdgeThickness == thickness;
                 }
             }
         }
@@ -555,28 +862,8 @@ namespace LightCrosshair
         {
             try
             {
-                // Try to load icon from resources
-                Icon appIcon = null;
-
-                try
-                {
-                    // Try to load the icon from the embedded resource
-                    string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "icon.ico");
-                    if (File.Exists(iconPath))
-                    {
-                        appIcon = new Icon(iconPath);
-                    }
-                    else
-                    {
-                        // If file doesn't exist, use the system icon
-                        appIcon = SystemIcons.Application;
-                    }
-                }
-                catch
-                {
-                    // If loading fails, use the system icon
-                    appIcon = SystemIcons.Application;
-                }
+                // Try to load icon from embedded resources first, then file system
+                Icon appIcon = LoadApplicationIcon();
 
                 notifyIcon = new NotifyIcon
                 {
@@ -602,6 +889,9 @@ namespace LightCrosshair
         private void InitializeContextMenu()
         {
             contextMenu = new ContextMenuStrip();
+
+            // Configure menu behavior for staying open
+            contextMenu.Closing += ContextMenu_Closing;
 
             // Create menu items
             var visibilityItem = new ToolStripMenuItem("Toggle Visibility");
@@ -838,6 +1128,19 @@ namespace LightCrosshair
             edgeColorMenu.DropDownItems.Add(new ToolStripSeparator());
             edgeColorMenu.DropDownItems.Add(customEdgeColorItem);
 
+            // Add Edge Thickness submenu
+            var edgeThicknessMenu = new ToolStripMenuItem("Edge Thickness");
+            for (int thickness = 1; thickness <= 10; thickness++)
+            {
+                var thicknessItem = new ToolStripMenuItem($"{thickness}px");
+                thicknessItem.Tag = thickness;
+                thicknessItem.Checked = profileManager.CurrentProfile.EdgeThickness == thickness;
+                int capturedThickness = thickness;
+                thicknessItem.Click += (sender, e) => { UpdateCurrentProfileProperty("EdgeThickness", capturedThickness); };
+                edgeThicknessMenu.DropDownItems.Add(thicknessItem);
+            }
+            edgeColorMenu.DropDownItems.Add(edgeThicknessMenu);
+
             // Inner Color submenu
             var innerColorMenu = new ToolStripMenuItem("Inner Color");
 
@@ -859,6 +1162,24 @@ namespace LightCrosshair
             // Save current profile option
             var saveProfileItem = new ToolStripMenuItem("Save Current Profile");
             saveProfileItem.Click += (sender, e) => SaveCurrentProfile();
+
+            // Screen recording detection option
+            var hideRecordingItem = new ToolStripMenuItem("Hide during screen recording");
+            hideRecordingItem.Checked = profileManager.CurrentProfile.HideDuringScreenRecording;
+            hideRecordingItem.Click += (sender, e) =>
+            {
+                var profile = profileManager.CurrentProfile.Clone();
+                profile.HideDuringScreenRecording = !profile.HideDuringScreenRecording;
+                profileManager.UpdateProfile(profile);
+                hideRecordingItem.Checked = profile.HideDuringScreenRecording;
+            };
+
+            // Close Menu option for user convenience
+            var closeMenuItem = new ToolStripMenuItem("Close Menu");
+            closeMenuItem.Click += (sender, e) =>
+            {
+                contextMenu.Close();
+            };
 
             var exitItem = new ToolStripMenuItem("Exit");
             exitItem.Click += (sender, e) =>
@@ -883,14 +1204,57 @@ namespace LightCrosshair
                 new ToolStripSeparator(),
                 innerShapeMenu,
                 new ToolStripSeparator(),
+                hideRecordingItem,
                 saveProfileItem,
                 new ToolStripSeparator(),
+                closeMenuItem,
                 exitItem
             });
 
             // Set the context menu for both the form and notify icon
             this.ContextMenuStrip = contextMenu;
             notifyIcon.ContextMenuStrip = contextMenu;
+        }
+
+        private void ContextMenu_Closing(object sender, ToolStripDropDownClosingEventArgs e)
+        {
+            // Allow closing for these specific reasons:
+            // - User clicked outside the menu
+            // - User pressed Escape
+            // - Programmatic close (like our Close Menu button)
+            // - Application shutdown
+            if (e.CloseReason == ToolStripDropDownCloseReason.ItemClicked)
+            {
+                // Check if the clicked item should close the menu
+                var clickedItem = contextMenu.GetItemAt(contextMenu.PointToClient(Cursor.Position));
+                if (clickedItem != null)
+                {
+                    // Allow closing for specific items
+                    string itemText = clickedItem.Text;
+                    if (itemText == "Close Menu" || itemText == "Exit" || itemText == "Toggle Visibility")
+                    {
+                        return; // Allow closing
+                    }
+                }
+
+                // For all other menu items, prevent closing
+                e.Cancel = true;
+
+                // Re-show the menu at the same position after a brief delay
+                Task.Delay(50).ContinueWith(_ =>
+                {
+                    if (!contextMenu.IsDisposed && contextMenu.Visible == false)
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            if (!contextMenu.IsDisposed)
+                            {
+                                contextMenu.Show(Cursor.Position);
+                            }
+                        }));
+                    }
+                });
+            }
         }
 
         private void AddColorMenuItem(ToolStripMenuItem parentMenu, string name, Color color, string colorType)
@@ -963,6 +1327,9 @@ namespace LightCrosshair
                 case "Thickness":
                     profile.Thickness = (int)value;
                     break;
+                case "EdgeThickness":
+                    profile.EdgeThickness = (int)value;
+                    break;
                 case "InnerThickness":
                     profile.InnerThickness = (int)value;
                     break;
@@ -990,7 +1357,13 @@ namespace LightCrosshair
             }
 
             profileManager.UpdateProfile(profile);
-            this.Invalidate();
+
+            // Mark for redraw and invalidate efficiently
+            lock (_renderLock)
+            {
+                _needsRedraw = true;
+                this.Invalidate();
+            }
 
             // Update only the relevant menu items
             UpdateMenuItems(propertyName);
@@ -1137,129 +1510,97 @@ namespace LightCrosshair
 
         private void Form1_Paint(object sender, PaintEventArgs e)
         {
-            // Clear background
-            e.Graphics.Clear(this.TransparencyKey);
-
-            // Set up graphics for high quality rendering of circles and dots
-            e.Graphics.SmoothingMode = SmoothingMode.HighQuality; // Use highest quality for smooth circles
-            e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic; // Use highest quality interpolation
-            e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality; // Use high quality pixel offset
-            e.Graphics.CompositingQuality = CompositingQuality.HighQuality; // Use high quality compositing
-            e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias; // Use antialiased text
-
-            // Get current profile
-            var profile = profileManager.CurrentProfile;
-
-            // Calculate center and size
-            int centerX = this.ClientSize.Width / 2;
-            int centerY = this.ClientSize.Height / 2;
-            int size = profile.Size / 2; // Convert percentage to actual size
-
-            // Create pens and brushes only if needed
-            using (Pen edgePen = profile.EdgeColor.A > 0 ? new Pen(profile.EdgeColor, profile.Thickness) : null)
-            using (Pen innerPen = profile.InnerColor.A > 0 ? new Pen(profile.InnerColor, Math.Max(1, profile.Thickness - 2)) : null)
-            using (SolidBrush fillBrush = profile.FillColor.A > 0 ? new SolidBrush(profile.FillColor) : null)
+            lock (_renderLock)
             {
-                switch (profile.Shape)
+                // Skip rendering if no changes are needed
+                if (!_needsRedraw && _lastRenderedProfile != null)
+                {
+                    return;
+                }
+
+                // Clear background
+                e.Graphics.Clear(this.TransparencyKey);
+
+                // Get current profile
+                var profile = profileManager.CurrentProfile;
+
+                // Enhanced graphics settings for optimal visual quality
+                // Use high quality settings for all shapes with performance optimizations
+                bool hasCircularShapes = profile.Shape == "Circle" || profile.Shape == "Dot" ||
+                                        profile.Shape.Contains("Circle") || profile.Shape.Contains("Dot");
+
+                if (hasCircularShapes)
+                {
+                    // Maximum quality for circular shapes to eliminate pixelation
+                    e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
+                    e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+                }
+                else
+                {
+                    // Enhanced quality for linear shapes with crisp edges
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality; // Improved from HighSpeed
+                    e.Graphics.CompositingQuality = CompositingQuality.HighQuality; // Improved from HighSpeed
+                }
+
+                // Additional quality enhancements
+                e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+
+                // Enable sub-pixel rendering for better line quality
+                e.Graphics.CompositingMode = CompositingMode.SourceOver;
+
+            // Calculate center and size with pixel-perfect precision
+            float centerX = this.ClientSize.Width / 2.0f;
+            float centerY = this.ClientSize.Height / 2.0f;
+            float size = profile.Size / 2.0f; // Convert percentage to actual size
+
+            // Ensure center coordinates are at exact pixel boundaries for crisp rendering
+            centerX = (float)Math.Round(centerX);
+            centerY = (float)Math.Round(centerY);
+
+            // Get cached pens and brushes for better performance
+            Pen edgePen = GetCachedPen(profile.EdgeColor, profile.EdgeThickness);
+            Pen innerPen = GetCachedPen(profile.InnerColor, Math.Max(1, profile.Thickness - 2));
+            SolidBrush fillBrush = GetCachedBrush(profile.FillColor);
+
+            switch (profile.Shape)
                 {
                     case "Circle":
-                        // Circle is a hollow circle with a border
+                        // Circle is a hollow circle (outline only, transparent interior)
                         if (edgePen != null)
                         {
-                            // For smoother circles, use a custom approach
-                            // First, create a path for the outer circle
-                            using (GraphicsPath path = new GraphicsPath())
+                            // Draw the circle outline
+                            DrawEllipseF(e.Graphics, edgePen, centerX - size, centerY - size, size * 2, size * 2);
+
+                            // Draw inner outline if thickness allows and inner color is specified
+                            if (innerPen != null && profile.Thickness > 2)
                             {
-                                // Add the outer circle to the path
-                                path.AddEllipse(centerX - size, centerY - size, size * 2, size * 2);
-
-                                // If we have an inner color and sufficient thickness, create a hole in the path
-                                if (profile.Thickness > 0 && innerPen != null)
+                                float innerSize = size - profile.Thickness;
+                                if (innerSize > 0)
                                 {
-                                    // Calculate the inner circle dimensions
-                                    float innerRadius = size - profile.Thickness;
-                                    if (innerRadius > 0)
-                                    {
-                                        // Add the inner circle to the path (in reverse direction to create a hole)
-                                        path.AddEllipse(
-                                            centerX - innerRadius,
-                                            centerY - innerRadius,
-                                            innerRadius * 2,
-                                            innerRadius * 2);
-                                    }
-                                }
-
-                                // Draw the path with the edge color
-                                using (SolidBrush edgeBrush = new SolidBrush(profile.EdgeColor))
-                                {
-                                    e.Graphics.FillPath(edgeBrush, path);
-                                }
-                            }
-
-                            // If we have an inner color and sufficient thickness, draw the inner circle
-                            if (profile.Thickness > 0 && innerPen != null)
-                            {
-                                // Calculate the inner circle dimensions
-                                float innerRadius = size - profile.Thickness;
-                                if (innerRadius > 0)
-                                {
-                                    // Draw the inner circle with the inner color
-                                    using (SolidBrush innerBrush = new SolidBrush(profile.InnerColor))
-                                    {
-                                        e.Graphics.FillEllipse(
-                                            innerBrush,
-                                            centerX - innerRadius,
-                                            centerY - innerRadius,
-                                            innerRadius * 2,
-                                            innerRadius * 2);
-                                    }
+                                    DrawEllipseF(e.Graphics, innerPen,
+                                        centerX - innerSize, centerY - innerSize,
+                                        innerSize * 2, innerSize * 2);
                                 }
                             }
                         }
                         break;
 
                     case "Dot":
-                        // Dot is a solid filled circle with an outer edge and inner fill
-                        // For smoother dots, use a custom approach with GraphicsPath
-
-                        // First, create a path for the outer circle (the dot)
-                        using (GraphicsPath dotPath = new GraphicsPath())
+                        // Dot is a solid filled circle
+                        if (profile.EdgeColor.A > 0)
                         {
-                            // Add the outer circle to the path
-                            float dotDiameter = size;
-                            dotPath.AddEllipse(centerX - dotDiameter/2, centerY - dotDiameter/2, dotDiameter, dotDiameter);
-
-                            // Draw the outer circle with the edge color
-                            if (profile.EdgeColor.A > 0)
+                            SolidBrush dotBrush = GetCachedBrush(profile.EdgeColor);
+                            if (dotBrush != null)
                             {
-                                using (SolidBrush dotBrush = new SolidBrush(profile.EdgeColor))
-                                {
-                                    e.Graphics.FillPath(dotBrush, dotPath);
-                                }
-                            }
-                        }
-
-                        // Then draw the inner part with inner color if thickness allows
-                        if (profile.InnerColor.A > 0 && profile.Thickness > 0)
-                        {
-                            float innerDiameter = size - (profile.Thickness * 2);
-                            if (innerDiameter > 0)
-                            {
-                                using (GraphicsPath innerDotPath = new GraphicsPath())
-                                {
-                                    // Add the inner circle to the path
-                                    innerDotPath.AddEllipse(
-                                        centerX - innerDiameter/2,
-                                        centerY - innerDiameter/2,
-                                        innerDiameter,
-                                        innerDiameter);
-
-                                    // Draw the inner circle with the inner color
-                                    using (SolidBrush innerBrush = new SolidBrush(profile.InnerColor))
-                                    {
-                                        e.Graphics.FillPath(innerBrush, innerDotPath);
-                                    }
-                                }
+                                // Draw filled circle using the size as diameter
+                                float dotSize = size * 2;
+                                FillEllipseF(e.Graphics, dotBrush,
+                                    centerX - size, centerY - size,
+                                    dotSize, dotSize);
                             }
                         }
                         break;
@@ -1271,24 +1612,24 @@ namespace LightCrosshair
                         if (edgePen != null)
                         {
                             // Draw horizontal lines with gap
-                            e.Graphics.DrawLine(edgePen, centerX - size, centerY, centerX - actualGapSize, centerY);
-                            e.Graphics.DrawLine(edgePen, centerX + actualGapSize, centerY, centerX + size, centerY);
+                            DrawLineF(e.Graphics, edgePen, centerX - size, centerY, centerX - actualGapSize, centerY);
+                            DrawLineF(e.Graphics, edgePen, centerX + actualGapSize, centerY, centerX + size, centerY);
 
                             // Draw vertical lines with gap
-                            e.Graphics.DrawLine(edgePen, centerX, centerY - size, centerX, centerY - actualGapSize);
-                            e.Graphics.DrawLine(edgePen, centerX, centerY + actualGapSize, centerX, centerY + size);
+                            DrawLineF(e.Graphics, edgePen, centerX, centerY - size, centerX, centerY - actualGapSize);
+                            DrawLineF(e.Graphics, edgePen, centerX, centerY + actualGapSize, centerX, centerY + size);
                         }
 
                         // Draw inner lines if thickness allows
                         if (profile.Thickness > 2 && innerPen != null)
                         {
                             // Horizontal inner lines
-                            e.Graphics.DrawLine(innerPen, centerX - size + 1, centerY, centerX - actualGapSize, centerY);
-                            e.Graphics.DrawLine(innerPen, centerX + actualGapSize, centerY, centerX + size - 1, centerY);
+                            DrawLineF(e.Graphics, innerPen, centerX - size + 1, centerY, centerX - actualGapSize, centerY);
+                            DrawLineF(e.Graphics, innerPen, centerX + actualGapSize, centerY, centerX + size - 1, centerY);
 
                             // Vertical inner lines
-                            e.Graphics.DrawLine(innerPen, centerX, centerY - size + 1, centerX, centerY - actualGapSize);
-                            e.Graphics.DrawLine(innerPen, centerX, centerY + actualGapSize, centerX, centerY + size - 1);
+                            DrawLineF(e.Graphics, innerPen, centerX, centerY - size + 1, centerX, centerY - actualGapSize);
+                            DrawLineF(e.Graphics, innerPen, centerX, centerY + actualGapSize, centerX, centerY + size - 1);
                         }
                         break;
 
@@ -1297,8 +1638,8 @@ namespace LightCrosshair
                         // Draw the X shape with edge color
                         if (edgePen != null)
                         {
-                            e.Graphics.DrawLine(edgePen, centerX - size, centerY - size, centerX + size, centerY + size);
-                            e.Graphics.DrawLine(edgePen, centerX - size, centerY + size, centerX + size, centerY - size);
+                            DrawLineF(e.Graphics, edgePen, centerX - size, centerY - size, centerX + size, centerY + size);
+                            DrawLineF(e.Graphics, edgePen, centerX - size, centerY + size, centerX + size, centerY - size);
                         }
 
                         // Draw inner lines if thickness allows and inner color is not transparent
@@ -1324,10 +1665,10 @@ namespace LightCrosshair
                             {
                                 int halfThickness = profile.Thickness / 2;
                                 path.AddPolygon(new Point[] {
-                                    new Point(centerX, centerY - halfThickness),
-                                    new Point(centerX + halfThickness, centerY),
-                                    new Point(centerX, centerY + halfThickness),
-                                    new Point(centerX - halfThickness, centerY)
+                                    new Point((int)Math.Round(centerX), (int)Math.Round(centerY - halfThickness)),
+                                    new Point((int)Math.Round(centerX + halfThickness), (int)Math.Round(centerY)),
+                                    new Point((int)Math.Round(centerX), (int)Math.Round(centerY + halfThickness)),
+                                    new Point((int)Math.Round(centerX - halfThickness), (int)Math.Round(centerY))
                                 });
                                 e.Graphics.FillPath(fillBrush, path);
                             }
@@ -1336,7 +1677,57 @@ namespace LightCrosshair
 
                     case "Cross":
                         // Cross is a full crosshair without a gap
-                        // Draw horizontal and vertical lines
+                        // Draw horizontal and vertical lines with pixel-perfect positioning
+                        if (edgePen != null)
+                        {
+                            DrawLineF(e.Graphics, edgePen, centerX - size, centerY, centerX + size, centerY);
+                            DrawLineF(e.Graphics, edgePen, centerX, centerY - size, centerX, centerY + size);
+                        }
+
+                        // Draw inner lines if thickness allows
+                        if (profile.Thickness > 2 && innerPen != null)
+                        {
+                            DrawLineF(e.Graphics, innerPen, centerX - size + 1, centerY, centerX + size - 1, centerY);
+                            DrawLineF(e.Graphics, innerPen, centerX, centerY - size + 1, centerX, centerY + size - 1);
+                        }
+                        break;
+
+                    // Combined shapes
+                    case "CircleDot":
+                        // Draw circle (outer shape) - hollow circle outline
+                        if (edgePen != null)
+                        {
+                            e.Graphics.DrawEllipse(edgePen, centerX - size, centerY - size, size * 2, size * 2);
+
+                            // Draw inner outline if thickness allows and inner color is specified
+                            if (innerPen != null && profile.Thickness > 2)
+                            {
+                                float innerSize = size - profile.Thickness;
+                                if (innerSize > 0)
+                                {
+                                    e.Graphics.DrawEllipse(innerPen,
+                                        centerX - innerSize, centerY - innerSize,
+                                        innerSize * 2, innerSize * 2);
+                                }
+                            }
+                        }
+
+                        // Draw dot in center (inner shape) - solid filled circle
+                        if (profile.InnerShapeEdgeColor.A > 0)
+                        {
+                            SolidBrush dotBrush = GetCachedBrush(profile.InnerShapeEdgeColor);
+                            if (dotBrush != null)
+                            {
+                                float dotRadius = profile.InnerSize / 2;
+                                e.Graphics.FillEllipse(dotBrush,
+                                    centerX - dotRadius, centerY - dotRadius,
+                                    profile.InnerSize, profile.InnerSize);
+                            }
+                        }
+                        break;
+
+                    case "CrossDot":
+                        // Draw cross (outer shape)
                         if (edgePen != null)
                         {
                             e.Graphics.DrawLine(edgePen, centerX - size, centerY, centerX + size, centerY);
@@ -1349,170 +1740,17 @@ namespace LightCrosshair
                             e.Graphics.DrawLine(innerPen, centerX - size + 1, centerY, centerX + size - 1, centerY);
                             e.Graphics.DrawLine(innerPen, centerX, centerY - size + 1, centerX, centerY + size - 1);
                         }
-                        break;
 
-                    // Combined shapes
-                    case "CircleDot":
-                        // Draw circle (outer shape)
-                        // Circle is a hollow circle with a border
-                        if (profile.EdgeColor.A > 0)
+                        // Draw dot in center (inner shape) - solid filled circle
+                        if (profile.InnerShapeEdgeColor.A > 0)
                         {
-                            // For smoother circles, use a custom approach
-                            // First, create a path for the outer circle
-                            using (GraphicsPath circlePath = new GraphicsPath())
+                            SolidBrush dotBrush = GetCachedBrush(profile.InnerShapeEdgeColor);
+                            if (dotBrush != null)
                             {
-                                // Add the outer circle to the path
-                                circlePath.AddEllipse(centerX - size, centerY - size, size * 2, size * 2);
-
-                                // If we have an inner color and sufficient thickness, create a hole in the path
-                                if (profile.Thickness > 0 && profile.InnerColor.A > 0)
-                                {
-                                    // Calculate the inner circle dimensions
-                                    float innerRadius = size - profile.Thickness;
-                                    if (innerRadius > 0)
-                                    {
-                                        // Add the inner circle to the path (in reverse direction to create a hole)
-                                        circlePath.AddEllipse(
-                                            centerX - innerRadius,
-                                            centerY - innerRadius,
-                                            innerRadius * 2,
-                                            innerRadius * 2);
-                                    }
-                                }
-
-                                // Draw the path with the edge color
-                                using (SolidBrush edgeBrush = new SolidBrush(profile.EdgeColor))
-                                {
-                                    e.Graphics.FillPath(edgeBrush, circlePath);
-                                }
-                            }
-
-                            // If we have an inner color and sufficient thickness, draw the inner circle
-                            if (profile.Thickness > 0 && profile.InnerColor.A > 0)
-                            {
-                                // Calculate the inner circle dimensions
-                                float innerRadius = size - profile.Thickness;
-                                if (innerRadius > 0)
-                                {
-                                    // Draw the inner circle with the inner color
-                                    using (SolidBrush innerBrush = new SolidBrush(profile.InnerColor))
-                                    {
-                                        e.Graphics.FillEllipse(
-                                            innerBrush,
-                                            centerX - innerRadius,
-                                            centerY - innerRadius,
-                                            innerRadius * 2,
-                                            innerRadius * 2);
-                                    }
-                                }
-                            }
-                        }
-
-                        // Draw dot in center (inner shape)
-                        // For smoother dots, use a custom approach with GraphicsPath
-                        float circleDotDiameter = profile.InnerSize;
-
-                        // First, create a path for the outer circle (the dot)
-                        using (GraphicsPath dotPath = new GraphicsPath())
-                        {
-                            // Add the outer circle to the path
-                            dotPath.AddEllipse(centerX - circleDotDiameter/2, centerY - circleDotDiameter/2, circleDotDiameter, circleDotDiameter);
-
-                            // Draw the outer circle with the edge color
-                            if (profile.InnerShapeEdgeColor.A > 0)
-                            {
-                                using (SolidBrush dotBrush = new SolidBrush(profile.InnerShapeEdgeColor))
-                                {
-                                    e.Graphics.FillPath(dotBrush, dotPath);
-                                }
-                            }
-                        }
-
-                        // Then draw the inner part with inner color if thickness allows
-                        if (profile.InnerShapeInnerColor.A > 0 && profile.InnerThickness > 0)
-                        {
-                            float innerDotDiameter = circleDotDiameter - (profile.InnerThickness * 2);
-                            if (innerDotDiameter > 0)
-                            {
-                                using (GraphicsPath innerDotPath = new GraphicsPath())
-                                {
-                                    // Add the inner circle to the path
-                                    innerDotPath.AddEllipse(
-                                        centerX - innerDotDiameter/2,
-                                        centerY - innerDotDiameter/2,
-                                        innerDotDiameter,
-                                        innerDotDiameter);
-
-                                    // Draw the inner circle with the inner color
-                                    using (SolidBrush innerDotBrush = new SolidBrush(profile.InnerShapeInnerColor))
-                                    {
-                                        e.Graphics.FillPath(innerDotBrush, innerDotPath);
-                                    }
-                                }
-                            }
-                        }
-                        break;
-
-                    case "CrossDot":
-                        // Draw cross (outer shape)
-                        // Draw horizontal and vertical lines
-                        using (Pen crossPen = new Pen(profile.EdgeColor, profile.Thickness))
-                        {
-                            e.Graphics.DrawLine(crossPen, centerX - size, centerY, centerX + size, centerY);
-                            e.Graphics.DrawLine(crossPen, centerX, centerY - size, centerX, centerY + size);
-                        }
-
-                        // Draw inner lines if thickness allows
-                        if (profile.Thickness > 2 && profile.InnerColor.A > 0)
-                        {
-                            using (Pen crossInnerPen = new Pen(profile.InnerColor, Math.Max(1, profile.Thickness - 2)))
-                            {
-                                e.Graphics.DrawLine(crossInnerPen, centerX - size + 1, centerY, centerX + size - 1, centerY);
-                                e.Graphics.DrawLine(crossInnerPen, centerX, centerY - size + 1, centerX, centerY + size - 1);
-                            }
-                        }
-
-                        // Draw dot in center (inner shape)
-                        // For smoother dots, use a custom approach with GraphicsPath
-                        float crossDotDiameter = profile.InnerSize;
-
-                        // First, create a path for the outer circle (the dot)
-                        using (GraphicsPath dotPath = new GraphicsPath())
-                        {
-                            // Add the outer circle to the path
-                            dotPath.AddEllipse(centerX - crossDotDiameter/2, centerY - crossDotDiameter/2, crossDotDiameter, crossDotDiameter);
-
-                            // Draw the outer circle with the edge color
-                            if (profile.InnerShapeEdgeColor.A > 0)
-                            {
-                                using (SolidBrush dotBrush = new SolidBrush(profile.InnerShapeEdgeColor))
-                                {
-                                    e.Graphics.FillPath(dotBrush, dotPath);
-                                }
-                            }
-                        }
-
-                        // Then draw the inner part with inner color if thickness allows
-                        if (profile.InnerShapeInnerColor.A > 0 && profile.InnerThickness > 0)
-                        {
-                            float crossInnerDotDiameter = crossDotDiameter - (profile.InnerThickness * 2);
-                            if (crossInnerDotDiameter > 0)
-                            {
-                                using (GraphicsPath innerDotPath = new GraphicsPath())
-                                {
-                                    // Add the inner circle to the path
-                                    innerDotPath.AddEllipse(
-                                        centerX - crossInnerDotDiameter/2,
-                                        centerY - crossInnerDotDiameter/2,
-                                        crossInnerDotDiameter,
-                                        crossInnerDotDiameter);
-
-                                    // Draw the inner circle with the inner color
-                                    using (SolidBrush innerDotBrush = new SolidBrush(profile.InnerShapeInnerColor))
-                                    {
-                                        e.Graphics.FillPath(innerDotBrush, innerDotPath);
-                                    }
-                                }
+                                float dotRadius = profile.InnerSize / 2;
+                                e.Graphics.FillEllipse(dotBrush,
+                                    centerX - dotRadius, centerY - dotRadius,
+                                    profile.InnerSize, profile.InnerSize);
                             }
                         }
                         break;
@@ -1769,6 +2007,10 @@ namespace LightCrosshair
                         e.Graphics.DrawLine(edgePen, centerX, centerY - size, centerX, centerY + size);
                         break;
                 }
+
+                // Update cached profile and mark as rendered
+                _lastRenderedProfile = profile;
+                _needsRedraw = false;
             }
         }
 
@@ -1780,11 +2022,55 @@ namespace LightCrosshair
 
         private void CenterCrosshair()
         {
+            // First ensure the form is properly sized
+            UpdateFormSize();
+
             Rectangle screenBounds = Screen.PrimaryScreen?.Bounds ?? new Rectangle(0, 0, 1920, 1080);
-            this.Location = new Point(
-                (screenBounds.Width - this.Width) / 2,
-                (screenBounds.Height - this.Height) / 2
-            );
+
+            // Calculate the exact pixel center of the screen
+            // For 1440p (2560x1440), center should be at (1280, 720)
+            double screenCenterX = screenBounds.X + (screenBounds.Width / 2.0);
+            double screenCenterY = screenBounds.Y + (screenBounds.Height / 2.0);
+
+            // Calculate form center (no DPI scaling needed for positioning)
+            double formCenterX = this.Width / 2.0;
+            double formCenterY = this.Height / 2.0;
+
+            // Position the form for pixel-perfect centering
+            // Use Math.Floor to ensure we don't round up and cause offset
+            int formX = (int)Math.Floor(screenCenterX - formCenterX);
+            int formY = (int)Math.Floor(screenCenterY - formCenterY);
+
+            // For even screen dimensions, adjust to ensure perfect centering
+            if (screenBounds.Width % 2 == 0)
+            {
+                formX = (int)Math.Round(screenCenterX - formCenterX);
+            }
+            if (screenBounds.Height % 2 == 0)
+            {
+                formY = (int)Math.Round(screenCenterY - formCenterY);
+            }
+
+            this.Location = new Point(formX, formY);
+        }
+
+        private void UpdateFormSize()
+        {
+            if (profileManager?.CurrentProfile != null)
+            {
+                // Calculate optimal form size based on crosshair size and thickness
+                int maxCrosshairSize = Math.Max(profileManager.CurrentProfile.Size,
+                                              profileManager.CurrentProfile.InnerSize);
+                int padding = Math.Max(profileManager.CurrentProfile.Thickness * 2, 10);
+
+                // Ensure minimum size and add padding for anti-aliasing
+                int formSize = Math.Max(100, maxCrosshairSize + padding * 2);
+
+                // Make sure the size is odd for perfect center pixel alignment
+                if (formSize % 2 == 0) formSize++;
+
+                this.Size = new Size(formSize, formSize);
+            }
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
@@ -1802,6 +2088,16 @@ namespace LightCrosshair
             notifyIcon.Visible = false;
             notifyIcon.Dispose();
             contextMenu.Dispose();
+
+            // Stop and dispose recording detection timer
+            if (_recordingDetectionTimer != null)
+            {
+                _recordingDetectionTimer.Stop();
+                _recordingDetectionTimer.Dispose();
+            }
+
+            // Clear graphics cache
+            ClearGraphicsCache();
 
             base.OnFormClosing(e);
         }

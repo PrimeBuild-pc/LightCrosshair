@@ -18,7 +18,9 @@ static class Program
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.SetHighDpiMode(HighDpiMode.SystemAware);
+
+            // Enhanced DPI awareness for better performance across different displays
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
             // Create and run the form
             using var form = new Form1();

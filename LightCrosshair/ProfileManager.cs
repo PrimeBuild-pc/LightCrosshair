@@ -48,10 +48,34 @@ namespace LightCrosshair
             if (_profiles.Count > 0)
             {
                 _currentProfile = _profiles[0];
+
+                // Check if this is an old default profile that needs updating
+                if (_currentProfile.Name == "Default" &&
+                    _currentProfile.EdgeColor == Color.White &&
+                    _currentProfile.InnerColor == Color.Orange)
+                {
+                    // Update old default profile to new settings
+                    _currentProfile.EdgeColor = Color.Transparent;
+                    _currentProfile.InnerColor = Color.FromArgb(0, 255, 255); // Neon Cyan
+                    _currentProfile.Size = 15;
+                    _currentProfile.Thickness = 5;
+                    _currentProfile.EdgeThickness = 1;
+                    _currentProfile.Save();
+                }
             }
             else
             {
-                _currentProfile = new CrosshairProfile();
+                // Create default profile with explicit settings
+                _currentProfile = new CrosshairProfile
+                {
+                    Name = "Default",
+                    Shape = "Cross",
+                    EdgeColor = Color.Transparent,
+                    InnerColor = Color.FromArgb(0, 255, 255), // Neon Cyan
+                    Size = 15,
+                    Thickness = 5,
+                    EdgeThickness = 1
+                };
                 _profiles.Add(_currentProfile);
                 _currentProfile.Save();
             }
