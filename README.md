@@ -184,19 +184,27 @@ dotnet restore
 dotnet build
 ```
 
-### **Coding Standards**
-- Follow C# naming conventions
-- Add XML documentation for public methods
-- Include unit tests for new features
-- Maintain <1% performance impact
-- Test on multiple Windows versions
+<details>
+  <summary><b>Coding Standards</b></summary>
+  <br>
 
-### **Pull Request Process**
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request with detailed description
+- Follow C# naming conventions  
+- Add XML documentation for public methods  
+- Include unit tests for new features  
+- Maintain &lt;1% performance impact  
+- Test on multiple Windows versions
+</details>
+
+<details>
+  <summary><b>Pull Request Process</b></summary>
+  <br>
+
+1. Fork the repository  
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)  
+3. Commit changes (`git commit -m 'Add amazing feature'`)  
+4. Push to branch (`git push origin feature/amazing-feature`)  
+5. Open a Pull Request with a detailed description
+</details>
 
 ---
 
