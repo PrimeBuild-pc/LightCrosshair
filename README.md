@@ -13,43 +13,46 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
 
 ## ✨ Key Features
 
-### 🎨 **Advanced Customization**
+<details>
+  <summary><b>🎨 Advanced Customization</b></summary>
+  <br>
+
 - **Multiple Shapes**: Cross, Circle, Dot, Plus, X, and combined shapes
 - **Vibrant Colors**: Neon cyan, electric red, neon green, and custom colors
 - **Transparent Edges**: Clean appearance with no unwanted borders
 - **Adjustable Thickness**: 1-10 pixel edge thickness control
 - **Dynamic Sizing**: 5-100% size adjustment with 5% increments
+</details>
 
-### 🚀 **Performance Optimized**
-- **<1% CPU Usage**: Minimal impact during gaming sessions
+<details>
+  <summary><b>🚀 Performance Optimized</b></summary>
+  <br>
+
+- **&lt;1% CPU Usage**: Minimal impact during gaming sessions
 - **Hardware Accelerated**: Leverages Windows' layered window optimizations
 - **Smart Rendering**: Only redraws when changes are detected
 - **Memory Efficient**: Optimized graphics object caching
+</details>
 
-### 🎮 **Gaming Features**
+<details>
+  <summary><b>🎮 Gaming Features</b></summary>
+  <br>
+
 - **Pixel-Perfect Centering**: Mathematically precise positioning on all displays
 - **Screen Recording Detection**: Auto-hide during streaming/recording
 - **Multi-Monitor Support**: Works correctly on all display configurations
 - **DPI Awareness**: Scales properly on high-DPI displays
+</details>
 
-### 🔧 **User Experience**
+<details>
+  <summary><b>🔧 User Experience</b></summary>
+  <br>
+
 - **Persistent Context Menu**: Make multiple adjustments without menu closing
 - **System Tray Integration**: Unobtrusive background operation
 - **Profile Management**: Save and switch between multiple configurations
 - **Hotkey Support**: Quick visibility toggle (Alt+X default)
-
----
-
-## 📋 System Requirements
-
-| Component | Requirement |
-|-----------|-------------|
-| **Operating System** | Windows 10 (1809+) or Windows 11 |
-| **Architecture** | x64 (Intel/AMD 64-bit processors) |
-| **Runtime** | .NET 6.0 (included in standalone builds) |
-| **Memory** | 50MB RAM (typical usage) |
-| **Storage** | 100MB available space |
-| **Display** | Any resolution (optimized for 1080p, 1440p, 4K) |
+</details>
 
 ---
 
@@ -78,53 +81,81 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true /
 
 ## 🎯 Usage Guide
 
-### **Getting Started**
-1. **Launch** the application - a neon cyan cross will appear at screen center
-2. **Right-click** anywhere on screen to open the context menu
-3. **Customize** your crosshair using the menu options
+<details>
+  <summary><b>Getting Started</b></summary>
+  <br>
+
+1. **Launch** the application - a neon cyan cross will appear at screen center  
+2. **Right-click** anywhere on screen to open the context menu  
+3. **Customize** your crosshair using the menu options  
 4. **Close Menu** when finished, or click outside to dismiss
+</details>
 
-### **Context Menu Navigation**
-- **Shape** → Choose from Cross, Circle, Dot, Plus, X, or combined shapes
-- **Size** → Adjust from 5% to 100% in 5% increments
-- **Thickness** → Set line thickness from 1-10 pixels
-- **Edge Color** → Choose color and thickness for borders
-- **Inner Color** → Set the main crosshair color
+<details>
+  <summary><b>Context Menu Navigation</b></summary>
+  <br>
+
+- **Shape** → Choose from Cross, Circle, Dot, Plus, X, or combined shapes  
+- **Size** → Adjust from 5% to 100% in 5% increments  
+- **Thickness** → Set line thickness from 1–10 pixels  
+- **Edge Color** → Choose color and thickness for borders  
+- **Inner Color** → Set the main crosshair color  
 - **Profiles** → Save, load, and manage multiple configurations
+</details>
 
-### **Keyboard Shortcuts**
-- `Alt + X` - Toggle crosshair visibility
-- `Escape` - Close context menu
+<details>
+  <summary><b>Keyboard Shortcuts</b></summary>
+  <br>
+
+- `Alt + X` - Toggle crosshair visibility  
+- `Escape` - Close context menu  
 - Right-click - Open context menu
+</details>
 
-### **Pro Tips** 💡
-- Use **transparent edge color** for clean appearance
-- **Neon cyan** provides excellent visibility on all backgrounds
-- **15% size** with **5px thickness** works well for most games
-- Create separate profiles for different game types
+<details>
+  <summary><b>💡 Pro Tips</b></summary>
+  <br>
+
+- Use **transparent edge color** for clean appearance  
+- **Neon cyan** provides excellent visibility on all backgrounds  
+- **15% size** with **5px thickness** works well for most games  
+- Create separate profiles for different game types  
 - Enable **"Hide during screen recording"** for streaming
+</details>
 
 ---
 
 ## 🛠️ Technical Specifications
 
-### **Architecture**
+<details>
+  <summary><b>Architecture</b></summary>
+  <br>
+
 - **Framework**: .NET 6.0 Windows Forms
 - **Graphics**: GDI+ with hardware acceleration
 - **Rendering**: Optimized double-buffering with anti-aliasing
 - **Threading**: Asynchronous operations for UI responsiveness
+</details>
 
-### **Performance Metrics**
-- **Startup Time**: <500ms (ReadyToRun optimized)
+<details>
+  <summary><b>Performance Metrics</b></summary>
+  <br>
+
+- **Startup Time**: &lt;500ms (ReadyToRun optimized)
 - **Memory Usage**: ~50MB baseline, stable during operation
-- **CPU Impact**: <1% during idle gaming, <2% during menu operations
-- **Rendering Latency**: <16ms (60+ FPS equivalent)
+- **CPU Impact**: &lt;1% during idle gaming, &lt;2% during menu operations
+- **Rendering Latency**: &lt;16ms (60+ FPS equivalent)
+</details>
 
-### **Compatibility**
+<details>
+  <summary><b>Compatibility</b></summary>
+  <br>
+
 - **Windows Versions**: 10 (1809+), 11 (all versions)
 - **Display Scaling**: 100%, 125%, 150%, 200% DPI scaling
 - **Multi-Monitor**: Primary and secondary display support
 - **Gaming Software**: Compatible with OBS, XSplit, Discord overlay
+</details>
 
 ---
 
@@ -147,7 +178,7 @@ We welcome contributions from the gaming and development community! Here's how y
 # - Git
 
 # Clone and setup
-git clone https://github.com/yourusername/LightCrosshair.git
+git clone https://github.com/PrimeBuild-pc/LightCrosshair.git
 cd LightCrosshair
 dotnet restore
 dotnet build
@@ -203,6 +234,8 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 <div align="center">
 
 **Made with ❤️ for the gaming community**
+
+[![PayPal](https://img.shields.io/badge/Supporta%20su-PayPal-blue?logo=paypal)](https://paypal.me/PrimeBuildOfficial?country.x=IT&locale.x=it_IT)
 
 [⭐ Star this repo](../../stargazers) • [🐛 Report Bug](../../issues) • [💡 Request Feature](../../issues) • [🤝 Contribute](../../pulls)
 
