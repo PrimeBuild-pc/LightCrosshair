@@ -45,8 +45,9 @@ namespace LightCrosshair
                     _lastGeometryHash = geomHash;
                     _lastColorHash = colorHash;
                 }
-                // Return clone (caller manages disposal)
-                return (Bitmap)_cachedBitmap!.Clone();
+                // Return cached bitmap directly (caller manages disposal of previous frame).
+                // Form1 holds the returned instance until configuration changes; renderer recreates when needed.
+                return _cachedBitmap!;
             }
         }
 
@@ -131,10 +132,10 @@ namespace LightCrosshair
                     filledCircles.Add(new FilledCircle(cx - size, cy - size, size * 2));
                     break;
                 case CrosshairShape.Cross:
-                    AddCross(outlined:false, gap:false);
+                    AddCross(outlined:false, gap: cfg.GapSize > 0);
                     break;
                 case CrosshairShape.CrossOutlined:
-                    AddCross(outlined:true, gap:false);
+                    AddCross(outlined:true, gap: cfg.GapSize > 0);
                     break;
                 case CrosshairShape.GapCross:
                     AddCross(outlined:true, gap:true);
@@ -205,51 +206,137 @@ namespace LightCrosshair
             g.CompositingMode = CompositingMode.SourceOver;
 
             // Pens / brushes (lazy)
-            Pen? edgePen = GetPen(cfg.EdgeColor, cfg.EdgeThickness);
+            int primaryWidth = cfg.EdgeThickness > 0 ? cfg.EdgeThickness : Math.Max(1, cfg.Thickness);
+            Pen? edgePen = GetPen(cfg.EdgeColor, primaryWidth);
             Pen? innerPen = cfg.Thickness > 2 ? GetPen(cfg.InnerColor, Math.Max(1, cfg.Thickness - 2)) : null;
             Pen? innerShapeEdgePen = GetPen(cfg.InnerShapeEdgeColor, cfg.InnerThickness);
             Pen? innerShapeInnerPen = cfg.InnerThickness > 2 ? GetPen(cfg.InnerShapeInnerColor, Math.Max(1, cfg.InnerThickness - 2)) : null;
             Brush? fillBrush = GetBrush(cfg.FillColor);
             Brush? dotBrush = GetBrush(cfg.EdgeColor.A > 0 ? cfg.EdgeColor : cfg.InnerColor); // for dot fallback
 
-            // Draw primary geometry
-            if (edgePen != null)
-            {
-                foreach (var l in plan.EdgeLines)
-                    g.DrawLine(edgePen, l.X1, l.Y1, l.X2, l.Y2);
-                foreach (var e in plan.EdgeEllipses)
-                    g.DrawEllipse(edgePen, e.X, e.Y, e.W, e.H);
-                foreach (var r in plan.EdgeRects)
-                    g.DrawRectangle(edgePen, r.X, r.Y, r.Width, r.Height);
-            }
-
-            if (innerPen != null)
-            {
-                foreach (var l in plan.InnerLines)
-                    g.DrawLine(innerPen, l.X1, l.Y1, l.X2, l.Y2);
-                foreach (var e in plan.InnerEllipses)
-                    g.DrawEllipse(innerPen, e.X, e.Y, e.W, e.H);
-            }
-
-            // Filled circles (used for dot / composite)
-            foreach (var fc in plan.FilledCircles)
-            {
-                var brush = fillBrush ?? dotBrush;
-                if (brush != null)
-                    g.FillEllipse(brush, fc.X, fc.Y, fc.D, fc.D);
-            }
-
-            // Additional inner-shape pens for composite custom shapes
+            // Composite handling: draw custom composite from cfg rather than plan
             if (plan.ShapeKind == CrosshairShape.Custom)
             {
-                // For composite geometry we reused edgeLines; treat inner-shape distinction using innerShapeEdgePen if present
-                if (innerShapeEdgePen != null && innerShapeEdgePen != edgePen)
+                float cx = plan.CanvasSize / 2f;
+                float cy = cx;
+                float outerR = cfg.Size / 2f;
+                float innerR = Math.Max(0, cfg.InnerSize / 2f);
+
+                void DrawCross(float radius, Pen pen, int gap)
                 {
-                    // Example: could re-draw or extend plan; keep simple for now.
+                    // Simple single-pen cross with center gap to preserve visibility
+                    // Horizontal
+                    g.DrawLine(pen, cx - radius, cy, cx - gap, cy);
+                    g.DrawLine(pen, cx + gap, cy, cx + radius, cy);
+                    // Vertical
+                    g.DrawLine(pen, cx, cy - radius, cx, cy - gap);
+                    g.DrawLine(pen, cx, cy + gap, cx, cy + radius);
                 }
-                if (innerShapeInnerPen != null)
+
+                void DrawX(float radius, Pen pen, int gap)
                 {
-                    // Potential enhancement: draw inner duplicates; omitted for initial pass.
+                    // Diagonals with center gap
+                    float d = gap * 0.70710678f; // ~ 1/sqrt(2) for equal x/y offsets
+                    // Top-left to bottom-right
+                    g.DrawLine(pen, cx - radius, cy - radius, cx - d, cy - d);
+                    g.DrawLine(pen, cx + d, cy + d, cx + radius, cy + radius);
+                    // Bottom-left to top-right
+                    g.DrawLine(pen, cx - radius, cy + radius, cx - d, cy + d);
+                    g.DrawLine(pen, cx + d, cy - d, cx + radius, cy - radius);
+                }
+
+                // Outer component
+                if (cfg.Shape == "CrossDot")
+                {
+                    var outerPenSingle = GetPen(cfg.EdgeColor, cfg.EdgeThickness > 0 ? cfg.EdgeThickness : cfg.Thickness);
+                    if (outerPenSingle != null)
+                    {
+                        int minForCaps = (int)Math.Ceiling(outerPenSingle.Width / 2f);
+                        int gap = Math.Max(cfg.GapSize, minForCaps);
+                        DrawCross(outerR, outerPenSingle, gap);
+                    }
+                }
+                else if (cfg.Shape.StartsWith("Circle", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Outer circle: outline only (no fill, no dual-pen)
+                    var outerPenSingle = GetPen(cfg.EdgeColor, cfg.EdgeThickness > 0 ? cfg.EdgeThickness : cfg.Thickness);
+                    if (outerPenSingle != null)
+                        g.DrawEllipse(outerPenSingle, cx - outerR, cy - outerR, outerR * 2, outerR * 2);
+                }
+
+                // Inner component
+                string innerKind = cfg.Shape == "CrossDot" ? "Dot" : cfg.Shape.Replace("Circle", string.Empty);
+                switch (innerKind)
+                {
+                    case "Dot":
+                    {
+                        var brush = GetBrush(cfg.InnerShapeEdgeColor);
+                        if (brush != null)
+                            g.FillEllipse(brush, cx - innerR, cy - innerR, innerR * 2, innerR * 2);
+                        break;
+                    }
+                    case "Cross":
+                    {
+                        var pen = GetPen(cfg.InnerShapeEdgeColor, cfg.InnerThickness);
+                        if (pen != null)
+                        {
+                            int minForCaps = (int)Math.Ceiling(pen.Width / 2f);
+                            int gap = Math.Max(cfg.InnerGapSize, minForCaps);
+                            DrawCross(innerR, pen, gap);
+                        }
+                        break;
+                    }
+                    case "Plus":
+                    {
+                        var pen = GetPen(cfg.InnerShapeEdgeColor, cfg.InnerThickness);
+                        if (pen != null)
+                        {
+                            int minForCaps = (int)Math.Ceiling(pen.Width / 2f);
+                            int gap = Math.Max(cfg.InnerGapSize, minForCaps);
+                            DrawCross(innerR, pen, gap);
+                        }
+                        break;
+                    }
+                    case "X":
+                    {
+                        var pen = GetPen(cfg.InnerShapeEdgeColor, cfg.InnerThickness);
+                        if (pen != null)
+                        {
+                            int minForCaps = (int)Math.Ceiling(pen.Width / 2f);
+                            int gap = Math.Max(cfg.InnerGapSize, minForCaps);
+                            DrawX(innerR, pen, gap);
+                        }
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                // Draw primary geometry from plan
+                if (edgePen != null)
+                {
+                    foreach (var l in plan.EdgeLines)
+                        g.DrawLine(edgePen, l.X1, l.Y1, l.X2, l.Y2);
+                    foreach (var e in plan.EdgeEllipses)
+                        g.DrawEllipse(edgePen, e.X, e.Y, e.W, e.H);
+                    foreach (var r in plan.EdgeRects)
+                        g.DrawRectangle(edgePen, r.X, r.Y, r.Width, r.Height);
+                }
+
+                if (innerPen != null)
+                {
+                    foreach (var l in plan.InnerLines)
+                        g.DrawLine(innerPen, l.X1, l.Y1, l.X2, l.Y2);
+                    foreach (var e in plan.InnerEllipses)
+                        g.DrawEllipse(innerPen, e.X, e.Y, e.W, e.H);
+                }
+
+                // Filled circles (used for dot / composite)
+                foreach (var fc in plan.FilledCircles)
+                {
+                    var brush = fillBrush ?? dotBrush;
+                    if (brush != null)
+                        g.FillEllipse(brush, fc.X, fc.Y, fc.D, fc.D);
                 }
             }
         }
@@ -284,20 +371,21 @@ namespace LightCrosshair
             return b;
         }
 
-                private string ComputeGeometryHash(CrosshairProfile p)
-                {
-                        var sb = new StringBuilder();
-                        sb.Append(p.EnumShape).Append('|')
-                            .Append(p.Size).Append('|')
-                            .Append(p.Thickness).Append('|')
-                            .Append(p.EdgeThickness).Append('|')
-                            .Append(p.GapSize).Append('|')
-                            .Append(p.InnerSize).Append('|')
-                            .Append(p.InnerThickness).Append('|')
-                            .Append(p.InnerGapSize);
-                        using var sha = SHA1.Create();
-                        return Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString())));
-                }
+        private string ComputeGeometryHash(CrosshairProfile p)
+        {
+            var sb = new StringBuilder();
+            sb.Append(p.EnumShape).Append('|')
+              .Append(p.Shape).Append('|')
+              .Append(p.Size).Append('|')
+              .Append(p.Thickness).Append('|')
+              .Append(p.EdgeThickness).Append('|')
+              .Append(p.GapSize).Append('|')
+              .Append(p.InnerSize).Append('|')
+              .Append(p.InnerThickness).Append('|')
+              .Append(p.InnerGapSize);
+            using var sha = SHA1.Create();
+            return Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString())));
+        }
 
                 private string ComputeColorHash(CrosshairProfile p)
                 {
@@ -307,6 +395,7 @@ namespace LightCrosshair
                             .Append(p.FillColor.ToArgb()).Append('|')
                             .Append(p.InnerShapeEdgeColor.ToArgb()).Append('|')
                             .Append(p.InnerShapeInnerColor.ToArgb()).Append('|')
+                            .Append(p.InnerShapeFillColor.ToArgb()).Append('|')
                             .Append(_antiAlias ? '1' : '0');
                         using var sha = SHA1.Create();
                         return Convert.ToHexString(sha.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString())));

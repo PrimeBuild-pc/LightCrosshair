@@ -45,7 +45,7 @@ namespace LightCrosshair
                             json = await File.ReadAllTextAsync(bak).ConfigureAwait(false);
                             list = JsonSerializer.Deserialize<List<CrosshairProfile>>(json, JsonOpts);
                         }
-                        catch { }
+                        catch (Exception ex) { Program.LogError(ex, "ProfileStore: backup load parse"); }
                     }
                 }
                 list ??= new();

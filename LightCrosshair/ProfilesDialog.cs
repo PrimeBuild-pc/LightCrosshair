@@ -52,7 +52,7 @@ namespace LightCrosshair
                     if (rect.HasValue && rect.Value.Width > 100 && rect.Value.Height > 100) this.Bounds = rect.Value;
                 }
             }
-            catch { }
+            catch (Exception ex) { Program.LogError(ex, "ProfilesDialog: OnLoad bounds restore"); }
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -62,7 +62,7 @@ namespace LightCrosshair
                 Properties.Settings.Default.ProfilesDlgBounds = new RectangleConverter().ConvertToString(this.Bounds) ?? string.Empty;
                 Properties.Settings.Default.Save();
             }
-            catch { }
+            catch (Exception ex) { Program.LogError(ex, "ProfilesDialog: OnFormClosed bounds save"); }
             base.OnFormClosed(e);
         }
 

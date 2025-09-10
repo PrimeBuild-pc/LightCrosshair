@@ -183,6 +183,7 @@ namespace LightCrosshair
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "LightCrosshair", "Profiles");
 
+        [Obsolete("Legacy per-file profiles; use ProfileService/ProfileStore")]
         public static List<CrosshairProfile> LoadProfiles()
         {
             var profiles = new List<CrosshairProfile>();
@@ -273,6 +274,7 @@ namespace LightCrosshair
             return profiles;
         }
 
+        [Obsolete("Legacy per-file profiles; use ProfileService/ProfileStore")]
         public void Save()
         {
             try
@@ -307,6 +309,7 @@ namespace LightCrosshair
             }
         }
 
+        [Obsolete("Legacy per-file profiles; use ProfileService/ProfileStore")]
         public static bool DeleteProfile(string name)
         {
             try

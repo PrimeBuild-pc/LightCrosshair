@@ -1,0 +1,178 @@
+<Window x:Class="LightCrosshair.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LightCrosshair Settings" Height="600" Width="820"
+        WindowStartupLocation="Manual"
+        ResizeMode="CanResize"
+        Topmost="False"
+        Background="{DynamicResource WindowBg}">
+
+    <Window.Resources>
+        <!-- Base styles using dynamic theme resources provided by code-behind -->
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
+            <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="0,0,0,2"/>
+        </Style>
+        <Style TargetType="ScrollViewer">
+            <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
+        </Style>
+        <Style TargetType="StackPanel">
+            <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
+            <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
+            <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
+            <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+        </Style>
+        <Style TargetType="Slider">
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+        </Style>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
+        </Style>
+        <Style TargetType="Hyperlink">
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid x:Name="RootPanel" Background="{DynamicResource PanelBg}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top bar: theme toggle fixed at top-left -->
+        <StackPanel Orientation="Horizontal" Margin="8" Grid.Row="0">
+            <Button x:Name="ThemeToggle" Width="40" Height="28" ToolTip="Toggle Theme" Foreground="{DynamicResource AccentBrush}">
+                <TextBlock x:Name="ThemeGlyph" Text="🌙" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            </Button>
+        </StackPanel>
+
+        <!-- Main content with left tabs -->
+        <TabControl TabStripPlacement="Left" Margin="8" Grid.Row="1">
+            <!-- Shape Tab -->
+            <TabItem Header="Shape">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="Simple Shapes" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Shape:" Width="160" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="ShapeCombo" Width="220">
+                                <ComboBoxItem Content="Cross"/>
+                                <ComboBoxItem Content="Circle"/>
+                                <ComboBoxItem Content="Dot"/>
+                                <ComboBoxItem Content="Plus"/>
+                                <ComboBoxItem Content="X"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <TextBlock Text="Composite Shapes" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Composite:" Width="160" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="CompositeCombo" Width="220">
+                                <ComboBoxItem Content="CircleDot"/>
+                                <ComboBoxItem Content="CrossDot"/>
+                                <ComboBoxItem Content="CircleCross"/>
+                                <ComboBoxItem Content="CirclePlus"/>
+                                <ComboBoxItem Content="CircleX"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Outer Shape Tab -->
+            <TabItem Header="Outer Shape">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Size:" Width="160" VerticalAlignment="Center"/>
+                            <Slider x:Name="SizeSlider" Minimum="5" Maximum="200" Width="280"/>
+                            <TextBlock x:Name="SizeValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Thickness:" Width="160" VerticalAlignment="Center"/>
+                            <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Width="280"/>
+                            <TextBlock x:Name="ThicknessValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Gap Size:" Width="160" VerticalAlignment="Center"/>
+                            <Slider x:Name="GapSlider" Minimum="0" Maximum="50" Width="280"/>
+                            <TextBlock x:Name="GapValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <TextBlock Text="Colors" FontWeight="Bold" Margin="0,12,0,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Button x:Name="EdgeColorBtn" Content="Edge Color" Width="120"/>
+                            <Button x:Name="InnerColorBtn" Content="Inner Color" Width="120" Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Inner Shape Tab -->
+            <TabItem Header="Inner Shape">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Inner Size:" Width="160" VerticalAlignment="Center"/>
+                            <Slider x:Name="InnerSizeSlider" Minimum="0" Maximum="200" Width="280"/>
+                            <TextBlock x:Name="InnerSizeValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Inner Thickness:" Width="160" VerticalAlignment="Center"/>
+                            <Slider x:Name="InnerThicknessSlider" Minimum="0" Maximum="20" Width="280"/>
+                            <TextBlock x:Name="InnerThicknessValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Inner Gap Size:" Width="160" VerticalAlignment="Center"/>
+                            <Slider x:Name="InnerGapSlider" Minimum="0" Maximum="50" Width="280"/>
+                            <TextBlock x:Name="InnerGapValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <TextBlock Text="Colors" FontWeight="Bold" Margin="0,12,0,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Button x:Name="InnerShapeEdgeColorBtn" Content="Inner Shape Edge" Width="140"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- About Tab -->
+            <TabItem Header="About">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="16" >
+                        <TextBlock Text="LightCrosshair" FontWeight="Bold" FontSize="16"/>
+                        <TextBlock Text="Author: PrimeBuild" Margin="0,8,0,0"/>
+                        <TextBlock Margin="0,8,0,0">
+                            <Run Text="Website: "/>
+                            <Hyperlink Foreground="{DynamicResource AccentBrush}" NavigateUri="https://primebuild.website/" RequestNavigate="OnHyperlinkNavigate">https://primebuild.website/</Hyperlink>
+                        </TextBlock>
+                        <TextBlock Margin="0,4,0,0">
+                            <Run Text="GitHub: "/>
+                            <Hyperlink Foreground="{DynamicResource AccentBrush}" NavigateUri="https://github.com/PrimeBuild-pc/LightCrosshair" RequestNavigate="OnHyperlinkNavigate">https://github.com/PrimeBuild-pc/LightCrosshair</Hyperlink>
+                        </TextBlock>
+                        <TextBlock Text="License: MIT" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

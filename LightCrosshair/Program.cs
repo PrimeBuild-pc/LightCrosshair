@@ -62,7 +62,7 @@ static class Program
         }
     }
 
-    private static void LogError(Exception ex, string context)
+    public static void LogError(Exception ex, string context)
     {
         try
         {

@@ -33,10 +33,27 @@ namespace LightCrosshair
         public async Task InitializeAsync()
         {
             var loaded = await ProfileStore.LoadAsync();
+
+            var prefs = PreferencesStore.Load();
             if (loaded.Count == 0)
             {
-                loaded.Add(new CrosshairProfile { Name = "Default", EnumShape = CrosshairShape.Cross, Shape = "Cross" });
+                // First launch default: simple red cross
+                var def = new CrosshairProfile
+                {
+                    Name = "Default",
+                    EnumShape = CrosshairShape.Cross,
+                    Shape = "Cross",
+                    EdgeColor = System.Drawing.Color.Red,
+                    InnerColor = System.Drawing.Color.Transparent,
+                    Thickness = 3,
+                    EdgeThickness = 0,
+                    GapSize = 0,
+                    InnerGapSize = 0,
+                };
+                loaded.Add(def);
                 await ProfileStore.SaveAtomicAsync(loaded);
+                prefs.FirstRunDone = true;
+                PreferencesStore.Save(prefs);
             }
             _profiles.Clear();
             _profiles.AddRange(loaded);
@@ -103,9 +120,13 @@ namespace LightCrosshair
             var idx = _profiles.FindIndex(p => p.Id == updated.Id);
             if (idx >= 0)
             {
+                bool wasCurrent = _profiles[idx].Id == Current.Id;
                 _profiles[idx] = updated;
-                if (ReferenceEquals(Current, _profiles[idx]))
-                    CurrentChanged?.Invoke(this, _profiles[idx]);
+                if (wasCurrent)
+                {
+                    Current = updated;
+                    CurrentChanged?.Invoke(this, Current);
+                }
                 RebuildHotkeys();
                 ScheduleSave();
             }
@@ -135,7 +156,7 @@ namespace LightCrosshair
         {
             if (_hotkeyMap.Count == 0) return;
             foreach (var id in _hotkeyMap.Keys.ToList())
-            { try { UnregisterHotKey(_windowHandle, id); } catch { } }
+            { try { UnregisterHotKey(_windowHandle, id); } catch (Exception ex) { Program.LogError(ex, "ProfileService: UnregisterHotKey (Dispose)"); } }
             _hotkeyMap.Clear();
             _nextHotkeyId = 1;
         }
@@ -152,7 +173,7 @@ namespace LightCrosshair
         {
             if (_windowHandle == IntPtr.Zero) return;
             foreach (var id in _hotkeyMap.Keys.ToList())
-            { try { UnregisterHotKey(_windowHandle, id); } catch { } }
+            { try { UnregisterHotKey(_windowHandle, id); } catch (Exception ex) { Program.LogError(ex, "ProfileService: UnregisterHotKey (Re-register)"); } }
             _hotkeyMap.Clear();
             _nextHotkeyId = 1;
             foreach (var p in _profiles)
@@ -163,7 +184,7 @@ namespace LightCrosshair
                     int id = _nextHotkeyId++;
                     if (RegisterHotKey(_windowHandle, id, MOD_NONE, (uint)p.HotKey)) _hotkeyMap[id] = p;
                 }
-                catch { }
+                catch (Exception ex) { Program.LogError(ex, "ProfileService: RegisterHotKey"); }
             }
         }
     }

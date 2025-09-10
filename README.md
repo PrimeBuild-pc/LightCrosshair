@@ -3,7 +3,7 @@
 > **A lightweight, high-performance crosshair overlay designed for competitive gaming**
 
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-blue?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
-[![.NET](https://img.shields.io/badge/.NET-6.0-purple?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-8.0-purple?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/Release-Latest-brightgreen)](../../releases)
 
@@ -131,7 +131,7 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true /
   <summary><b>Architecture</b></summary>
   <br>
 
-- **Framework**: .NET 6.0 Windows Forms
+- **Framework**: .NET 8.0 (Windows) Windows Forms
 - **Graphics**: GDI+ with hardware acceleration
 - **Rendering**: Optimized double-buffering with anti-aliasing
 - **Threading**: Asynchronous operations for UI responsiveness
@@ -174,7 +174,7 @@ We welcome contributions from the gaming and development community! Here's how y
 ```bash
 # Prerequisites
 # - Visual Studio 2022 or VS Code
-# - .NET 6.0 SDK
+# - .NET 8.0 SDK
 # - Git
 
 # Clone and setup

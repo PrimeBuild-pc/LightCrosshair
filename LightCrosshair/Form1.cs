@@ -6,6 +6,8 @@ using System.Drawing.Drawing2D;
 using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Diagnostics;
+
 
 namespace LightCrosshair
 {
@@ -62,6 +64,16 @@ namespace LightCrosshair
     private const int WS_EX_TOPMOST = 0x8;
     private const int WS_EX_TOOLWINDOW = 0x00000080; // Hide from Alt-Tab / task switcher
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_NOACTIVATE = 0x0010;
+        private const uint SWP_NOOWNERZORDER = 0x0200;
+        private const uint SWP_NOSENDCHANGING = 0x0400;
+        private const uint SWP_SHOWWINDOW = 0x0040;
+
 
         // Modifiers for hotkeys
         private const int MOD_ALT = 0x0001;
@@ -81,8 +93,8 @@ namespace LightCrosshair
         public Form1() : this(null) {}
         public Form1(IProfileService? service)
         {
-            InitializeComponent();
             _profileService = service ?? ProfileService.Instance;
+            InitializeComponent();
 
             // Basic form setup
             this.FormBorderStyle = FormBorderStyle.None;
@@ -130,18 +142,20 @@ namespace LightCrosshair
             _profileService.Persisted += (_, args) =>
             {
                 if (_lblSaved == null || _lblSaved.IsDisposed) return;
-                BeginInvoke(new Action(() => _lblSaved.Text = args.Success ? $"Saved {args.Timestamp:HH:mm:ss}" : "Save error"));
+                if (!IsHandleCreated || IsDisposed) return;
+                try { BeginInvoke(new Action(() => _lblSaved.Text = args.Success ? $"Saved {args.Timestamp:HH:mm:ss}" : "Save error")); }
+                catch { /* Form handle might be gone during shutdown; ignore */ }
             };
         }
 
         private void SetupStatusStrip()
         {
             if (_statusStrip != null) return;
-            _statusStrip = new StatusStrip { SizingGrip = false, Visible = true };
+            _statusStrip = new StatusStrip { SizingGrip = false, Visible = false, Dock = DockStyle.None };
             _lblSaved = new ToolStripStatusLabel(" ");
             _statusStrip.Items.Add(_lblSaved);
             Controls.Add(_statusStrip);
-            _statusStrip.BringToFront();
+            // Leave hidden by default to avoid obstructing gameplay overlay
         }
 
         private async void Form1_Load(object? sender, EventArgs e)
@@ -155,7 +169,7 @@ namespace LightCrosshair
                 MarkConfigDirty();
                 UpdateMenuItems();
             }
-            catch { }
+            catch (Exception ex) { Program.LogError(ex, "Form1_Load"); }
         }
 
         private void InitializeDpiAwareness()
@@ -376,6 +390,9 @@ namespace LightCrosshair
             // Mark that we need a redraw and invalidate only if profile actually changed
             lock (_renderLock)
             {
+                // Sync renderer flags from profile (e.g., AntiAlias)
+                _renderer.AntiAlias = profile.AntiAlias;
+
                 if (_lastRenderedProfile == null || !ProfilesEqual(_lastRenderedProfile, profile))
                 {
                     _configDirty = true; // trigger renderer regeneration
@@ -426,15 +443,19 @@ namespace LightCrosshair
 
         private bool ProfilesEqual(CrosshairProfile a, CrosshairProfile b)
         {
-            return a.Shape == b.Shape &&
+            return a.EnumShape == b.EnumShape &&
+                   a.Shape == b.Shape &&
                    a.Size == b.Size &&
                    a.Thickness == b.Thickness &&
+                   a.EdgeThickness == b.EdgeThickness &&
+                   a.GapSize == b.GapSize &&
+                   a.InnerSize == b.InnerSize &&
+                   a.InnerThickness == b.InnerThickness &&
+                   a.InnerGapSize == b.InnerGapSize &&
                    a.EdgeColor == b.EdgeColor &&
                    a.InnerColor == b.InnerColor &&
                    a.FillColor == b.FillColor &&
                    a.InnerShape == b.InnerShape &&
-                   a.InnerSize == b.InnerSize &&
-                   a.InnerThickness == b.InnerThickness &&
                    a.InnerShapeEdgeColor == b.InnerShapeEdgeColor &&
                    a.InnerShapeInnerColor == b.InnerShapeInnerColor &&
                    a.InnerShapeFillColor == b.InnerShapeFillColor;
@@ -614,9 +635,9 @@ namespace LightCrosshair
             var gapSizeMenu = FindMenuItemByText(contextMenu.Items, "Gap Size");
             if (gapSizeMenu == null) return;
 
-            bool isPlus = CurrentProfile.Shape == "Plus" || CurrentProfile.Shape == "CirclePlus";
-            gapSizeMenu.Enabled = isPlus;
-            gapSizeMenu.Text = isPlus ? "Plus Gap Size" : "Gap Size";
+            bool isGapShape = CurrentProfile.Shape == "Plus" || CurrentProfile.Shape == "CirclePlus" || CurrentProfile.Shape == "CrossDot";
+            gapSizeMenu.Enabled = isGapShape;
+            gapSizeMenu.Text = "Gap Size";
 
             foreach (ToolStripItem item in gapSizeMenu.DropDownItems)
             {
@@ -720,8 +741,8 @@ namespace LightCrosshair
             if (innerGapSizeMenu != null)
             {
                 // Enable/disable the gap size menu based on the current shape
-                bool isInnerPlus = CurrentProfile.Shape == "CirclePlus";
-                innerGapSizeMenu.Enabled = isInnerPlus;
+                bool enableInnerGap = CurrentProfile.Shape == "CirclePlus" || CurrentProfile.Shape == "CircleCross" || CurrentProfile.Shape == "CircleX";
+                innerGapSizeMenu.Enabled = enableInnerGap;
 
                 foreach (ToolStripItem item in innerGapSizeMenu.DropDownItems)
                 {
@@ -796,8 +817,8 @@ namespace LightCrosshair
         private void UpdateInnerGapSizeMenu(ToolStripMenuItem menu)
         {
             // Enable/disable the gap size menu based on the current shape
-            bool isInnerPlus = CurrentProfile.Shape == "CirclePlus";
-            menu.Enabled = isInnerPlus;
+            bool enableInnerGap = CurrentProfile.Shape == "CirclePlus" || CurrentProfile.Shape == "CircleCross" || CurrentProfile.Shape == "CircleX";
+            menu.Enabled = enableInnerGap;
 
             foreach (ToolStripItem item in menu.DropDownItems)
             {
@@ -865,6 +886,7 @@ namespace LightCrosshair
                     Icon = appIcon
                 };
                 notifyIcon.DoubleClick += (sender, e) => ToggleVisibility();
+                notifyIcon.MouseClick += (sender, e) => { if (e.Button == MouseButtons.Left) ShowSettingsWindow(); };
             }
             catch (Exception)
             {
@@ -876,6 +898,7 @@ namespace LightCrosshair
                     Icon = SystemIcons.Application
                 };
                 notifyIcon.DoubleClick += (sender, e) => ToggleVisibility();
+                notifyIcon.MouseClick += (sender, e) => { if (e.Button == MouseButtons.Left) ShowSettingsWindow(); };
             }
         }
 
@@ -1025,7 +1048,7 @@ namespace LightCrosshair
 
             // Inner Gap Size submenu (for Plus shape)
             var innerGapSizeMenu = new ToolStripMenuItem("Gap Size");
-            innerGapSizeMenu.Enabled = CurrentProfile.Shape == "CirclePlus"; // Only enable for CirclePlus
+            innerGapSizeMenu.Enabled = CurrentProfile.Shape == "CirclePlus" || CurrentProfile.Shape == "CircleCross" || CurrentProfile.Shape == "CircleX";
 
             for (int gap = 2; gap <= 20; gap += 2)
             {
@@ -1096,7 +1119,7 @@ namespace LightCrosshair
 
             // Gap Size submenu (for Plus shape)
             var gapSizeMenu = new ToolStripMenuItem("Gap Size");
-            gapSizeMenu.Enabled = CurrentProfile.Shape == "Plus" || CurrentProfile.Shape == "CirclePlus";
+            gapSizeMenu.Enabled = CurrentProfile.Shape == "Plus" || CurrentProfile.Shape == "CirclePlus" || CurrentProfile.Shape == "CrossDot";
             for (int gap = 2; gap <= 20; gap += 2)
             {
                 var gapItem = new ToolStripMenuItem(gap.ToString());
@@ -1192,6 +1215,18 @@ namespace LightCrosshair
                 contextMenu?.Close();
             };
 
+
+
+            // Minimal tray menu: About + Exit
+            contextMenu.Items.Clear();
+
+            var aboutItem = new ToolStripMenuItem("About");
+            aboutItem.Click += (sender, e) =>
+            {
+                string text = "LightCrosshair\nAuthor: PrimeBuild\nLicense: MIT (2025)\nWebsite: https://primebuild.website/\nGitHub: https://github.com/PrimeBuild-pc/LightCrosshair";
+                MessageBox.Show(this, text, "About", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
+
             var exitItem = new ToolStripMenuItem("Exit");
             exitItem.Click += (sender, e) =>
             {
@@ -1203,32 +1238,15 @@ namespace LightCrosshair
                 Application.Exit();
             };
 
-            // Add all items to context menu
-            contextMenu.Items.AddRange(new ToolStripItem[]
-            {
-                visibilityItem,
-                editMenu,
-                profilesMenu,
-                new ToolStripSeparator(),
-                shapeMenu,
-                sizeMenu,
-                thicknessMenu,
-                gapSizeMenu,
-                edgeColorMenu,
-                innerColorMenu,
-                new ToolStripSeparator(),
-                renderingMenu,
-                innerShapeMenu,
-                new ToolStripSeparator(),
-                hideRecordingItem,
-                saveProfileItem,
-                new ToolStripSeparator(),
-                closeMenuItem,
-                exitItem
-            });
+            contextMenu.Items.Add(aboutItem);
+            contextMenu.Items.Add(new ToolStripSeparator());
+            contextMenu.Items.Add(exitItem);
 
             // Set the context menu for both the form and notify icon
+
             this.ContextMenuStrip = contextMenu;
+
+
             if (notifyIcon != null)
                 notifyIcon.ContextMenuStrip = contextMenu;
         }
@@ -1241,6 +1259,8 @@ namespace LightCrosshair
             // - Programmatic close (like our Close Menu button)
             // - Application shutdown
             if (e.CloseReason == ToolStripDropDownCloseReason.ItemClicked)
+
+
             {
                 // Check if the clicked item should close the menu
                 if (contextMenu == null) return;
@@ -1260,13 +1280,18 @@ namespace LightCrosshair
                 {
                     if (contextMenu != null && !contextMenu.IsDisposed && contextMenu.Visible == false)
                     {
-                        this.Invoke(new Action(() =>
+                        if (!IsHandleCreated || IsDisposed) return;
+                        try
                         {
-                            if (contextMenu != null && !contextMenu.IsDisposed)
+                            BeginInvoke(new Action(() =>
                             {
-                                contextMenu.Show(Cursor.Position);
-                            }
-                        }));
+                                if (contextMenu != null && !contextMenu.IsDisposed)
+                                {
+                                    contextMenu.Show(Cursor.Position);
+                                }
+                            }));
+                        }
+                        catch { /* ignore if handle disappeared */ }
                     }
                 });
             }
@@ -1280,6 +1305,8 @@ namespace LightCrosshair
             // Set initial checkmark based on current profile
             switch (colorType)
             {
+
+
                 case "Edge":
                     colorItem.Checked = ColorEquals(CurrentProfile.EdgeColor, color);
                     break;
@@ -1504,7 +1531,7 @@ namespace LightCrosshair
             {
                 if (_configDirty)
                 {
-                    _currentFrame?.Dispose();
+                    // Do NOT dispose _currentFrame here; renderer owns the bitmap and may return the same instance.
                     var p = CurrentProfile;
                     _currentFrame = _renderer.RenderIfNeeded(p);
                     _lastRenderedProfile = p.Clone();
@@ -1622,14 +1649,46 @@ namespace LightCrosshair
                 _recordingDetectionTimer.Dispose();
             }
 
+
             // Clear graphics cache
             ClearGraphicsCache();
 
-            try { _ = _profileService.PersistAsync(); } catch { }
+            try { _ = _profileService.PersistAsync(); } catch (Exception ex) { Program.LogError(ex, "PersistAsync on close"); }
 
             base.OnFormClosing(e);
         }
 
+
+        private void ReinforceTopMost()
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+            try { SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING); } catch { }
+        }
+
+
+        private void ShowSettingsWindow()
+        {
+            if (IsDisposed) return;
+
+
+            if (InvokeRequired)
+            {
+                try { BeginInvoke(new Action(() => { ReinforceTopMost(); WpfSettingsHost.Show(_profileService); ReinforceTopMost(); })); }
+                catch { /* ignore if handle is not ready */ }
+                return;
+            }
+            ReinforceTopMost();
+            WpfSettingsHost.Show(_profileService);
+            ReinforceTopMost();
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            // Renderer owns cached bitmap; dispose renderer on form close to release GDI resources
+            try { _renderer.Dispose(); } catch { }
+            _currentFrame = null;
+            base.OnFormClosed(e);
+        }
 
 
         protected override void OnResize(EventArgs e)
