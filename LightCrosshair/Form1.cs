@@ -1,7 +1,7 @@
+using System.Runtime.InteropServices; // ensure attribute available at top
 using System;
 using System.Drawing;
 using System.Windows.Forms;
-using System.Runtime.InteropServices;
 using System.Drawing.Drawing2D;
 using System.IO;
 using System.Collections.Generic;
@@ -11,16 +11,19 @@ namespace LightCrosshair
 {
     public partial class Form1 : Form
     {
-        private NotifyIcon notifyIcon;
-        private ContextMenuStrip contextMenu;
-        private ProfileManager profileManager;
+    private NotifyIcon? notifyIcon;
+    private ContextMenuStrip? contextMenu;
+    private readonly IProfileService _profileService; // unified service
         private Color fillColor = Color.Transparent;
         private bool isVisible = true;
 
         // Performance optimization fields
-        private CrosshairProfile _lastRenderedProfile;
-        private bool _needsRedraw = true;
-        private readonly object _renderLock = new object();
+    // Legacy incremental rendering fields replaced by central renderer
+    private CrosshairProfile? _lastRenderedProfile; // retained temporarily for menu diff logic
+    private readonly object _renderLock = new object();
+    private CrosshairRenderer _renderer = new CrosshairRenderer();
+    private Bitmap? _currentFrame; // last produced bitmap copy
+    private bool _configDirty = true; // marks need to request new bitmap from renderer
         private float _dpiScaleFactor = 1.0f;
 
         // Object pooling for graphics resources
@@ -28,7 +31,7 @@ namespace LightCrosshair
         private readonly Dictionary<(Color, float), Pen> _penCache = new Dictionary<(Color, float), Pen>();
 
         // Screen recording detection
-        private System.Windows.Forms.Timer _recordingDetectionTimer;
+    private System.Windows.Forms.Timer? _recordingDetectionTimer;
         private bool _isRecordingDetected = false;
         private bool _wasVisibleBeforeRecording = true;
 
@@ -44,8 +47,8 @@ namespace LightCrosshair
         [DllImport("user32.dll")]
         private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
-        [DllImport("user32.dll")]
-        private static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
 
         [DllImport("user32.dll")]
         private static extern bool IsWindowVisible(IntPtr hWnd);
@@ -56,7 +59,9 @@ namespace LightCrosshair
         private const int GWL_EXSTYLE = -20;
         private const int WS_EX_LAYERED = 0x80000;
         private const int WS_EX_TRANSPARENT = 0x20;
-        private const int WS_EX_TOPMOST = 0x8;
+    private const int WS_EX_TOPMOST = 0x8;
+    private const int WS_EX_TOOLWINDOW = 0x00000080; // Hide from Alt-Tab / task switcher
+    [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
 
         // Modifiers for hotkeys
         private const int MOD_ALT = 0x0001;
@@ -67,9 +72,17 @@ namespace LightCrosshair
         // Hotkey IDs
         private const int TOGGLE_VISIBILITY_HOTKEY_ID = 9000;
 
-        public Form1()
+    // Autosave centralized in ProfileService now
+        private readonly UndoStack<CrosshairProfile> _undo = new(10);
+        private StatusStrip? _statusStrip; // simple status surface for Saved HH:MM:SS
+        private ToolStripStatusLabel? _lblSaved;
+    private CrosshairProfile CurrentProfile => _profileService.Current;
+
+        public Form1() : this(null) {}
+        public Form1(IProfileService? service)
         {
             InitializeComponent();
+            _profileService = service ?? ProfileService.Instance;
 
             // Basic form setup
             this.FormBorderStyle = FormBorderStyle.None;
@@ -93,15 +106,13 @@ namespace LightCrosshair
             // Additional performance optimizations
             this.SetStyle(ControlStyles.Selectable, false);
 
-            // Initialize profile manager
-            profileManager = new ProfileManager(this.Handle);
-            profileManager.ProfileChanged += ProfileManager_ProfileChanged;
+            _profileService.CurrentChanged += (_, p) => Service_CurrentChanged(p);
 
             // Initialize system tray icon and menu
             InitializeNotifyIcon();
             InitializeContextMenu();
 
-            // Add paint handler
+            // Add paint handler (now only blits cached bitmap)
             this.Paint += Form1_Paint;
 
             // Initialize DPI awareness
@@ -110,8 +121,41 @@ namespace LightCrosshair
             // Initialize screen recording detection
             InitializeScreenRecordingDetection();
 
+            // Setup minimal status strip (optional visual feedback)
+            SetupStatusStrip();
+
             // Center the form on screen
             CenterCrosshair();
+            this.Load += Form1_Load; // async profiles load & migration
+            _profileService.Persisted += (_, args) =>
+            {
+                if (_lblSaved == null || _lblSaved.IsDisposed) return;
+                BeginInvoke(new Action(() => _lblSaved.Text = args.Success ? $"Saved {args.Timestamp:HH:mm:ss}" : "Save error"));
+            };
+        }
+
+        private void SetupStatusStrip()
+        {
+            if (_statusStrip != null) return;
+            _statusStrip = new StatusStrip { SizingGrip = false, Visible = true };
+            _lblSaved = new ToolStripStatusLabel(" ");
+            _statusStrip.Items.Add(_lblSaved);
+            Controls.Add(_statusStrip);
+            _statusStrip.BringToFront();
+        }
+
+        private async void Form1_Load(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (_profileService.Profiles.Count == 0)
+                    await _profileService.InitializeAsync();
+                var current = _profileService.Current;
+                _undo.Push(current.Clone());
+                MarkConfigDirty();
+                UpdateMenuItems();
+            }
+            catch { }
         }
 
         private void InitializeDpiAwareness()
@@ -165,11 +209,11 @@ namespace LightCrosshair
             return SystemIcons.Application;
         }
 
-        private SolidBrush GetCachedBrush(Color color)
+        private SolidBrush? GetCachedBrush(Color color)
         {
             if (color.A == 0) return null; // Don't cache transparent brushes
 
-            if (!_brushCache.TryGetValue(color, out SolidBrush brush))
+            if (!_brushCache.TryGetValue(color, out SolidBrush? brush))
             {
                 brush = new SolidBrush(color);
                 _brushCache[color] = brush;
@@ -177,12 +221,12 @@ namespace LightCrosshair
             return brush;
         }
 
-        private Pen GetCachedPen(Color color, float width)
+        private Pen? GetCachedPen(Color color, float width)
         {
             if (color.A == 0) return null; // Don't cache transparent pens
 
             var key = (color, width);
-            if (!_penCache.TryGetValue(key, out Pen pen))
+            if (!_penCache.TryGetValue(key, out Pen? pen))
             {
                 pen = new Pen(color, width);
 
@@ -244,9 +288,9 @@ namespace LightCrosshair
             _recordingDetectionTimer.Start();
         }
 
-        private void RecordingDetectionTimer_Tick(object sender, EventArgs e)
+    private void RecordingDetectionTimer_Tick(object? sender, EventArgs e)
         {
-            if (profileManager?.CurrentProfile?.HideDuringScreenRecording == true)
+            if (_profileService.Current.HideDuringScreenRecording)
             {
                 bool isRecording = IsScreenRecordingActive();
 
@@ -327,25 +371,57 @@ namespace LightCrosshair
             }
         }
 
-        private void ProfileManager_ProfileChanged(object sender, CrosshairProfile profile)
+    private void Service_CurrentChanged(CrosshairProfile profile)
         {
             // Mark that we need a redraw and invalidate only if profile actually changed
             lock (_renderLock)
             {
                 if (_lastRenderedProfile == null || !ProfilesEqual(_lastRenderedProfile, profile))
                 {
-                    _needsRedraw = true;
-
-                    // Update form size and recenter for optimal rendering
+                    _configDirty = true; // trigger renderer regeneration
                     UpdateFormSize();
                     CenterCrosshair();
-
-                    this.Invalidate();
+                    Invalidate();
                 }
             }
-
             // Update menu checkmarks
             UpdateMenuItems();
+
+            // Ensure Profiles submenu reflects ordering & names after reorder/rename
+            if (contextMenu != null)
+            {
+                var profilesMenu = FindMenuItemByText(contextMenu.Items, "Profiles");
+                if (profilesMenu != null)
+                {
+                    // First two items: Manage Profiles..., separator
+                    bool needsRebuild = false;
+                    int expectedCount = _profileService.Profiles.Count + 2; // manage + separator
+                    if (profilesMenu.DropDownItems.Count != expectedCount) needsRebuild = true;
+                    else
+                    {
+                        for (int i = 0; i < _profileService.Profiles.Count; i++)
+                        {
+                            var prof = _profileService.Profiles[i];
+                            var item = profilesMenu.DropDownItems[i + 2] as ToolStripMenuItem; // offset
+                            if (item == null || !string.Equals(item.Text, prof.Name, StringComparison.Ordinal))
+                            { needsRebuild = true; break; }
+                        }
+                    }
+                    if (needsRebuild)
+                    {
+                        // Rebuild only the dynamic portion
+                        while (profilesMenu.DropDownItems.Count > 2)
+                            profilesMenu.DropDownItems.RemoveAt(2);
+                        foreach (var p in _profileService.Profiles)
+                        {
+                            var mi = new ToolStripMenuItem(p.Name);
+                            mi.Click += (_, __) => _profileService.Switch(p.Id);
+                            profilesMenu.DropDownItems.Add(mi);
+                        }
+                        UpdateMenuItems();
+                    }
+                }
+            }
         }
 
         private bool ProfilesEqual(CrosshairProfile a, CrosshairProfile b)
@@ -381,7 +457,7 @@ namespace LightCrosshair
                         UpdateSizeMenuItems();
                         return;
                     case "InnerSize":
-                        // Only update inner size menu within inner shape menu
+                        if (contextMenu == null) return; // null guard
                         var innerShapeMenu = FindMenuItemByText(contextMenu.Items, "Inner Shape");
                         if (innerShapeMenu != null)
                         {
@@ -396,7 +472,7 @@ namespace LightCrosshair
                         UpdateEdgeThicknessMenuItems();
                         return;
                     case "InnerThickness":
-                        // Only update inner thickness menu within inner shape menu
+                        if (contextMenu == null) return;
                         innerShapeMenu = FindMenuItemByText(contextMenu.Items, "Inner Shape");
                         if (innerShapeMenu != null)
                         {
@@ -408,7 +484,7 @@ namespace LightCrosshair
                         UpdateGapSizeMenuItems();
                         return;
                     case "InnerGapSize":
-                        // Only update inner gap size menu within inner shape menu
+                        if (contextMenu == null) return;
                         innerShapeMenu = FindMenuItemByText(contextMenu.Items, "Inner Shape");
                         if (innerShapeMenu != null)
                         {
@@ -423,7 +499,7 @@ namespace LightCrosshair
                         return;
                     case "InnerShapeEdge":
                     case "InnerShapeInner":
-                        // Only update inner shape color menus
+                        if (contextMenu == null) return;
                         innerShapeMenu = FindMenuItemByText(contextMenu.Items, "Inner Shape");
                         if (innerShapeMenu != null)
                         {
@@ -454,38 +530,20 @@ namespace LightCrosshair
 
         private void UpdateShapeMenuItems()
         {
-            // Find the shape menu
+            if (contextMenu == null) return;
             var shapeMenu = FindMenuItemByText(contextMenu.Items, "Shape");
             if (shapeMenu == null) return;
 
-            // Update basic shapes
-            var basicShapesMenu = FindMenuItemByText(shapeMenu.DropDownItems, "Basic Shapes");
-            if (basicShapesMenu != null)
+            // Update all shape items (basic + combined) based on CurrentProfile.Shape
+            foreach (var group in new[] { "Basic Shapes", "Combined Shapes" })
             {
-                foreach (ToolStripItem item in basicShapesMenu.DropDownItems)
+                var grpMenu = FindMenuItemByText(shapeMenu.DropDownItems, group);
+                if (grpMenu == null) continue;
+                foreach (ToolStripItem item in grpMenu.DropDownItems)
                 {
-                    // Skip separators and non-menu items
-                    if (!(item is ToolStripMenuItem menuItem)) continue;
-
-                    if (menuItem.Tag is string shape)
+                    if (item is ToolStripMenuItem mi && mi.Tag is string shapeTag)
                     {
-                        menuItem.Checked = profileManager.CurrentProfile.Shape == shape;
-                    }
-                }
-            }
-
-            // Update combined shapes
-            var combinedShapesMenu = FindMenuItemByText(shapeMenu.DropDownItems, "Combined Shapes");
-            if (combinedShapesMenu != null)
-            {
-                foreach (ToolStripItem item in combinedShapesMenu.DropDownItems)
-                {
-                    // Skip separators and non-menu items
-                    if (!(item is ToolStripMenuItem menuItem)) continue;
-
-                    if (menuItem.Tag is string shape)
-                    {
-                        menuItem.Checked = profileManager.CurrentProfile.Shape == shape;
+                        mi.Checked = string.Equals(CurrentProfile.Shape, shapeTag, StringComparison.OrdinalIgnoreCase);
                     }
                 }
             }
@@ -493,64 +551,16 @@ namespace LightCrosshair
 
         private void UpdateSizeMenuItems()
         {
-            // Find the size menu - try both possible names
-            var sizeMenu = FindMenuItemByText(contextMenu.Items, "Outer Shape Size");
-            if (sizeMenu == null)
-            {
-                sizeMenu = FindMenuItemByText(contextMenu.Items, "Size");
-            }
+            if (contextMenu == null) return;
+            // Outer shape size menu (used even for combined shapes; tagged as percentage ints)
+            var sizeMenu = FindMenuItemByText(contextMenu.Items, "Outer Shape Size")
+                           ?? FindMenuItemByText(contextMenu.Items, "Size");
             if (sizeMenu == null) return;
-
-            // Enable/disable based on shape type
-            bool isCombinedShape = profileManager.CurrentProfile.Shape.StartsWith("Circle") ||
-                                  profileManager.CurrentProfile.Shape == "CrossDot";
-            sizeMenu.Text = isCombinedShape ? "Outer Shape Size" : "Size";
-
             foreach (ToolStripItem item in sizeMenu.DropDownItems)
             {
-                // Skip separators and non-menu items
-                if (!(item is ToolStripMenuItem menuItem)) continue;
-
-                if (menuItem.Tag is int size)
+                if (item is ToolStripMenuItem mi && mi.Tag is int val)
                 {
-                    menuItem.Checked = profileManager.CurrentProfile.Size == size;
-                }
-            }
-        }
-
-        private void UpdateInnerSizeMenuItems()
-        {
-            // Find the inner size menu
-            var innerSizeMenu = FindMenuItemByText(contextMenu.Items, "Inner Shape Size");
-            if (innerSizeMenu == null) return;
-
-            // Enable/disable based on shape type
-            bool isCombinedShape = profileManager.CurrentProfile.Shape.StartsWith("Circle") ||
-                                  profileManager.CurrentProfile.Shape == "CrossDot";
-            innerSizeMenu.Enabled = isCombinedShape;
-
-            // Update the menu text to indicate which shape it applies to
-            if (profileManager.CurrentProfile.Shape == "CircleDot")
-                innerSizeMenu.Text = "Dot Size";
-            else if (profileManager.CurrentProfile.Shape == "CircleCross")
-                innerSizeMenu.Text = "Cross Size";
-            else if (profileManager.CurrentProfile.Shape == "CirclePlus")
-                innerSizeMenu.Text = "Plus Size";
-            else if (profileManager.CurrentProfile.Shape == "CircleX")
-                innerSizeMenu.Text = "X Size";
-            else if (profileManager.CurrentProfile.Shape == "CrossDot")
-                innerSizeMenu.Text = "Dot Size";
-            else
-                innerSizeMenu.Text = "Inner Shape Size";
-
-            foreach (ToolStripItem item in innerSizeMenu.DropDownItems)
-            {
-                // Skip separators and non-menu items
-                if (!(item is ToolStripMenuItem menuItem)) continue;
-
-                if (menuItem.Tag is int size)
-                {
-                    menuItem.Checked = profileManager.CurrentProfile.InnerSize == size;
+                    mi.Checked = CurrentProfile.Size == val;
                 }
             }
         }
@@ -558,6 +568,7 @@ namespace LightCrosshair
         private void UpdateThicknessMenuItems()
         {
             // Find the thickness menu
+            if (contextMenu == null) return;
             var thicknessMenu = FindMenuItemByText(contextMenu.Items, "Thickness");
             if (thicknessMenu == null) return;
 
@@ -568,7 +579,7 @@ namespace LightCrosshair
 
                 if (menuItem.Tag is int thickness)
                 {
-                    menuItem.Checked = profileManager.CurrentProfile.Thickness == thickness;
+                    menuItem.Checked = CurrentProfile.Thickness == thickness;
                 }
             }
         }
@@ -576,6 +587,7 @@ namespace LightCrosshair
         private void UpdateEdgeThicknessMenuItems()
         {
             // Find the edge color menu first
+            if (contextMenu == null) return;
             var edgeColorMenu = FindMenuItemByText(contextMenu.Items, "Edge Color");
             if (edgeColorMenu == null) return;
 
@@ -590,7 +602,7 @@ namespace LightCrosshair
 
                 if (menuItem.Tag is int thickness)
                 {
-                    menuItem.Checked = profileManager.CurrentProfile.EdgeThickness == thickness;
+                    menuItem.Checked = CurrentProfile.EdgeThickness == thickness;
                 }
             }
         }
@@ -598,30 +610,19 @@ namespace LightCrosshair
         private void UpdateGapSizeMenuItems()
         {
             // Find the gap size menu
+            if (contextMenu == null) return;
             var gapSizeMenu = FindMenuItemByText(contextMenu.Items, "Gap Size");
             if (gapSizeMenu == null) return;
 
-            // Enable/disable the gap size menu based on the current shape
-            bool isPlus = profileManager.CurrentProfile.Shape == "Plus" ||
-                          profileManager.CurrentProfile.Shape == "CirclePlus";
+            bool isPlus = CurrentProfile.Shape == "Plus" || CurrentProfile.Shape == "CirclePlus";
             gapSizeMenu.Enabled = isPlus;
-
-            // Update the menu text to indicate which shape it applies to
-            if (profileManager.CurrentProfile.Shape == "Plus")
-                gapSizeMenu.Text = "Plus Gap Size";
-            else if (profileManager.CurrentProfile.Shape == "CirclePlus")
-                gapSizeMenu.Text = "Plus Gap Size";
-            else
-                gapSizeMenu.Text = "Gap Size";
+            gapSizeMenu.Text = isPlus ? "Plus Gap Size" : "Gap Size";
 
             foreach (ToolStripItem item in gapSizeMenu.DropDownItems)
             {
-                // Skip separators and non-menu items
-                if (!(item is ToolStripMenuItem menuItem)) continue;
-
-                if (menuItem.Tag is int gap)
+                if (item is ToolStripMenuItem mi && mi.Tag is int gap)
                 {
-                    menuItem.Checked = profileManager.CurrentProfile.GapSize == gap;
+                    mi.Checked = CurrentProfile.GapSize == gap;
                 }
             }
         }
@@ -629,6 +630,7 @@ namespace LightCrosshair
         private void UpdateColorMenuItems()
         {
             // Update edge color menu
+            if (contextMenu == null) return;
             var edgeColorMenu = FindMenuItemByText(contextMenu.Items, "Edge Color");
             if (edgeColorMenu != null)
             {
@@ -639,7 +641,7 @@ namespace LightCrosshair
 
                     if (menuItem.Tag is Color color)
                     {
-                        menuItem.Checked = ColorEquals(profileManager.CurrentProfile.EdgeColor, color);
+                        menuItem.Checked = ColorEquals(CurrentProfile.EdgeColor, color);
                     }
                 }
             }
@@ -655,7 +657,7 @@ namespace LightCrosshair
 
                     if (menuItem.Tag is Color color)
                     {
-                        menuItem.Checked = ColorEquals(profileManager.CurrentProfile.InnerColor, color);
+                        menuItem.Checked = ColorEquals(CurrentProfile.InnerColor, color);
                     }
                 }
             }
@@ -664,25 +666,25 @@ namespace LightCrosshair
         private void UpdateInnerShapeMenuItems()
         {
             // Find the inner shape menu
+            if (contextMenu == null) return;
             var innerShapeMenu = FindMenuItemByText(contextMenu.Items, "Inner Shape");
             if (innerShapeMenu == null) return;
 
             // Enable/disable based on shape type
-            bool isCombinedShape = profileManager.CurrentProfile.Shape.StartsWith("Circle") ||
-                                  profileManager.CurrentProfile.Shape == "CrossDot";
+            bool isCombinedShape = CurrentProfile.Shape.StartsWith("Circle", StringComparison.OrdinalIgnoreCase) || CurrentProfile.Shape == "CrossDot";
             innerShapeMenu.Enabled = isCombinedShape;
 
             if (!isCombinedShape) return;
 
             // Update the menu text to indicate which shape it applies to
             string innerShapeName = "";
-            if (profileManager.CurrentProfile.Shape == "CircleDot" || profileManager.CurrentProfile.Shape == "CrossDot")
+            if (CurrentProfile.Shape == "CircleDot" || CurrentProfile.Shape == "CrossDot")
                 innerShapeName = "Dot";
-            else if (profileManager.CurrentProfile.Shape == "CircleCross")
+            else if (CurrentProfile.Shape == "CircleCross")
                 innerShapeName = "Cross";
-            else if (profileManager.CurrentProfile.Shape == "CirclePlus")
+            else if (CurrentProfile.Shape == "CirclePlus")
                 innerShapeName = "Plus";
-            else if (profileManager.CurrentProfile.Shape == "CircleX")
+            else if (CurrentProfile.Shape == "CircleX")
                 innerShapeName = "X";
 
             innerShapeMenu.Text = innerShapeName.Length > 0 ? $"{innerShapeName} Settings" : "Inner Shape";
@@ -696,10 +698,7 @@ namespace LightCrosshair
                     // Skip separators and non-menu items
                     if (!(item is ToolStripMenuItem menuItem)) continue;
 
-                    if (menuItem.Tag is int size)
-                    {
-                        menuItem.Checked = profileManager.CurrentProfile.InnerSize == size;
-                    }
+                    if (menuItem.Tag is int size) menuItem.Checked = CurrentProfile.InnerSize == size;
                 }
             }
 
@@ -712,10 +711,7 @@ namespace LightCrosshair
                     // Skip separators and non-menu items
                     if (!(item is ToolStripMenuItem menuItem)) continue;
 
-                    if (menuItem.Tag is int thickness)
-                    {
-                        menuItem.Checked = profileManager.CurrentProfile.InnerThickness == thickness;
-                    }
+                    if (menuItem.Tag is int thickness) menuItem.Checked = CurrentProfile.InnerThickness == thickness;
                 }
             }
 
@@ -724,7 +720,7 @@ namespace LightCrosshair
             if (innerGapSizeMenu != null)
             {
                 // Enable/disable the gap size menu based on the current shape
-                bool isInnerPlus = profileManager.CurrentProfile.Shape == "CirclePlus";
+                bool isInnerPlus = CurrentProfile.Shape == "CirclePlus";
                 innerGapSizeMenu.Enabled = isInnerPlus;
 
                 foreach (ToolStripItem item in innerGapSizeMenu.DropDownItems)
@@ -732,10 +728,7 @@ namespace LightCrosshair
                     // Skip separators and non-menu items
                     if (!(item is ToolStripMenuItem menuItem)) continue;
 
-                    if (menuItem.Tag is int gap)
-                    {
-                        menuItem.Checked = profileManager.CurrentProfile.InnerGapSize == gap;
-                    }
+                    if (menuItem.Tag is int gap) menuItem.Checked = CurrentProfile.InnerGapSize == gap;
                 }
             }
 
@@ -750,7 +743,7 @@ namespace LightCrosshair
 
                     if (menuItem.Tag is Color color)
                     {
-                        menuItem.Checked = ColorEquals(profileManager.CurrentProfile.InnerShapeEdgeColor, color);
+                        menuItem.Checked = ColorEquals(CurrentProfile.InnerShapeEdgeColor, color);
                     }
                 }
             }
@@ -766,7 +759,7 @@ namespace LightCrosshair
 
                     if (menuItem.Tag is Color color)
                     {
-                        menuItem.Checked = ColorEquals(profileManager.CurrentProfile.InnerShapeInnerColor, color);
+                        menuItem.Checked = ColorEquals(CurrentProfile.InnerShapeInnerColor, color);
                     }
                 }
             }
@@ -781,7 +774,7 @@ namespace LightCrosshair
 
                 if (menuItem.Tag is int size)
                 {
-                    menuItem.Checked = profileManager.CurrentProfile.InnerSize == size;
+                    menuItem.Checked = CurrentProfile.InnerSize == size;
                 }
             }
         }
@@ -795,7 +788,7 @@ namespace LightCrosshair
 
                 if (menuItem.Tag is int thickness)
                 {
-                    menuItem.Checked = profileManager.CurrentProfile.InnerThickness == thickness;
+                    menuItem.Checked = CurrentProfile.InnerThickness == thickness;
                 }
             }
         }
@@ -803,7 +796,7 @@ namespace LightCrosshair
         private void UpdateInnerGapSizeMenu(ToolStripMenuItem menu)
         {
             // Enable/disable the gap size menu based on the current shape
-            bool isInnerPlus = profileManager.CurrentProfile.Shape == "CirclePlus";
+            bool isInnerPlus = CurrentProfile.Shape == "CirclePlus";
             menu.Enabled = isInnerPlus;
 
             foreach (ToolStripItem item in menu.DropDownItems)
@@ -813,7 +806,7 @@ namespace LightCrosshair
 
                 if (menuItem.Tag is int gap)
                 {
-                    menuItem.Checked = profileManager.CurrentProfile.InnerGapSize == gap;
+                    menuItem.Checked = CurrentProfile.InnerGapSize == gap;
                 }
             }
         }
@@ -827,7 +820,7 @@ namespace LightCrosshair
 
                 if (menuItem.Tag is Color color)
                 {
-                    menuItem.Checked = ColorEquals(profileManager.CurrentProfile.InnerShapeEdgeColor, color);
+                    menuItem.Checked = ColorEquals(CurrentProfile.InnerShapeEdgeColor, color);
                 }
             }
         }
@@ -841,12 +834,12 @@ namespace LightCrosshair
 
                 if (menuItem.Tag is Color color)
                 {
-                    menuItem.Checked = ColorEquals(profileManager.CurrentProfile.InnerShapeInnerColor, color);
+                    menuItem.Checked = ColorEquals(CurrentProfile.InnerShapeInnerColor, color);
                 }
             }
         }
 
-        private ToolStripMenuItem FindMenuItemByText(ToolStripItemCollection items, string text)
+    private ToolStripMenuItem? FindMenuItemByText(ToolStripItemCollection items, string text)
         {
             foreach (ToolStripItem item in items)
             {
@@ -897,6 +890,12 @@ namespace LightCrosshair
             var visibilityItem = new ToolStripMenuItem("Toggle Visibility");
             visibilityItem.Click += (sender, e) => ToggleVisibility();
 
+            // Edit menu with Undo
+            var editMenu = new ToolStripMenuItem("Edit");
+            var miUndo = new ToolStripMenuItem("Undo") { ShortcutKeys = Keys.Control | Keys.Z };
+            miUndo.Click += (_, __) => UndoLastChange();
+            editMenu.DropDownItems.Add(miUndo);
+
             // Profiles submenu
             var profilesMenu = new ToolStripMenuItem("Profiles");
 
@@ -909,10 +908,10 @@ namespace LightCrosshair
             profilesMenu.DropDownItems.Add(new ToolStripSeparator());
 
             // Add profiles from profile manager
-            foreach (var profile in profileManager.Profiles)
+                foreach (var profile in _profileService.Profiles)
             {
                 var profileItem = new ToolStripMenuItem(profile.Name);
-                profileItem.Click += (sender, e) => profileManager.SwitchToProfile(profile.Name);
+                    profileItem.Click += (sender, e) => { _profileService.Switch(profile.Id); };
                 profilesMenu.DropDownItems.Add(profileItem);
             }
 
@@ -923,28 +922,28 @@ namespace LightCrosshair
             var basicShapesMenu = new ToolStripMenuItem("Basic Shapes");
             var crossItem = new ToolStripMenuItem("Cross");
             crossItem.Tag = "Cross";
-            crossItem.Checked = profileManager.CurrentProfile.Shape == "Cross";
-            crossItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Shape", "Cross"); };
+            crossItem.Checked = CurrentProfile.Shape == "Cross";
+            crossItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Cross, "Cross"); };
 
             var circleItem = new ToolStripMenuItem("Circle");
             circleItem.Tag = "Circle";
-            circleItem.Checked = profileManager.CurrentProfile.Shape == "Circle";
-            circleItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Shape", "Circle"); };
+            circleItem.Checked = CurrentProfile.Shape == "Circle";
+            circleItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Circle, "Circle"); };
 
             var dotItem = new ToolStripMenuItem("Dot");
             dotItem.Tag = "Dot";
-            dotItem.Checked = profileManager.CurrentProfile.Shape == "Dot";
-            dotItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Shape", "Dot"); };
+            dotItem.Checked = CurrentProfile.Shape == "Dot";
+            dotItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Dot, "Dot"); };
 
             var plusItem = new ToolStripMenuItem("Plus");
             plusItem.Tag = "Plus";
-            plusItem.Checked = profileManager.CurrentProfile.Shape == "Plus";
-            plusItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Shape", "Plus"); };
+            plusItem.Checked = CurrentProfile.Shape == "Plus";
+            plusItem.Click += (sender, e) => { UpdateShape(CrosshairShape.GapCross, "Plus"); };
 
             var xItem = new ToolStripMenuItem("X");
             xItem.Tag = "X";
-            xItem.Checked = profileManager.CurrentProfile.Shape == "X";
-            xItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Shape", "X"); };
+            xItem.Checked = CurrentProfile.Shape == "X";
+            xItem.Click += (sender, e) => { UpdateShape(CrosshairShape.X, "X"); };
 
             basicShapesMenu.DropDownItems.AddRange(new ToolStripItem[] { crossItem, circleItem, dotItem, plusItem, xItem });
 
@@ -953,28 +952,28 @@ namespace LightCrosshair
 
             var circleDotItem = new ToolStripMenuItem("Circle + Dot");
             circleDotItem.Tag = "CircleDot";
-            circleDotItem.Checked = profileManager.CurrentProfile.Shape == "CircleDot";
-            circleDotItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Shape", "CircleDot"); };
+            circleDotItem.Checked = CurrentProfile.Shape == "CircleDot";
+            circleDotItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CircleDot"); };
 
             var crossDotItem = new ToolStripMenuItem("Cross + Dot");
             crossDotItem.Tag = "CrossDot";
-            crossDotItem.Checked = profileManager.CurrentProfile.Shape == "CrossDot";
-            crossDotItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Shape", "CrossDot"); };
+            crossDotItem.Checked = CurrentProfile.Shape == "CrossDot";
+            crossDotItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CrossDot"); };
 
             var circleCrossItem = new ToolStripMenuItem("Circle + Cross");
             circleCrossItem.Tag = "CircleCross";
-            circleCrossItem.Checked = profileManager.CurrentProfile.Shape == "CircleCross";
-            circleCrossItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Shape", "CircleCross"); };
+            circleCrossItem.Checked = CurrentProfile.Shape == "CircleCross";
+            circleCrossItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CircleCross"); };
 
             var circlePlusItem = new ToolStripMenuItem("Circle + Plus");
             circlePlusItem.Tag = "CirclePlus";
-            circlePlusItem.Checked = profileManager.CurrentProfile.Shape == "CirclePlus";
-            circlePlusItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Shape", "CirclePlus"); };
+            circlePlusItem.Checked = CurrentProfile.Shape == "CirclePlus";
+            circlePlusItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CirclePlus"); };
 
             var circleXItem = new ToolStripMenuItem("Circle + X");
             circleXItem.Tag = "CircleX";
-            circleXItem.Checked = profileManager.CurrentProfile.Shape == "CircleX";
-            circleXItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Shape", "CircleX"); };
+            circleXItem.Checked = CurrentProfile.Shape == "CircleX";
+            circleXItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CircleX"); };
 
             combinedShapesMenu.DropDownItems.AddRange(new ToolStripItem[] { circleDotItem, crossDotItem, circleCrossItem, circlePlusItem, circleXItem });
 
@@ -983,14 +982,14 @@ namespace LightCrosshair
 
             // Size submenu (for outer shape in combined shapes)
             var sizeMenu = new ToolStripMenuItem("Outer Shape Size");
-            bool isCombinedShape = profileManager.CurrentProfile.Shape.StartsWith("Circle") ||
-                                  profileManager.CurrentProfile.Shape == "CrossDot";
+            bool isCombinedShape = CurrentProfile.Shape.StartsWith("Circle", StringComparison.OrdinalIgnoreCase) ||
+                                  CurrentProfile.Shape == "CrossDot";
 
             for (int size = 5; size <= 100; size += 5)
             {
                 var sizeItem = new ToolStripMenuItem($"{size}%");
                 sizeItem.Tag = size; // Store the size value in the Tag property
-                sizeItem.Checked = profileManager.CurrentProfile.Size == size;
+                sizeItem.Checked = CurrentProfile.Size == size;
                 int capturedSize = size; // Capture the size value for the lambda
                 sizeItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Size", capturedSize); };
                 sizeMenu.DropDownItems.Add(sizeItem);
@@ -1006,7 +1005,7 @@ namespace LightCrosshair
             {
                 var sizeItem = new ToolStripMenuItem($"{size}%");
                 sizeItem.Tag = size; // Store the size value in the Tag property
-                sizeItem.Checked = profileManager.CurrentProfile.InnerSize == size;
+                sizeItem.Checked = CurrentProfile.InnerSize == size;
                 int capturedSize = size; // Capture the size value for the lambda
                 sizeItem.Click += (sender, e) => { UpdateCurrentProfileProperty("InnerSize", capturedSize); };
                 innerSizeMenu.DropDownItems.Add(sizeItem);
@@ -1018,7 +1017,7 @@ namespace LightCrosshair
             {
                 var thicknessItem = new ToolStripMenuItem(thickness.ToString());
                 thicknessItem.Tag = thickness; // Store the thickness value in the Tag property
-                thicknessItem.Checked = profileManager.CurrentProfile.InnerThickness == thickness;
+                thicknessItem.Checked = CurrentProfile.InnerThickness == thickness;
                 int capturedThickness = thickness; // Capture the thickness value for the lambda
                 thicknessItem.Click += (sender, e) => { UpdateCurrentProfileProperty("InnerThickness", capturedThickness); };
                 innerThicknessMenu.DropDownItems.Add(thicknessItem);
@@ -1026,13 +1025,13 @@ namespace LightCrosshair
 
             // Inner Gap Size submenu (for Plus shape)
             var innerGapSizeMenu = new ToolStripMenuItem("Gap Size");
-            innerGapSizeMenu.Enabled = profileManager.CurrentProfile.Shape == "CirclePlus"; // Only enable for CirclePlus
+            innerGapSizeMenu.Enabled = CurrentProfile.Shape == "CirclePlus"; // Only enable for CirclePlus
 
             for (int gap = 2; gap <= 20; gap += 2)
             {
                 var gapItem = new ToolStripMenuItem(gap.ToString());
                 gapItem.Tag = gap; // Store the gap value in the Tag property
-                gapItem.Checked = profileManager.CurrentProfile.InnerGapSize == gap;
+                gapItem.Checked = CurrentProfile.InnerGapSize == gap;
                 int capturedGap = gap; // Capture the gap value for the lambda
                 gapItem.Click += (sender, e) => { UpdateCurrentProfileProperty("InnerGapSize", capturedGap); };
                 innerGapSizeMenu.DropDownItems.Add(gapItem);
@@ -1089,7 +1088,7 @@ namespace LightCrosshair
             {
                 var thicknessItem = new ToolStripMenuItem(thickness.ToString());
                 thicknessItem.Tag = thickness; // Store the thickness value in the Tag property
-                thicknessItem.Checked = profileManager.CurrentProfile.Thickness == thickness;
+                thicknessItem.Checked = CurrentProfile.Thickness == thickness;
                 int capturedThickness = thickness; // Capture the thickness value for the lambda
                 thicknessItem.Click += (sender, e) => { UpdateCurrentProfileProperty("Thickness", capturedThickness); };
                 thicknessMenu.DropDownItems.Add(thicknessItem);
@@ -1097,17 +1096,28 @@ namespace LightCrosshair
 
             // Gap Size submenu (for Plus shape)
             var gapSizeMenu = new ToolStripMenuItem("Gap Size");
-            gapSizeMenu.Enabled = profileManager.CurrentProfile.Shape == "Plus" ||
-                                  profileManager.CurrentProfile.Shape == "CirclePlus";
+            gapSizeMenu.Enabled = CurrentProfile.Shape == "Plus" || CurrentProfile.Shape == "CirclePlus";
             for (int gap = 2; gap <= 20; gap += 2)
             {
                 var gapItem = new ToolStripMenuItem(gap.ToString());
                 gapItem.Tag = gap; // Store the gap value in the Tag property
-                gapItem.Checked = profileManager.CurrentProfile.GapSize == gap;
+                gapItem.Checked = CurrentProfile.GapSize == gap;
                 int capturedGap = gap; // Capture the gap value for the lambda
                 gapItem.Click += (sender, e) => { UpdateCurrentProfileProperty("GapSize", capturedGap); };
                 gapSizeMenu.DropDownItems.Add(gapItem);
             }
+
+            // Rendering submenu (AA toggle)
+            var renderingMenu = new ToolStripMenuItem("Rendering");
+            var aaItem = new ToolStripMenuItem("Smooth (Anti-alias)") { CheckOnClick = true };
+            aaItem.Checked = _profileService.Current.AntiAlias;
+            aaItem.CheckedChanged += (_, __) => {
+                _renderer.AntiAlias = aaItem.Checked;
+                var cur = _profileService.Current.Clone();
+                cur.AntiAlias = aaItem.Checked;
+                _profileService.Update(cur);
+                _configDirty = true; Invalidate(); };
+            renderingMenu.DropDownItems.Add(aaItem);
 
             // Edge Color submenu
             var edgeColorMenu = new ToolStripMenuItem("Edge Color");
@@ -1134,7 +1144,7 @@ namespace LightCrosshair
             {
                 var thicknessItem = new ToolStripMenuItem($"{thickness}px");
                 thicknessItem.Tag = thickness;
-                thicknessItem.Checked = profileManager.CurrentProfile.EdgeThickness == thickness;
+                thicknessItem.Checked = CurrentProfile.EdgeThickness == thickness;
                 int capturedThickness = thickness;
                 thicknessItem.Click += (sender, e) => { UpdateCurrentProfileProperty("EdgeThickness", capturedThickness); };
                 edgeThicknessMenu.DropDownItems.Add(thicknessItem);
@@ -1165,12 +1175,13 @@ namespace LightCrosshair
 
             // Screen recording detection option
             var hideRecordingItem = new ToolStripMenuItem("Hide during screen recording");
-            hideRecordingItem.Checked = profileManager.CurrentProfile.HideDuringScreenRecording;
+            hideRecordingItem.Checked = CurrentProfile.HideDuringScreenRecording;
             hideRecordingItem.Click += (sender, e) =>
             {
-                var profile = profileManager.CurrentProfile.Clone();
+                var baseProfile = CurrentProfile;
+                var profile = baseProfile.Clone();
                 profile.HideDuringScreenRecording = !profile.HideDuringScreenRecording;
-                profileManager.UpdateProfile(profile);
+                _profileService.Update(profile);
                 hideRecordingItem.Checked = profile.HideDuringScreenRecording;
             };
 
@@ -1178,14 +1189,17 @@ namespace LightCrosshair
             var closeMenuItem = new ToolStripMenuItem("Close Menu");
             closeMenuItem.Click += (sender, e) =>
             {
-                contextMenu.Close();
+                contextMenu?.Close();
             };
 
             var exitItem = new ToolStripMenuItem("Exit");
             exitItem.Click += (sender, e) =>
             {
-                notifyIcon.Visible = false;
-                notifyIcon.Dispose();
+                if (notifyIcon != null)
+                {
+                    notifyIcon.Visible = false;
+                    notifyIcon.Dispose();
+                }
                 Application.Exit();
             };
 
@@ -1193,6 +1207,7 @@ namespace LightCrosshair
             contextMenu.Items.AddRange(new ToolStripItem[]
             {
                 visibilityItem,
+                editMenu,
                 profilesMenu,
                 new ToolStripSeparator(),
                 shapeMenu,
@@ -1202,6 +1217,7 @@ namespace LightCrosshair
                 edgeColorMenu,
                 innerColorMenu,
                 new ToolStripSeparator(),
+                renderingMenu,
                 innerShapeMenu,
                 new ToolStripSeparator(),
                 hideRecordingItem,
@@ -1213,10 +1229,11 @@ namespace LightCrosshair
 
             // Set the context menu for both the form and notify icon
             this.ContextMenuStrip = contextMenu;
-            notifyIcon.ContextMenuStrip = contextMenu;
+            if (notifyIcon != null)
+                notifyIcon.ContextMenuStrip = contextMenu;
         }
 
-        private void ContextMenu_Closing(object sender, ToolStripDropDownClosingEventArgs e)
+    private void ContextMenu_Closing(object? sender, ToolStripDropDownClosingEventArgs e)
         {
             // Allow closing for these specific reasons:
             // - User clicked outside the menu
@@ -1226,15 +1243,13 @@ namespace LightCrosshair
             if (e.CloseReason == ToolStripDropDownCloseReason.ItemClicked)
             {
                 // Check if the clicked item should close the menu
+                if (contextMenu == null) return;
                 var clickedItem = contextMenu.GetItemAt(contextMenu.PointToClient(Cursor.Position));
-                if (clickedItem != null)
+                if (clickedItem is ToolStripItem tsi)
                 {
-                    // Allow closing for specific items
-                    string itemText = clickedItem.Text;
+                    string? itemText = tsi.Text; // Text is non-null in framework, but treat cautiously
                     if (itemText == "Close Menu" || itemText == "Exit" || itemText == "Toggle Visibility")
-                    {
                         return; // Allow closing
-                    }
                 }
 
                 // For all other menu items, prevent closing
@@ -1243,11 +1258,11 @@ namespace LightCrosshair
                 // Re-show the menu at the same position after a brief delay
                 Task.Delay(50).ContinueWith(_ =>
                 {
-                    if (!contextMenu.IsDisposed && contextMenu.Visible == false)
+                    if (contextMenu != null && !contextMenu.IsDisposed && contextMenu.Visible == false)
                     {
                         this.Invoke(new Action(() =>
                         {
-                            if (!contextMenu.IsDisposed)
+                            if (contextMenu != null && !contextMenu.IsDisposed)
                             {
                                 contextMenu.Show(Cursor.Position);
                             }
@@ -1266,13 +1281,13 @@ namespace LightCrosshair
             switch (colorType)
             {
                 case "Edge":
-                    colorItem.Checked = ColorEquals(profileManager.CurrentProfile.EdgeColor, color);
+                    colorItem.Checked = ColorEquals(CurrentProfile.EdgeColor, color);
                     break;
                 case "Inner":
-                    colorItem.Checked = ColorEquals(profileManager.CurrentProfile.InnerColor, color);
+                    colorItem.Checked = ColorEquals(CurrentProfile.InnerColor, color);
                     break;
                 case "Fill":
-                    colorItem.Checked = ColorEquals(profileManager.CurrentProfile.FillColor, color);
+                    colorItem.Checked = ColorEquals(CurrentProfile.FillColor, color);
                     break;
             }
 
@@ -1311,7 +1326,9 @@ namespace LightCrosshair
 
         private void UpdateCurrentProfileProperty(string propertyName, object value)
         {
-            var profile = profileManager.CurrentProfile.Clone();
+            var baseProfile = _profileService.Current;
+            var profile = baseProfile.Clone();
+            _undo.Push(baseProfile.Clone());
 
             switch (propertyName)
             {
@@ -1356,45 +1373,38 @@ namespace LightCrosshair
                     break;
             }
 
-            profileManager.UpdateProfile(profile);
+            _profileService.Update(profile);
 
             // Mark for redraw and invalidate efficiently
             lock (_renderLock)
             {
-                _needsRedraw = true;
-                this.Invalidate();
+                _configDirty = true;
+                Invalidate();
             }
 
             // Update only the relevant menu items
             UpdateMenuItems(propertyName);
+
+            // Autosave now handled by service (debounced)
         }
 
         private void ShowColorPicker(string colorType)
         {
             using (var colorDialog = new ColorDialog())
             {
+                var baseProfile = CurrentProfile;
                 switch (colorType)
                 {
                     case "Edge":
-                        colorDialog.Color = profileManager.CurrentProfile.EdgeColor;
-                        break;
+                        colorDialog.Color = baseProfile.EdgeColor; break;
                     case "Inner":
-                        colorDialog.Color = profileManager.CurrentProfile.InnerColor;
-                        break;
+                        colorDialog.Color = baseProfile.InnerColor; break;
                     case "InnerShapeEdge":
-                        colorDialog.Color = profileManager.CurrentProfile.InnerShapeEdgeColor;
-                        break;
+                        colorDialog.Color = baseProfile.InnerShapeEdgeColor; break;
                     case "InnerShapeInner":
-                        colorDialog.Color = profileManager.CurrentProfile.InnerShapeInnerColor;
-                        break;
+                        colorDialog.Color = baseProfile.InnerShapeInnerColor; break;
                     case "Fill":
-                        // If fill color is transparent, use a default color for the dialog
-                        if (profileManager.CurrentProfile.FillColor.A == 0)
-                            colorDialog.Color = Color.White;
-                        else
-                            colorDialog.Color = Color.FromArgb(255, profileManager.CurrentProfile.FillColor.R,
-                                profileManager.CurrentProfile.FillColor.G, profileManager.CurrentProfile.FillColor.B);
-                        break;
+                        colorDialog.Color = baseProfile.FillColor.A == 0 ? Color.White : Color.FromArgb(255, baseProfile.FillColor.R, baseProfile.FillColor.G, baseProfile.FillColor.B); break;
                 }
 
                 colorDialog.FullOpen = true;
@@ -1406,31 +1416,11 @@ namespace LightCrosshair
                 {
                     switch (colorType)
                     {
-                        case "Edge":
-                            // Use full opacity for edge color
-                            Color edgeColor = Color.FromArgb(255, colorDialog.Color);
-                            UpdateCurrentProfileProperty("EdgeColor", edgeColor);
-                            break;
-                        case "Inner":
-                            // Use full opacity for inner color
-                            Color innerColor = Color.FromArgb(255, colorDialog.Color);
-                            UpdateCurrentProfileProperty("InnerColor", innerColor);
-                            break;
-                        case "InnerShapeEdge":
-                            // Use full opacity for inner shape edge color
-                            Color innerShapeEdgeColor = Color.FromArgb(255, colorDialog.Color);
-                            UpdateCurrentProfileProperty("InnerShapeEdge", innerShapeEdgeColor);
-                            break;
-                        case "InnerShapeInner":
-                            // Use full opacity for inner shape inner color
-                            Color innerShapeInnerColor = Color.FromArgb(255, colorDialog.Color);
-                            UpdateCurrentProfileProperty("InnerShapeInner", innerShapeInnerColor);
-                            break;
-                        case "Fill":
-                            // For fill color, we want some transparency
-                            Color fillColor = Color.FromArgb(180, colorDialog.Color);
-                            UpdateCurrentProfileProperty("FillColor", fillColor);
-                            break;
+                        case "Edge":   UpdateCurrentProfileProperty("EdgeColor", Color.FromArgb(255, colorDialog.Color)); break;
+                        case "Inner":  UpdateCurrentProfileProperty("InnerColor", Color.FromArgb(255, colorDialog.Color)); break;
+                        case "InnerShapeEdge": UpdateCurrentProfileProperty("InnerShapeEdge", Color.FromArgb(255, colorDialog.Color)); break;
+                        case "InnerShapeInner": UpdateCurrentProfileProperty("InnerShapeInner", Color.FromArgb(255, colorDialog.Color)); break;
+                        case "Fill":   UpdateCurrentProfileProperty("FillColor", Color.FromArgb(180, colorDialog.Color)); break;
                     }
                 }
             }
@@ -1438,32 +1428,27 @@ namespace LightCrosshair
 
         private void SaveCurrentProfile()
         {
-            // Clone the current profile to avoid modifying it directly
-            var profile = profileManager.CurrentProfile.Clone();
-
-            // Ask for a profile name
+            var baseProfile = CurrentProfile.Clone();
             string name = Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter a name for this profile:",
-                "Save Profile",
-                profile.Name);
+                "Enter a name for this profile:", "Save Profile", baseProfile.Name);
 
             if (!string.IsNullOrWhiteSpace(name))
             {
-                profile.Name = name;
-                profileManager.UpdateProfile(profile);
-
-                // Refresh the context menu to show the new profile
+                baseProfile.Name = name;
+                // Add as new clone (keep current too)
+                var newClone = _profileService.AddClone(CurrentProfile, name);
+                _profileService.Switch(newClone.Id);
                 InitializeContextMenu();
             }
+            _ = _profileService.PersistAsync();
         }
 
         private void ShowProfileManager()
         {
-            using (var profileForm = new ProfileForm(profileManager))
+            using (var dlg = new ProfilesDialog(_profileService))
             {
-                profileForm.ShowDialog();
-
-                // Refresh the context menu to show any changes
+                dlg.ShowDialog(this);
+                // Rebuild context menu to reflect profile name / hotkey changes
                 InitializeContextMenu();
             }
         }
@@ -1471,15 +1456,16 @@ namespace LightCrosshair
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-
-            // Set click-through
             if (this.Handle != IntPtr.Zero)
             {
-                int exStyle = SetWindowLong(this.Handle, GWL_EXSTYLE, WS_EX_LAYERED | WS_EX_TRANSPARENT);
+                int exStyle = GetWindowLong(this.Handle, GWL_EXSTYLE);
+                exStyle |= WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW;
+                SetWindowLong(this.Handle, GWL_EXSTYLE, exStyle);
             }
-
-            // Register the ALT+X hotkey for toggling visibility
             RegisterHotKey(this.Handle, TOGGLE_VISIBILITY_HOTKEY_ID, MOD_ALT, (int)Keys.X);
+            RegisterHotKey(this.Handle, TOGGLE_VISIBILITY_HOTKEY_ID + 1, MOD_CONTROL | MOD_SHIFT, (int)Keys.Right);
+            RegisterHotKey(this.Handle, TOGGLE_VISIBILITY_HOTKEY_ID + 2, MOD_CONTROL | MOD_SHIFT, (int)Keys.Left);
+            _profileService.RegisterHotkeys(this.Handle);
         }
 
         protected override void WndProc(ref Message m)
@@ -1491,526 +1477,48 @@ namespace LightCrosshair
 
                 if (hotkeyId == TOGGLE_VISIBILITY_HOTKEY_ID)
                 {
-                    // Toggle visibility when ALT+X is pressed
                     ToggleVisibility();
-                    return; // Message was handled
+                    return;
                 }
-                else
+                if (hotkeyId == TOGGLE_VISIBILITY_HOTKEY_ID + 1)
                 {
-                    // Let the profile manager handle it
-                    if (profileManager.ProcessHotkey(m))
-                    {
-                        return; // Message was handled
-                    }
+                    CycleProfile(1);
+                    return;
                 }
+                if (hotkeyId == TOGGLE_VISIBILITY_HOTKEY_ID + 2)
+                {
+                    CycleProfile(-1);
+                    return;
+                }
+
+                // Let profile service process per-profile custom hotkeys
+                if (_profileService.ProcessHotkeyMessage(m)) return;
             }
 
             base.WndProc(ref m);
         }
 
-        private void Form1_Paint(object sender, PaintEventArgs e)
+    private void Form1_Paint(object? sender, PaintEventArgs e)
         {
             lock (_renderLock)
             {
-                // Skip rendering if no changes are needed
-                if (!_needsRedraw && _lastRenderedProfile != null)
+                if (_configDirty)
                 {
-                    return;
+                    _currentFrame?.Dispose();
+                    var p = CurrentProfile;
+                    _currentFrame = _renderer.RenderIfNeeded(p);
+                    _lastRenderedProfile = p.Clone();
+                    _configDirty = false;
                 }
 
-                // Clear background
-                e.Graphics.Clear(this.TransparencyKey);
-
-                // Get current profile
-                var profile = profileManager.CurrentProfile;
-
-                // Enhanced graphics settings for optimal visual quality
-                // Use high quality settings for all shapes with performance optimizations
-                bool hasCircularShapes = profile.Shape == "Circle" || profile.Shape == "Dot" ||
-                                        profile.Shape.Contains("Circle") || profile.Shape.Contains("Dot");
-
-                if (hasCircularShapes)
+                if (_currentFrame != null)
                 {
-                    // Maximum quality for circular shapes to eliminate pixelation
-                    e.Graphics.SmoothingMode = SmoothingMode.HighQuality;
-                    e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                    e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
+                    e.Graphics.Clear(this.TransparencyKey);
+                    // Center bitmap in client area in case form larger than bitmap
+                    int x = (ClientSize.Width - _currentFrame.Width) / 2;
+                    int y = (ClientSize.Height - _currentFrame.Height) / 2;
+                    e.Graphics.DrawImageUnscaled(_currentFrame, x, y);
                 }
-                else
-                {
-                    // Enhanced quality for linear shapes with crisp edges
-                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                    e.Graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                    e.Graphics.PixelOffsetMode = PixelOffsetMode.HighQuality; // Improved from HighSpeed
-                    e.Graphics.CompositingQuality = CompositingQuality.HighQuality; // Improved from HighSpeed
-                }
-
-                // Additional quality enhancements
-                e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-
-                // Enable sub-pixel rendering for better line quality
-                e.Graphics.CompositingMode = CompositingMode.SourceOver;
-
-            // Calculate center and size with pixel-perfect precision
-            float centerX = this.ClientSize.Width / 2.0f;
-            float centerY = this.ClientSize.Height / 2.0f;
-            float size = profile.Size / 2.0f; // Convert percentage to actual size
-
-            // Ensure center coordinates are at exact pixel boundaries for crisp rendering
-            centerX = (float)Math.Round(centerX);
-            centerY = (float)Math.Round(centerY);
-
-            // Get cached pens and brushes for better performance
-            Pen edgePen = GetCachedPen(profile.EdgeColor, profile.EdgeThickness);
-            Pen innerPen = GetCachedPen(profile.InnerColor, Math.Max(1, profile.Thickness - 2));
-            SolidBrush fillBrush = GetCachedBrush(profile.FillColor);
-
-            switch (profile.Shape)
-                {
-                    case "Circle":
-                        // Circle is a hollow circle (outline only, transparent interior)
-                        if (edgePen != null)
-                        {
-                            // Draw the circle outline
-                            DrawEllipseF(e.Graphics, edgePen, centerX - size, centerY - size, size * 2, size * 2);
-
-                            // Draw inner outline if thickness allows and inner color is specified
-                            if (innerPen != null && profile.Thickness > 2)
-                            {
-                                float innerSize = size - profile.Thickness;
-                                if (innerSize > 0)
-                                {
-                                    DrawEllipseF(e.Graphics, innerPen,
-                                        centerX - innerSize, centerY - innerSize,
-                                        innerSize * 2, innerSize * 2);
-                                }
-                            }
-                        }
-                        break;
-
-                    case "Dot":
-                        // Dot is a solid filled circle
-                        if (profile.EdgeColor.A > 0)
-                        {
-                            SolidBrush dotBrush = GetCachedBrush(profile.EdgeColor);
-                            if (dotBrush != null)
-                            {
-                                // Draw filled circle using the size as diameter
-                                float dotSize = size * 2;
-                                FillEllipseF(e.Graphics, dotBrush,
-                                    centerX - size, centerY - size,
-                                    dotSize, dotSize);
-                            }
-                        }
-                        break;
-
-                    case "Plus":
-                        // Plus has a gap in the center
-                        int actualGapSize = profile.GapSize;
-
-                        if (edgePen != null)
-                        {
-                            // Draw horizontal lines with gap
-                            DrawLineF(e.Graphics, edgePen, centerX - size, centerY, centerX - actualGapSize, centerY);
-                            DrawLineF(e.Graphics, edgePen, centerX + actualGapSize, centerY, centerX + size, centerY);
-
-                            // Draw vertical lines with gap
-                            DrawLineF(e.Graphics, edgePen, centerX, centerY - size, centerX, centerY - actualGapSize);
-                            DrawLineF(e.Graphics, edgePen, centerX, centerY + actualGapSize, centerX, centerY + size);
-                        }
-
-                        // Draw inner lines if thickness allows
-                        if (profile.Thickness > 2 && innerPen != null)
-                        {
-                            // Horizontal inner lines
-                            DrawLineF(e.Graphics, innerPen, centerX - size + 1, centerY, centerX - actualGapSize, centerY);
-                            DrawLineF(e.Graphics, innerPen, centerX + actualGapSize, centerY, centerX + size - 1, centerY);
-
-                            // Vertical inner lines
-                            DrawLineF(e.Graphics, innerPen, centerX, centerY - size + 1, centerX, centerY - actualGapSize);
-                            DrawLineF(e.Graphics, innerPen, centerX, centerY + actualGapSize, centerX, centerY + size - 1);
-                        }
-                        break;
-
-                    case "X":
-                        // X is a diagonal crosshair
-                        // Draw the X shape with edge color
-                        if (edgePen != null)
-                        {
-                            DrawLineF(e.Graphics, edgePen, centerX - size, centerY - size, centerX + size, centerY + size);
-                            DrawLineF(e.Graphics, edgePen, centerX - size, centerY + size, centerX + size, centerY - size);
-                        }
-
-                        // Draw inner lines if thickness allows and inner color is not transparent
-                        if (profile.Thickness > 2 && innerPen != null)
-                        {
-                            // Calculate offset for inner lines
-                            double offset = profile.Thickness / 2.0 * 0.707; // 0.707 is approximately sin(45°) or cos(45°)
-                            int offsetInt = (int)Math.Ceiling(offset);
-
-                            // Draw inner lines with inner color
-                            e.Graphics.DrawLine(innerPen,
-                                centerX - size + offsetInt, centerY - size + offsetInt,
-                                centerX + size - offsetInt, centerY + size - offsetInt);
-                            e.Graphics.DrawLine(innerPen,
-                                centerX - size + offsetInt, centerY + size - offsetInt,
-                                centerX + size - offsetInt, centerY - size + offsetInt);
-                        }
-
-                        // Draw fill in center if not transparent
-                        if (fillBrush != null)
-                        {
-                            using (GraphicsPath path = new GraphicsPath())
-                            {
-                                int halfThickness = profile.Thickness / 2;
-                                path.AddPolygon(new Point[] {
-                                    new Point((int)Math.Round(centerX), (int)Math.Round(centerY - halfThickness)),
-                                    new Point((int)Math.Round(centerX + halfThickness), (int)Math.Round(centerY)),
-                                    new Point((int)Math.Round(centerX), (int)Math.Round(centerY + halfThickness)),
-                                    new Point((int)Math.Round(centerX - halfThickness), (int)Math.Round(centerY))
-                                });
-                                e.Graphics.FillPath(fillBrush, path);
-                            }
-                        }
-                        break;
-
-                    case "Cross":
-                        // Cross is a full crosshair without a gap
-                        // Draw horizontal and vertical lines with pixel-perfect positioning
-                        if (edgePen != null)
-                        {
-                            DrawLineF(e.Graphics, edgePen, centerX - size, centerY, centerX + size, centerY);
-                            DrawLineF(e.Graphics, edgePen, centerX, centerY - size, centerX, centerY + size);
-                        }
-
-                        // Draw inner lines if thickness allows
-                        if (profile.Thickness > 2 && innerPen != null)
-                        {
-                            DrawLineF(e.Graphics, innerPen, centerX - size + 1, centerY, centerX + size - 1, centerY);
-                            DrawLineF(e.Graphics, innerPen, centerX, centerY - size + 1, centerX, centerY + size - 1);
-                        }
-                        break;
-
-                    // Combined shapes
-                    case "CircleDot":
-                        // Draw circle (outer shape) - hollow circle outline
-                        if (edgePen != null)
-                        {
-                            e.Graphics.DrawEllipse(edgePen, centerX - size, centerY - size, size * 2, size * 2);
-
-                            // Draw inner outline if thickness allows and inner color is specified
-                            if (innerPen != null && profile.Thickness > 2)
-                            {
-                                float innerSize = size - profile.Thickness;
-                                if (innerSize > 0)
-                                {
-                                    e.Graphics.DrawEllipse(innerPen,
-                                        centerX - innerSize, centerY - innerSize,
-                                        innerSize * 2, innerSize * 2);
-                                }
-                            }
-                        }
-
-                        // Draw dot in center (inner shape) - solid filled circle
-                        if (profile.InnerShapeEdgeColor.A > 0)
-                        {
-                            SolidBrush dotBrush = GetCachedBrush(profile.InnerShapeEdgeColor);
-                            if (dotBrush != null)
-                            {
-                                float dotRadius = profile.InnerSize / 2;
-                                e.Graphics.FillEllipse(dotBrush,
-                                    centerX - dotRadius, centerY - dotRadius,
-                                    profile.InnerSize, profile.InnerSize);
-                            }
-                        }
-                        break;
-
-                    case "CrossDot":
-                        // Draw cross (outer shape)
-                        if (edgePen != null)
-                        {
-                            e.Graphics.DrawLine(edgePen, centerX - size, centerY, centerX + size, centerY);
-                            e.Graphics.DrawLine(edgePen, centerX, centerY - size, centerX, centerY + size);
-                        }
-
-                        // Draw inner lines if thickness allows
-                        if (profile.Thickness > 2 && innerPen != null)
-                        {
-                            e.Graphics.DrawLine(innerPen, centerX - size + 1, centerY, centerX + size - 1, centerY);
-                            e.Graphics.DrawLine(innerPen, centerX, centerY - size + 1, centerX, centerY + size - 1);
-                        }
-
-                        // Draw dot in center (inner shape) - solid filled circle
-                        if (profile.InnerShapeEdgeColor.A > 0)
-                        {
-                            SolidBrush dotBrush = GetCachedBrush(profile.InnerShapeEdgeColor);
-                            if (dotBrush != null)
-                            {
-                                float dotRadius = profile.InnerSize / 2;
-                                e.Graphics.FillEllipse(dotBrush,
-                                    centerX - dotRadius, centerY - dotRadius,
-                                    profile.InnerSize, profile.InnerSize);
-                            }
-                        }
-                        break;
-
-                    case "CircleCross":
-                        // Draw circle (outer shape)
-                        // Circle is a hollow circle with a border
-                        if (profile.EdgeColor.A > 0)
-                        {
-                            // For smoother circles, use a custom approach
-                            // First, create a path for the outer circle
-                            using (GraphicsPath circlePath = new GraphicsPath())
-                            {
-                                // Add the outer circle to the path
-                                circlePath.AddEllipse(centerX - size, centerY - size, size * 2, size * 2);
-
-                                // If we have an inner color and sufficient thickness, create a hole in the path
-                                if (profile.Thickness > 0 && profile.InnerColor.A > 0)
-                                {
-                                    // Calculate the inner circle dimensions
-                                    float innerRadius = size - profile.Thickness;
-                                    if (innerRadius > 0)
-                                    {
-                                        // Add the inner circle to the path (in reverse direction to create a hole)
-                                        circlePath.AddEllipse(
-                                            centerX - innerRadius,
-                                            centerY - innerRadius,
-                                            innerRadius * 2,
-                                            innerRadius * 2);
-                                    }
-                                }
-
-                                // Draw the path with the edge color
-                                using (SolidBrush edgeBrush = new SolidBrush(profile.EdgeColor))
-                                {
-                                    e.Graphics.FillPath(edgeBrush, circlePath);
-                                }
-                            }
-
-                            // If we have an inner color and sufficient thickness, draw the inner circle
-                            if (profile.Thickness > 0 && profile.InnerColor.A > 0)
-                            {
-                                // Calculate the inner circle dimensions
-                                float innerRadius = size - profile.Thickness;
-                                if (innerRadius > 0)
-                                {
-                                    // Draw the inner circle with the inner color
-                                    using (SolidBrush innerBrush = new SolidBrush(profile.InnerColor))
-                                    {
-                                        e.Graphics.FillEllipse(
-                                            innerBrush,
-                                            centerX - innerRadius,
-                                            centerY - innerRadius,
-                                            innerRadius * 2,
-                                            innerRadius * 2);
-                                    }
-                                }
-                            }
-                        }
-
-                        // Draw cross (inner shape)
-                        // Use InnerSize for the cross
-                        int crossSize = profile.InnerSize / 2;
-                        using (Pen crossPen = new Pen(profile.InnerShapeEdgeColor, profile.InnerThickness))
-                        {
-                            e.Graphics.DrawLine(crossPen, centerX - crossSize, centerY, centerX + crossSize, centerY);
-                            e.Graphics.DrawLine(crossPen, centerX, centerY - crossSize, centerX, centerY + crossSize);
-                        }
-
-                        // Draw inner lines if thickness allows
-                        if (profile.InnerThickness > 2 && profile.InnerShapeInnerColor.A > 0)
-                        {
-                            using (Pen crossInnerPen = new Pen(profile.InnerShapeInnerColor, Math.Max(1, profile.InnerThickness - 2)))
-                            {
-                                e.Graphics.DrawLine(crossInnerPen, centerX - crossSize + 1, centerY, centerX + crossSize - 1, centerY);
-                                e.Graphics.DrawLine(crossInnerPen, centerX, centerY - crossSize + 1, centerX, centerY + crossSize - 1);
-                            }
-                        }
-                        break;
-
-                    case "CirclePlus":
-                        // Draw circle (outer shape)
-                        // Circle is a hollow circle with a border
-                        if (profile.EdgeColor.A > 0)
-                        {
-                            // For smoother circles, use a custom approach
-                            // First, create a path for the outer circle
-                            using (GraphicsPath circlePath = new GraphicsPath())
-                            {
-                                // Add the outer circle to the path
-                                circlePath.AddEllipse(centerX - size, centerY - size, size * 2, size * 2);
-
-                                // If we have an inner color and sufficient thickness, create a hole in the path
-                                if (profile.Thickness > 0 && profile.InnerColor.A > 0)
-                                {
-                                    // Calculate the inner circle dimensions
-                                    float innerRadius = size - profile.Thickness;
-                                    if (innerRadius > 0)
-                                    {
-                                        // Add the inner circle to the path (in reverse direction to create a hole)
-                                        circlePath.AddEllipse(
-                                            centerX - innerRadius,
-                                            centerY - innerRadius,
-                                            innerRadius * 2,
-                                            innerRadius * 2);
-                                    }
-                                }
-
-                                // Draw the path with the edge color
-                                using (SolidBrush edgeBrush = new SolidBrush(profile.EdgeColor))
-                                {
-                                    e.Graphics.FillPath(edgeBrush, circlePath);
-                                }
-                            }
-
-                            // If we have an inner color and sufficient thickness, draw the inner circle
-                            if (profile.Thickness > 0 && profile.InnerColor.A > 0)
-                            {
-                                // Calculate the inner circle dimensions
-                                float innerRadius = size - profile.Thickness;
-                                if (innerRadius > 0)
-                                {
-                                    // Draw the inner circle with the inner color
-                                    using (SolidBrush innerBrush = new SolidBrush(profile.InnerColor))
-                                    {
-                                        e.Graphics.FillEllipse(
-                                            innerBrush,
-                                            centerX - innerRadius,
-                                            centerY - innerRadius,
-                                            innerRadius * 2,
-                                            innerRadius * 2);
-                                    }
-                                }
-                            }
-                        }
-
-                        // Draw plus (inner shape)
-                        // Use InnerSize for the plus
-                        int plusSize = profile.InnerSize / 2;
-                        int plusGapSize = profile.InnerGapSize;
-                        using (Pen plusPen = new Pen(profile.InnerShapeEdgeColor, profile.InnerThickness))
-                        {
-                            // Horizontal lines with gap
-                            e.Graphics.DrawLine(plusPen, centerX - plusSize, centerY, centerX - plusGapSize, centerY);
-                            e.Graphics.DrawLine(plusPen, centerX + plusGapSize, centerY, centerX + plusSize, centerY);
-                            // Vertical lines with gap
-                            e.Graphics.DrawLine(plusPen, centerX, centerY - plusSize, centerX, centerY - plusGapSize);
-                            e.Graphics.DrawLine(plusPen, centerX, centerY + plusGapSize, centerX, centerY + plusSize);
-                        }
-
-                        // Draw inner lines if thickness allows
-                        if (profile.InnerThickness > 2 && profile.InnerShapeInnerColor.A > 0)
-                        {
-                            using (Pen plusInnerPen = new Pen(profile.InnerShapeInnerColor, Math.Max(1, profile.InnerThickness - 2)))
-                            {
-                                // Horizontal inner lines
-                                e.Graphics.DrawLine(plusInnerPen, centerX - plusSize + 1, centerY, centerX - plusGapSize, centerY);
-                                e.Graphics.DrawLine(plusInnerPen, centerX + plusGapSize, centerY, centerX + plusSize - 1, centerY);
-                                // Vertical inner lines
-                                e.Graphics.DrawLine(plusInnerPen, centerX, centerY - plusSize + 1, centerX, centerY - plusGapSize);
-                                e.Graphics.DrawLine(plusInnerPen, centerX, centerY + plusGapSize, centerX, centerY + plusSize - 1);
-                            }
-                        }
-                        break;
-
-                    case "CircleX":
-                        // Draw circle (outer shape)
-                        // Circle is a hollow circle with a border
-                        if (profile.EdgeColor.A > 0)
-                        {
-                            // For smoother circles, use a custom approach
-                            // First, create a path for the outer circle
-                            using (GraphicsPath circlePath = new GraphicsPath())
-                            {
-                                // Add the outer circle to the path
-                                circlePath.AddEllipse(centerX - size, centerY - size, size * 2, size * 2);
-
-                                // If we have an inner color and sufficient thickness, create a hole in the path
-                                if (profile.Thickness > 0 && profile.InnerColor.A > 0)
-                                {
-                                    // Calculate the inner circle dimensions
-                                    float innerRadius = size - profile.Thickness;
-                                    if (innerRadius > 0)
-                                    {
-                                        // Add the inner circle to the path (in reverse direction to create a hole)
-                                        circlePath.AddEllipse(
-                                            centerX - innerRadius,
-                                            centerY - innerRadius,
-                                            innerRadius * 2,
-                                            innerRadius * 2);
-                                    }
-                                }
-
-                                // Draw the path with the edge color
-                                using (SolidBrush edgeBrush = new SolidBrush(profile.EdgeColor))
-                                {
-                                    e.Graphics.FillPath(edgeBrush, circlePath);
-                                }
-                            }
-
-                            // If we have an inner color and sufficient thickness, draw the inner circle
-                            if (profile.Thickness > 0 && profile.InnerColor.A > 0)
-                            {
-                                // Calculate the inner circle dimensions
-                                float innerRadius = size - profile.Thickness;
-                                if (innerRadius > 0)
-                                {
-                                    // Draw the inner circle with the inner color
-                                    using (SolidBrush innerBrush = new SolidBrush(profile.InnerColor))
-                                    {
-                                        e.Graphics.FillEllipse(
-                                            innerBrush,
-                                            centerX - innerRadius,
-                                            centerY - innerRadius,
-                                            innerRadius * 2,
-                                            innerRadius * 2);
-                                    }
-                                }
-                            }
-                        }
-
-                        // Draw X (inner shape)
-                        // Use InnerSize for the X
-                        int xSize = profile.InnerSize / 2;
-                        using (Pen xPen = new Pen(profile.InnerShapeEdgeColor, profile.InnerThickness))
-                        {
-                            e.Graphics.DrawLine(xPen, centerX - xSize, centerY - xSize, centerX + xSize, centerY + xSize);
-                            e.Graphics.DrawLine(xPen, centerX - xSize, centerY + xSize, centerX + xSize, centerY - xSize);
-                        }
-
-                        // Draw inner lines if thickness allows and inner color is not transparent
-                        if (profile.InnerThickness > 2 && profile.InnerShapeInnerColor.A > 0)
-                        {
-                            // Calculate offset for inner lines
-                            double offset = profile.InnerThickness / 2.0 * 0.707; // 0.707 is approximately sin(45°) or cos(45°)
-                            int offsetInt = (int)Math.Ceiling(offset);
-
-                            // Draw inner lines with inner color
-                            using (Pen xInnerPen = new Pen(profile.InnerShapeInnerColor, Math.Max(1, profile.InnerThickness - 2)))
-                            {
-                                e.Graphics.DrawLine(xInnerPen,
-                                    centerX - xSize + offsetInt, centerY - xSize + offsetInt,
-                                    centerX + xSize - offsetInt, centerY + xSize - offsetInt);
-                                e.Graphics.DrawLine(xInnerPen,
-                                    centerX - xSize + offsetInt, centerY + xSize - offsetInt,
-                                    centerX + xSize - offsetInt, centerY - xSize + offsetInt);
-                            }
-                        }
-                        break;
-
-                    default:
-                        // Default to cross if shape not recognized
-                        e.Graphics.DrawLine(edgePen, centerX - size, centerY, centerX + size, centerY);
-                        e.Graphics.DrawLine(edgePen, centerX, centerY - size, centerX, centerY + size);
-                        break;
-                }
-
-                // Update cached profile and mark as rendered
-                _lastRenderedProfile = profile;
-                _needsRedraw = false;
             }
         }
 
@@ -2018,6 +1526,30 @@ namespace LightCrosshair
         {
             isVisible = !isVisible;
             this.Visible = isVisible;
+        }
+
+        private void CycleProfile(int direction)
+        {
+            var list = new List<CrosshairProfile>(_profileService.Profiles);
+            if (list.Count == 0) return;
+            var current = _profileService.Current;
+            int currentIndex = list.FindIndex(p => p.Id == current.Id);
+            if (currentIndex < 0) currentIndex = 0;
+            int next = (currentIndex + direction + list.Count) % list.Count;
+            _profileService.Switch(list[next].Id);
+        }
+
+        private void UpdateShape(CrosshairShape shape, string legacyString)
+        {
+            var baseProfile = _profileService.Current;
+            var clone = baseProfile.Clone();
+            clone.EnumShape = shape;
+            clone.Shape = legacyString; // keep for legacy persisted field
+            _profileService.Update(clone);
+            _undo.Push(baseProfile.Clone());
+            lock (_renderLock) { _configDirty = true; Invalidate(); }
+            // autosave scheduled by service
+            UpdateMenuItems("Shape");
         }
 
         private void CenterCrosshair()
@@ -2056,38 +1588,32 @@ namespace LightCrosshair
 
         private void UpdateFormSize()
         {
-            if (profileManager?.CurrentProfile != null)
+            var p = CurrentProfile;
+            if (p != null)
             {
-                // Calculate optimal form size based on crosshair size and thickness
-                int maxCrosshairSize = Math.Max(profileManager.CurrentProfile.Size,
-                                              profileManager.CurrentProfile.InnerSize);
-                int padding = Math.Max(profileManager.CurrentProfile.Thickness * 2, 10);
-
-                // Ensure minimum size and add padding for anti-aliasing
+                int maxCrosshairSize = Math.Max(p.Size, p.InnerSize);
+                int padding = Math.Max(p.Thickness * 2, 10);
                 int formSize = Math.Max(100, maxCrosshairSize + padding * 2);
-
-                // Make sure the size is odd for perfect center pixel alignment
                 if (formSize % 2 == 0) formSize++;
-
                 this.Size = new Size(formSize, formSize);
             }
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            // Unregister all hotkeys
-            if (profileManager != null)
-            {
-                profileManager.UnregisterAllHotkeys();
-            }
+            // Unregister profile service hotkeys
+            _profileService.UnregisterHotkeys();
 
             // Unregister the toggle visibility hotkey
             UnregisterHotKey(this.Handle, TOGGLE_VISIBILITY_HOTKEY_ID);
 
             // Clean up resources
-            notifyIcon.Visible = false;
-            notifyIcon.Dispose();
-            contextMenu.Dispose();
+            if (notifyIcon != null)
+            {
+                notifyIcon.Visible = false;
+                notifyIcon.Dispose();
+            }
+            contextMenu?.Dispose();
 
             // Stop and dispose recording detection timer
             if (_recordingDetectionTimer != null)
@@ -2099,6 +1625,8 @@ namespace LightCrosshair
             // Clear graphics cache
             ClearGraphicsCache();
 
+            try { _ = _profileService.PersistAsync(); } catch { }
+
             base.OnFormClosing(e);
         }
 
@@ -2108,6 +1636,27 @@ namespace LightCrosshair
         {
             base.OnResize(e);
             CenterCrosshair();
+        }
+
+        // TriggerAutosave removed; persistence handled by ProfileService.
+
+        private void UndoLastChange()
+        {
+            if (_undo.TryPop(out var prev))
+            {
+                _profileService.Update(prev);
+                _profileService.Switch(prev.Id);
+                if (_lblSaved != null) _lblSaved.Text = "Reverted";
+            }
+        }
+
+        private void MarkConfigDirty()
+        {
+            lock (_renderLock)
+            {
+                _configDirty = true;
+                Invalidate();
+            }
         }
 
 

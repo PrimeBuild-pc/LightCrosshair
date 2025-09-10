@@ -22,8 +22,19 @@ static class Program
             // Enhanced DPI awareness for better performance across different displays
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
-            // Create and run the form
-            using var form = new Form1();
+            bool created;
+            using var mutex = new System.Threading.Mutex(true, "LightCrosshair_Singleton", out created);
+            if (!created)
+            {
+                // Another instance running – optionally bring to front via IPC (omitted here)
+                return;
+            }
+
+            // Initialize profiles centrally
+            var ps = ProfileService.Instance;
+            ps.InitializeAsync().GetAwaiter().GetResult();
+
+            using var form = new Form1(ps);
             Application.Run(form);
         }
         catch (Exception ex)

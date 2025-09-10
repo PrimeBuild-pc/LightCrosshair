@@ -5,16 +5,22 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 
 namespace LightCrosshair
 {
     public class CrosshairProfile
     {
+        // Schema / identity
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
         // Profile name
         public string Name { get; set; } = "Default";
 
         // Shape properties
-        public string Shape { get; set; } = "Cross";
+        public string Shape { get; set; } = "Cross"; // legacy string (kept for renderer + back-compat)
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public CrosshairShape EnumShape { get; set; } = CrosshairShape.Cross; // new canonical enum (serialized as string)
         public string InnerShape { get; set; } = "Dot"; // Inner shape for combined shapes
 
         // Primary shape properties (outer shape in combined shapes)
@@ -167,6 +173,10 @@ namespace LightCrosshair
 
         // Screen recording detection
         public bool HideDuringScreenRecording { get; set; } = false;
+    public bool AntiAlias { get; set; } = true; // persist AA per profilo
+
+    // Schema versioning
+    public int SchemaVersion { get; set; } = ProfileSchema.Current;
 
         // Static methods for profile management
         private static readonly string ProfilesDirectory = Path.Combine(
@@ -209,6 +219,16 @@ namespace LightCrosshair
                         var profile = JsonSerializer.Deserialize<CrosshairProfile>(json);
                         if (profile != null)
                         {
+                            // Migration: if schema older, upgrade
+                            if (profile.SchemaVersion < ProfileSchema.Current)
+                            {
+                                // Map legacy Shape to EnumShape if default enum value
+                                if (profile.EnumShape == default)
+                                {
+                                    profile.EnumShape = ShapeNormalizer.ToEnum(profile.Shape);
+                                }
+                                profile.SchemaVersion = ProfileSchema.Current;
+                            }
                             profiles.Add(profile);
                         }
                     }
@@ -272,7 +292,13 @@ namespace LightCrosshair
 
                 // Save profile to file
                 string filePath = Path.Combine(ProfilesDirectory, safeName + ".json");
-                string json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
+                // Ensure enum shape is synchronized before persisting
+                if (EnumShape == default)
+                {
+                    EnumShape = ShapeNormalizer.ToEnum(Shape);
+                }
+                SchemaVersion = ProfileSchema.Current;
+                string json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true, Converters = { new JsonStringEnumConverter() } });
                 File.WriteAllText(filePath, json);
             }
             catch
@@ -307,8 +333,10 @@ namespace LightCrosshair
         {
             return new CrosshairProfile
             {
+                Id = this.Id,
                 Name = this.Name,
                 Shape = this.Shape,
+                EnumShape = this.EnumShape,
                 InnerShape = this.InnerShape,
                 Size = this.Size,
                 InnerSize = this.InnerSize,
@@ -324,7 +352,9 @@ namespace LightCrosshair
                 InnerShapeInnerColor = this.InnerShapeInnerColor,
                 InnerShapeFillColor = this.InnerShapeFillColor,
                 HotKey = this.HotKey,
-                HideDuringScreenRecording = this.HideDuringScreenRecording
+                HideDuringScreenRecording = this.HideDuringScreenRecording,
+                AntiAlias = this.AntiAlias,
+                SchemaVersion = this.SchemaVersion
             };
         }
 
@@ -355,5 +385,10 @@ namespace LightCrosshair
 
             return Color.Red; // Default color
         }
+    }
+
+    public static class ProfileSchema
+    {
+        public const int Current = 1;
     }
 }

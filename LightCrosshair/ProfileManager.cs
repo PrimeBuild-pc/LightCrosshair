@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace LightCrosshair
 {
-    public class ProfileManager
+    [Obsolete("Legacy: replaced by IProfileService")] public class ProfileManager
     {
         // Windows API for hotkeys
         [DllImport("user32.dll")]

@@ -9,6 +9,9 @@ using System.Diagnostics;
 
 namespace LightCrosshair
 {
+    // Enum for normalized shapes (step A)
+    public enum CrosshairShape { Dot, Cross, CrossOutlined, Circle, CircleOutlined, T, X, Box, GapCross, Custom }
+
     public class CrosshairConfig : IDisposable
     {
         // Constants for hotkey registration
@@ -69,6 +72,9 @@ namespace LightCrosshair
         public bool HotkeyUseControl { get; set; } = false;
         public bool HotkeyUseShift { get; set; } = false;
         public bool HotkeyUseWin { get; set; } = false;
+
+    // Rendering flags
+    public bool AntiAlias { get; set; } = false; // Used by AA toggle (step B)
 
         // Event triggered when settings are changed
         public event EventHandler? SettingsChanged;
