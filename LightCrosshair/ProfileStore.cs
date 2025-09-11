@@ -57,6 +57,27 @@ namespace LightCrosshair
                 {
                     if (p.EnumShape == default && !string.IsNullOrWhiteSpace(p.Shape))
                         p.EnumShape = ShapeNormalizer.ToEnum(p.Shape);
+
+                    // Migration to simplified color model (v2)
+                    // Prefer the visible inner color for the new OuterColor; fallback to edge if inner is transparent
+                    try
+                    {
+                        bool hasOuter = p.OuterColor.A != 0 || p.OuterColor.R != 0 || p.OuterColor.G != 0 || p.OuterColor.B != 0;
+                        if (!hasOuter)
+                        {
+                            if (p.InnerColor.A > 0) p.OuterColor = p.InnerColor;
+                            else if (p.EdgeColor.A > 0) p.OuterColor = p.EdgeColor;
+                        }
+
+                        bool hasInnerComposite = p.InnerShapeColor.A != 0 || p.InnerShapeColor.R != 0 || p.InnerShapeColor.G != 0 || p.InnerShapeColor.B != 0;
+                        if (!hasInnerComposite)
+                        {
+                            if (p.InnerShapeEdgeColor.A > 0) p.InnerShapeColor = p.InnerShapeEdgeColor;
+                            else if (p.InnerColor.A > 0) p.InnerShapeColor = p.InnerColor;
+                        }
+                    }
+                    catch { }
+
                     p.SchemaVersion = ProfileSchema.Current;
                 }
             }

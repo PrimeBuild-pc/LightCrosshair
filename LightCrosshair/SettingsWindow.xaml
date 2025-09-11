@@ -11,41 +11,126 @@
         <!-- Base styles using dynamic theme resources provided by code-behind -->
         <Style TargetType="TabControl">
             <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
         </Style>
+
+        <!-- TabItem: custom template to avoid white selected header in dark theme -->
         <Style TargetType="TabItem">
             <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
             <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
-            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/>
+            <Setter Property="Padding" Value="10,8"/>
             <Setter Property="Margin" Value="0,0,0,2"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource TabSelectedBg}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.6"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
+
         <Style TargetType="ScrollViewer">
             <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
         </Style>
         <Style TargetType="StackPanel">
             <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
         </Style>
+
+        <!-- Flat button style -->
         <Style TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
-            <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Margin" Value="0,0,8,0"/>
         </Style>
+
+        <!-- ComboBox with dark popup -->
         <Style TargetType="ComboBox">
             <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
-            <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4"/>
+                            <Grid>
+                                <ToggleButton Grid.Column="0" Focusable="False" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press" Background="Transparent" BorderBrush="{x:Null}"/>
+                                <ContentPresenter Margin="8,2,24,2" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                  Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"/>
+                            </Grid>
+                            <Popup Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                                <Border Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4">
+                                    <ScrollViewer>
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlBg}"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource TabSelectedBg}"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource TabSelectedBg}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="TextBox">
             <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
-            <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/>
         </Style>
+
+        <!-- Modern slider -->
         <Style TargetType="Slider">
-            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid Margin="0,6">
+                            <Border Background="{DynamicResource ControlBg}" CornerRadius="2" Height="4" VerticalAlignment="Center"/>
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Height="4" Background="{DynamicResource AccentBrush}" Command="Slider.DecreaseLarge"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Height="4" Background="Transparent" Command="Slider.IncreaseLarge"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Width="12" Height="12" Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1"/>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
+
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
         </Style>
@@ -70,7 +155,7 @@
         <!-- Main content with left tabs -->
         <TabControl TabStripPlacement="Left" Margin="8" Grid.Row="1">
             <!-- Shape Tab -->
-            <TabItem Header="Shape">
+            <TabItem x:Name="ShapeTab" Header="Shape">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
                         <TextBlock Text="Simple Shapes" FontWeight="Bold" Margin="0,0,0,6"/>
@@ -101,7 +186,7 @@
             </TabItem>
 
             <!-- Outer Shape Tab -->
-            <TabItem Header="Outer Shape">
+            <TabItem x:Name="OuterTab" Header="Outer Shape">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -121,15 +206,15 @@
                         </StackPanel>
                         <TextBlock Text="Colors" FontWeight="Bold" Margin="0,12,0,6"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <Button x:Name="EdgeColorBtn" Content="Edge Color" Width="120"/>
-                            <Button x:Name="InnerColorBtn" Content="Inner Color" Width="120" Margin="8,0,0,0"/>
+                            <Button x:Name="OuterColorBtn" Content="Outer Shape Color" Width="160"/>
+
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <!-- Inner Shape Tab -->
-            <TabItem Header="Inner Shape">
+            <TabItem x:Name="InnerTab" Header="Inner Shape">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -149,14 +234,31 @@
                         </StackPanel>
                         <TextBlock Text="Colors" FontWeight="Bold" Margin="0,12,0,6"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <Button x:Name="InnerShapeEdgeColorBtn" Content="Inner Shape Edge" Width="140"/>
+                            <Button x:Name="InnerShapeColorBtn" Content="Inner Shape Color" Width="160"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
+            <!-- Profiles Tab -->
+            <TabItem x:Name="ProfilesTab" Header="Profiles">
+                <Grid Margin="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,8">
+                        <Button x:Name="SaveCurrentProfileBtn" Content="Save Current to Selected" Width="220"/>
+                    </StackPanel>
+                    <ListBox x:Name="ProfilesList" Grid.Row="1" BorderBrush="{DynamicResource ControlBorder}" Background="{DynamicResource PanelBg}" Foreground="{DynamicResource TextFg}"/>
+                    <TextBlock Grid.Row="2" Text="Up to 10 profiles. Select a slot to Save/Load/Rename/Delete." Foreground="{DynamicResource TextFg}" Opacity="0.7" Margin="0,8,0,0"/>
+                </Grid>
+            </TabItem>
+
+
             <!-- About Tab -->
-            <TabItem Header="About">
+            <TabItem x:Name="AboutTab" Header="About">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="16" >
                         <TextBlock Text="LightCrosshair" FontWeight="Bold" FontSize="16"/>

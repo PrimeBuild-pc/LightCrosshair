@@ -206,13 +206,13 @@ namespace LightCrosshair
             g.CompositingMode = CompositingMode.SourceOver;
 
             // Pens / brushes (lazy)
-            int primaryWidth = cfg.EdgeThickness > 0 ? cfg.EdgeThickness : Math.Max(1, cfg.Thickness);
-            Pen? edgePen = GetPen(cfg.EdgeColor, primaryWidth);
-            Pen? innerPen = cfg.Thickness > 2 ? GetPen(cfg.InnerColor, Math.Max(1, cfg.Thickness - 2)) : null;
-            Pen? innerShapeEdgePen = GetPen(cfg.InnerShapeEdgeColor, cfg.InnerThickness);
-            Pen? innerShapeInnerPen = cfg.InnerThickness > 2 ? GetPen(cfg.InnerShapeInnerColor, Math.Max(1, cfg.InnerThickness - 2)) : null;
+            int primaryWidth = Math.Max(1, cfg.Thickness);
+            Pen? edgePen = GetPen(cfg.OuterColor, primaryWidth);
+            Pen? innerPen = cfg.Thickness > 2 ? GetPen(cfg.OuterColor, Math.Max(1, cfg.Thickness - 2)) : null;
+            // Simplified colors: inner composite uses single InnerShapeColor
+            Pen? innerShapePen = GetPen(cfg.InnerShapeColor, cfg.InnerThickness);
             Brush? fillBrush = GetBrush(cfg.FillColor);
-            Brush? dotBrush = GetBrush(cfg.EdgeColor.A > 0 ? cfg.EdgeColor : cfg.InnerColor); // for dot fallback
+            Brush? dotBrush = GetBrush(cfg.OuterColor); // fallback for dot/single-color cases
 
             // Composite handling: draw custom composite from cfg rather than plan
             if (plan.ShapeKind == CrosshairShape.Custom)
@@ -248,7 +248,7 @@ namespace LightCrosshair
                 // Outer component
                 if (cfg.Shape == "CrossDot")
                 {
-                    var outerPenSingle = GetPen(cfg.EdgeColor, cfg.EdgeThickness > 0 ? cfg.EdgeThickness : cfg.Thickness);
+                    var outerPenSingle = GetPen(cfg.OuterColor, Math.Max(1, cfg.Thickness));
                     if (outerPenSingle != null)
                     {
                         int minForCaps = (int)Math.Ceiling(outerPenSingle.Width / 2f);
@@ -258,8 +258,8 @@ namespace LightCrosshair
                 }
                 else if (cfg.Shape.StartsWith("Circle", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Outer circle: outline only (no fill, no dual-pen)
-                    var outerPenSingle = GetPen(cfg.EdgeColor, cfg.EdgeThickness > 0 ? cfg.EdgeThickness : cfg.Thickness);
+                    // Outer circle: outline only
+                    var outerPenSingle = GetPen(cfg.OuterColor, Math.Max(1, cfg.Thickness));
                     if (outerPenSingle != null)
                         g.DrawEllipse(outerPenSingle, cx - outerR, cy - outerR, outerR * 2, outerR * 2);
                 }
@@ -270,14 +270,14 @@ namespace LightCrosshair
                 {
                     case "Dot":
                     {
-                        var brush = GetBrush(cfg.InnerShapeEdgeColor);
+                        var brush = GetBrush(cfg.InnerShapeColor);
                         if (brush != null)
                             g.FillEllipse(brush, cx - innerR, cy - innerR, innerR * 2, innerR * 2);
                         break;
                     }
                     case "Cross":
                     {
-                        var pen = GetPen(cfg.InnerShapeEdgeColor, cfg.InnerThickness);
+                        var pen = GetPen(cfg.InnerShapeColor, cfg.InnerThickness);
                         if (pen != null)
                         {
                             int minForCaps = (int)Math.Ceiling(pen.Width / 2f);
@@ -288,7 +288,7 @@ namespace LightCrosshair
                     }
                     case "Plus":
                     {
-                        var pen = GetPen(cfg.InnerShapeEdgeColor, cfg.InnerThickness);
+                        var pen = GetPen(cfg.InnerShapeColor, cfg.InnerThickness);
                         if (pen != null)
                         {
                             int minForCaps = (int)Math.Ceiling(pen.Width / 2f);
@@ -299,7 +299,7 @@ namespace LightCrosshair
                     }
                     case "X":
                     {
-                        var pen = GetPen(cfg.InnerShapeEdgeColor, cfg.InnerThickness);
+                        var pen = GetPen(cfg.InnerShapeColor, cfg.InnerThickness);
                         if (pen != null)
                         {
                             int minForCaps = (int)Math.Ceiling(pen.Width / 2f);
@@ -390,11 +390,9 @@ namespace LightCrosshair
                 private string ComputeColorHash(CrosshairProfile p)
                 {
                         var sb = new StringBuilder();
-                        sb.Append(p.EdgeColor.ToArgb()).Append('|')
-                            .Append(p.InnerColor.ToArgb()).Append('|')
+                        sb.Append(p.OuterColor.ToArgb()).Append('|')
                             .Append(p.FillColor.ToArgb()).Append('|')
-                            .Append(p.InnerShapeEdgeColor.ToArgb()).Append('|')
-                            .Append(p.InnerShapeInnerColor.ToArgb()).Append('|')
+                            .Append(p.InnerShapeColor.ToArgb()).Append('|')
                             .Append(p.InnerShapeFillColor.ToArgb()).Append('|')
                             .Append(_antiAlias ? '1' : '0');
                         using var sha = SHA1.Create();

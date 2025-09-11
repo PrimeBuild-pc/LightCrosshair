@@ -43,6 +43,7 @@ namespace LightCrosshair
                     Name = "Default",
                     EnumShape = CrosshairShape.Cross,
                     Shape = "Cross",
+                    OuterColor = System.Drawing.Color.Red,
                     EdgeColor = System.Drawing.Color.Red,
                     InnerColor = System.Drawing.Color.Transparent,
                     Thickness = 3,

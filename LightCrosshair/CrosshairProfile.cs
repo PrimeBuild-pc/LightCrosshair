@@ -26,7 +26,7 @@ namespace LightCrosshair
         // Primary shape properties (outer shape in combined shapes)
         public int Size { get; set; } = 15; // 15% size for optimal visibility
         public int Thickness { get; set; } = 5; // 5 pixels for better visibility
-        public int EdgeThickness { get; set; } = 1; // Edge color thickness/width
+        public int EdgeThickness { get; set; } = 0; // 0 means "use Thickness" (no separate override)
         public int GapSize { get; set; } = 4; // For Plus shape
 
         // Secondary shape properties (inner shape in combined shapes)
@@ -140,6 +140,43 @@ namespace LightCrosshair
             }
         }
 
+        // Simplified color model
+        [JsonIgnore]
+        public Color OuterColor { get; set; } = Color.Red; // Single color for outer shape
+
+        [JsonPropertyName("OuterColorSerialized")]
+        public string OuterColorSerialized
+        {
+            get => $"{OuterColor.A},{OuterColor.R},{OuterColor.G},{OuterColor.B}";
+            set
+            {
+                try
+                {
+                    var parts = value.Split(',');
+                    if (parts.Length == 4 &&
+                        int.TryParse(parts[0], out int a) &&
+                        int.TryParse(parts[1], out int r) &&
+                        int.TryParse(parts[2], out int g) &&
+                        int.TryParse(parts[3], out int b))
+                    {
+                        OuterColor = Color.FromArgb(a, r, g, b);
+                    }
+                }
+                catch { OuterColor = Color.Red; }
+            }
+        }
+
+        [JsonIgnore]
+        public Color InnerShapeColor { get; set; } = Color.White; // Used only for composite inner shape
+
+        [JsonConverter(typeof(ColorJsonConverter))]
+        public string InnerShapeColorJson
+        {
+            get => ColorToJson(InnerShapeColor);
+            set => InnerShapeColor = JsonToColor(value);
+        }
+
+
         [JsonIgnore]
         public Color FillColor { get; set; } = Color.Transparent;
 
@@ -204,7 +241,7 @@ namespace LightCrosshair
                         InnerColor = Color.FromArgb(0, 255, 255), // Neon Cyan
                         Size = 15,
                         Thickness = 5,
-                        EdgeThickness = 1
+                        EdgeThickness = 0
                     };
                     defaultProfile.Save();
                     profiles.Add(defaultProfile);
@@ -250,7 +287,7 @@ namespace LightCrosshair
                         InnerColor = Color.FromArgb(0, 255, 255), // Neon Cyan
                         Size = 15,
                         Thickness = 5,
-                        EdgeThickness = 1
+                        EdgeThickness = 0
                     };
                     defaultProfile.Save();
                     profiles.Add(defaultProfile);
@@ -267,7 +304,7 @@ namespace LightCrosshair
                     InnerColor = Color.FromArgb(0, 255, 255), // Neon Cyan
                     Size = 15,
                     Thickness = 5,
-                    EdgeThickness = 1
+                    EdgeThickness = 0
                 });
             }
 
@@ -350,7 +387,9 @@ namespace LightCrosshair
                 InnerGapSize = this.InnerGapSize,
                 EdgeColor = this.EdgeColor,
                 InnerColor = this.InnerColor,
+                OuterColor = this.OuterColor,
                 FillColor = this.FillColor,
+                InnerShapeColor = this.InnerShapeColor,
                 InnerShapeEdgeColor = this.InnerShapeEdgeColor,
                 InnerShapeInnerColor = this.InnerShapeInnerColor,
                 InnerShapeFillColor = this.InnerShapeFillColor,
@@ -392,6 +431,6 @@ namespace LightCrosshair
 
     public static class ProfileSchema
     {
-        public const int Current = 1;
+        public const int Current = 2; // Bump for simplified color model migration
     }
 }

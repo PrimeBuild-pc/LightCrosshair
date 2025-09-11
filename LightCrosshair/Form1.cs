@@ -1540,11 +1540,23 @@ namespace LightCrosshair
 
                 if (_currentFrame != null)
                 {
-                    e.Graphics.Clear(this.TransparencyKey);
-                    // Center bitmap in client area in case form larger than bitmap
-                    int x = (ClientSize.Width - _currentFrame.Width) / 2;
-                    int y = (ClientSize.Height - _currentFrame.Height) / 2;
-                    e.Graphics.DrawImageUnscaled(_currentFrame, x, y);
+                    try
+                    {
+                        e.Graphics.Clear(this.TransparencyKey);
+                        // Center bitmap in client area in case form larger than bitmap
+                        int x = (ClientSize.Width - _currentFrame.Width) / 2;
+                        int y = (ClientSize.Height - _currentFrame.Height) / 2;
+                        e.Graphics.DrawImageUnscaled(_currentFrame, x, y);
+                    }
+                    catch (Exception ex) when (ex is ArgumentException || ex is ObjectDisposedException)
+                    {
+                        // The cached frame became invalid (disposed or corrupted) mid-draw.
+                        // Reset and request a fresh render on next paint.
+                        try { Program.LogError(ex, "Form1_Paint: frame invalid"); } catch { }
+                        _currentFrame = null;
+                        _configDirty = true;
+                        Invalidate();
+                    }
                 }
             }
         }
