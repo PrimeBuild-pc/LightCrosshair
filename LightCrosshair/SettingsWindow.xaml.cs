@@ -58,6 +58,37 @@ namespace LightCrosshair
                     {
                         p.Shape = item;
                         p.EnumShape = MapShape(item);
+                        // Apply composite defaults when switching to CircleDot / CrossDot
+                        try
+                        {
+                            if (string.Equals(item, "CircleDot", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var d = CompositeDefaults.GetCompositeDefaults(CompositeShapeType.CircleDot);
+                                if (d != null)
+                                {
+                                    p.Size = d.OuterSize;
+                                    p.Thickness = d.OuterThickness;
+                                    p.GapSize = d.OuterGapSize;
+                                    p.InnerSize = d.InnerSize;
+                                    p.InnerThickness = d.InnerThickness;
+                                    p.InnerGapSize = d.InnerGapSize;
+                                }
+                            }
+                            else if (string.Equals(item, "CrossDot", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var d = CompositeDefaults.GetCompositeDefaults(CompositeShapeType.CrossDot);
+                                if (d != null)
+                                {
+                                    p.Size = d.OuterSize;
+                                    p.Thickness = d.OuterThickness;
+                                    p.GapSize = d.OuterGapSize;
+                                    p.InnerSize = d.InnerSize;
+                                    p.InnerThickness = d.InnerThickness;
+                                    p.InnerGapSize = d.InnerGapSize;
+                                }
+                            }
+                        }
+                        catch { }
                     }
                 });
                 UpdateInnerTabEnabled();

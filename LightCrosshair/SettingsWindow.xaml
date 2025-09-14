@@ -63,13 +63,14 @@
             <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
             <Setter Property="Background" Value="{DynamicResource ControlBg}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource ControlBorder}"/>
+            <Setter Property="Padding" Value="6,4"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
                         <Grid>
                             <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="4"/>
                             <Grid>
-                                <ToggleButton Grid.Column="0" Focusable="False" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press" Background="Transparent" BorderBrush="{x:Null}"/>
+                                <ToggleButton Grid.Column="0" Focusable="False" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press" Background="Transparent" BorderBrush="{x:Null}" Cursor="Hand"/>
                                 <ContentPresenter Margin="8,2,24,2" VerticalAlignment="Center" HorizontalAlignment="Left"
                                                   Content="{TemplateBinding SelectionBoxItem}"
                                                   ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
@@ -90,13 +91,17 @@
         <Style TargetType="ComboBoxItem">
             <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
             <Setter Property="Background" Value="{DynamicResource ControlBg}"/>
-            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="MinHeight" Value="28"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Style.Triggers>
                 <Trigger Property="IsHighlighted" Value="True">
                     <Setter Property="Background" Value="{DynamicResource TabSelectedBg}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
                 </Trigger>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{DynamicResource TabSelectedBg}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextFg}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>

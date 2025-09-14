@@ -966,24 +966,24 @@ namespace LightCrosshair
             var shapeMenu = new ToolStripMenuItem("Shape");
 
             // Basic shapes
-            var basicShapesMenu = new ToolStripMenuItem("Basic Shapes");
-            var crossItem = new ToolStripMenuItem("Cross");
+            var basicShapesMenu = new ToolStripMenuItem("Basic Shapes") { Padding = new Padding(8, 6, 8, 6) };
+            var crossItem = new ToolStripMenuItem("Cross") { Padding = new Padding(10, 8, 10, 8), AutoSize = true }; crossItem.MouseEnter += (_, __) => crossItem.Select();
             crossItem.Tag = "Cross";
             crossItem.Checked = CurrentProfile.Shape == "Cross";
             crossItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Cross, "Cross"); };
 
-            var circleItem = new ToolStripMenuItem("Circle");
+            var circleItem = new ToolStripMenuItem("Circle") { Padding = new Padding(10, 8, 10, 8), AutoSize = true }; circleItem.MouseEnter += (_, __) => circleItem.Select();
             circleItem.Tag = "Circle";
             circleItem.Checked = CurrentProfile.Shape == "Circle";
             circleItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Circle, "Circle"); };
 
-            var dotItem = new ToolStripMenuItem("Dot");
+            var dotItem = new ToolStripMenuItem("Dot") { Padding = new Padding(10, 8, 10, 8), AutoSize = true }; dotItem.MouseEnter += (_, __) => dotItem.Select();
             dotItem.Tag = "Dot";
             dotItem.Checked = CurrentProfile.Shape == "Dot";
             dotItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Dot, "Dot"); };
 
 
-            var xItem = new ToolStripMenuItem("X");
+            var xItem = new ToolStripMenuItem("X") { Padding = new Padding(10, 8, 10, 8), AutoSize = true }; xItem.MouseEnter += (_, __) => xItem.Select();
             xItem.Tag = "X";
             xItem.Checked = CurrentProfile.Shape == "X";
             xItem.Click += (sender, e) => { UpdateShape(CrosshairShape.X, "X"); };
@@ -991,25 +991,25 @@ namespace LightCrosshair
             basicShapesMenu.DropDownItems.AddRange(new ToolStripItem[] { crossItem, circleItem, dotItem, xItem });
 
             // Combined shapes
-            var combinedShapesMenu = new ToolStripMenuItem("Combined Shapes");
+            var combinedShapesMenu = new ToolStripMenuItem("Combined Shapes") { Padding = new Padding(8, 6, 8, 6) };
 
-            var circleDotItem = new ToolStripMenuItem("Circle + Dot");
+            var circleDotItem = new ToolStripMenuItem("Circle + Dot") { Padding = new Padding(10, 8, 10, 8), AutoSize = true }; circleDotItem.MouseEnter += (_, __) => circleDotItem.Select();
             circleDotItem.Tag = "CircleDot";
             circleDotItem.Checked = CurrentProfile.Shape == "CircleDot";
             circleDotItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CircleDot"); };
 
-            var crossDotItem = new ToolStripMenuItem("Cross + Dot");
+            var crossDotItem = new ToolStripMenuItem("Cross + Dot") { Padding = new Padding(10, 8, 10, 8), AutoSize = true }; crossDotItem.MouseEnter += (_, __) => crossDotItem.Select();
             crossDotItem.Tag = "CrossDot";
             crossDotItem.Checked = CurrentProfile.Shape == "CrossDot";
             crossDotItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CrossDot"); };
 
-            var circleCrossItem = new ToolStripMenuItem("Circle + Cross");
+            var circleCrossItem = new ToolStripMenuItem("Circle + Cross") { Padding = new Padding(10, 8, 10, 8), AutoSize = true }; circleCrossItem.MouseEnter += (_, __) => circleCrossItem.Select();
             circleCrossItem.Tag = "CircleCross";
             circleCrossItem.Checked = CurrentProfile.Shape == "CircleCross";
             circleCrossItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CircleCross"); };
 
 
-            var circleXItem = new ToolStripMenuItem("Circle + X");
+            var circleXItem = new ToolStripMenuItem("Circle + X") { Padding = new Padding(10, 8, 10, 8), AutoSize = true }; circleXItem.MouseEnter += (_, __) => circleXItem.Select();
             circleXItem.Tag = "CircleX";
             circleXItem.Checked = CurrentProfile.Shape == "CircleX";
             circleXItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CircleX"); };
@@ -1592,6 +1592,37 @@ namespace LightCrosshair
                 var clone = baseProfile.Clone();
                 clone.EnumShape = shape;
                 clone.Shape = legacyString; // keep for legacy persisted field
+                // Apply recommended defaults for specific composite shapes
+                try
+                {
+                    if (string.Equals(legacyString, "CircleDot", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var d = CompositeDefaults.GetCompositeDefaults(CompositeShapeType.CircleDot);
+                        if (d != null)
+                        {
+                            clone.Size = d.OuterSize;
+                            clone.Thickness = d.OuterThickness;
+                            clone.GapSize = d.OuterGapSize;
+                            clone.InnerSize = d.InnerSize;
+                            clone.InnerThickness = d.InnerThickness;
+                            clone.InnerGapSize = d.InnerGapSize;
+                        }
+                    }
+                    else if (string.Equals(legacyString, "CrossDot", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var d = CompositeDefaults.GetCompositeDefaults(CompositeShapeType.CrossDot);
+                        if (d != null)
+                        {
+                            clone.Size = d.OuterSize;
+                            clone.Thickness = d.OuterThickness;
+                            clone.GapSize = d.OuterGapSize;
+                            clone.InnerSize = d.InnerSize;
+                            clone.InnerThickness = d.InnerThickness;
+                            clone.InnerGapSize = d.InnerGapSize;
+                        }
+                    }
+                }
+                catch { }
                 _profileService.Update(clone);
                 _undo.Push(baseProfile.Clone());
                 lock (_renderLock) { _configDirty = true; Invalidate(); }

@@ -59,6 +59,29 @@ namespace LightCrosshair
             _profiles.Clear();
             _profiles.AddRange(loaded);
             Current = _profiles[0];
+            // If first profile starts as CircleDot/CrossDot, normalize initial parameters
+            try
+            {
+                if (string.Equals(Current.Shape, "CircleDot", StringComparison.OrdinalIgnoreCase))
+                {
+                    var d = CompositeDefaults.GetCompositeDefaults(CompositeShapeType.CircleDot);
+                    if (d != null)
+                    {
+                        Current.Size = d.OuterSize; Current.Thickness = d.OuterThickness; Current.GapSize = d.OuterGapSize;
+                        Current.InnerSize = d.InnerSize; Current.InnerThickness = d.InnerThickness; Current.InnerGapSize = d.InnerGapSize;
+                    }
+                }
+                else if (string.Equals(Current.Shape, "CrossDot", StringComparison.OrdinalIgnoreCase))
+                {
+                    var d = CompositeDefaults.GetCompositeDefaults(CompositeShapeType.CrossDot);
+                    if (d != null)
+                    {
+                        Current.Size = d.OuterSize; Current.Thickness = d.OuterThickness; Current.GapSize = d.OuterGapSize;
+                        Current.InnerSize = d.InnerSize; Current.InnerThickness = d.InnerThickness; Current.InnerGapSize = d.InnerGapSize;
+                    }
+                }
+            }
+            catch { }
             CurrentChanged?.Invoke(this, Current);
             ScheduleSave(true);
             RebuildHotkeys();
