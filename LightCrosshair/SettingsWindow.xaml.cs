@@ -13,6 +13,7 @@ namespace LightCrosshair
     {
         private readonly IProfileService _profiles;
         private AppPreferences _prefs;
+        private bool _suppressUiEvents = false; // prevent feedback during programmatic updates
 
         public SettingsWindow(IProfileService profiles)
         {
@@ -96,6 +97,7 @@ namespace LightCrosshair
 
         private void LoadFromProfile(CrosshairProfile p)
         {
+            _suppressUiEvents = true;
             // Clear both selections to avoid conflicting visual states
             ShapeCombo.SelectedIndex = -1;
             CompositeCombo.SelectedIndex = -1;
@@ -127,13 +129,18 @@ namespace LightCrosshair
             InnerThicknessValue.Text = p.InnerThickness.ToString();
             InnerGapSlider.Value = p.InnerGapSize;
             InnerGapValue.Text = p.InnerGapSize.ToString();
+            _suppressUiEvents = false;
         }
 
         private void ApplyChange(Action<CrosshairProfile> change)
         {
+            if (_suppressUiEvents) return;
             var cur = _profiles.Current.Clone();
             change(cur);
-            _profiles.Update(cur);
+            if (!cur.ContentEquals(_profiles.Current))
+            {
+                _profiles.Update(cur);
+            }
         }
 
         private void ApplyTheme(AppTheme theme)

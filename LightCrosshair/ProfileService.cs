@@ -82,13 +82,18 @@ namespace LightCrosshair
 
         public void Switch(string idOrName)
         {
-            var p = _profiles.FirstOrDefault(x => x.Id == idOrName) ?? _profiles.FirstOrDefault(x => x.Name == idOrName);
-            if (p != null && !ReferenceEquals(p, Current))
+            try
             {
-                Current = p;
-                CurrentChanged?.Invoke(this, Current);
-                ScheduleSave();
+                Program.LogDebug($"Switch request -> {idOrName}", nameof(ProfileService));
+                var p = _profiles.FirstOrDefault(x => x.Id == idOrName) ?? _profiles.FirstOrDefault(x => x.Name == idOrName);
+                if (p != null && !ReferenceEquals(p, Current))
+                {
+                    Current = p;
+                    CurrentChanged?.Invoke(this, Current);
+                    ScheduleSave();
+                }
             }
+            catch (Exception ex) { Program.LogError(ex, "ProfileService.Switch"); }
         }
 
         public CrosshairProfile AddClone(CrosshairProfile src, string newName)
@@ -118,19 +123,30 @@ namespace LightCrosshair
 
         public void Update(CrosshairProfile updated)
         {
-            var idx = _profiles.FindIndex(p => p.Id == updated.Id);
-            if (idx >= 0)
+            try
             {
-                bool wasCurrent = _profiles[idx].Id == Current.Id;
-                _profiles[idx] = updated;
-                if (wasCurrent)
+                Program.LogDebug($"Update profile -> {updated.Name} ({updated.Id})", nameof(ProfileService));
+                var idx = _profiles.FindIndex(p => p.Id == updated.Id);
+                if (idx >= 0)
                 {
-                    Current = updated;
-                    CurrentChanged?.Invoke(this, Current);
+                    bool wasCurrent = _profiles[idx].Id == Current.Id;
+                    // Avoid no-op updates that can trigger event loops
+                    if (wasCurrent && updated.ContentEquals(Current))
+                    {
+                        Program.LogDebug("Update skipped (no changes)", nameof(ProfileService));
+                        return;
+                    }
+                    _profiles[idx] = updated;
+                    if (wasCurrent)
+                    {
+                        Current = updated;
+                        CurrentChanged?.Invoke(this, Current);
+                    }
+                    RebuildHotkeys();
+                    ScheduleSave();
                 }
-                RebuildHotkeys();
-                ScheduleSave();
             }
+            catch (Exception ex) { Program.LogError(ex, "ProfileService.Update"); }
         }
 
         public bool Move(string id, int delta)
@@ -164,10 +180,14 @@ namespace LightCrosshair
 
         public bool ProcessHotkeyMessage(Message m)
         {
-            if (m.Msg != WM_HOTKEY) return false;
-            int id = m.WParam.ToInt32();
-            if (_hotkeyMap.TryGetValue(id, out var profile)) { Switch(profile.Id); return true; }
-            return false;
+            try
+            {
+                if (m.Msg != WM_HOTKEY) return false;
+                int id = m.WParam.ToInt32();
+                if (_hotkeyMap.TryGetValue(id, out var profile)) { Program.LogDebug($"Hotkey -> {profile.Name}", nameof(ProfileService)); Switch(profile.Id); return true; }
+                return false;
+            }
+            catch (Exception ex) { Program.LogError(ex, "ProfileService.ProcessHotkeyMessage"); return false; }
         }
 
         private void RebuildHotkeys()

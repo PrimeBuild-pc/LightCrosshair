@@ -7,6 +7,10 @@ namespace LightCrosshair;
 
 static class Program
 {
+    private static readonly object _logGate = new object();
+    private static readonly string _debugLogPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug.log");
+    public static bool DebugLoggingEnabled { get; set; } = true;
+
     [STAThread]
     static void Main()
     {
@@ -69,13 +73,33 @@ static class Program
             string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "error.log");
             string timestamp = DateTime.Now.ToString("[dd/MM/yyyy HH:mm:ss]");
             string errorMessage = $"{timestamp} {context}: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n\n";
-
-            File.AppendAllText(logPath, errorMessage);
+            lock (_logGate)
+            {
+                File.AppendAllText(logPath, errorMessage);
+            }
+            try { Console.WriteLine(errorMessage); } catch { }
             Debug.WriteLine(errorMessage);
         }
         catch
         {
             // If logging fails, we can't do much about it
         }
+    }
+
+    public static void LogDebug(string message, string? context = null)
+    {
+        if (!DebugLoggingEnabled) return;
+        try
+        {
+            string timestamp = DateTime.Now.ToString("[dd/MM/yyyy HH:mm:ss]");
+            string line = context is null ? $"{timestamp} {message}\n" : $"{timestamp} {context}: {message}\n";
+            lock (_logGate)
+            {
+                File.AppendAllText(_debugLogPath, line);
+            }
+            try { Console.WriteLine(line.TrimEnd()); } catch { }
+            Debug.WriteLine(line);
+        }
+        catch { }
     }
 }

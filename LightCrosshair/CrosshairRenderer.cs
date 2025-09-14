@@ -25,10 +25,11 @@ namespace LightCrosshair
         private readonly Dictionary<Color, SolidBrush> _brushCache = new();
 
         #region Public API
-        public Bitmap RenderIfNeeded(CrosshairProfile cfg)
+    public Bitmap RenderIfNeeded(CrosshairProfile cfg)
         {
             lock (_sync)
             {
+        if (cfg == null) throw new ArgumentNullException(nameof(cfg));
                 string geomHash = ComputeGeometryHash(cfg);
                 string colorHash = ComputeColorHash(cfg);
 
@@ -41,13 +42,20 @@ namespace LightCrosshair
                 }
                 if (colorChanged && _plan != null)
                 {
-                    RegenerateBitmap(cfg, _plan);
+                    try
+                    {
+                        RegenerateBitmap(cfg, _plan);
+                    }
+                    catch (Exception ex)
+                    {
+                        Program.LogError(ex, nameof(CrosshairRenderer) + ".RegenerateBitmap");
+                        throw;
+                    }
                     _lastGeometryHash = geomHash;
                     _lastColorHash = colorHash;
                 }
-                // Return cached bitmap directly (caller manages disposal of previous frame).
-                // Form1 holds the returned instance until configuration changes; renderer recreates when needed.
-                return _cachedBitmap!;
+                // Return a clone so UI owns its copy and renderer can freely regenerate/dispose the cache.
+                return (Bitmap)_cachedBitmap!.Clone();
             }
         }
 
@@ -222,9 +230,23 @@ namespace LightCrosshair
                 float outerR = cfg.Size / 2f;
                 float innerR = Math.Max(0, cfg.InnerSize / 2f);
 
-                void DrawCross(float radius, Pen pen, int gap)
+                // For composite lines we need precise ends that don't bleed into the gap.
+                // Use FLAT caps (not round) to avoid overlapping the center region.
+                Pen MakeFlatPen(Color color, int width)
+                {
+                    var p = new Pen(color, width)
+                    {
+                        StartCap = LineCap.Flat,
+                        EndCap = LineCap.Flat,
+                        LineJoin = LineJoin.Miter
+                    };
+                    return p;
+                }
+
+                void DrawCross(float radius, Color color, int width, int gap)
                 {
                     // Simple single-pen cross with center gap to preserve visibility
+                    using var pen = MakeFlatPen(color, Math.Max(1, width));
                     // Horizontal
                     g.DrawLine(pen, cx - radius, cy, cx - gap, cy);
                     g.DrawLine(pen, cx + gap, cy, cx + radius, cy);
@@ -233,10 +255,11 @@ namespace LightCrosshair
                     g.DrawLine(pen, cx, cy + gap, cx, cy + radius);
                 }
 
-                void DrawX(float radius, Pen pen, int gap)
+                void DrawX(float radius, Color color, int width, int gap)
                 {
                     // Diagonals with center gap
                     float d = gap * 0.70710678f; // ~ 1/sqrt(2) for equal x/y offsets
+                    using var pen = MakeFlatPen(color, Math.Max(1, width));
                     // Top-left to bottom-right
                     g.DrawLine(pen, cx - radius, cy - radius, cx - d, cy - d);
                     g.DrawLine(pen, cx + d, cy + d, cx + radius, cy + radius);
@@ -248,13 +271,10 @@ namespace LightCrosshair
                 // Outer component
                 if (cfg.Shape == "CrossDot")
                 {
-                    var outerPenSingle = GetPen(cfg.OuterColor, Math.Max(1, cfg.Thickness));
-                    if (outerPenSingle != null)
-                    {
-                        int minForCaps = (int)Math.Ceiling(outerPenSingle.Width / 2f);
-                        int gap = Math.Max(cfg.GapSize, minForCaps);
-                        DrawCross(outerR, outerPenSingle, gap);
-                    }
+                    int width = Math.Max(1, cfg.Thickness);
+                    int minForCaps = (int)Math.Ceiling(width / 2f);
+                    int gap = Math.Max(cfg.GapSize, minForCaps);
+                    DrawCross(outerR, cfg.OuterColor, width, gap);
                 }
                 else if (cfg.Shape.StartsWith("Circle", StringComparison.OrdinalIgnoreCase))
                 {
@@ -277,35 +297,26 @@ namespace LightCrosshair
                     }
                     case "Cross":
                     {
-                        var pen = GetPen(cfg.InnerShapeColor, cfg.InnerThickness);
-                        if (pen != null)
-                        {
-                            int minForCaps = (int)Math.Ceiling(pen.Width / 2f);
-                            int gap = Math.Max(cfg.InnerGapSize, minForCaps);
-                            DrawCross(innerR, pen, gap);
-                        }
+                        int width = Math.Max(1, cfg.InnerThickness);
+                        int minForCaps = (int)Math.Ceiling(width / 2f);
+                        int gap = Math.Max(cfg.InnerGapSize, minForCaps);
+                        DrawCross(innerR, cfg.InnerShapeColor, width, gap);
                         break;
                     }
                     case "Plus":
                     {
-                        var pen = GetPen(cfg.InnerShapeColor, cfg.InnerThickness);
-                        if (pen != null)
-                        {
-                            int minForCaps = (int)Math.Ceiling(pen.Width / 2f);
-                            int gap = Math.Max(cfg.InnerGapSize, minForCaps);
-                            DrawCross(innerR, pen, gap);
-                        }
+                        int width = Math.Max(1, cfg.InnerThickness);
+                        int minForCaps = (int)Math.Ceiling(width / 2f);
+                        int gap = Math.Max(cfg.InnerGapSize, minForCaps);
+                        DrawCross(innerR, cfg.InnerShapeColor, width, gap);
                         break;
                     }
                     case "X":
                     {
-                        var pen = GetPen(cfg.InnerShapeColor, cfg.InnerThickness);
-                        if (pen != null)
-                        {
-                            int minForCaps = (int)Math.Ceiling(pen.Width / 2f);
-                            int gap = Math.Max(cfg.InnerGapSize, minForCaps);
-                            DrawX(innerR, pen, gap);
-                        }
+                        int width = Math.Max(1, cfg.InnerThickness);
+                        int minForCaps = (int)Math.Ceiling(width / 2f);
+                        int gap = Math.Max(cfg.InnerGapSize, minForCaps);
+                        DrawX(innerR, cfg.InnerShapeColor, width, gap);
                         break;
                     }
                 }

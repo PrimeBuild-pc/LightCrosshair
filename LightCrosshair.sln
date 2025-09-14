@@ -5,6 +5,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightCrosshair", "LightCrosshair\LightCrosshair.csproj", "{4FD703CD-A2AD-5907-379D-658E2C3BA263}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightCrosshair.Tests", "LightCrosshair.Tests\LightCrosshair.Tests.csproj", "{A2A1B7C7-F310-4F51-AB17-7F4401410862}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{4FD703CD-A2AD-5907-379D-658E2C3BA263}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4FD703CD-A2AD-5907-379D-658E2C3BA263}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4FD703CD-A2AD-5907-379D-658E2C3BA263}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2A1B7C7-F310-4F51-AB17-7F4401410862}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2A1B7C7-F310-4F51-AB17-7F4401410862}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2A1B7C7-F310-4F51-AB17-7F4401410862}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2A1B7C7-F310-4F51-AB17-7F4401410862}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -83,6 +83,7 @@ namespace LightCrosshair
 
         // Hotkey IDs
         private const int TOGGLE_VISIBILITY_HOTKEY_ID = 9000;
+    private bool _suppressMenuEvents = false; // prevent feedback loops while syncing menu state
 
     // Autosave centralized in ProfileService now
         private readonly UndoStack<CrosshairProfile> _undo = new(10);
@@ -118,14 +119,22 @@ namespace LightCrosshair
             // Additional performance optimizations
             this.SetStyle(ControlStyles.Selectable, false);
 
-            _profileService.CurrentChanged += (_, p) => Service_CurrentChanged(p);
+            _profileService.CurrentChanged += (_, p) =>
+            {
+                try { Program.LogDebug($"CurrentChanged -> {p.Name} ({p.Id})", nameof(Form1)); Service_CurrentChanged(p); }
+                catch (Exception ex) { Program.LogError(ex, "Form1.CurrentChanged handler"); }
+            };
 
             // Initialize system tray icon and menu
             InitializeNotifyIcon();
             InitializeContextMenu();
 
             // Add paint handler (now only blits cached bitmap)
-            this.Paint += Form1_Paint;
+            this.Paint += (s, e) =>
+            {
+                try { Form1_Paint(s, e); }
+                catch (Exception ex) { Program.LogError(ex, "Form1_Paint"); }
+            };
 
             // Initialize DPI awareness
             InitializeDpiAwareness();
@@ -141,10 +150,14 @@ namespace LightCrosshair
             this.Load += Form1_Load; // async profiles load & migration
             _profileService.Persisted += (_, args) =>
             {
-                if (_lblSaved == null || _lblSaved.IsDisposed) return;
-                if (!IsHandleCreated || IsDisposed) return;
-                try { BeginInvoke(new Action(() => _lblSaved.Text = args.Success ? $"Saved {args.Timestamp:HH:mm:ss}" : "Save error")); }
-                catch { /* Form handle might be gone during shutdown; ignore */ }
+                try
+                {
+                    if (_lblSaved == null || _lblSaved.IsDisposed) return;
+                    if (!IsHandleCreated || IsDisposed) return;
+                    Program.LogDebug($"Persisted event -> success={args.Success} at {args.Timestamp:O}", nameof(Form1));
+                    BeginInvoke(new Action(() => _lblSaved.Text = args.Success ? $"Saved {args.Timestamp:HH:mm:ss}" : "Save error"));
+                }
+                catch (Exception ex) { Program.LogError(ex, "Form1.Persisted handler"); }
             };
         }
 
@@ -390,6 +403,7 @@ namespace LightCrosshair
             // Mark that we need a redraw and invalidate only if profile actually changed
             lock (_renderLock)
             {
+        Program.LogDebug($"Apply profile: {profile.Name} size={profile.Size} th={profile.Thickness} shape={profile.Shape}", nameof(Form1));
                 // Sync renderer flags from profile (e.g., AntiAlias)
                 _renderer.AntiAlias = profile.AntiAlias;
 
@@ -402,7 +416,7 @@ namespace LightCrosshair
                 }
             }
             // Update menu checkmarks
-            UpdateMenuItems();
+            try { if (SafeVisible(contextMenu)) UpdateMenuItems(); } catch (Exception ex) { Program.LogError(ex, "Form1.UpdateMenuItems (from CurrentChanged)"); }
 
             // Ensure Profiles submenu reflects ordering & names after reorder/rename
             if (contextMenu != null)
@@ -432,10 +446,10 @@ namespace LightCrosshair
                         foreach (var p in _profileService.Profiles)
                         {
                             var mi = new ToolStripMenuItem(p.Name);
-                            mi.Click += (_, __) => _profileService.Switch(p.Id);
+                            mi.Click += (_, __) => { try { Program.LogDebug($"Switch profile -> {p.Name}", nameof(Form1)); _profileService.Switch(p.Id); } catch (Exception ex) { Program.LogError(ex, "Profiles menu Switch click"); } };
                             profilesMenu.DropDownItems.Add(mi);
                         }
-                        UpdateMenuItems();
+                        try { if (SafeVisible(contextMenu)) UpdateMenuItems(); } catch (Exception ex) { Program.LogError(ex, "Form1.UpdateMenuItems (profiles rebuild)"); }
                     }
                 }
             }
@@ -463,6 +477,10 @@ namespace LightCrosshair
 
         private void UpdateMenuItems(string? changedProperty = null)
         {
+            Program.LogDebug($"UpdateMenuItems start (changed={changedProperty ?? "ALL"})", nameof(Form1));
+            _suppressMenuEvents = true;
+            try
+            {
             // If a specific property changed, only update relevant menus
             if (changedProperty != null)
             {
@@ -540,13 +558,18 @@ namespace LightCrosshair
             }
 
             // If no specific property or unknown property, update all menus
-            UpdateShapeMenuItems();
-            UpdateSizeMenuItems();
-            UpdateThicknessMenuItems();
-            UpdateEdgeThicknessMenuItems();
-            UpdateGapSizeMenuItems();
-            UpdateColorMenuItems();
-            UpdateInnerShapeMenuItems();
+            try { UpdateShapeMenuItems(); } catch (Exception ex) { Program.LogError(ex, "UpdateShapeMenuItems"); }
+            try { UpdateSizeMenuItems(); } catch (Exception ex) { Program.LogError(ex, "UpdateSizeMenuItems"); }
+            try { UpdateThicknessMenuItems(); } catch (Exception ex) { Program.LogError(ex, "UpdateThicknessMenuItems"); }
+            try { UpdateEdgeThicknessMenuItems(); } catch (Exception ex) { Program.LogError(ex, "UpdateEdgeThicknessMenuItems"); }
+            try { UpdateGapSizeMenuItems(); } catch (Exception ex) { Program.LogError(ex, "UpdateGapSizeMenuItems"); }
+            try { UpdateColorMenuItems(); } catch (Exception ex) { Program.LogError(ex, "UpdateColorMenuItems"); }
+            try { UpdateInnerShapeMenuItems(); } catch (Exception ex) { Program.LogError(ex, "UpdateInnerShapeMenuItems"); }
+            }
+            finally
+            {
+                _suppressMenuEvents = false;
+            }
         }
 
         private void UpdateShapeMenuItems()
@@ -872,6 +895,8 @@ namespace LightCrosshair
             return null;
         }
 
+        private static bool SafeVisible(ContextMenuStrip? menu) => menu != null && !menu.IsDisposed && menu.Visible;
+
         private void InitializeNotifyIcon()
         {
             try
@@ -1135,6 +1160,7 @@ namespace LightCrosshair
             var aaItem = new ToolStripMenuItem("Smooth (Anti-alias)") { CheckOnClick = true };
             aaItem.Checked = _profileService.Current.AntiAlias;
             aaItem.CheckedChanged += (_, __) => {
+                if (_suppressMenuEvents) return;
                 _renderer.AntiAlias = aaItem.Checked;
                 var cur = _profileService.Current.Clone();
                 cur.AntiAlias = aaItem.Checked;
@@ -1253,48 +1279,11 @@ namespace LightCrosshair
 
     private void ContextMenu_Closing(object? sender, ToolStripDropDownClosingEventArgs e)
         {
-            // Allow closing for these specific reasons:
-            // - User clicked outside the menu
-            // - User pressed Escape
-            // - Programmatic close (like our Close Menu button)
-            // - Application shutdown
-            if (e.CloseReason == ToolStripDropDownCloseReason.ItemClicked)
-
-
-            {
-                // Check if the clicked item should close the menu
-                if (contextMenu == null) return;
-                var clickedItem = contextMenu.GetItemAt(contextMenu.PointToClient(Cursor.Position));
-                if (clickedItem is ToolStripItem tsi)
-                {
-                    string? itemText = tsi.Text; // Text is non-null in framework, but treat cautiously
-                    if (itemText == "Close Menu" || itemText == "Exit" || itemText == "Toggle Visibility")
-                        return; // Allow closing
-                }
-
-                // For all other menu items, prevent closing
-                e.Cancel = true;
-
-                // Re-show the menu at the same position after a brief delay
-                Task.Delay(50).ContinueWith(_ =>
-                {
-                    if (contextMenu != null && !contextMenu.IsDisposed && contextMenu.Visible == false)
-                    {
-                        if (!IsHandleCreated || IsDisposed) return;
-                        try
-                        {
-                            BeginInvoke(new Action(() =>
-                            {
-                                if (contextMenu != null && !contextMenu.IsDisposed)
-                                {
-                                    contextMenu.Show(Cursor.Position);
-                                }
-                            }));
-                        }
-                        catch { /* ignore if handle disappeared */ }
-                    }
-                });
-            }
+            // Importante: permettiamo sempre la chiusura del menu.
+            // In passato qui veniva annullata la chiusura e riaperto il menu subito dopo,
+            // causando rientranza mentre gli handler di click modificavano il modello e ricostruivano il menu.
+            // Questo portava a ObjectDisposedException/InvalidOperationException.
+            Program.LogDebug($"ContextMenu_Closing reason={e.CloseReason}", nameof(Form1));
         }
 
         private void AddColorMenuItem(ToolStripMenuItem parentMenu, string name, Color color, string colorType)
@@ -1320,21 +1309,24 @@ namespace LightCrosshair
 
             colorItem.Click += (sender, e) =>
             {
-                switch (colorType)
+                try
                 {
-                    case "Edge":
-                        UpdateCurrentProfileProperty("EdgeColor", color);
-                        break;
-                    case "Inner":
-                        UpdateCurrentProfileProperty("InnerColor", color);
-                        break;
-                    case "Fill":
-                        UpdateCurrentProfileProperty("FillColor", color);
-                        break;
+                    Program.LogDebug($"Color click -> {name} ({color}) type={colorType}", nameof(Form1));
+                    switch (colorType)
+                    {
+                        case "Edge":
+                            UpdateCurrentProfileProperty("EdgeColor", color);
+                            break;
+                        case "Inner":
+                            UpdateCurrentProfileProperty("InnerColor", color);
+                            break;
+                        case "Fill":
+                            UpdateCurrentProfileProperty("FillColor", color);
+                            break;
+                    }
+                    UpdateMenuItems();
                 }
-
-                // Update checkmarks
-                UpdateMenuItems();
+                catch (Exception ex) { Program.LogError(ex, "Color menu click"); }
             };
             parentMenu.DropDownItems.Add(colorItem);
         }
@@ -1353,9 +1345,26 @@ namespace LightCrosshair
 
         private void UpdateCurrentProfileProperty(string propertyName, object value)
         {
+            Program.LogDebug($"Update property {propertyName} -> {value}", nameof(Form1));
             var baseProfile = _profileService.Current;
+            // No-op short-circuit to avoid redundant updates
+            switch (propertyName)
+            {
+                case "Shape": if (string.Equals(baseProfile.Shape, (string)value, StringComparison.Ordinal)) return; break;
+                case "Size": if (baseProfile.Size == (int)value) return; break;
+                case "InnerSize": if (baseProfile.InnerSize == (int)value) return; break;
+                case "Thickness": if (baseProfile.Thickness == (int)value) return; break;
+                case "EdgeThickness": if (baseProfile.EdgeThickness == (int)value) return; break;
+                case "InnerThickness": if (baseProfile.InnerThickness == (int)value) return; break;
+                case "GapSize": if (baseProfile.GapSize == (int)value) return; break;
+                case "InnerGapSize": if (baseProfile.InnerGapSize == (int)value) return; break;
+                case "EdgeColor": if (baseProfile.EdgeColor.ToArgb() == ((Color)value).ToArgb()) return; break;
+                case "InnerColor": if (baseProfile.InnerColor.ToArgb() == ((Color)value).ToArgb()) return; break;
+                case "InnerShapeEdge": if (baseProfile.InnerShapeEdgeColor.ToArgb() == ((Color)value).ToArgb()) return; break;
+                case "InnerShapeInner": if (baseProfile.InnerShapeInnerColor.ToArgb() == ((Color)value).ToArgb()) return; break;
+                case "FillColor": if (baseProfile.FillColor.ToArgb() == ((Color)value).ToArgb()) return; break;
+            }
             var profile = baseProfile.Clone();
-            _undo.Push(baseProfile.Clone());
 
             switch (propertyName)
             {
@@ -1400,17 +1409,22 @@ namespace LightCrosshair
                     break;
             }
 
-            _profileService.Update(profile);
-
-            // Mark for redraw and invalidate efficiently
-            lock (_renderLock)
+            try
             {
-                _configDirty = true;
-                Invalidate();
+                _undo.Push(baseProfile.Clone());
+                _profileService.Update(profile);
+                // Mark for redraw and invalidate efficiently
+                lock (_renderLock)
+                {
+                    _configDirty = true;
+                    Invalidate();
+                }
+                UpdateMenuItems(propertyName);
             }
-
-            // Update only the relevant menu items
-            UpdateMenuItems(propertyName);
+            catch (Exception ex)
+            {
+                Program.LogError(ex, $"UpdateCurrentProfileProperty({propertyName})");
+            }
 
             // Autosave now handled by service (debounced)
         }
@@ -1580,15 +1594,19 @@ namespace LightCrosshair
 
         private void UpdateShape(CrosshairShape shape, string legacyString)
         {
-            var baseProfile = _profileService.Current;
-            var clone = baseProfile.Clone();
-            clone.EnumShape = shape;
-            clone.Shape = legacyString; // keep for legacy persisted field
-            _profileService.Update(clone);
-            _undo.Push(baseProfile.Clone());
-            lock (_renderLock) { _configDirty = true; Invalidate(); }
-            // autosave scheduled by service
-            UpdateMenuItems("Shape");
+            try
+            {
+                Program.LogDebug($"Update shape -> {legacyString} ({shape})", nameof(Form1));
+                var baseProfile = _profileService.Current;
+                var clone = baseProfile.Clone();
+                clone.EnumShape = shape;
+                clone.Shape = legacyString; // keep for legacy persisted field
+                _profileService.Update(clone);
+                _undo.Push(baseProfile.Clone());
+                lock (_renderLock) { _configDirty = true; Invalidate(); }
+                UpdateMenuItems("Shape");
+            }
+            catch (Exception ex) { Program.LogError(ex, "UpdateShape"); }
         }
 
         private void CenterCrosshair()

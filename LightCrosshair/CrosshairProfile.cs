@@ -427,6 +427,36 @@ namespace LightCrosshair
 
             return Color.Red; // Default color
         }
+
+        // Semantic equality (content-wise) used to avoid no-op updates
+        public bool ContentEquals(CrosshairProfile other)
+        {
+            if (other == null) return false;
+            return Id == other.Id &&
+                   Name == other.Name &&
+                   Shape == other.Shape &&
+                   EnumShape == other.EnumShape &&
+                   InnerShape == other.InnerShape &&
+                   Size == other.Size &&
+                   InnerSize == other.InnerSize &&
+                   Thickness == other.Thickness &&
+                   EdgeThickness == other.EdgeThickness &&
+                   InnerThickness == other.InnerThickness &&
+                   GapSize == other.GapSize &&
+                   InnerGapSize == other.InnerGapSize &&
+                   EdgeColor.ToArgb() == other.EdgeColor.ToArgb() &&
+                   InnerColor.ToArgb() == other.InnerColor.ToArgb() &&
+                   OuterColor.ToArgb() == other.OuterColor.ToArgb() &&
+                   FillColor.ToArgb() == other.FillColor.ToArgb() &&
+                   InnerShapeColor.ToArgb() == other.InnerShapeColor.ToArgb() &&
+                   InnerShapeEdgeColor.ToArgb() == other.InnerShapeEdgeColor.ToArgb() &&
+                   InnerShapeInnerColor.ToArgb() == other.InnerShapeInnerColor.ToArgb() &&
+                   InnerShapeFillColor.ToArgb() == other.InnerShapeFillColor.ToArgb() &&
+                   HotKey == other.HotKey &&
+                   HideDuringScreenRecording == other.HideDuringScreenRecording &&
+                   AntiAlias == other.AntiAlias &&
+                   SchemaVersion == other.SchemaVersion;
+        }
     }
 
     public static class ProfileSchema
