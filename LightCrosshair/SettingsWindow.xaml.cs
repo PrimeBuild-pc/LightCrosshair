@@ -102,7 +102,18 @@ namespace LightCrosshair
             InnerThicknessSlider.ValueChanged += (_, __) => { InnerThicknessValue.Text = ((int)InnerThicknessSlider.Value).ToString(); ApplyChange(p => p.InnerThickness = (int)InnerThicknessSlider.Value); };
             InnerGapSlider.ValueChanged += (_, __) => { InnerGapValue.Text = ((int)InnerGapSlider.Value).ToString(); ApplyChange(p => p.InnerGapSize = (int)InnerGapSlider.Value); };
 
-            OuterColorBtn.Click += (_, __) => PickColor(c => ApplyChange(p => p.OuterColor = System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B)));
+            // Update both OuterColor and EdgeColor so the visible stroke color changes immediately
+            // Additionally, for the Dot shape, update InnerColor too since the dot uses InnerColor when FillColor is transparent.
+            OuterColorBtn.Click += (_, __) => PickColor(c => ApplyChange(p =>
+            {
+                var col = System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B);
+                p.OuterColor = col;
+                p.EdgeColor = col; // keep edge in sync for immediate rendering
+                if (p.EnumShape == CrosshairShape.Dot)
+                {
+                    p.InnerColor = col; // ensure Dot uses the newly picked color immediately
+                }
+            }));
             InnerShapeColorBtn.Click += (_, __) => PickColor(c => ApplyChange(p => p.InnerShapeColor = System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B)));
 
             // Pixel nudge controls (1px)
