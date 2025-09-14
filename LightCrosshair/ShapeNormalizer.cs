@@ -17,7 +17,7 @@ namespace LightCrosshair
             ["x"] = CrosshairShape.X,
             ["box"] = CrosshairShape.Box,
             ["gapcross"] = CrosshairShape.GapCross,
-            ["plus"] = CrosshairShape.GapCross,
+            // "plus" removed; map handled via migration to Cross in ProfileStore
             ["custom"] = CrosshairShape.Custom
         };
 

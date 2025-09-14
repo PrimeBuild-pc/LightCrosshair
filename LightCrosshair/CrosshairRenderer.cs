@@ -215,12 +215,16 @@ namespace LightCrosshair
 
             // Pens / brushes (lazy)
             int primaryWidth = Math.Max(1, cfg.Thickness);
-            Pen? edgePen = GetPen(cfg.OuterColor, primaryWidth);
-            Pen? innerPen = cfg.Thickness > 2 ? GetPen(cfg.OuterColor, Math.Max(1, cfg.Thickness - 2)) : null;
-            // Simplified colors: inner composite uses single InnerShapeColor
+            // Prefer EdgeColor if provided; fallback to OuterColor for backward compat
+            Color strokeColor = cfg.EdgeColor.A > 0 ? cfg.EdgeColor : cfg.OuterColor;
+            Pen? edgePen = GetPen(strokeColor, primaryWidth);
+            Pen? innerPen = cfg.Thickness > 2 ? GetPen(strokeColor, Math.Max(1, cfg.Thickness - 2)) : null;
+            // Inner/composite colors
             Pen? innerShapePen = GetPen(cfg.InnerShapeColor, cfg.InnerThickness);
+            // Fill prefers explicit FillColor, otherwise (legacy) InnerColor, else OuterColor
             Brush? fillBrush = GetBrush(cfg.FillColor);
-            Brush? dotBrush = GetBrush(cfg.OuterColor); // fallback for dot/single-color cases
+            Color dotColor = cfg.InnerColor.A > 0 ? cfg.InnerColor : strokeColor;
+            Brush? dotBrush = GetBrush(dotColor); // fallback for dot/single-color cases
 
             // Composite handling: draw custom composite from cfg rather than plan
             if (plan.ShapeKind == CrosshairShape.Custom)
@@ -274,12 +278,14 @@ namespace LightCrosshair
                     int width = Math.Max(1, cfg.Thickness);
                     int minForCaps = (int)Math.Ceiling(width / 2f);
                     int gap = Math.Max(cfg.GapSize, minForCaps);
-                    DrawCross(outerR, cfg.OuterColor, width, gap);
+                    // Prefer EdgeColor for strokes
+                    var crossColor = cfg.EdgeColor.A > 0 ? cfg.EdgeColor : cfg.OuterColor;
+                    DrawCross(outerR, crossColor, width, gap);
                 }
                 else if (cfg.Shape.StartsWith("Circle", StringComparison.OrdinalIgnoreCase))
                 {
                     // Outer circle: outline only
-                    var outerPenSingle = GetPen(cfg.OuterColor, Math.Max(1, cfg.Thickness));
+                    var outerPenSingle = GetPen(cfg.EdgeColor.A > 0 ? cfg.EdgeColor : cfg.OuterColor, Math.Max(1, cfg.Thickness));
                     if (outerPenSingle != null)
                         g.DrawEllipse(outerPenSingle, cx - outerR, cy - outerR, outerR * 2, outerR * 2);
                 }
@@ -295,15 +301,9 @@ namespace LightCrosshair
                             g.FillEllipse(brush, cx - innerR, cy - innerR, innerR * 2, innerR * 2);
                         break;
                     }
-                    case "Cross":
-                    {
-                        int width = Math.Max(1, cfg.InnerThickness);
-                        int minForCaps = (int)Math.Ceiling(width / 2f);
-                        int gap = Math.Max(cfg.InnerGapSize, minForCaps);
-                        DrawCross(innerR, cfg.InnerShapeColor, width, gap);
-                        break;
-                    }
+                    // "Plus" removed; treat as Cross for backward compatibility
                     case "Plus":
+                    case "Cross":
                     {
                         int width = Math.Max(1, cfg.InnerThickness);
                         int minForCaps = (int)Math.Ceiling(width / 2f);
@@ -401,7 +401,9 @@ namespace LightCrosshair
                 private string ComputeColorHash(CrosshairProfile p)
                 {
                         var sb = new StringBuilder();
-                        sb.Append(p.OuterColor.ToArgb()).Append('|')
+                        sb.Append(p.EdgeColor.ToArgb()).Append('|')
+                            .Append(p.InnerColor.ToArgb()).Append('|')
+                            .Append(p.OuterColor.ToArgb()).Append('|')
                             .Append(p.FillColor.ToArgb()).Append('|')
                             .Append(p.InnerShapeColor.ToArgb()).Append('|')
                             .Append(p.InnerShapeFillColor.ToArgb()).Append('|')

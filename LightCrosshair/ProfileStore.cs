@@ -58,6 +58,10 @@ namespace LightCrosshair
                     if (p.EnumShape == default && !string.IsNullOrWhiteSpace(p.Shape))
                         p.EnumShape = ShapeNormalizer.ToEnum(p.Shape);
 
+                    // Legacy shape migration: remove Plus variants
+                    if (string.Equals(p.Shape, "Plus", StringComparison.OrdinalIgnoreCase)) p.Shape = "Cross";
+                    if (string.Equals(p.Shape, "CirclePlus", StringComparison.OrdinalIgnoreCase)) p.Shape = "CircleCross";
+
                     // Migration to simplified color model (v2)
                     // Prefer the visible inner color for the new OuterColor; fallback to edge if inner is transparent
                     try
@@ -67,6 +71,21 @@ namespace LightCrosshair
                         {
                             if (p.InnerColor.A > 0) p.OuterColor = p.InnerColor;
                             else if (p.EdgeColor.A > 0) p.OuterColor = p.EdgeColor;
+                        }
+
+                        // Migration v3: remove Plus/CirclePlus
+                        if (!string.IsNullOrWhiteSpace(p.Shape))
+                        {
+                            if (p.Shape.Equals("Plus", StringComparison.OrdinalIgnoreCase))
+                            {
+                                p.Shape = "Cross";
+                                p.EnumShape = CrosshairShape.Cross;
+                            }
+                            else if (p.Shape.Equals("CirclePlus", StringComparison.OrdinalIgnoreCase))
+                            {
+                                p.Shape = "CircleCross";
+                                p.EnumShape = CrosshairShape.Custom; // composite
+                            }
                         }
 
                         bool hasInnerComposite = p.InnerShapeColor.A != 0 || p.InnerShapeColor.R != 0 || p.InnerShapeColor.G != 0 || p.InnerShapeColor.B != 0;

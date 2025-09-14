@@ -74,6 +74,14 @@ namespace LightCrosshair
             OuterColorBtn.Click += (_, __) => PickColor(c => ApplyChange(p => p.OuterColor = System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B)));
             InnerShapeColorBtn.Click += (_, __) => PickColor(c => ApplyChange(p => p.InnerShapeColor = System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B)));
 
+            // Pixel nudge controls (1px)
+            if (NudgeLeft != null) NudgeLeft.Click += (_, __) => { RequestNudge(-1, 0); UpdatePositionStatus(); };
+            if (NudgeRight != null) NudgeRight.Click += (_, __) => { RequestNudge(1, 0); UpdatePositionStatus(); };
+            if (NudgeUp != null) NudgeUp.Click += (_, __) => { RequestNudge(0, -1); UpdatePositionStatus(); };
+            if (NudgeDown != null) NudgeDown.Click += (_, __) => { RequestNudge(0, 1); UpdatePositionStatus(); };
+
+            if (ResetCenterBtn != null) ResetCenterBtn.Click += (_, __) => { try { WpfSettingsHost.ResetToCenter(); } catch { } UpdatePositionStatus(); };
+
             ThemeToggle.Click += (_, __) => { _prefs.Theme = _prefs.Theme == AppTheme.Dark ? AppTheme.Light : AppTheme.Dark; ApplyTheme(_prefs.Theme); UpdateThemeButtonIcon(); SavePrefs(); };
 
             // Reflect current profile
@@ -82,7 +90,10 @@ namespace LightCrosshair
             SaveCurrentProfileBtn.Click += (_, __) => SaveCurrentProfileToSelected();
             RefreshProfilesUI();
 
-            _profiles.CurrentChanged += (_, p) => Dispatcher.Invoke(() => LoadFromProfile(p));
+            _profiles.CurrentChanged += (_, p) => Dispatcher.Invoke(() => { LoadFromProfile(p); UpdatePositionStatus(); });
+
+            // Initial status
+            UpdatePositionStatus();
         }
 
         private void PickColor(Action<System.Windows.Media.Color> onPick)
@@ -345,7 +356,7 @@ namespace LightCrosshair
 
         private static readonly System.Collections.Generic.HashSet<string> CompositeShapes = new(System.StringComparer.OrdinalIgnoreCase)
         {
-            "CircleDot", "CrossDot", "CircleCross", "CirclePlus", "CircleX"
+            "CircleDot", "CrossDot", "CircleCross", "CircleX"
         };
 
         private void UpdateInnerTabEnabled()
@@ -367,10 +378,26 @@ namespace LightCrosshair
             "Cross" => CrosshairShape.Cross,
             "Circle" => CrosshairShape.Circle,
             "Dot" => CrosshairShape.Dot,
-            "Plus" => CrosshairShape.GapCross,
             "X" => CrosshairShape.X,
             _ => CrosshairShape.Custom,
         };
+
+        private void RequestNudge(int dx, int dy)
+        {
+            try { WpfSettingsHost.Nudge(dx, dy); }
+            catch { }
+        }
+
+        private void UpdatePositionStatus()
+        {
+            try
+            {
+                var pt = WpfSettingsHost.QueryPosition();
+                if (pt.HasValue && CurrentPositionText != null)
+                    CurrentPositionText.Text = $"Current Position: X={pt.Value.X}, Y={pt.Value.Y}";
+            }
+            catch { }
+        }
     }
 }
 

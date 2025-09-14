@@ -658,7 +658,7 @@ namespace LightCrosshair
             var gapSizeMenu = FindMenuItemByText(contextMenu.Items, "Gap Size");
             if (gapSizeMenu == null) return;
 
-            bool isGapShape = CurrentProfile.Shape == "Plus" || CurrentProfile.Shape == "CirclePlus" || CurrentProfile.Shape == "CrossDot";
+            bool isGapShape = CurrentProfile.Shape == "Cross" || CurrentProfile.Shape == "CircleCross" || CurrentProfile.Shape == "CrossDot";
             gapSizeMenu.Enabled = isGapShape;
             gapSizeMenu.Text = "Gap Size";
 
@@ -726,8 +726,7 @@ namespace LightCrosshair
                 innerShapeName = "Dot";
             else if (CurrentProfile.Shape == "CircleCross")
                 innerShapeName = "Cross";
-            else if (CurrentProfile.Shape == "CirclePlus")
-                innerShapeName = "Plus";
+            
             else if (CurrentProfile.Shape == "CircleX")
                 innerShapeName = "X";
 
@@ -764,7 +763,7 @@ namespace LightCrosshair
             if (innerGapSizeMenu != null)
             {
                 // Enable/disable the gap size menu based on the current shape
-                bool enableInnerGap = CurrentProfile.Shape == "CirclePlus" || CurrentProfile.Shape == "CircleCross" || CurrentProfile.Shape == "CircleX";
+                bool enableInnerGap = CurrentProfile.Shape == "CircleCross" || CurrentProfile.Shape == "CircleX";
                 innerGapSizeMenu.Enabled = enableInnerGap;
 
                 foreach (ToolStripItem item in innerGapSizeMenu.DropDownItems)
@@ -840,7 +839,7 @@ namespace LightCrosshair
         private void UpdateInnerGapSizeMenu(ToolStripMenuItem menu)
         {
             // Enable/disable the gap size menu based on the current shape
-            bool enableInnerGap = CurrentProfile.Shape == "CirclePlus" || CurrentProfile.Shape == "CircleCross" || CurrentProfile.Shape == "CircleX";
+            bool enableInnerGap = CurrentProfile.Shape == "CircleCross" || CurrentProfile.Shape == "CircleX";
             menu.Enabled = enableInnerGap;
 
             foreach (ToolStripItem item in menu.DropDownItems)
@@ -983,17 +982,13 @@ namespace LightCrosshair
             dotItem.Checked = CurrentProfile.Shape == "Dot";
             dotItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Dot, "Dot"); };
 
-            var plusItem = new ToolStripMenuItem("Plus");
-            plusItem.Tag = "Plus";
-            plusItem.Checked = CurrentProfile.Shape == "Plus";
-            plusItem.Click += (sender, e) => { UpdateShape(CrosshairShape.GapCross, "Plus"); };
 
             var xItem = new ToolStripMenuItem("X");
             xItem.Tag = "X";
             xItem.Checked = CurrentProfile.Shape == "X";
             xItem.Click += (sender, e) => { UpdateShape(CrosshairShape.X, "X"); };
 
-            basicShapesMenu.DropDownItems.AddRange(new ToolStripItem[] { crossItem, circleItem, dotItem, plusItem, xItem });
+            basicShapesMenu.DropDownItems.AddRange(new ToolStripItem[] { crossItem, circleItem, dotItem, xItem });
 
             // Combined shapes
             var combinedShapesMenu = new ToolStripMenuItem("Combined Shapes");
@@ -1013,17 +1008,13 @@ namespace LightCrosshair
             circleCrossItem.Checked = CurrentProfile.Shape == "CircleCross";
             circleCrossItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CircleCross"); };
 
-            var circlePlusItem = new ToolStripMenuItem("Circle + Plus");
-            circlePlusItem.Tag = "CirclePlus";
-            circlePlusItem.Checked = CurrentProfile.Shape == "CirclePlus";
-            circlePlusItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CirclePlus"); };
 
             var circleXItem = new ToolStripMenuItem("Circle + X");
             circleXItem.Tag = "CircleX";
             circleXItem.Checked = CurrentProfile.Shape == "CircleX";
             circleXItem.Click += (sender, e) => { UpdateShape(CrosshairShape.Custom, "CircleX"); };
 
-            combinedShapesMenu.DropDownItems.AddRange(new ToolStripItem[] { circleDotItem, crossDotItem, circleCrossItem, circlePlusItem, circleXItem });
+            combinedShapesMenu.DropDownItems.AddRange(new ToolStripItem[] { circleDotItem, crossDotItem, circleCrossItem, circleXItem });
 
             // Add both submenus to the shape menu
             shapeMenu.DropDownItems.AddRange(new ToolStripItem[] { basicShapesMenu, combinedShapesMenu });
@@ -1071,7 +1062,7 @@ namespace LightCrosshair
                 innerThicknessMenu.DropDownItems.Add(thicknessItem);
             }
 
-            // Inner Gap Size submenu (for Plus shape)
+            // Inner Gap Size submenu (for inner cross/X in composites)
             var innerGapSizeMenu = new ToolStripMenuItem("Gap Size");
             innerGapSizeMenu.Enabled = CurrentProfile.Shape == "CirclePlus" || CurrentProfile.Shape == "CircleCross" || CurrentProfile.Shape == "CircleX";
 
@@ -1142,9 +1133,9 @@ namespace LightCrosshair
                 thicknessMenu.DropDownItems.Add(thicknessItem);
             }
 
-            // Gap Size submenu (for Plus shape)
+            // Gap Size submenu (for Cross and CrossDot)
             var gapSizeMenu = new ToolStripMenuItem("Gap Size");
-            gapSizeMenu.Enabled = CurrentProfile.Shape == "Plus" || CurrentProfile.Shape == "CirclePlus" || CurrentProfile.Shape == "CrossDot";
+            gapSizeMenu.Enabled = CurrentProfile.Shape == "Cross" || CurrentProfile.Shape == "CrossDot" || CurrentProfile.Shape == "CircleCross";
             for (int gap = 2; gap <= 20; gap += 2)
             {
                 var gapItem = new ToolStripMenuItem(gap.ToString());
@@ -1703,13 +1694,41 @@ namespace LightCrosshair
 
             if (InvokeRequired)
             {
-                try { BeginInvoke(new Action(() => { ReinforceTopMost(); WpfSettingsHost.Show(_profileService); ReinforceTopMost(); })); }
+                try { BeginInvoke(new Action(() => { ReinforceTopMost(); HookNudgeBridge(); WpfSettingsHost.Show(_profileService); ReinforceTopMost(); })); }
                 catch { /* ignore if handle is not ready */ }
                 return;
             }
             ReinforceTopMost();
+            HookNudgeBridge();
             WpfSettingsHost.Show(_profileService);
             ReinforceTopMost();
+        }
+
+        private void HookNudgeBridge()
+        {
+            // Ensure single assignment
+            WpfSettingsHost.OnNudge = (dx, dy) =>
+            {
+                try
+                {
+                    if (IsDisposed) return;
+                    var loc = this.Location;
+                    var next = new Point(loc.X + dx, loc.Y + dy);
+                    this.Location = next;
+                    // no need to redraw; bitmap stays the same; only position changes
+                }
+                catch { }
+            };
+
+            WpfSettingsHost.GetPosition = () =>
+            {
+                try { return this.Location; } catch { return this.Location; }
+            };
+
+            WpfSettingsHost.ResetCenter = () =>
+            {
+                try { CenterCrosshair(); } catch { }
+            };
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)

@@ -165,7 +165,6 @@
                                 <ComboBoxItem Content="Cross"/>
                                 <ComboBoxItem Content="Circle"/>
                                 <ComboBoxItem Content="Dot"/>
-                                <ComboBoxItem Content="Plus"/>
                                 <ComboBoxItem Content="X"/>
                             </ComboBox>
                         </StackPanel>
@@ -177,9 +176,22 @@
                                 <ComboBoxItem Content="CircleDot"/>
                                 <ComboBoxItem Content="CrossDot"/>
                                 <ComboBoxItem Content="CircleCross"/>
-                                <ComboBoxItem Content="CirclePlus"/>
                                 <ComboBoxItem Content="CircleX"/>
                             </ComboBox>
+                        </StackPanel>
+
+                        <TextBlock Text="Pixel Nudge" FontWeight="Bold" Margin="0,8,0,6"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
+                            <Button x:Name="NudgeLeft" Content="←" Width="40" ToolTip="Move left 1px"/>
+                            <Button x:Name="NudgeUp" Content="↑" Width="40" ToolTip="Move up 1px"/>
+                            <Button x:Name="NudgeDown" Content="↓" Width="40" ToolTip="Move down 1px"/>
+                            <Button x:Name="NudgeRight" Content="→" Width="40" ToolTip="Move right 1px"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Status Posizione" FontWeight="Bold" Margin="0,8,0,6"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
+                            <TextBlock x:Name="CurrentPositionText" Text="Current Position: X=0, Y=0" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetCenterBtn" Content="Reset to Center" Width="140" Margin="12,0,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

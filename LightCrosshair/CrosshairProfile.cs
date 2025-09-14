@@ -27,12 +27,12 @@ namespace LightCrosshair
         public int Size { get; set; } = 15; // 15% size for optimal visibility
         public int Thickness { get; set; } = 5; // 5 pixels for better visibility
         public int EdgeThickness { get; set; } = 0; // 0 means "use Thickness" (no separate override)
-        public int GapSize { get; set; } = 4; // For Plus shape
+    public int GapSize { get; set; } = 4; // Gap at center for crosses
 
         // Secondary shape properties (inner shape in combined shapes)
         public int InnerSize { get; set; } = 10;
         public int InnerThickness { get; set; } = 2;
-        public int InnerGapSize { get; set; } = 4; // For Plus shape when used as inner shape
+    public int InnerGapSize { get; set; } = 4; // Gap at center for inner cross/X
 
         // These properties will be used instead of the ones below for backward compatibility
 
@@ -461,6 +461,6 @@ namespace LightCrosshair
 
     public static class ProfileSchema
     {
-        public const int Current = 2; // Bump for simplified color model migration
+        public const int Current = 3; // v3: remove Plus/CirclePlus (migrate to Cross/CircleCross)
     }
 }
