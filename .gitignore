@@ -557,3 +557,5 @@ Temporary Items
 /*.md
 !README.md
 !LICENSE.md
+
+dist/
