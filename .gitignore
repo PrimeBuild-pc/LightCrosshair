@@ -559,3 +559,7 @@ Temporary Items
 !LICENSE.md
 
 dist/
+
+# Build/installer outputs (local artifacts)
+Output/
+releases/

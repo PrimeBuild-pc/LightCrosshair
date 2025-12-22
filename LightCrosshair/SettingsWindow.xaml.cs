@@ -6,6 +6,9 @@ using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Diagnostics;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 
 namespace LightCrosshair
 {
@@ -14,12 +17,21 @@ namespace LightCrosshair
         private readonly IProfileService _profiles;
         private AppPreferences _prefs;
         private bool _suppressUiEvents = false; // prevent feedback during programmatic updates
+        private const string LatestReleaseUrl = "https://github.com/PrimeBuild-pc/LightCrosshair/releases/latest";
+        private const string LatestReleaseApiUrl = "https://api.github.com/repos/PrimeBuild-pc/LightCrosshair/releases/latest";
+        private readonly string _currentVersion;
+        private static readonly HttpClient Http = new();
 
         public SettingsWindow(IProfileService profiles)
         {
             _profiles = profiles;
             _prefs = PreferencesStore.Load();
             InitializeComponent();
+
+            _currentVersion = GetCurrentVersion();
+            VersionText.Text = $"Version: {_currentVersion}";
+
+            ConfigureHttpClient();
 
             // Window position and size
             if (_prefs.WindowX >= 0 && _prefs.WindowY >= 0)
@@ -387,12 +399,147 @@ namespace LightCrosshair
 
         private void OnHyperlinkNavigate(object sender, RequestNavigateEventArgs e)
         {
+            OpenUrl(e.Uri.AbsoluteUri);
+            e.Handled = true;
+        }
+
+
+        private async void OnCheckUpdatesClick(object sender, RoutedEventArgs e)
+        {
+            var fetchTask = FetchLatestVersionSafe();
+            await ShowTransientDialog("Check for updates", "Checking for a newer version...", 1000);
+
+            var latest = await fetchTask;
+            if (latest == null)
+            {
+                ShowAppDialog("Check for updates", "Could not check for updates right now. Please try again later.", MessageBoxImage.Warning);
+                return;
+            }
+
+            if (IsNewer(latest, _currentVersion))
+            {
+                ShowAppDialog("Update available", $"A newer version is available: v{latest}. Opening the releases page.", MessageBoxImage.Information);
+                OpenUrl(LatestReleaseUrl);
+            }
+            else
+            {
+                ShowAppDialog("Up to date", $"You are on the latest version (v{_currentVersion}).", MessageBoxImage.Information);
+            }
+        }
+
+        private void OpenUrl(string url)
+        {
             try
             {
-                Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
             }
             catch { }
-            e.Handled = true;
+        }
+
+        private void ConfigureHttpClient()
+        {
+            if (!Http.DefaultRequestHeaders.Contains("User-Agent"))
+            {
+                Http.DefaultRequestHeaders.UserAgent.ParseAdd("LightCrosshair/1.0");
+            }
+        }
+
+        private async System.Threading.Tasks.Task<string?> FetchLatestVersionSafe()
+        {
+            try
+            {
+                var dto = await Http.GetFromJsonAsync<GithubReleaseDto>(LatestReleaseApiUrl);
+                var tag = dto?.TagName ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(tag)) return null;
+                return tag.TrimStart('v', 'V');
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsNewer(string latest, string current)
+        {
+            if (!Version.TryParse(latest, out var latestVer)) return false;
+            if (!Version.TryParse(current, out var currentVer)) return false;
+            return latestVer > currentVer;
+        }
+
+        private string GetCurrentVersion()
+        {
+            try
+            {
+                var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                if (v != null)
+                {
+                    // Use Major.Minor.Build for display
+                    return new Version(v.Major, v.Minor, v.Build < 0 ? 0 : v.Build).ToString();
+                }
+            }
+            catch { }
+            return "1.0.0";
+        }
+
+        private void ShowAppDialog(string title, string message, MessageBoxImage icon)
+        {
+            var dlg = new System.Windows.Window
+            {
+                Title = title,
+                WindowStyle = WindowStyle.ToolWindow,
+                SizeToContent = SizeToContent.WidthAndHeight,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Background = (System.Windows.Media.Brush)FindResource("WindowBg"),
+                Foreground = (System.Windows.Media.Brush)FindResource("TextFg"),
+                Owner = this,
+                ResizeMode = ResizeMode.NoResize,
+                ShowInTaskbar = false
+            };
+
+            var sp = new System.Windows.Controls.StackPanel { Margin = new Thickness(16), Width = 380 };
+            var txt = new System.Windows.Controls.TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12) };
+            sp.Children.Add(txt);
+
+            var buttons = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, HorizontalAlignment = System.Windows.HorizontalAlignment.Right };
+            var ok = new System.Windows.Controls.Button { Content = "OK", Width = 80, Margin = new Thickness(6, 0, 0, 0) };
+            ok.Click += (_, __) => dlg.Close();
+            buttons.Children.Add(ok);
+            sp.Children.Add(buttons);
+
+            dlg.Content = sp;
+            dlg.ShowDialog();
+        }
+
+        private async System.Threading.Tasks.Task ShowTransientDialog(string title, string message, int milliseconds)
+        {
+            var dlg = new System.Windows.Window
+            {
+                Title = title,
+                WindowStyle = WindowStyle.ToolWindow,
+                SizeToContent = SizeToContent.WidthAndHeight,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Background = (System.Windows.Media.Brush)FindResource("WindowBg"),
+                Foreground = (System.Windows.Media.Brush)FindResource("TextFg"),
+                Owner = this,
+                ResizeMode = ResizeMode.NoResize,
+                ShowInTaskbar = false
+            };
+
+            var sp = new System.Windows.Controls.StackPanel { Margin = new Thickness(16), Width = 380 };
+            var txt = new System.Windows.Controls.TextBlock { Text = message, TextWrapping = TextWrapping.Wrap };
+            sp.Children.Add(txt);
+
+            dlg.Content = sp;
+            dlg.Show();
+
+            await System.Threading.Tasks.Task.Delay(milliseconds);
+            dlg.Close();
+        }
+
+        private sealed class GithubReleaseDto
+        {
+            [JsonPropertyName("tag_name")]
+            public string? TagName { get; set; }
         }
 
 

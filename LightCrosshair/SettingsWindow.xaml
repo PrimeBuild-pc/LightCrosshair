@@ -279,6 +279,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="16" >
                         <TextBlock Text="LightCrosshair" FontWeight="Bold" FontSize="16"/>
+                        <TextBlock x:Name="VersionText" Text="Version: -" Margin="0,8,0,0"/>
                         <TextBlock Text="Author: PrimeBuild" Margin="0,8,0,0"/>
                         <TextBlock Margin="0,8,0,0">
                             <Run Text="Website: "/>
@@ -288,7 +289,12 @@
                             <Run Text="GitHub: "/>
                             <Hyperlink Foreground="{DynamicResource AccentBrush}" NavigateUri="https://github.com/PrimeBuild-pc/LightCrosshair" RequestNavigate="OnHyperlinkNavigate">https://github.com/PrimeBuild-pc/LightCrosshair</Hyperlink>
                         </TextBlock>
+                        <TextBlock Margin="0,8,0,0">
+                            <Run Text="Discord: "/>
+                            <Hyperlink Foreground="{DynamicResource AccentBrush}" NavigateUri="https://discord.gg/AkuAZMwnGY" RequestNavigate="OnHyperlinkNavigate">https://discord.gg/AkuAZMwnGY</Hyperlink>
+                        </TextBlock>
                         <TextBlock Text="License: MIT" Margin="0,8,0,0"/>
+                        <Button x:Name="CheckUpdatesBtn" Content="Check for Updates" Width="180" Margin="0,12,0,0" Click="OnCheckUpdatesClick"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
