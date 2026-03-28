@@ -1,7 +1,7 @@
 <Window x:Class="LightCrosshair.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="LightCrosshair Settings" Height="600" Width="820"
+        Title="LightCrosshair Settings" Height="600" Width="1320"
         WindowStartupLocation="Manual"
         ResizeMode="CanResize"
         Topmost="False"
@@ -158,106 +158,170 @@
         </StackPanel>
 
         <!-- Main content with left tabs -->
-        <TabControl TabStripPlacement="Left" Margin="8" Grid.Row="1">
-            <!-- Shape Tab -->
-            <TabItem x:Name="ShapeTab" Header="Shape">
+                <TabControl TabStripPlacement="Left" Margin="8" Grid.Row="1">
+            <!-- Crosshair Builder Tab -->
+            <TabItem x:Name="BuilderTab" Header="Crosshair Builder">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
-                        <TextBlock Text="Simple Shapes" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <TextBlock Text="Basic Options" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <CheckBox x:Name="EnableCustomCrosshairCheckbox" Content="Enable Custom Crosshair" Margin="0,0,0,12"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="Shape:" Width="160" VerticalAlignment="Center"/>
-                            <ComboBox x:Name="ShapeCombo" Width="220">
+                            <TextBlock Text="Shape:" Width="120" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="ShapeCombo" Width="260">
+                                <ComboBoxItem Content="Dot"/>
                                 <ComboBoxItem Content="Cross"/>
                                 <ComboBoxItem Content="Circle"/>
-                                <ComboBoxItem Content="Dot"/>
-                                <ComboBoxItem Content="X"/>
                             </ComboBox>
                         </StackPanel>
 
-                        <TextBlock Text="Composite Shapes" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <TextBlock Text="Dimensions" FontWeight="Bold" Margin="0,12,0,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Size:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="SizeSlider" Minimum="2" Maximum="100" Width="260"/>
+                            <TextBlock x:Name="SizeValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Thickness:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Width="260"/>
+                            <TextBlock x:Name="ThicknessValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Outline:" Width="120" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="OutlineCheckbox" Content="Use Secondary/Edge Color" VerticalAlignment="Center"/>
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="Composite:" Width="160" VerticalAlignment="Center"/>
-                            <ComboBox x:Name="CompositeCombo" Width="220">
-                                <ComboBoxItem Content="CircleDot"/>
-                                <ComboBoxItem Content="CrossDot"/>
-                                <ComboBoxItem Content="CircleCross"/>
-                                <ComboBoxItem Content="CircleX"/>
-                            </ComboBox>
+                            <TextBlock Text="Gap:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="GapSlider" Minimum="0" Maximum="50" Width="260"/>
+                            <TextBlock x:Name="GapValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
                         </StackPanel>
-
-                        <TextBlock Text="Pixel Nudge" FontWeight="Bold" Margin="0,8,0,6"/>
+                        
+                        <TextBlock Text="Colors" FontWeight="Bold" Margin="0,12,0,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Button x:Name="OuterColorBtn" Content="Main Color" Width="140"/>
+                            <Button x:Name="InnerShapeColorBtn" Content="Secondary/Edge Color" Width="190" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        
+                        <TextBlock Text="Position &amp; Tweaks" FontWeight="Bold" Margin="0,12,0,6"/>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
                             <Button x:Name="NudgeLeft" Content="←" Width="40" ToolTip="Move left 1px"/>
                             <Button x:Name="NudgeUp" Content="↑" Width="40" ToolTip="Move up 1px"/>
                             <Button x:Name="NudgeDown" Content="↓" Width="40" ToolTip="Move down 1px"/>
                             <Button x:Name="NudgeRight" Content="→" Width="40" ToolTip="Move right 1px"/>
+                            <Button x:Name="ResetCenterBtn" Content="Reset Center" Width="100" Margin="12,0,0,0"/>
                         </StackPanel>
-
-                        <TextBlock Text="Status Posizione" FontWeight="Bold" Margin="0,8,0,6"/>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
-                            <TextBlock x:Name="CurrentPositionText" Text="Current Position: X=0, Y=0" VerticalAlignment="Center"/>
-                            <Button x:Name="ResetCenterBtn" Content="Reset to Center" Width="140" Margin="12,0,0,0"/>
-                        </StackPanel>
+                        <TextBlock x:Name="CurrentPositionText" Text="Current Position: X=0, Y=0" Opacity="0.7"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-            <!-- Outer Shape Tab -->
-            <TabItem x:Name="OuterTab" Header="Outer Shape">
+            <!-- Hotkeys Tab -->
+            <TabItem x:Name="HotkeysTab" Header="Hotkeys">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
+                        <TextBlock Text="Global Hotkeys" FontWeight="Bold" Margin="0,0,0,12"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Size:" Width="160" VerticalAlignment="Center"/>
-                            <Slider x:Name="SizeSlider" Minimum="5" Maximum="200" Width="280"/>
-                            <TextBlock x:Name="SizeValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Thickness:" Width="160" VerticalAlignment="Center"/>
-                            <Slider x:Name="ThicknessSlider" Minimum="1" Maximum="20" Width="280"/>
-                            <TextBlock x:Name="ThicknessValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                            <TextBlock Text="Toggle Crosshair:" Width="140" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="HkAlt1" Content="Alt" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox x:Name="HkCtrl1" Content="Ctrl" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox x:Name="HkShift1" Content="Shift" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox x:Name="HkKey1Combo" Width="100"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="Gap Size:" Width="160" VerticalAlignment="Center"/>
-                            <Slider x:Name="GapSlider" Minimum="0" Maximum="50" Width="280"/>
-                            <TextBlock x:Name="GapValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
-                        </StackPanel>
-                        <TextBlock Text="Colors" FontWeight="Bold" Margin="0,12,0,6"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <Button x:Name="OuterColorBtn" Content="Outer Shape Color" Width="160"/>
-
+                            <TextBlock Text="Cycle Profiles:" Width="140" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="HkAlt2" Content="Alt" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox x:Name="HkCtrl2" Content="Ctrl" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox x:Name="HkShift2" Content="Shift" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox x:Name="HkKey2Combo" Width="100"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-            <!-- Inner Shape Tab -->
-            <TabItem x:Name="InnerTab" Header="Inner Shape">
+            <!-- Gamma & Vibrance Tab -->
+            <TabItem x:Name="DisplayTab" Header="Display Settings">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Inner Size:" Width="160" VerticalAlignment="Center"/>
-                            <Slider x:Name="InnerSizeSlider" Minimum="0" Maximum="200" Width="280"/>
-                            <TextBlock x:Name="InnerSizeValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        <TextBlock Text="Display Adjustments" FontWeight="Bold" Margin="0,0,0,12"/>
+
+                        <Border Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Color Backend" FontWeight="Bold"/>
+                                <TextBlock x:Name="ColorBackendText" Text="Detecting..." Margin="0,4,0,0"/>
+                                <TextBlock x:Name="ColorBackendDetailsText" Text="-" Opacity="0.75" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <CheckBox x:Name="EnableGammaCheckbox" Content="Enable Gamma/Contrast/Brightness/Vibrance Override" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Apply Settings To" FontWeight="Bold" Margin="0,0,0,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <TextBlock Text="Target Process:" Width="120" VerticalAlignment="Center"/>
+                            <TextBox x:Name="TargetProcessTextBox" Width="180" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Leave empty to apply globally. Example: valorant.exe"/>
+                            <ComboBox x:Name="ProcessPickerComboBox" Width="180" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Select from currently running processes"/>
+                            <Button x:Name="RefreshProcessListBtn" Content="Refresh List" Width="100" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <Button x:Name="BrowseProcessExeBtn" Content="Browse .exe" Width="110" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <Button x:Name="ClearTargetProcessBtn" Content="Clear" Width="80" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                         </StackPanel>
+                        <TextBlock Text="Manual mode: pick a running process, browse an .exe, or type one. Leave empty to apply globally." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <!-- Note: Software fallback was removed from the codebase. -->
+                        
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Inner Thickness:" Width="160" VerticalAlignment="Center"/>
-                            <Slider x:Name="InnerThicknessSlider" Minimum="0" Maximum="20" Width="280"/>
-                            <TextBlock x:Name="InnerThicknessValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                            <TextBlock Text="Gamma:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="GammaSlider" Minimum="50" Maximum="150" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <TextBlock x:Name="GammaValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="Inner Gap Size:" Width="160" VerticalAlignment="Center"/>
-                            <Slider x:Name="InnerGapSlider" Minimum="0" Maximum="50" Width="280"/>
-                            <TextBlock x:Name="InnerGapValue" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                            <TextBlock Text="Contrast:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="ContrastSlider" Minimum="50" Maximum="150" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <TextBlock x:Name="ContrastValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
                         </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Brightness:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="BrightnessSlider" Minimum="50" Maximum="150" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <TextBlock x:Name="BrightnessValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Vibrance:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="VibranceSlider" Minimum="0" Maximum="100" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <TextBlock x:Name="VibranceValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <TextBlock Text="Note: Hardware path is preferred. If disabled, software fallback will not be used when hardware apply fails." Opacity="0.7" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- FPS Overlay Tab -->
+            <TabItem x:Name="FpsTab" Header="FPS &amp; Performance">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <TextBlock Text="Performance Overlay" FontWeight="Bold" Margin="0,0,0,12"/>
+                        <CheckBox x:Name="EnableFpsCheckbox" Content="Enable FPS Overlay" Margin="0,0,0,12"/>
+                        
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Position X:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="FpsXSlider" Minimum="0" Maximum="3840" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
+                            <TextBlock x:Name="FpsXValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Position Y:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="FpsYSlider" Minimum="0" Maximum="2160" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
+                            <TextBlock x:Name="FpsYValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        
+                        <CheckBox x:Name="ShowFrametimeCheckbox" Content="Show Frametime Graph" Margin="0,0,0,6" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
+                        <CheckBox x:Name="Show1PercentCheckbox" Content="Show 1% Lows" Margin="0,0,0,6" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
+                        <CheckBox x:Name="ShowGenFramesCheckbox" Content="Show Generated Frames (when detected)" Margin="0,0,0,12" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
+
                         <TextBlock Text="Colors" FontWeight="Bold" Margin="0,12,0,6"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <Button x:Name="InnerShapeColorBtn" Content="Inner Shape Color" Width="160"/>
+                            <Button x:Name="FpsTextColorBtn" Content="Text Color" Width="140"/>
+                            <Button x:Name="FpsBgColorBtn" Content="Background Color" Width="140" Margin="8,0,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-            <!-- Profiles Tab -->
+<!-- Profiles Tab -->
             <TabItem x:Name="ProfilesTab" Header="Profiles">
                 <Grid Margin="12">
                     <Grid.RowDefinitions>
@@ -301,3 +365,4 @@
         </TabControl>
     </Grid>
 </Window>
+

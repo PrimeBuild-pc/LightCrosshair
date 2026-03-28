@@ -14,13 +14,15 @@ namespace LightCrosshair
 
     public class CrosshairConfig : IDisposable
     {
+        private static CrosshairConfig? _instance;
+        public static CrosshairConfig Instance => _instance ??= new CrosshairConfig();
+        [ThreadStatic]
+        private static bool _isDeserializing;
+
         // Constants for hotkey registration
         private const int WM_HOTKEY = 0x0312;
-        private const int MOD_ALT = 0x0001;
-        private const int MOD_CONTROL = 0x0002;
-        private const int MOD_SHIFT = 0x0004;
-        private const int MOD_WIN = 0x0008;
         private const int HOTKEY_ID = 9000;
+        private const int HOTKEY_CYCLE_ID = 9001;
 
         // Windows API imports for hotkey registration
         [DllImport("user32.dll")]
@@ -65,6 +67,7 @@ namespace LightCrosshair
         public int CrosshairThickness { get; set; } = 2;
         public string CrosshairStyle { get; set; } = "Cross";
         public bool Visible { get; set; } = true;
+        public string TargetProcessName { get; set; } = "";
         
         // Hotkey settings
         public Keys HotkeyKey { get; set; } = Keys.X;
@@ -72,6 +75,30 @@ namespace LightCrosshair
         public bool HotkeyUseControl { get; set; } = false;
         public bool HotkeyUseShift { get; set; } = false;
         public bool HotkeyUseWin { get; set; } = false;
+
+        public Keys CycleProfileHotkeyKey { get; set; } = Keys.C;
+        public bool CycleProfileHotkeyUseAlt { get; set; } = true;
+        public bool CycleProfileHotkeyUseControl { get; set; } = false;
+        public bool CycleProfileHotkeyUseShift { get; set; } = false;
+        public bool CycleProfileHotkeyUseWin { get; set; } = false;
+
+        // Display (Gamma/Vibrance) Settings
+        public bool EnableGammaOverride { get; set; } = false;
+        public int GammaValue { get; set; } = 100; // 100 = default
+        public int ContrastValue { get; set; } = 100; // 100 = default
+        public int BrightnessValue { get; set; } = 100; // 100 = default
+        public int VibranceValue { get; set; } = 50; // 50 = default
+
+        // FPS Overlay Settings
+        public bool EnableFpsOverlay { get; set; } = false;
+        public int FpsOverlayX { get; set; } = 10;
+        public int FpsOverlayY { get; set; } = 10;
+        public bool ShowFrametimeGraph { get; set; } = true;
+        public bool Show1PercentLows { get; set; } = true;
+        public bool ShowGenFrames { get; set; } = true;
+        public string FpsOverlayColorSerialized { get; set; } = "255,255,255";
+        public string FpsOverlayBgColorSerialized { get; set; } = "0,0,0,128"; // Includes alpha
+        public int FpsOverlayScale { get; set; } = 100;
 
     // Rendering flags
     public bool AntiAlias { get; set; } = false; // Used by AA toggle (step B)
@@ -89,7 +116,7 @@ namespace LightCrosshair
             {
                 // Initialize the config file path
                 string appDataPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     "LightCrosshair");
                 
                 // Create the directory if it doesn't exist
@@ -101,7 +128,10 @@ namespace LightCrosshair
                 _configFilePath = Path.Combine(appDataPath, "crosshair_settings.json");
                 
                 // Load settings
-                LoadSettings();
+                if (!_isDeserializing)
+                {
+                    LoadSettings();
+                }
             }
             catch (Exception ex)
             {
@@ -123,7 +153,10 @@ namespace LightCrosshair
                 };
                 
                 string jsonString = JsonSerializer.Serialize(this, options);
-                File.WriteAllText(_configFilePath, jsonString);
+                string tmpPath = _configFilePath + ".tmp";
+                
+                File.WriteAllText(tmpPath, jsonString);
+                File.Move(tmpPath, _configFilePath, true);
                 
                 OnSettingsChanged();
             }
@@ -144,7 +177,17 @@ namespace LightCrosshair
                 if (File.Exists(_configFilePath))
                 {
                     string jsonString = File.ReadAllText(_configFilePath);
-                    var loadedConfig = JsonSerializer.Deserialize<CrosshairConfig>(jsonString);
+                    CrosshairConfig? loadedConfig;
+                    bool previous = _isDeserializing;
+                    try
+                    {
+                        _isDeserializing = true;
+                        loadedConfig = JsonSerializer.Deserialize<CrosshairConfig>(jsonString);
+                    }
+                    finally
+                    {
+                        _isDeserializing = previous;
+                    }
                     
                     if (loadedConfig != null)
                     {
@@ -154,11 +197,36 @@ namespace LightCrosshair
                         CrosshairThickness = Math.Max(1, Math.Min(10, loadedConfig.CrosshairThickness));
                         CrosshairStyle = loadedConfig.CrosshairStyle ?? "Cross";
                         Visible = loadedConfig.Visible;
+                        TargetProcessName = loadedConfig.TargetProcessName ?? string.Empty;
                         HotkeyKey = loadedConfig.HotkeyKey;
                         HotkeyUseAlt = loadedConfig.HotkeyUseAlt;
                         HotkeyUseControl = loadedConfig.HotkeyUseControl;
                         HotkeyUseShift = loadedConfig.HotkeyUseShift;
                         HotkeyUseWin = loadedConfig.HotkeyUseWin;
+
+                        CycleProfileHotkeyKey = loadedConfig.CycleProfileHotkeyKey;
+                        CycleProfileHotkeyUseAlt = loadedConfig.CycleProfileHotkeyUseAlt;
+                        CycleProfileHotkeyUseControl = loadedConfig.CycleProfileHotkeyUseControl;
+                        CycleProfileHotkeyUseShift = loadedConfig.CycleProfileHotkeyUseShift;
+                        CycleProfileHotkeyUseWin = loadedConfig.CycleProfileHotkeyUseWin;
+
+                        EnableGammaOverride = loadedConfig.EnableGammaOverride;
+                        GammaValue = Math.Clamp(loadedConfig.GammaValue, 50, 150);
+                        ContrastValue = Math.Clamp(loadedConfig.ContrastValue, 50, 150);
+                        BrightnessValue = loadedConfig.BrightnessValue <= 0
+                            ? 100
+                            : Math.Clamp(loadedConfig.BrightnessValue, 50, 150);
+                        VibranceValue = Math.Clamp(loadedConfig.VibranceValue, 0, 100);
+
+                        EnableFpsOverlay = loadedConfig.EnableFpsOverlay;
+                        FpsOverlayX = loadedConfig.FpsOverlayX;
+                        FpsOverlayY = loadedConfig.FpsOverlayY;
+                        ShowFrametimeGraph = loadedConfig.ShowFrametimeGraph;
+                        Show1PercentLows = loadedConfig.Show1PercentLows;
+                        ShowGenFrames = loadedConfig.ShowGenFrames;
+                        FpsOverlayColorSerialized = loadedConfig.FpsOverlayColorSerialized ?? "255,255,255";
+                        FpsOverlayBgColorSerialized = loadedConfig.FpsOverlayBgColorSerialized ?? "0,0,0,128";
+                        FpsOverlayScale = loadedConfig.FpsOverlayScale > 0 ? loadedConfig.FpsOverlayScale : 100;
                     }
                 }
             }
@@ -168,6 +236,8 @@ namespace LightCrosshair
                 // Don't show message box here as it might be called during initialization
             }
         }
+
+        public void ReRegisterHotkeys() { if (_ownerForm != null) RegisterHotkey(_ownerForm); }
 
         public void RegisterHotkey(Form ownerForm)
         {
@@ -183,18 +253,33 @@ namespace LightCrosshair
             try
             {
                 int modifiers = 0;
-                if (HotkeyUseAlt) modifiers |= MOD_ALT;
-                if (HotkeyUseControl) modifiers |= MOD_CONTROL;
-                if (HotkeyUseShift) modifiers |= MOD_SHIFT;
-                if (HotkeyUseWin) modifiers |= MOD_WIN;
+                if (HotkeyUseAlt) modifiers |= HotkeyManager.MOD_ALT;
+                if (HotkeyUseControl) modifiers |= HotkeyManager.MOD_CONTROL;
+                if (HotkeyUseShift) modifiers |= HotkeyManager.MOD_SHIFT;
+                if (HotkeyUseWin) modifiers |= HotkeyManager.MOD_WIN;
                 
-                if (RegisterHotKey(ownerForm.Handle, HOTKEY_ID, modifiers, (int)HotkeyKey))
+                if (HotkeyManager.Instance.RegisterHotkeyWithId(HOTKEY_ID, modifiers, (int)HotkeyKey))
                 {
                     _hotkeyRegistered = true;
                 }
                 else
                 {
-                    Debug.WriteLine("Failed to register hotkey. It might be in use by another application.");
+                    Debug.WriteLine("Failed to register toggle hotkey. It might be in use by another application.");
+                }
+
+                int cycleModifiers = 0;
+                if (CycleProfileHotkeyUseAlt) cycleModifiers |= HotkeyManager.MOD_ALT;
+                if (CycleProfileHotkeyUseControl) cycleModifiers |= HotkeyManager.MOD_CONTROL;
+                if (CycleProfileHotkeyUseShift) cycleModifiers |= HotkeyManager.MOD_SHIFT;
+                if (CycleProfileHotkeyUseWin) cycleModifiers |= HotkeyManager.MOD_WIN;
+
+                if (HotkeyManager.Instance.RegisterHotkeyWithId(HOTKEY_CYCLE_ID, cycleModifiers, (int)CycleProfileHotkeyKey))
+                {
+                    // Success
+                }
+                else
+                {
+                    Debug.WriteLine("Failed to register cycle hotkey.");
                 }
             }
             catch (Exception ex)
@@ -209,7 +294,8 @@ namespace LightCrosshair
             {
                 if (_hotkeyRegistered && _ownerForm != null && !_ownerForm.IsDisposed)
                 {
-                    UnregisterHotKey(_ownerForm.Handle, HOTKEY_ID);
+                    HotkeyManager.Instance.UnregisterHotkey(HOTKEY_ID);
+                    HotkeyManager.Instance.UnregisterHotkey(HOTKEY_CYCLE_ID);
                     _hotkeyRegistered = false;
                 }
             }
@@ -219,15 +305,26 @@ namespace LightCrosshair
             }
         }
 
+        public event EventHandler? CycleProfileRequested;
+
         public bool ProcessHotkey(Message m)
         {
             if (_disposed) return false;
 
-            if (m.Msg == WM_HOTKEY && m.WParam.ToInt32() == HOTKEY_ID)
+            if (m.Msg == WM_HOTKEY)
             {
-                Visible = !Visible;
-                OnSettingsChanged();
-                return true;
+                int id = m.WParam.ToInt32();
+                if (id == HOTKEY_ID)
+                {
+                    Visible = !Visible;
+                    OnSettingsChanged();
+                    return true;
+                }
+                else if (id == HOTKEY_CYCLE_ID)
+                {
+                    CycleProfileRequested?.Invoke(this, EventArgs.Empty);
+                    return true;
+                }
             }
             return false;
         }

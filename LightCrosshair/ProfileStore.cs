@@ -94,6 +94,12 @@ namespace LightCrosshair
                             if (p.InnerShapeEdgeColor.A > 0) p.InnerShapeColor = p.InnerShapeEdgeColor;
                             else if (p.InnerColor.A > 0) p.InnerShapeColor = p.InnerColor;
                         }
+
+                        // Migration v4: profile-level toggle fields were introduced in schema 4.
+                        if (p.SchemaVersion < 4)
+                        {
+                            p.EnableCustomCrosshair = true;
+                        }
                     }
                     catch { }
 

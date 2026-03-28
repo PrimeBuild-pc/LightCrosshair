@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Windows.Forms;
 using System.Diagnostics;
+using System.Threading;
 
 namespace LightCrosshair;
 
@@ -9,6 +10,7 @@ static class Program
 {
     private static readonly object _logGate = new object();
     private static readonly string _debugLogPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug.log");
+    private static int _shutdownRestoreTriggered;
     public static bool DebugLoggingEnabled { get; set; } = true;
 
     [STAThread]
@@ -19,6 +21,8 @@ static class Program
             // Set up error logging
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.ThreadException += Application_ThreadException;
+            AppDomain.CurrentDomain.ProcessExit += (_, __) => TryRestoreDisplayState("ProcessExit");
+            Application.ApplicationExit += (_, __) => TryRestoreDisplayState("ApplicationExit");
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
@@ -38,14 +42,51 @@ static class Program
             var ps = ProfileService.Instance;
             ps.InitializeAsync().GetAwaiter().GetResult();
 
+            // Capture user baseline before any runtime color adjustment can be applied.
+            GammaController.SaveOriginal();
+
             using var form = new Form1(ps);
-            Application.Run(form);
+            try
+            {
+                Application.Run(form);
+            }
+            finally
+            {
+                TryRestoreDisplayState("MainLoopExit");
+            }
         }
         catch (Exception ex)
         {
             LogError(ex, "Main method");
             MessageBox.Show($"Error: {ex.Message}\n\nCheck error.log for details.", "Error",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private static void TryRestoreDisplayState(string reason)
+    {
+        if (Interlocked.Exchange(ref _shutdownRestoreTriggered, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            DisplayManager.StopMonitoring();
+        }
+        catch (Exception ex)
+        {
+            LogError(ex, $"TryRestoreDisplayState.StopMonitoring ({reason})");
+        }
+
+        try
+        {
+            GammaController.RestoreOriginal();
+            LogDebug($"Display state restore requested on shutdown ({reason}).", nameof(Program));
+        }
+        catch (Exception ex)
+        {
+            LogError(ex, $"TryRestoreDisplayState.RestoreOriginal ({reason})");
         }
     }
 

@@ -28,13 +28,9 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
   <summary><b>🚀 Performance Optimized</b></summary>
   <br>
 
-- **&lt;1% CPU Usage**: Minimal impact during gaming sessions
-- **Hardware Accelerated**: Leverages Windows' layered window optimizations
-- **Smart Rendering**: Only redraws when changes are detected
-- **Memory Efficient**: Optimized graphics object caching
-</details>
-
-<details>
+- **<1% CPU Usage**: Minimal impact during gaming sessions, powered by **SkiaSharp** rendering
+- **Hardware Accelerated**: Zero-GC allocations and pixel-perfect native memory pinning
+- **Safe FPS Counter**: Uses **ETW/PresentMon** for anti-cheat safe telemetry (No in-game hooking/injection)
   <summary><b>🎮 Gaming Features</b></summary>
   <br>
 
@@ -51,13 +47,7 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
 - **Persistent Context Menu**: Make multiple adjustments without menu closing
 - **System Tray Integration**: Unobtrusive background operation
 - **Profile Management**: Save and switch between multiple configurations
-- **Hotkey Support**: Quick visibility toggle (Alt+X default)
-</details>
-
----
-
-## 🚀 Installation
-
+- **Atomic Cloud-Ready Saves**: Configuration files safely stored in `%AppData%` using atomic writes to prevent corruption
 ### Option 1: Standalone Executable (Recommended)
 1. **Download** the latest `LightCrosshair.exe` from the [Releases](../../releases) page
 2. **Place** the executable in your preferred directory

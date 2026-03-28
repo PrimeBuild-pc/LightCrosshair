@@ -16,6 +16,7 @@ namespace LightCrosshair
     private NotifyIcon? notifyIcon;
     private ContextMenuStrip? contextMenu;
     private readonly IProfileService _profileService; // unified service
+    private readonly AppPreferences _prefs;
         private Color fillColor = Color.Transparent;
         private bool isVisible = true;
 
@@ -23,7 +24,7 @@ namespace LightCrosshair
     // Legacy incremental rendering fields replaced by central renderer
     private CrosshairProfile? _lastRenderedProfile; // retained temporarily for menu diff logic
     private readonly object _renderLock = new object();
-    private CrosshairRenderer _renderer = new CrosshairRenderer();
+    private ICrosshairRenderBackend _renderer = new CrosshairRenderer();
     private Bitmap? _currentFrame; // last produced bitmap copy
     private bool _configDirty = true; // marks need to request new bitmap from renderer
         private float _dpiScaleFactor = 1.0f;
@@ -34,13 +35,15 @@ namespace LightCrosshair
 
         // Screen recording detection
     private System.Windows.Forms.Timer? _recordingDetectionTimer;
+    private System.Windows.Forms.Timer? _fpsTimer;
+    private FpsOverlayForm? _fpsOverlayForm;
         private bool _isRecordingDetected = false;
         private bool _wasVisibleBeforeRecording = true;
 
         // Constants for message handling
         private const int WM_HOTKEY = 0x0312;
 
-        [DllImport("user32.dll")]
+        [DllImport("user32.dll", SetLastError = true)]
         private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
         [DllImport("user32.dll")]
@@ -63,13 +66,16 @@ namespace LightCrosshair
         private const int WS_EX_TRANSPARENT = 0x20;
     private const int WS_EX_TOPMOST = 0x8;
     private const int WS_EX_TOOLWINDOW = 0x00000080; // Hide from Alt-Tab / task switcher
-    [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+    private const int WS_EX_APPWINDOW = 0x00040000;
+    private const int WS_EX_NOACTIVATE = 0x08000000;
+    [DllImport("user32.dll", SetLastError = true)] private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
         private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         private const uint SWP_NOSIZE = 0x0001;
         private const uint SWP_NOMOVE = 0x0002;
         private const uint SWP_NOACTIVATE = 0x0010;
+        private const uint SWP_FRAMECHANGED = 0x0020;
         private const uint SWP_NOOWNERZORDER = 0x0200;
         private const uint SWP_NOSENDCHANGING = 0x0400;
         private const uint SWP_SHOWWINDOW = 0x0040;
@@ -84,6 +90,7 @@ namespace LightCrosshair
         // Hotkey IDs
         private const int TOGGLE_VISIBILITY_HOTKEY_ID = 9000;
     private bool _suppressMenuEvents = false; // prevent feedback loops while syncing menu state
+    private bool _isExiting;
 
     // Autosave centralized in ProfileService now
         private readonly UndoStack<CrosshairProfile> _undo = new(10);
@@ -91,10 +98,24 @@ namespace LightCrosshair
         private ToolStripStatusLabel? _lblSaved;
     private CrosshairProfile CurrentProfile => _profileService.Current;
 
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var cp = base.CreateParams;
+                cp.ExStyle |= WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
+                cp.ExStyle &= ~WS_EX_APPWINDOW;
+                return cp;
+            }
+        }
+
+        protected override bool ShowWithoutActivation => true;
+
         public Form1() : this(null) {}
         public Form1(IProfileService? service)
         {
             _profileService = service ?? ProfileService.Instance;
+            _prefs = PreferencesStore.Load();
             InitializeComponent();
 
             // Basic form setup
@@ -119,25 +140,24 @@ namespace LightCrosshair
             // Additional performance optimizations
             this.SetStyle(ControlStyles.Selectable, false);
 
-            _profileService.CurrentChanged += (_, p) =>
-            {
-                try { Program.LogDebug($"CurrentChanged -> {p.Name} ({p.Id})", nameof(Form1)); Service_CurrentChanged(p); }
-                catch (Exception ex) { Program.LogError(ex, "Form1.CurrentChanged handler"); }
-            };
+            _profileService.CurrentChanged += Service_CurrentChanged_Handler;
 
             // Initialize system tray icon and menu
             InitializeNotifyIcon();
             InitializeContextMenu();
 
             // Add paint handler (now only blits cached bitmap)
-            this.Paint += (s, e) =>
-            {
-                try { Form1_Paint(s, e); }
-                catch (Exception ex) { Program.LogError(ex, "Form1_Paint"); }
-            };
+            this.Paint += Form1_Paint_Handler;
 
             // Initialize DPI awareness
             InitializeDpiAwareness();
+            this.DpiChanged += Form1_DpiChanged;
+
+            // Try the low-level Skia backend first, fallback to GDI renderer if unavailable.
+            _renderer.Dispose();
+            _renderer = CreateRenderBackend();
+            _renderer.DpiScale = _dpiScaleFactor;
+            _renderer.AntiAlias = _profileService.Current.AntiAlias;
 
             // Initialize screen recording detection
             InitializeScreenRecordingDetection();
@@ -148,17 +168,11 @@ namespace LightCrosshair
             // Center the form on screen
             CenterCrosshair();
             this.Load += Form1_Load; // async profiles load & migration
-            _profileService.Persisted += (_, args) =>
-            {
-                try
-                {
-                    if (_lblSaved == null || _lblSaved.IsDisposed) return;
-                    if (!IsHandleCreated || IsDisposed) return;
-                    Program.LogDebug($"Persisted event -> success={args.Success} at {args.Timestamp:O}", nameof(Form1));
-                    BeginInvoke(new Action(() => _lblSaved.Text = args.Success ? $"Saved {args.Timestamp:HH:mm:ss}" : "Save error"));
-                }
-                catch (Exception ex) { Program.LogError(ex, "Form1.Persisted handler"); }
-            };
+            _profileService.Persisted += ProfileService_Persisted_Handler;
+
+            // Subscribe to application exit events safely
+            Application.ApplicationExit += OnApplication_Exit;
+            AppDomain.CurrentDomain.ProcessExit += OnAppDomain_ProcessExit;
         }
 
         private void SetupStatusStrip()
@@ -173,25 +187,44 @@ namespace LightCrosshair
 
         private async void Form1_Load(object? sender, EventArgs e)
         {
+            SystemFpsMonitor.Start();
+            DisplayManager.StartMonitoring();
+            EnsureFpsOverlayForm();
+            UpdateFpsOverlaySurface();
             try
             {
                 if (_profileService.Profiles.Count == 0)
                     await _profileService.InitializeAsync();
                 var current = _profileService.Current;
+                isVisible = _prefs.OverlayVisible && CrosshairConfig.Instance.Visible;
+                Program.LogDebug($"Startup visibility restore -> prefs={_prefs.OverlayVisible}, config={CrosshairConfig.Instance.Visible}, effective={isVisible}, profileEnabled={current.EnableCustomCrosshair}", nameof(Form1));
                 _undo.Push(current.Clone());
                 MarkConfigDirty();
+                UpdateCrosshairVisibilityState();
                 UpdateMenuItems();
-            }
-            catch (Exception ex) { Program.LogError(ex, "Form1_Load"); }
+
+            // Hardware-only logic is now enforced globally; no explicit toggling required.
+            GammaController.SaveOriginal();
         }
+        catch (Exception ex) { Program.LogError(ex, "Form1_Load"); }
+    }
 
         private void InitializeDpiAwareness()
         {
             // Get current DPI scaling factor
             using (Graphics g = this.CreateGraphics())
             {
-                _dpiScaleFactor = g.DpiX / 96.0f; // 96 DPI is the standard
+                _dpiScaleFactor = Math.Clamp(g.DpiX / 96.0f, 0.75f, 3.0f); // 96 DPI is the standard
             }
+            _renderer.DpiScale = _dpiScaleFactor;
+        }
+
+        private void Form1_DpiChanged(object? sender, DpiChangedEventArgs e)
+        {
+            _dpiScaleFactor = Math.Clamp(e.DeviceDpiNew / 96.0f, 0.75f, 3.0f);
+            _renderer.DpiScale = _dpiScaleFactor;
+            MarkConfigDirty();
+            InvalidateThrottled();
         }
 
         private Icon LoadApplicationIcon()
@@ -240,6 +273,8 @@ namespace LightCrosshair
         {
             if (color.A == 0) return null; // Don't cache transparent brushes
 
+            if (_brushCache.Count > 50) ClearGraphicsCache();
+
             if (!_brushCache.TryGetValue(color, out SolidBrush? brush))
             {
                 brush = new SolidBrush(color);
@@ -251,6 +286,8 @@ namespace LightCrosshair
         private Pen? GetCachedPen(Color color, float width)
         {
             if (color.A == 0) return null; // Don't cache transparent pens
+
+            if (_penCache.Count > 150) ClearGraphicsCache();
 
             var key = (color, width);
             if (!_penCache.TryGetValue(key, out Pen? pen))
@@ -313,26 +350,86 @@ namespace LightCrosshair
             _recordingDetectionTimer.Interval = 2000; // Check every 2 seconds
             _recordingDetectionTimer.Tick += RecordingDetectionTimer_Tick;
             _recordingDetectionTimer.Start();
+
+            _fpsTimer = new System.Windows.Forms.Timer();
+            _fpsTimer.Interval = SystemFpsMonitor.PreferredUiRefreshMs;
+            _fpsTimer.Tick += FpsTimer_Tick;
+            _fpsTimer.Start();
         }
 
-    private void RecordingDetectionTimer_Tick(object? sender, EventArgs e)
+        private void FpsTimer_Tick(object? sender, EventArgs e)
+        {
+            UpdateFpsOverlaySurface();
+        }
+
+        private void EnsureFpsOverlayForm()
+        {
+            if (_fpsOverlayForm != null && !_fpsOverlayForm.IsDisposed) return;
+
+            _fpsOverlayForm = new FpsOverlayForm();
+            _fpsOverlayForm.Show();
+            _fpsOverlayForm.Hide();
+        }
+
+        private void UpdateFpsOverlaySurface()
+        {
+            EnsureFpsOverlayForm();
+            if (_fpsOverlayForm == null || _fpsOverlayForm.IsDisposed) return;
+
+            bool shouldShow = CrosshairConfig.Instance.EnableFpsOverlay && isVisible && !_isRecordingDetected;
+            if (!shouldShow)
+            {
+                if (_fpsOverlayForm.Visible) _fpsOverlayForm.Hide();
+                return;
+            }
+
+            if (!_fpsOverlayForm.Visible) _fpsOverlayForm.Show();
+
+            var snapshot = SystemFpsMonitor.GetSnapshot();
+            _fpsOverlayForm.UpdateState(snapshot, SystemFpsMonitor.ActiveSource, SystemFpsMonitor.StatusText);
+        }
+
+        private bool ShouldDisplayCrosshairOverlay()
+        {
+            return isVisible && CurrentProfile.EnableCustomCrosshair && !_isRecordingDetected;
+        }
+
+        private void UpdateCrosshairVisibilityState()
+        {
+            bool shouldShow = ShouldDisplayCrosshairOverlay();
+            if (Visible != shouldShow)
+            {
+                Visible = shouldShow;
+            }
+
+            if (shouldShow)
+            {
+                ReinforceTopMost();
+                MarkConfigDirty();
+            }
+
+            UpdateFpsOverlaySurface();
+        }
+
+    private async void RecordingDetectionTimer_Tick(object? sender, EventArgs e)
         {
             if (_profileService.Current.HideDuringScreenRecording)
             {
-                bool isRecording = IsScreenRecordingActive();
+                bool isRecording = await Task.Run(() => IsScreenRecordingActive());
 
                 if (isRecording && !_isRecordingDetected)
                 {
                     // Recording started
                     _isRecordingDetected = true;
-                    _wasVisibleBeforeRecording = this.Visible;
-                    this.Visible = false;
+                    _wasVisibleBeforeRecording = isVisible;
+                    UpdateCrosshairVisibilityState();
                 }
                 else if (!isRecording && _isRecordingDetected)
                 {
                     // Recording stopped
                     _isRecordingDetected = false;
-                    this.Visible = _wasVisibleBeforeRecording && isVisible;
+                    isVisible = _wasVisibleBeforeRecording;
+                    UpdateCrosshairVisibilityState();
                 }
             }
         }
@@ -412,9 +509,13 @@ namespace LightCrosshair
                     _configDirty = true; // trigger renderer regeneration
                     UpdateFormSize();
                     CenterCrosshair();
-                    Invalidate();
+                    if (Visible)
+                    {
+                        InvalidateThrottled();
+                    }
                 }
             }
+            UpdateCrosshairVisibilityState();
             // Update menu checkmarks
             try { if (SafeVisible(contextMenu)) UpdateMenuItems(); } catch (Exception ex) { Program.LogError(ex, "Form1.UpdateMenuItems (from CurrentChanged)"); }
 
@@ -909,8 +1010,8 @@ namespace LightCrosshair
                     Visible = true,
                     Icon = appIcon
                 };
-                notifyIcon.DoubleClick += (sender, e) => ToggleVisibility();
-                notifyIcon.MouseClick += (sender, e) => { if (e.Button == MouseButtons.Left) ShowSettingsWindow(); };
+                notifyIcon.DoubleClick += NotifyIcon_DoubleClick;
+                notifyIcon.MouseClick += NotifyIcon_MouseClick;
             }
             catch (Exception)
             {
@@ -921,8 +1022,8 @@ namespace LightCrosshair
                     Visible = true,
                     Icon = SystemIcons.Application
                 };
-                notifyIcon.DoubleClick += (sender, e) => ToggleVisibility();
-                notifyIcon.MouseClick += (sender, e) => { if (e.Button == MouseButtons.Left) ShowSettingsWindow(); };
+                notifyIcon.DoubleClick += NotifyIcon_DoubleClick;
+                notifyIcon.MouseClick += NotifyIcon_MouseClick;
             }
         }
 
@@ -1156,7 +1257,7 @@ namespace LightCrosshair
                 var cur = _profileService.Current.Clone();
                 cur.AntiAlias = aaItem.Checked;
                 _profileService.Update(cur);
-                _configDirty = true; Invalidate(); };
+                _configDirty = true; InvalidateThrottled(); };
             renderingMenu.DropDownItems.Add(aaItem);
 
             // Edge Color submenu
@@ -1247,12 +1348,13 @@ namespace LightCrosshair
             var exitItem = new ToolStripMenuItem("Exit");
             exitItem.Click += (sender, e) =>
             {
-                if (notifyIcon != null)
+                if (_isExiting)
                 {
-                    notifyIcon.Visible = false;
-                    notifyIcon.Dispose();
+                    return;
                 }
-                Application.Exit();
+
+                _isExiting = true;
+                BeginInvoke(new Action(() => Close()));
             };
 
             contextMenu.Items.Add(aboutItem);
@@ -1408,7 +1510,7 @@ namespace LightCrosshair
                 lock (_renderLock)
                 {
                     _configDirty = true;
-                    Invalidate();
+                    InvalidateThrottled();
                 }
                 UpdateMenuItems(propertyName);
             }
@@ -1488,16 +1590,47 @@ namespace LightCrosshair
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            if (this.Handle != IntPtr.Zero)
+            if (Handle != IntPtr.Zero)
             {
-                int exStyle = GetWindowLong(this.Handle, GWL_EXSTYLE);
-                exStyle |= WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW;
-                SetWindowLong(this.Handle, GWL_EXSTYLE, exStyle);
+                ApplyOverlayWindowStyles(Handle);
             }
-            RegisterHotKey(this.Handle, TOGGLE_VISIBILITY_HOTKEY_ID, MOD_ALT, (int)Keys.X);
-            RegisterHotKey(this.Handle, TOGGLE_VISIBILITY_HOTKEY_ID + 1, MOD_CONTROL | MOD_SHIFT, (int)Keys.Right);
-            RegisterHotKey(this.Handle, TOGGLE_VISIBILITY_HOTKEY_ID + 2, MOD_CONTROL | MOD_SHIFT, (int)Keys.Left);
+            HotkeyManager.Instance.SetWindowHandle(this.Handle);
+            
+            // Replaced raw Win32 hotkeys with HotkeyManager
+            if (!HotkeyManager.Instance.RegisterHotkeyWithId(HotkeyManager.TOGGLE_VISIBILITY_ID, HotkeyManager.MOD_ALT, (int)Keys.X))
+            {
+                Program.LogDebug("Toggle Visibility hotkey conflict", "Form1");
+            }
+            if (!HotkeyManager.Instance.RegisterHotkeyWithId(HotkeyManager.CYCLE_PROFILE_NEXT_ID, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_SHIFT, (int)Keys.Right))
+            {
+                Program.LogDebug("Cycle Next hotkey conflict", "Form1");
+            }
+            if (!HotkeyManager.Instance.RegisterHotkeyWithId(HotkeyManager.CYCLE_PROFILE_PREV_ID, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_SHIFT, (int)Keys.Left))
+            {
+                Program.LogDebug("Cycle Prev hotkey conflict", "Form1");
+            }
+
             _profileService.RegisterHotkeys(this.Handle);
+        }
+
+        private void ApplyOverlayWindowStyles(IntPtr handle)
+        {
+            if (handle == IntPtr.Zero) return;
+
+            int exStyle = GetWindowLong(handle, GWL_EXSTYLE);
+            int desired = (exStyle | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE) & ~WS_EX_APPWINDOW;
+            if (desired != exStyle)
+            {
+                _ = SetWindowLong(handle, GWL_EXSTYLE, desired);
+                int lastError = Marshal.GetLastWin32Error();
+                if (lastError != 0)
+                {
+                    Program.LogDebug($"SetWindowLong(GWL_EXSTYLE) returned Win32 error {lastError}.", nameof(Form1));
+                }
+            }
+
+            SetWindowPos(handle, HWND_TOPMOST, 0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING);
         }
 
         protected override void WndProc(ref Message m)
@@ -1507,17 +1640,17 @@ namespace LightCrosshair
             {
                 int hotkeyId = m.WParam.ToInt32();
 
-                if (hotkeyId == TOGGLE_VISIBILITY_HOTKEY_ID)
+                if (hotkeyId == HotkeyManager.TOGGLE_VISIBILITY_ID)
                 {
                     ToggleVisibility();
                     return;
                 }
-                if (hotkeyId == TOGGLE_VISIBILITY_HOTKEY_ID + 1)
+                if (hotkeyId == HotkeyManager.CYCLE_PROFILE_NEXT_ID)
                 {
                     CycleProfile(1);
                     return;
                 }
-                if (hotkeyId == TOGGLE_VISIBILITY_HOTKEY_ID + 2)
+                if (hotkeyId == HotkeyManager.CYCLE_PROFILE_PREV_ID)
                 {
                     CycleProfile(-1);
                     return;
@@ -1530,8 +1663,20 @@ namespace LightCrosshair
             base.WndProc(ref m);
         }
 
+        private DateTime _lastPaintTime = DateTime.MinValue;
+        private void InvalidateThrottled()
+        {
+            if ((DateTime.UtcNow - _lastPaintTime).TotalMilliseconds >= 16)
+            {
+                _lastPaintTime = DateTime.UtcNow;
+                base.Invalidate();
+            }
+        }
+
     private void Form1_Paint(object? sender, PaintEventArgs e)
         {
+            if (!ShouldDisplayCrosshairOverlay()) return;
+
             lock (_renderLock)
             {
                 if (_configDirty)
@@ -1545,23 +1690,11 @@ namespace LightCrosshair
 
                 if (_currentFrame != null)
                 {
-                    try
-                    {
-                        e.Graphics.Clear(this.TransparencyKey);
-                        // Center bitmap in client area in case form larger than bitmap
-                        int x = (ClientSize.Width - _currentFrame.Width) / 2;
-                        int y = (ClientSize.Height - _currentFrame.Height) / 2;
-                        e.Graphics.DrawImageUnscaled(_currentFrame, x, y);
-                    }
-                    catch (Exception ex) when (ex is ArgumentException || ex is ObjectDisposedException)
-                    {
-                        // The cached frame became invalid (disposed or corrupted) mid-draw.
-                        // Reset and request a fresh render on next paint.
-                        try { Program.LogError(ex, "Form1_Paint: frame invalid"); } catch { }
-                        _currentFrame = null;
-                        _configDirty = true;
-                        Invalidate();
-                    }
+                    e.Graphics.Clear(this.TransparencyKey);
+                    // Center bitmap in client area in case form larger than bitmap
+                    int x = (ClientSize.Width - _currentFrame.Width) / 2;
+                    int y = (ClientSize.Height - _currentFrame.Height) / 2;
+                    e.Graphics.DrawImageUnscaled(_currentFrame, x, y);
                 }
             }
         }
@@ -1569,7 +1702,8 @@ namespace LightCrosshair
         private void ToggleVisibility()
         {
             isVisible = !isVisible;
-            this.Visible = isVisible;
+            SaveOverlayVisibilityPreference();
+            UpdateCrosshairVisibilityState();
         }
 
         private void CycleProfile(int direction)
@@ -1625,7 +1759,7 @@ namespace LightCrosshair
                 catch { }
                 _profileService.Update(clone);
                 _undo.Push(baseProfile.Clone());
-                lock (_renderLock) { _configDirty = true; Invalidate(); }
+                lock (_renderLock) { _configDirty = true; InvalidateThrottled(); }
                 UpdateMenuItems("Shape");
             }
             catch (Exception ex) { Program.LogError(ex, "UpdateShape"); }
@@ -1633,6 +1767,8 @@ namespace LightCrosshair
 
         private void CenterCrosshair()
         {
+            if (!ShouldDisplayCrosshairOverlay()) return;
+
             // First ensure the form is properly sized
             UpdateFormSize();
 
@@ -1671,8 +1807,12 @@ namespace LightCrosshair
             if (p != null)
             {
                 int maxCrosshairSize = Math.Max(p.Size, p.InnerSize);
-                int padding = Math.Max(p.Thickness * 2, 10);
-                int formSize = Math.Max(100, maxCrosshairSize + padding * 2);
+                // Increased padding to account for outlines and anti-aliasing bounds
+                int outlinePadding = p.OutlineEnabled ? Math.Max(2, (p.EdgeThickness > 0 ? p.EdgeThickness : p.Thickness) + 2) : 0;
+                int totalThickness = Math.Max(p.Thickness, p.InnerThickness) + outlinePadding;
+                int padding = Math.Max(totalThickness * 4, 32);
+
+                int formSize = Math.Max(100, maxCrosshairSize + padding);
                 if (formSize % 2 == 0) formSize++;
                 this.Size = new Size(formSize, formSize);
             }
@@ -1680,39 +1820,91 @@ namespace LightCrosshair
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            base.OnFormClosing(e);
+            if (e.Cancel) return;
+
+            _isExiting = true;
+            CleanupEvents();
+            SaveOverlayVisibilityPreference();
+            DisplayManager.StopMonitoring();
+            WpfSettingsHost.Shutdown();
+            
             // Unregister profile service hotkeys
             _profileService.UnregisterHotkeys();
 
-            // Unregister the toggle visibility hotkey
-            UnregisterHotKey(this.Handle, TOGGLE_VISIBILITY_HOTKEY_ID);
+            // Unregister global hotkeys managed centrally
+            HotkeyManager.Instance.UnregisterAll();
 
             // Clean up resources
             if (notifyIcon != null)
             {
-                notifyIcon.Visible = false;
-                notifyIcon.Dispose();
+                notifyIcon.Visible = false; // Hide immediately, disposal happens in Designer
             }
-            contextMenu?.Dispose();
 
-            // Stop and dispose recording detection timer
+            // Stop and dispose timers
             if (_recordingDetectionTimer != null)
             {
                 _recordingDetectionTimer.Stop();
                 _recordingDetectionTimer.Dispose();
             }
 
+            if (_fpsTimer != null)
+            {
+                _fpsTimer.Stop();
+                _fpsTimer.Dispose();
+            }
+
+            if (_fpsOverlayForm != null && !_fpsOverlayForm.IsDisposed)
+            {
+                _fpsOverlayForm.Hide();
+                _fpsOverlayForm.Dispose();
+                _fpsOverlayForm = null;
+            }
+
+            SystemFpsMonitor.Stop();
 
             // Clear graphics cache
             ClearGraphicsCache();
 
             try { _ = _profileService.PersistAsync(); } catch (Exception ex) { Program.LogError(ex, "PersistAsync on close"); }
+        }
 
-            base.OnFormClosing(e);
+        private ICrosshairRenderBackend CreateRenderBackend()
+        {
+            try
+            {
+                var backend = new SkiaCrosshairRenderer();
+                Program.LogDebug("Rendering backend selected: SkiaSharp", nameof(Form1));
+                return backend;
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "Skia renderer init failed, fallback to GDI");
+                Program.LogDebug("Rendering backend selected: GDI fallback", nameof(Form1));
+                return new CrosshairRenderer();
+            }
+        }
+
+        private void SaveOverlayVisibilityPreference()
+        {
+            try
+            {
+                _prefs.OverlayVisible = isVisible;
+                PreferencesStore.Save(_prefs);
+
+                CrosshairConfig.Instance.Visible = isVisible;
+                CrosshairConfig.Instance.SaveSettings();
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "SaveOverlayVisibilityPreference");
+            }
         }
 
 
         private void ReinforceTopMost()
         {
+            if (!ShouldDisplayCrosshairOverlay()) return;
             if (IsDisposed || !IsHandleCreated) return;
             try { SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING); } catch { }
         }
@@ -1773,8 +1965,19 @@ namespace LightCrosshair
 
         protected override void OnResize(EventArgs e)
         {
+            if (!ShouldDisplayCrosshairOverlay()) return;
             base.OnResize(e);
             CenterCrosshair();
+        }
+
+        protected override void SetVisibleCore(bool value)
+        {
+            if (value && !ShouldDisplayCrosshairOverlay())
+            {
+                value = false;
+            }
+
+            base.SetVisibleCore(value);
         }
 
         // TriggerAutosave removed; persistence handled by ProfileService.
@@ -1794,10 +1997,74 @@ namespace LightCrosshair
             lock (_renderLock)
             {
                 _configDirty = true;
-                Invalidate();
+                InvalidateThrottled();
             }
         }
 
+        private void Service_CurrentChanged_Handler(object? sender, CrosshairProfile profile)
+        {
+            try { Program.LogDebug($"CurrentChanged -> {profile.Name} ({profile.Id})", nameof(Form1)); Service_CurrentChanged(profile); }
+            catch (Exception ex) { Program.LogError(ex, "Form1.CurrentChanged handler"); }
+        }
 
+        private void Form1_Paint_Handler(object? sender, PaintEventArgs e)
+        {
+            try { Form1_Paint(sender, e); }
+            catch (Exception ex) { Program.LogError(ex, "Form1_Paint"); }
+        }
+
+        private void ProfileService_Persisted_Handler(object? sender, ProfilesPersistedEventArgs args)
+        {
+            try
+            {
+                if (_lblSaved == null || _lblSaved.IsDisposed) return;
+                if (!IsHandleCreated || IsDisposed) return;
+                Program.LogDebug($"Persisted event -> success={args.Success} at {args.Timestamp:O}", nameof(Form1));
+                BeginInvoke(new Action(() => _lblSaved.Text = args.Success ? $"Saved {args.Timestamp:HH:mm:ss}" : "Save error"));
+            }
+            catch (Exception ex) { Program.LogError(ex, "Form1.Persisted handler"); }
+        }
+
+        private void OnApplication_Exit(object? sender, EventArgs e)
+        {
+            GammaController.RestoreOriginal();
+        }
+
+        private void OnAppDomain_ProcessExit(object? sender, EventArgs e)
+        {
+            GammaController.RestoreOriginal();
+        }
+
+        private void NotifyIcon_DoubleClick(object? sender, EventArgs e)
+        {
+            ToggleVisibility();
+        }
+
+        private void NotifyIcon_MouseClick(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left) ShowSettingsWindow();
+        }
+
+        private void CleanupEvents()
+        {
+            if (_profileService != null)
+            {
+                _profileService.CurrentChanged -= Service_CurrentChanged_Handler;
+                _profileService.Persisted -= ProfileService_Persisted_Handler;
+            }
+
+            this.Paint -= Form1_Paint_Handler;
+            this.DpiChanged -= Form1_DpiChanged;
+
+            if (notifyIcon != null)
+            {
+                notifyIcon.DoubleClick -= NotifyIcon_DoubleClick;
+                notifyIcon.MouseClick -= NotifyIcon_MouseClick;
+            }
+
+            Application.ApplicationExit -= OnApplication_Exit;
+            AppDomain.CurrentDomain.ProcessExit -= OnAppDomain_ProcessExit;
+        }
     }
 }
+

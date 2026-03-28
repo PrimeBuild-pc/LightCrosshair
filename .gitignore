@@ -563,3 +563,8 @@ dist/
 # Build/installer outputs (local artifacts)
 Output/
 releases/
+
+# Ignora file di test provvisori
+*.exe
+!LightCrosshair.iss
+!build-release.bat

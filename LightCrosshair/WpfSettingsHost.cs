@@ -42,6 +42,39 @@ namespace LightCrosshair
             _window.Activate();
             _window.Focus();
         }
+
+        public static void Shutdown()
+        {
+            try
+            {
+                if (_window != null)
+                {
+                    _window.Close();
+                    _window = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "WpfSettingsHost: Window Close Failed");
+            }
+
+            try
+            {
+                var app = System.Windows.Application.Current;
+                if (app != null)
+                {
+                    app.Dispatcher.Invoke(() => app.Shutdown());
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "WpfSettingsHost: App Shutdown Failed");
+            }
+
+            OnNudge = null;
+            GetPosition = null;
+            ResetCenter = null;
+        }
     }
 }
 

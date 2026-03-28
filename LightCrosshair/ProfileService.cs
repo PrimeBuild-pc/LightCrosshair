@@ -25,7 +25,7 @@ namespace LightCrosshair
         private const int WM_HOTKEY = 0x0312;
         private const uint MOD_NONE = 0x0000;
         private readonly Dictionary<int, CrosshairProfile> _hotkeyMap = new();
-        private int _nextHotkeyId = 1;
+        
         private IntPtr _windowHandle = IntPtr.Zero;
 
         private ProfileService() { }
@@ -58,7 +58,11 @@ namespace LightCrosshair
             }
             _profiles.Clear();
             _profiles.AddRange(loaded);
-            Current = _profiles[0];
+            var restoredCurrent = !string.IsNullOrWhiteSpace(prefs.LastProfileId)
+                ? _profiles.FirstOrDefault(p => p.Id == prefs.LastProfileId)
+                : null;
+            Current = restoredCurrent ?? _profiles[0];
+            PersistLastProfileId(Current.Id);
             // If first profile starts as CircleDot/CrossDot, normalize initial parameters
             try
             {
@@ -112,6 +116,7 @@ namespace LightCrosshair
                 if (p != null && !ReferenceEquals(p, Current))
                 {
                     Current = p;
+                    PersistLastProfileId(Current.Id);
                     CurrentChanged?.Invoke(this, Current);
                     ScheduleSave();
                 }
@@ -138,7 +143,11 @@ namespace LightCrosshair
             var wasCurrent = ReferenceEquals(_profiles[idx], Current);
             _profiles.RemoveAt(idx);
             if (wasCurrent) Current = _profiles[0];
-            if (wasCurrent) CurrentChanged?.Invoke(this, Current);
+            if (wasCurrent)
+            {
+                PersistLastProfileId(Current.Id);
+                CurrentChanged?.Invoke(this, Current);
+            }
             ScheduleSave();
             RebuildHotkeys();
             return true;
@@ -163,6 +172,7 @@ namespace LightCrosshair
                     if (wasCurrent)
                     {
                         Current = updated;
+                        PersistLastProfileId(Current.Id);
                         CurrentChanged?.Invoke(this, Current);
                     }
                     RebuildHotkeys();
@@ -196,9 +206,9 @@ namespace LightCrosshair
         {
             if (_hotkeyMap.Count == 0) return;
             foreach (var id in _hotkeyMap.Keys.ToList())
-            { try { UnregisterHotKey(_windowHandle, id); } catch (Exception ex) { Program.LogError(ex, "ProfileService: UnregisterHotKey (Dispose)"); } }
+            { try { HotkeyManager.Instance.UnregisterHotkey(id); } catch (Exception ex) { Program.LogError(ex, "ProfileService: UnregisterHotKey (Dispose)"); } }
             _hotkeyMap.Clear();
-            _nextHotkeyId = 1;
+            
         }
 
         public bool ProcessHotkeyMessage(Message m)
@@ -217,18 +227,38 @@ namespace LightCrosshair
         {
             if (_windowHandle == IntPtr.Zero) return;
             foreach (var id in _hotkeyMap.Keys.ToList())
-            { try { UnregisterHotKey(_windowHandle, id); } catch (Exception ex) { Program.LogError(ex, "ProfileService: UnregisterHotKey (Re-register)"); } }
+            { try { HotkeyManager.Instance.UnregisterHotkey(id); } catch (Exception ex) { Program.LogError(ex, "ProfileService: UnregisterHotKey (Re-register)"); } }   
             _hotkeyMap.Clear();
-            _nextHotkeyId = 1;
+            
             foreach (var p in _profiles)
             {
                 if (p.HotKey == Keys.None) continue;
                 try
                 {
-                    int id = _nextHotkeyId++;
-                    if (RegisterHotKey(_windowHandle, id, MOD_NONE, (uint)p.HotKey)) _hotkeyMap[id] = p;
+                    if (HotkeyManager.Instance.RegisterHotkey(0, (int)p.HotKey, out int id)) _hotkeyMap[id] = p;
                 }
                 catch (Exception ex) { Program.LogError(ex, "ProfileService: RegisterHotKey"); }
+            }
+        }
+
+        private static void PersistLastProfileId(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id)) return;
+
+            try
+            {
+                var prefs = PreferencesStore.Load();
+                if (string.Equals(prefs.LastProfileId, id, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                prefs.LastProfileId = id;
+                PreferencesStore.Save(prefs);
+            }
+            catch
+            {
+                // Best-effort persistence; profile switching must still work even if this fails.
             }
         }
     }

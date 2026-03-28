@@ -25,6 +25,7 @@
     <Company>LightCrosshair</Company>
     <Copyright>Copyright © 2024</Copyright>
     <Description>Lightweight gaming crosshair overlay</Description>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <!-- Release-specific optimizations -->
@@ -51,7 +52,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.8" />
     <PackageReference Include="Microsoft.VisualBasic" Version="10.3.0" />
+    <PackageReference Include="SkiaSharp" Version="2.88.8" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="2.88.8" />
   </ItemGroup>
 
   <!-- Exclude removed legacy files -->
@@ -59,6 +63,14 @@
     <Compile Remove="ProfileForm.cs" />
     <Compile Remove="ProfileForm.Designer.cs" />
     <Compile Remove="ProfileManager.cs" />
+    <Compile Remove="obj_tmp\**\*.cs" />
+    <Compile Remove="bin_tmp\**\*.cs" />
+    <Page Remove="obj_tmp\**\*.xaml" />
+    <Page Remove="bin_tmp\**\*.xaml" />
+    <EmbeddedResource Remove="obj_tmp\**" />
+    <EmbeddedResource Remove="bin_tmp\**" />
+    <None Remove="obj_tmp\**" />
+    <None Remove="bin_tmp\**" />
   </ItemGroup>
 
   <!-- Settings designer generated items -->

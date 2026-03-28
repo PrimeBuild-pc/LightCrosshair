@@ -1,7 +1,9 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Forms;
 using System.Windows.Media;
 using System.Windows.Navigation;
@@ -17,15 +19,23 @@ namespace LightCrosshair
         private readonly IProfileService _profiles;
         private AppPreferences _prefs;
         private bool _suppressUiEvents = false; // prevent feedback during programmatic updates
+        private bool _isUpdatingProcessPicker;
+        private readonly Debouncer _displayApplyDebouncer = new(100);
         private const string LatestReleaseUrl = "https://github.com/PrimeBuild-pc/LightCrosshair/releases/latest";
         private const string LatestReleaseApiUrl = "https://api.github.com/repos/PrimeBuild-pc/LightCrosshair/releases/latest";
         private readonly string _currentVersion;
+        private ResourceDictionary? _activeThemeDictionary;
         private static readonly HttpClient Http = new();
 
         public SettingsWindow(IProfileService profiles)
         {
             _profiles = profiles;
             _prefs = PreferencesStore.Load();
+
+            // Ensure DynamicResource keys exist before InitializeComponent parses XAML styles.
+            _activeThemeDictionary = CreateThemeDictionary(_prefs.Theme);
+            Resources.MergedDictionaries.Add(_activeThemeDictionary);
+
             InitializeComponent();
 
             _currentVersion = GetCurrentVersion();
@@ -47,88 +57,47 @@ namespace LightCrosshair
             UpdateThemeButtonIcon();
 
             // Wire controls
+            EnableCustomCrosshairCheckbox.Checked += (_, __) =>
+            {
+                ApplyChange(p => p.EnableCustomCrosshair = true);
+                UpdateBuilderControlsState();
+            };
+            EnableCustomCrosshairCheckbox.Unchecked += (_, __) =>
+            {
+                ApplyChange(p => p.EnableCustomCrosshair = false);
+                UpdateBuilderControlsState();
+            };
+
             ShapeCombo.SelectionChanged += (_, __) =>
             {
-                // Clear composite selection to avoid conflicts
-                if (CompositeCombo.SelectedIndex != -1) CompositeCombo.SelectedIndex = -1;
                 ApplyChange(p =>
                 {
                     var item = (ShapeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Cross";
                     p.Shape = item;
                     p.EnumShape = MapShape(item);
                 });
-                UpdateInnerTabEnabled();
             };
-            CompositeCombo.SelectionChanged += (_, __) =>
-            {
-                // Clear simple selection to avoid conflicts
-                if (ShapeCombo.SelectedIndex != -1) ShapeCombo.SelectedIndex = -1;
-                ApplyChange(p =>
-                {
-                    var item = (CompositeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString();
-                    if (!string.IsNullOrEmpty(item))
-                    {
-                        p.Shape = item;
-                        p.EnumShape = MapShape(item);
-                        // Apply composite defaults when switching to CircleDot / CrossDot
-                        try
-                        {
-                            if (string.Equals(item, "CircleDot", StringComparison.OrdinalIgnoreCase))
-                            {
-                                var d = CompositeDefaults.GetCompositeDefaults(CompositeShapeType.CircleDot);
-                                if (d != null)
-                                {
-                                    p.Size = d.OuterSize;
-                                    p.Thickness = d.OuterThickness;
-                                    p.GapSize = d.OuterGapSize;
-                                    p.InnerSize = d.InnerSize;
-                                    p.InnerThickness = d.InnerThickness;
-                                    p.InnerGapSize = d.InnerGapSize;
-                                }
-                            }
-                            else if (string.Equals(item, "CrossDot", StringComparison.OrdinalIgnoreCase))
-                            {
-                                var d = CompositeDefaults.GetCompositeDefaults(CompositeShapeType.CrossDot);
-                                if (d != null)
-                                {
-                                    p.Size = d.OuterSize;
-                                    p.Thickness = d.OuterThickness;
-                                    p.GapSize = d.OuterGapSize;
-                                    p.InnerSize = d.InnerSize;
-                                    p.InnerThickness = d.InnerThickness;
-                                    p.InnerGapSize = d.InnerGapSize;
-                                }
-                            }
-                        }
-                        catch { }
-                    }
-                });
-                UpdateInnerTabEnabled();
-            };
+
+            OutlineCheckbox.Checked += (_, __) => ApplyChange(p => p.OutlineEnabled = true);
+            OutlineCheckbox.Unchecked += (_, __) => ApplyChange(p => p.OutlineEnabled = false);
 
             SizeSlider.ValueChanged += (_, __) => { SizeValue.Text = ((int)SizeSlider.Value).ToString(); ApplyChange(p => p.Size = (int)SizeSlider.Value); };
             ThicknessSlider.ValueChanged += (_, __) => { ThicknessValue.Text = ((int)ThicknessSlider.Value).ToString(); ApplyChange(p => p.Thickness = (int)ThicknessSlider.Value); };
             GapSlider.ValueChanged += (_, __) => { GapValue.Text = ((int)GapSlider.Value).ToString(); ApplyChange(p => p.GapSize = (int)GapSlider.Value); };
 
-            InnerSizeSlider.ValueChanged += (_, __) => { InnerSizeValue.Text = ((int)InnerSizeSlider.Value).ToString(); ApplyChange(p => p.InnerSize = (int)InnerSizeSlider.Value); };
-            InnerThicknessSlider.ValueChanged += (_, __) => { InnerThicknessValue.Text = ((int)InnerThicknessSlider.Value).ToString(); ApplyChange(p => p.InnerThickness = (int)InnerThicknessSlider.Value); };
-            InnerGapSlider.ValueChanged += (_, __) => { InnerGapValue.Text = ((int)InnerGapSlider.Value).ToString(); ApplyChange(p => p.InnerGapSize = (int)InnerGapSlider.Value); };
-
-            // Update both OuterColor and EdgeColor so the visible stroke color changes immediately
-            // Additionally, for the Dot shape, update InnerColor too since the dot uses InnerColor when FillColor is transparent.
             OuterColorBtn.Click += (_, __) => PickColor(c => ApplyChange(p =>
             {
                 var col = System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B);
                 p.OuterColor = col;
-                p.EdgeColor = col; // keep edge in sync for immediate rendering
-                if (p.EnumShape == CrosshairShape.Dot)
-                {
-                    p.InnerColor = col; // ensure Dot uses the newly picked color immediately
-                }
+                p.InnerColor = col;
             }));
-            InnerShapeColorBtn.Click += (_, __) => PickColor(c => ApplyChange(p => p.InnerShapeColor = System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B)));
+            InnerShapeColorBtn.Click += (_, __) => PickColor(c => ApplyChange(p =>
+            {
+                var col = System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B);
+                p.EdgeColor = col;
+                p.InnerShapeColor = col;
+            }));
 
-            // Pixel nudge controls (1px)
             if (NudgeLeft != null) NudgeLeft.Click += (_, __) => { RequestNudge(-1, 0); UpdatePositionStatus(); };
             if (NudgeRight != null) NudgeRight.Click += (_, __) => { RequestNudge(1, 0); UpdatePositionStatus(); };
             if (NudgeUp != null) NudgeUp.Click += (_, __) => { RequestNudge(0, -1); UpdatePositionStatus(); };
@@ -140,6 +109,10 @@ namespace LightCrosshair
 
             // Reflect current profile
             LoadFromProfile(_profiles.Current);
+            LoadAdvancedSettings();
+            WireAdvancedSettings();
+            RefreshDisplayBackendInfo();
+
             // Profiles tab wiring
             SaveCurrentProfileBtn.Click += (_, __) => SaveCurrentProfileToSelected();
             RefreshProfilesUI();
@@ -163,23 +136,21 @@ namespace LightCrosshair
         private void LoadFromProfile(CrosshairProfile p)
         {
             _suppressUiEvents = true;
-            // Clear both selections to avoid conflicting visual states
             ShapeCombo.SelectedIndex = -1;
-            CompositeCombo.SelectedIndex = -1;
 
-            // Choose the correct selector based on shape kind
-            bool isComposite = CompositeShapes.Contains(p.Shape);
-            var targetCombo = isComposite ? CompositeCombo : ShapeCombo;
-            foreach (var item in targetCombo.Items.OfType<ComboBoxItem>())
+            EnableCustomCrosshairCheckbox.IsChecked = p.EnableCustomCrosshair;
+            OutlineCheckbox.IsChecked = p.OutlineEnabled;
+
+            string builderShape = GetBuilderShape(p);
+
+            foreach (var item in ShapeCombo.Items.OfType<ComboBoxItem>())
             {
-                if (string.Equals(item.Content?.ToString(), p.Shape, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(item.Content?.ToString(), builderShape, StringComparison.OrdinalIgnoreCase))
                 {
-                    targetCombo.SelectedItem = item;
+                    ShapeCombo.SelectedItem = item;
                     break;
                 }
             }
-
-            UpdateInnerTabEnabled();
 
             SizeSlider.Value = p.Size;
             SizeValue.Text = p.Size.ToString();
@@ -188,13 +159,8 @@ namespace LightCrosshair
             GapSlider.Value = p.GapSize;
             GapValue.Text = p.GapSize.ToString();
 
-            InnerSizeSlider.Value = p.InnerSize;
-            InnerSizeValue.Text = p.InnerSize.ToString();
-            InnerThicknessSlider.Value = p.InnerThickness;
-            InnerThicknessValue.Text = p.InnerThickness.ToString();
-            InnerGapSlider.Value = p.InnerGapSize;
-            InnerGapValue.Text = p.InnerGapSize.ToString();
             _suppressUiEvents = false;
+            UpdateBuilderControlsState();
         }
 
         private void ApplyChange(Action<CrosshairProfile> change)
@@ -210,15 +176,31 @@ namespace LightCrosshair
 
         private void ApplyTheme(AppTheme theme)
         {
-            // Use clean ResourceDictionary replacement to avoid mixed states after repeated toggles
-            Resources.MergedDictionaries.Clear();
+            // Add new theme dictionary first, then remove old one to avoid transient missing resources.
+            var dict = CreateThemeDictionary(theme);
+
+            Resources.MergedDictionaries.Add(dict);
+            if (_activeThemeDictionary != null)
+            {
+                Resources.MergedDictionaries.Remove(_activeThemeDictionary);
+            }
+            _activeThemeDictionary = dict;
+            Program.LogDebug($"ApplyTheme({theme}) dictionaries={Resources.MergedDictionaries.Count}", nameof(SettingsWindow));
+
+            Background = GetThemeBrush("WindowBg", System.Windows.Media.Brushes.White);
+            RootPanel.Background = GetThemeBrush("PanelBg", System.Windows.Media.Brushes.White);
+            Foreground = GetThemeBrush("TextFg", System.Windows.Media.Brushes.Black);
+        }
+
+        private static ResourceDictionary CreateThemeDictionary(AppTheme theme)
+        {
             var dict = new ResourceDictionary();
             if (theme == AppTheme.Dark)
             {
                 // Neutral gray palette
                 dict["WindowBg"] = new SolidColorBrush(ColorFromRgb(30, 31, 34));   // #1E1F22
-                dict["PanelBg"]  = new SolidColorBrush(ColorFromRgb(43, 45, 49));   // #2B2D31
-                dict["TextFg"]    = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)230,(byte)230,(byte)230)); // #E6E6E6
+                dict["PanelBg"] = new SolidColorBrush(ColorFromRgb(43, 45, 49));    // #2B2D31
+                dict["TextFg"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)230, (byte)230, (byte)230)); // #E6E6E6
                 dict["AccentBrush"] = new SolidColorBrush(Colors.Orange);
                 dict["ControlBg"] = new SolidColorBrush(ColorFromRgb(47, 49, 54));  // #2F3136
                 dict["ControlBorder"] = new SolidColorBrush(ColorFromRgb(60, 63, 68)); // #3C3F44
@@ -227,18 +209,20 @@ namespace LightCrosshair
             else
             {
                 dict["WindowBg"] = new SolidColorBrush(Colors.White);
-                dict["PanelBg"]  = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)245,(byte)245,(byte)245));
-                dict["TextFg"]    = new SolidColorBrush(Colors.Black);
+                dict["PanelBg"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)245, (byte)245, (byte)245));
+                dict["TextFg"] = new SolidColorBrush(Colors.Black);
                 dict["AccentBrush"] = new SolidColorBrush(Colors.Orange);
-                dict["ControlBg"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)250,(byte)250,(byte)250));
-                dict["ControlBorder"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)220,(byte)220,(byte)220));
-                dict["TabSelectedBg"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)235,(byte)235,(byte)235));
+                dict["ControlBg"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)250, (byte)250, (byte)250));
+                dict["ControlBorder"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)220, (byte)220, (byte)220));
+                dict["TabSelectedBg"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb((byte)235, (byte)235, (byte)235));
             }
-            Resources.MergedDictionaries.Add(dict);
 
-            Background = (System.Windows.Media.Brush)dict["WindowBg"];
-            RootPanel.Background = (System.Windows.Media.Brush)dict["PanelBg"];
-            Foreground = (System.Windows.Media.Brush)dict["TextFg"];
+            return dict;
+        }
+
+        private System.Windows.Media.Brush GetThemeBrush(string key, System.Windows.Media.Brush fallback)
+        {
+            return TryFindResource(key) as System.Windows.Media.Brush ?? fallback;
         }
 
         private void RefreshProfilesUI()
@@ -257,7 +241,7 @@ namespace LightCrosshair
                 {
                     var placeholder = new System.Windows.Controls.ListBoxItem { Tag = i };
                     var sp = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Margin = new Thickness(4) };
-                    sp.Children.Add(new System.Windows.Controls.TextBlock { Text = $"Slot {i + 1}: (Empty)", Width = 260, Foreground = (System.Windows.Media.Brush)FindResource("TextFg") });
+                    sp.Children.Add(new System.Windows.Controls.TextBlock { Text = $"Slot {i + 1}: (Empty)", Width = 260, Foreground = GetThemeBrush("TextFg", System.Windows.Media.Brushes.Black) });
                     var btn = new System.Windows.Controls.Button { Content = "Save Here", Width = 90, Margin = new Thickness(6, 0, 0, 0), Tag = i };
                     btn.Click += (s, e) => SaveCurrentToNewAtIndex((int)((System.Windows.Controls.Button)s!).Tag);
                     sp.Children.Add(btn);
@@ -271,7 +255,7 @@ namespace LightCrosshair
         {
             var item = new System.Windows.Controls.ListBoxItem { Tag = p.Id };
             var sp = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Margin = new Thickness(4) };
-            sp.Children.Add(new System.Windows.Controls.TextBlock { Text = $"Slot {index + 1}:", Width = 64, Foreground = (System.Windows.Media.Brush)FindResource("TextFg") });
+            sp.Children.Add(new System.Windows.Controls.TextBlock { Text = $"Slot {index + 1}:", Width = 64, Foreground = GetThemeBrush("TextFg", System.Windows.Media.Brushes.Black) });
             var nameBox = new System.Windows.Controls.TextBox { Text = p.Name, Width = 190, IsReadOnly = true, Margin = new Thickness(0, 0, 4, 0) };
             sp.Children.Add(nameBox);
             var loadBtn = new System.Windows.Controls.Button { Content = "Load", Width = 70, Margin = new Thickness(6, 0, 0, 0) };
@@ -328,8 +312,8 @@ namespace LightCrosshair
                 WindowStyle = WindowStyle.ToolWindow,
                 SizeToContent = SizeToContent.WidthAndHeight,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Background = (System.Windows.Media.Brush)FindResource("WindowBg"),
-                Foreground = (System.Windows.Media.Brush)FindResource("TextFg"),
+                Background = GetThemeBrush("WindowBg", System.Windows.Media.Brushes.White),
+                Foreground = GetThemeBrush("TextFg", System.Windows.Media.Brushes.Black),
                 Owner = this
             };
             var sp = new System.Windows.Controls.StackPanel { Margin = new Thickness(12) };
@@ -367,6 +351,18 @@ namespace LightCrosshair
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
             base.OnClosing(e);
+            try
+            {
+                if (!_suppressUiEvents)
+                {
+                    SaveTargetProcessFromUi(CrosshairConfig.Instance);
+                }
+            }
+            catch
+            {
+                // Closing should never fail because of target persistence.
+            }
+
             // Do not shutdown app; only hide settings window
             e.Cancel = true;
             Hide();
@@ -489,8 +485,8 @@ namespace LightCrosshair
                 WindowStyle = WindowStyle.ToolWindow,
                 SizeToContent = SizeToContent.WidthAndHeight,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Background = (System.Windows.Media.Brush)FindResource("WindowBg"),
-                Foreground = (System.Windows.Media.Brush)FindResource("TextFg"),
+                Background = GetThemeBrush("WindowBg", System.Windows.Media.Brushes.White),
+                Foreground = GetThemeBrush("TextFg", System.Windows.Media.Brushes.Black),
                 Owner = this,
                 ResizeMode = ResizeMode.NoResize,
                 ShowInTaskbar = false
@@ -518,8 +514,8 @@ namespace LightCrosshair
                 WindowStyle = WindowStyle.ToolWindow,
                 SizeToContent = SizeToContent.WidthAndHeight,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Background = (System.Windows.Media.Brush)FindResource("WindowBg"),
-                Foreground = (System.Windows.Media.Brush)FindResource("TextFg"),
+                Background = GetThemeBrush("WindowBg", System.Windows.Media.Brushes.White),
+                Foreground = GetThemeBrush("TextFg", System.Windows.Media.Brushes.Black),
                 Owner = this,
                 ResizeMode = ResizeMode.NoResize,
                 ShowInTaskbar = false
@@ -543,23 +539,40 @@ namespace LightCrosshair
         }
 
 
-        private static readonly System.Collections.Generic.HashSet<string> CompositeShapes = new(System.StringComparer.OrdinalIgnoreCase)
-        {
-            "CircleDot", "CrossDot", "CircleCross", "CircleX"
-        };
+        // Removed CompositeShapes here
 
-        private void UpdateInnerTabEnabled()
+        // Removed UpdateInnerTabEnabled here
+
+        private void UpdateBuilderControlsState()
         {
-            var shape = (CompositeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString()
-                        ?? (ShapeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString()
-                        ?? _profiles.Current.Shape;
-            bool composite = !string.IsNullOrEmpty(shape) && CompositeShapes.Contains(shape);
-            if (InnerTab != null)
+            bool enabled = EnableCustomCrosshairCheckbox.IsChecked == true;
+            ShapeCombo.IsEnabled = enabled;
+            SizeSlider.IsEnabled = enabled;
+            ThicknessSlider.IsEnabled = enabled;
+            GapSlider.IsEnabled = enabled;
+            OutlineCheckbox.IsEnabled = enabled;
+            OuterColorBtn.IsEnabled = enabled;
+            InnerShapeColorBtn.IsEnabled = enabled;
+        }
+
+        private static string GetBuilderShape(CrosshairProfile p)
+        {
+            if (p.EnumShape == CrosshairShape.Dot || string.Equals(p.Shape, "Dot", StringComparison.OrdinalIgnoreCase))
             {
-                InnerTab.IsEnabled = composite;
-                if (!composite && InnerTab.IsSelected && OuterTab != null)
-                    OuterTab.IsSelected = true;
+                return "Dot";
             }
+
+            if (p.EnumShape == CrosshairShape.Circle || p.EnumShape == CrosshairShape.CircleOutlined)
+            {
+                return "Circle";
+            }
+
+            if (!string.IsNullOrWhiteSpace(p.Shape) && p.Shape.StartsWith("Circle", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Circle";
+            }
+
+            return "Cross";
         }
 
         private static CrosshairShape MapShape(string s) => s switch
@@ -567,8 +580,7 @@ namespace LightCrosshair
             "Cross" => CrosshairShape.Cross,
             "Circle" => CrosshairShape.Circle,
             "Dot" => CrosshairShape.Dot,
-            "X" => CrosshairShape.X,
-            _ => CrosshairShape.Custom,
+            _ => CrosshairShape.Cross,
         };
 
         private void RequestNudge(int dx, int dy)
@@ -587,6 +599,374 @@ namespace LightCrosshair
             }
             catch { }
         }
+    
+        private void LoadAdvancedSettings()
+        {
+            _suppressUiEvents = true;
+            var cfg = CrosshairConfig.Instance;
+            
+            // Hotkeys
+            HkAlt1.IsChecked = cfg.HotkeyUseAlt;
+            HkCtrl1.IsChecked = cfg.HotkeyUseControl;
+            HkShift1.IsChecked = cfg.HotkeyUseShift;
+            LoadKeysCombo(HkKey1Combo, cfg.HotkeyKey);
+
+            HkAlt2.IsChecked = cfg.CycleProfileHotkeyUseAlt;
+            HkCtrl2.IsChecked = cfg.CycleProfileHotkeyUseControl;
+            HkShift2.IsChecked = cfg.CycleProfileHotkeyUseShift;
+            LoadKeysCombo(HkKey2Combo, cfg.CycleProfileHotkeyKey);
+
+            // Gamma
+            EnableGammaCheckbox.IsChecked = cfg.EnableGammaOverride;
+            GammaSlider.Value = cfg.GammaValue;
+            GammaValueText.Text = cfg.GammaValue.ToString();
+            ContrastSlider.Value = cfg.ContrastValue;
+            ContrastValueText.Text = cfg.ContrastValue.ToString();
+            BrightnessSlider.Value = cfg.BrightnessValue;
+            BrightnessValueText.Text = cfg.BrightnessValue.ToString();
+            VibranceSlider.Value = cfg.VibranceValue;
+            VibranceValueText.Text = cfg.VibranceValue.ToString();
+            TargetProcessTextBox.Text = cfg.TargetProcessName;
+            RefreshProcessPickerItems();
+
+            // FPS Overlay
+            EnableFpsCheckbox.IsChecked = cfg.EnableFpsOverlay;
+            FpsXSlider.Value = cfg.FpsOverlayX;
+            FpsXValueText.Text = cfg.FpsOverlayX.ToString();
+            FpsYSlider.Value = cfg.FpsOverlayY;
+            FpsYValueText.Text = cfg.FpsOverlayY.ToString();
+            ShowFrametimeCheckbox.IsChecked = cfg.ShowFrametimeGraph;
+            Show1PercentCheckbox.IsChecked = cfg.Show1PercentLows;
+            ShowGenFramesCheckbox.IsChecked = cfg.ShowGenFrames;
+            _suppressUiEvents = false;
+            RefreshDisplayBackendInfo();
+        }
+
+        private void RefreshDisplayBackendInfo()
+        {
+            var info = DisplayManager.GetBackendInfo();
+            bool isSoftwareFallback = info.BackendName.IndexOf("Software Overlay", StringComparison.OrdinalIgnoreCase) >= 0;
+            ColorBackendText.Text = isSoftwareFallback
+                ? $"{info.BackendName} (active)"
+                : info.BackendName;
+            ColorBackendDetailsText.Text = $"GPU: {info.AdapterDescription} | {info.StatusMessage}";
+        }
+
+        private void ApplyDisplaySettingsDebounced(CrosshairConfig cfg)
+        {
+            if (!cfg.EnableGammaOverride)
+            {
+                return;
+            }
+
+            _displayApplyDebouncer.Trigger(() =>
+            {
+                DisplayManager.CheckForegroundAndApply(forceUpdate: true);
+                Dispatcher.BeginInvoke(new Action(RefreshDisplayBackendInfo));
+            });
+        }
+
+        private void ApplyDisplaySettingsImmediate(CrosshairConfig cfg)
+        {
+            if (!cfg.EnableGammaOverride)
+            {
+                return;
+            }
+
+            DisplayManager.CheckForegroundAndApply(forceUpdate: true);
+            RefreshDisplayBackendInfo();
+        }
+
+        private static string NormalizeTargetProcessInput(string input)
+        {
+            var trimmed = (input ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                return string.Empty;
+            }
+
+            if (trimmed.Contains('\\') || trimmed.Contains('/'))
+            {
+                trimmed = Path.GetFileName(trimmed);
+            }
+
+            if (trimmed.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                return trimmed;
+            }
+
+            return trimmed.Contains('.') ? trimmed : $"{trimmed}.exe";
+        }
+
+        private void RefreshProcessPickerItems()
+        {
+            if (ProcessPickerComboBox == null)
+            {
+                return;
+            }
+
+            _isUpdatingProcessPicker = true;
+            try
+            {
+                var selected = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
+                ProcessPickerComboBox.Items.Clear();
+                ProcessPickerComboBox.Items.Add("(select running process)");
+
+                var names = Process
+                    .GetProcesses()
+                    .Select(p =>
+                    {
+                        try
+                        {
+                            return p.ProcessName;
+                        }
+                        catch
+                        {
+                            return string.Empty;
+                        }
+                    })
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .Select(n => NormalizeTargetProcessInput(n))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                foreach (var name in names)
+                {
+                    ProcessPickerComboBox.Items.Add(name);
+                }
+
+                if (!string.IsNullOrWhiteSpace(selected))
+                {
+                    var match = names.FirstOrDefault(n => string.Equals(n, selected, StringComparison.OrdinalIgnoreCase));
+                    ProcessPickerComboBox.SelectedItem = match ?? "(select running process)";
+                }
+                else
+                {
+                    ProcessPickerComboBox.SelectedItem = "(select running process)";
+                }
+            }
+            finally
+            {
+                _isUpdatingProcessPicker = false;
+            }
+        }
+
+        private void SaveTargetProcessFromUi(CrosshairConfig cfg)
+        {
+            cfg.TargetProcessName = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
+            TargetProcessTextBox.Text = cfg.TargetProcessName;
+            RefreshProcessPickerItems();
+            cfg.SaveSettings();
+
+            if (cfg.EnableGammaOverride)
+            {
+                DisplayManager.CheckForegroundAndApply(forceUpdate: true);
+            }
+        }
+
+        private void LoadKeysCombo(System.Windows.Controls.ComboBox combo, System.Windows.Forms.Keys currentKey)
+        {
+            combo.Items.Clear();
+            foreach (var key in Enum.GetValues(typeof(System.Windows.Forms.Keys)).Cast<System.Windows.Forms.Keys>())
+            {
+                var item = new System.Windows.Controls.ComboBoxItem { Content = key.ToString(), Tag = key };
+                combo.Items.Add(item);
+                if (key == currentKey)
+                    combo.SelectedItem = item;
+            }
+        }
+
+        private void WireAdvancedSettings()
+        {
+            var cfg = CrosshairConfig.Instance;
+
+            // Hotkey Toggle
+            HkAlt1.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseAlt = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkAlt1.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseAlt = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkCtrl1.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseControl = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkCtrl1.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseControl = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkShift1.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseShift = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkShift1.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseShift = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkKey1Combo.SelectionChanged += (_, __) => 
+            {
+                if (_suppressUiEvents || HkKey1Combo.SelectedItem == null) return;
+                cfg.HotkeyKey = (System.Windows.Forms.Keys)((System.Windows.Controls.ComboBoxItem)HkKey1Combo.SelectedItem).Tag;
+                cfg.SaveSettings();
+                cfg.ReRegisterHotkeys();
+            };
+
+            // Hotkey Cycle
+            HkAlt2.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseAlt = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkAlt2.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseAlt = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkCtrl2.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseControl = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkCtrl2.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseControl = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkShift2.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseShift = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkShift2.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseShift = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkKey2Combo.SelectionChanged += (_, __) => 
+            {
+                if (_suppressUiEvents || HkKey2Combo.SelectedItem == null) return;
+                cfg.CycleProfileHotkeyKey = (System.Windows.Forms.Keys)((System.Windows.Controls.ComboBoxItem)HkKey2Combo.SelectedItem).Tag;
+                cfg.SaveSettings();
+                cfg.ReRegisterHotkeys();
+            };
+
+            // Gamma
+            EnableGammaCheckbox.Checked += (_,__) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.EnableGammaOverride = true;
+                cfg.SaveSettings();
+                ApplyDisplaySettingsImmediate(cfg);
+            };
+            EnableGammaCheckbox.Unchecked += (_,__) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.EnableGammaOverride = false;
+                cfg.SaveSettings();
+                DisplayManager.CheckForegroundAndApply(forceUpdate: true);
+                RefreshDisplayBackendInfo();
+            };
+            GammaSlider.ValueChanged += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.GammaValue = (int)GammaSlider.Value;
+                GammaValueText.Text = cfg.GammaValue.ToString();
+                cfg.SaveSettings();
+                ApplyDisplaySettingsDebounced(cfg);
+            };
+            ContrastSlider.ValueChanged += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.ContrastValue = (int)ContrastSlider.Value;
+                ContrastValueText.Text = cfg.ContrastValue.ToString();
+                cfg.SaveSettings();
+                ApplyDisplaySettingsDebounced(cfg);
+            };
+            BrightnessSlider.ValueChanged += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.BrightnessValue = (int)BrightnessSlider.Value;
+                BrightnessValueText.Text = cfg.BrightnessValue.ToString();
+                cfg.SaveSettings();
+                ApplyDisplaySettingsDebounced(cfg);
+            };
+            VibranceSlider.ValueChanged += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.VibranceValue = (int)VibranceSlider.Value;
+                VibranceValueText.Text = cfg.VibranceValue.ToString();
+                cfg.SaveSettings();
+                ApplyDisplaySettingsDebounced(cfg);
+            };
+
+            // Flush one final hardware apply when dragging ends.
+            DragCompletedEventHandler dragCompleteHandler = (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                ApplyDisplaySettingsImmediate(cfg);
+            };
+            GammaSlider.AddHandler(Thumb.DragCompletedEvent, dragCompleteHandler);
+            ContrastSlider.AddHandler(Thumb.DragCompletedEvent, dragCompleteHandler);
+            BrightnessSlider.AddHandler(Thumb.DragCompletedEvent, dragCompleteHandler);
+            VibranceSlider.AddHandler(Thumb.DragCompletedEvent, dragCompleteHandler);
+            TargetProcessTextBox.LostFocus += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                SaveTargetProcessFromUi(cfg);
+            };
+            TargetProcessTextBox.KeyDown += (_, e) =>
+            {
+                if (_suppressUiEvents) return;
+                if (e.Key != System.Windows.Input.Key.Enter)
+                {
+                    return;
+                }
+
+                SaveTargetProcessFromUi(cfg);
+                e.Handled = true;
+            };
+            ProcessPickerComboBox.SelectionChanged += (_, __) =>
+            {
+                if (_suppressUiEvents || _isUpdatingProcessPicker) return;
+                if (ProcessPickerComboBox.SelectedItem is not string selected || selected.StartsWith("(", StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                TargetProcessTextBox.Text = selected;
+                SaveTargetProcessFromUi(cfg);
+            };
+            RefreshProcessListBtn.Click += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                RefreshProcessPickerItems();
+            };
+            BrowseProcessExeBtn.Click += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+
+                var dlg = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "Executable files (*.exe)|*.exe|All files (*.*)|*.*",
+                    Title = "Select game executable"
+                };
+
+                if (dlg.ShowDialog(this) == true)
+                {
+                    TargetProcessTextBox.Text = Path.GetFileName(dlg.FileName);
+                    SaveTargetProcessFromUi(cfg);
+                }
+            };
+            ClearTargetProcessBtn.Click += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                TargetProcessTextBox.Text = string.Empty;
+                SaveTargetProcessFromUi(cfg);
+            };
+            // FPS Overlay
+            EnableFpsCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.EnableFpsOverlay = true; cfg.SaveSettings(); } };
+            EnableFpsCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.EnableFpsOverlay = false; cfg.SaveSettings(); } };
+            FpsXSlider.ValueChanged += (_,__) => { if (!_suppressUiEvents) { cfg.FpsOverlayX = (int)FpsXSlider.Value; FpsXValueText.Text = cfg.FpsOverlayX.ToString(); cfg.SaveSettings(); } };
+            FpsYSlider.ValueChanged += (_,__) => { if (!_suppressUiEvents) { cfg.FpsOverlayY = (int)FpsYSlider.Value; FpsYValueText.Text = cfg.FpsOverlayY.ToString(); cfg.SaveSettings(); } };
+            ShowFrametimeCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFrametimeGraph = true; cfg.SaveSettings(); } };
+            ShowFrametimeCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFrametimeGraph = false; cfg.SaveSettings(); } };
+            Show1PercentCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.Show1PercentLows = true; cfg.SaveSettings(); } };
+            Show1PercentCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.Show1PercentLows = false; cfg.SaveSettings(); } };
+            ShowGenFramesCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowGenFrames = true; cfg.SaveSettings(); } };
+            ShowGenFramesCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowGenFrames = false; cfg.SaveSettings(); } };
+            FpsTextColorBtn.Click += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                PickColor(c =>
+                {
+                    cfg.FpsOverlayColorSerialized = SerializeRgb(c.R, c.G, c.B);
+                    cfg.SaveSettings();
+                });
+            };
+            FpsBgColorBtn.Click += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                PickColor(c =>
+                {
+                    byte alpha = ParseOverlayAlpha(cfg.FpsOverlayBgColorSerialized, 128);
+                    cfg.FpsOverlayBgColorSerialized = SerializeRgba(c.R, c.G, c.B, alpha);
+                    cfg.SaveSettings();
+                });
+            };
+        }
+
+        private static string SerializeRgb(byte r, byte g, byte b) => $"{r},{g},{b}";
+
+        private static string SerializeRgba(byte r, byte g, byte b, byte a) => $"{r},{g},{b},{a}";
+
+        private static byte ParseOverlayAlpha(string? value, byte fallback)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return fallback;
+            var parts = value.Split(',');
+            if (parts.Length == 4 && byte.TryParse(parts[3], out byte alpha)) return alpha;
+            return fallback;
+        }
+
     }
 }
-

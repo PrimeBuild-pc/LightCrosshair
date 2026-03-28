@@ -22,6 +22,8 @@ namespace LightCrosshair
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public CrosshairShape EnumShape { get; set; } = CrosshairShape.Cross; // new canonical enum (serialized as string)
         public string InnerShape { get; set; } = "Dot"; // Inner shape for combined shapes
+        public bool EnableCustomCrosshair { get; set; } = true;
+        public bool OutlineEnabled { get; set; } = false;
 
         // Primary shape properties (outer shape in combined shapes)
         public int Size { get; set; } = 15; // 15% size for optimal visibility
@@ -217,7 +219,7 @@ namespace LightCrosshair
 
         // Static methods for profile management
         private static readonly string ProfilesDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "LightCrosshair", "Profiles");
 
         [Obsolete("Legacy per-file profiles; use ProfileService/ProfileStore")]
@@ -338,7 +340,9 @@ namespace LightCrosshair
                 }
                 SchemaVersion = ProfileSchema.Current;
                 string json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true, Converters = { new JsonStringEnumConverter() } });
-                File.WriteAllText(filePath, json);
+                string tmpPath = filePath + ".tmp";
+                File.WriteAllText(tmpPath, json);
+                File.Move(tmpPath, filePath, true);
             }
             catch
             {
@@ -378,6 +382,8 @@ namespace LightCrosshair
                 Shape = this.Shape,
                 EnumShape = this.EnumShape,
                 InnerShape = this.InnerShape,
+                EnableCustomCrosshair = this.EnableCustomCrosshair,
+                OutlineEnabled = this.OutlineEnabled,
                 Size = this.Size,
                 InnerSize = this.InnerSize,
                 Thickness = this.Thickness,
@@ -437,6 +443,8 @@ namespace LightCrosshair
                    Shape == other.Shape &&
                    EnumShape == other.EnumShape &&
                    InnerShape == other.InnerShape &&
+                   EnableCustomCrosshair == other.EnableCustomCrosshair &&
+                   OutlineEnabled == other.OutlineEnabled &&
                    Size == other.Size &&
                    InnerSize == other.InnerSize &&
                    Thickness == other.Thickness &&
@@ -461,6 +469,6 @@ namespace LightCrosshair
 
     public static class ProfileSchema
     {
-        public const int Current = 3; // v3: remove Plus/CirclePlus (migrate to Cross/CircleCross)
+        public const int Current = 4; // v4: add EnableCustomCrosshair and OutlineEnabled profile flags
     }
 }
