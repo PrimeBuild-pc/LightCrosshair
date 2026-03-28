@@ -20,8 +20,8 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
 - **Multiple Shapes**: Cross, Circle, Dot, Plus, X, and combined shapes
 - **Vibrant Colors**: Neon cyan, electric red, neon green, and custom colors
 - **Transparent Edges**: Clean appearance with no unwanted borders
-- **Adjustable Thickness**: 1-10 pixel edge thickness control
-- **Dynamic Sizing**: 5-100% size adjustment with 5% increments
+- **Adjustable Thickness**: 1–10 pixel edge thickness control
+- **Dynamic Sizing**: 5–100% size adjustment with 5% increments
 </details>
 
 <details>
@@ -30,7 +30,10 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
 
 - **<1% CPU Usage**: Minimal impact during gaming sessions, powered by **SkiaSharp** rendering
 - **Hardware Accelerated**: Zero-GC allocations and pixel-perfect native memory pinning
-- **Safe FPS Counter**: Uses **ETW/PresentMon** for anti-cheat safe telemetry (No in-game hooking/injection)
+- **Safe FPS Counter**: Uses **ETW/PresentMon** for anti-cheat safe telemetry (no in-game hooking/injection)
+</details>
+
+<details>
   <summary><b>🎮 Gaming Features</b></summary>
   <br>
 
@@ -48,13 +51,21 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
 - **System Tray Integration**: Unobtrusive background operation
 - **Profile Management**: Save and switch between multiple configurations
 - **Atomic Cloud-Ready Saves**: Configuration files safely stored in `%AppData%` using atomic writes to prevent corruption
+</details>
+
+---
+
+## 📦 Installation
+
 ### Option 1: Standalone Executable (Recommended)
+
 1. **Download** the latest `LightCrosshair.exe` from the [Releases](../../releases) page
 2. **Place** the executable in your preferred directory
-3. **Run** `LightCrosshair.exe` - no installation required!
+3. **Run** `LightCrosshair.exe` — no installation required!
 4. **Configure** your crosshair using the right-click context menu
 
 ### Option 2: Build from Source
+
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/LightCrosshair.git
@@ -75,9 +86,9 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true /
   <summary><b>Getting Started</b></summary>
   <br>
 
-1. **Launch** the application - a neon cyan cross will appear at screen center  
-2. **Right-click** anywhere on screen to open the context menu  
-3. **Customize** your crosshair using the menu options  
+1. **Launch** the application — a neon cyan cross will appear at screen center
+2. **Right-click** anywhere on screen to open the context menu
+3. **Customize** your crosshair using the menu options
 4. **Close Menu** when finished, or click outside to dismiss
 </details>
 
@@ -85,11 +96,11 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true /
   <summary><b>Context Menu Navigation</b></summary>
   <br>
 
-- **Shape** → Choose from Cross, Circle, Dot, Plus, X, or combined shapes  
-- **Size** → Adjust from 5% to 100% in 5% increments  
-- **Thickness** → Set line thickness from 1–10 pixels  
-- **Edge Color** → Choose color and thickness for borders  
-- **Inner Color** → Set the main crosshair color  
+- **Shape** → Choose from Cross, Circle, Dot, Plus, X, or combined shapes
+- **Size** → Adjust from 5% to 100% in 5% increments
+- **Thickness** → Set line thickness from 1–10 pixels
+- **Edge Color** → Choose color and thickness for borders
+- **Inner Color** → Set the main crosshair color
 - **Profiles** → Save, load, and manage multiple configurations
 </details>
 
@@ -97,19 +108,19 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true /
   <summary><b>Keyboard Shortcuts</b></summary>
   <br>
 
-- `Alt + X` - Toggle crosshair visibility  
-- `Escape` - Close context menu  
-- Right-click - Open context menu
+- `Alt + X` — Toggle crosshair visibility
+- `Escape` — Close context menu
+- Right-click — Open context menu
 </details>
 
 <details>
   <summary><b>💡 Pro Tips</b></summary>
   <br>
 
-- Use **transparent edge color** for clean appearance  
-- **Neon cyan** provides excellent visibility on all backgrounds  
-- **15% size** with **5px thickness** works well for most games  
-- Create separate profiles for different game types  
+- Use **transparent edge color** for a clean appearance
+- **Neon cyan** provides excellent visibility on all backgrounds
+- **15% size** with **5px thickness** works well for most games
+- Create separate profiles for different game types
 - Enable **"Hide during screen recording"** for streaming
 </details>
 
@@ -131,10 +142,10 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true /
   <summary><b>Performance Metrics</b></summary>
   <br>
 
-- **Startup Time**: &lt;500ms (ReadyToRun optimized)
+- **Startup Time**: <500ms (ReadyToRun optimized)
 - **Memory Usage**: ~50MB baseline, stable during operation
-- **CPU Impact**: &lt;1% during idle gaming, &lt;2% during menu operations
-- **Rendering Latency**: &lt;16ms (60+ FPS equivalent)
+- **CPU Impact**: <1% during idle gaming, <2% during menu operations
+- **Rendering Latency**: <16ms (60+ FPS equivalent)
 </details>
 
 <details>
@@ -153,21 +164,22 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true /
 
 We welcome contributions from the gaming and development community! Here's how you can help:
 
-### **Ways to Contribute**
-- 🐛 **Report Bugs** - Submit detailed issue reports
-- 💡 **Suggest Features** - Share ideas for new functionality
-- 🔧 **Submit Code** - Fix bugs or implement new features
-- 📖 **Improve Documentation** - Help make guides clearer
-- 🧪 **Test Builds** - Try pre-release versions and provide feedback
+### Ways to Contribute
 
-### **Development Setup**
+- 🐛 **Report Bugs** — Submit detailed issue reports
+- 💡 **Suggest Features** — Share ideas for new functionality
+- 🔧 **Submit Code** — Fix bugs or implement new features
+- 📖 **Improve Documentation** — Help make guides clearer
+- 🧪 **Test Builds** — Try pre-release versions and provide feedback
+
+### Development Setup
+
 ```bash
-# Prerequisites
+# Prerequisites:
 # - Visual Studio 2022 or VS Code
 # - .NET 8.0 SDK
 # - Git
 
-# Clone and setup
 git clone https://github.com/PrimeBuild-pc/LightCrosshair.git
 cd LightCrosshair
 dotnet restore
@@ -178,10 +190,10 @@ dotnet build
   <summary><b>Coding Standards</b></summary>
   <br>
 
-- Follow C# naming conventions  
-- Add XML documentation for public methods  
-- Include unit tests for new features  
-- Maintain &lt;1% performance impact  
+- Follow C# naming conventions
+- Add XML documentation for public methods
+- Include unit tests for new features
+- Maintain <1% performance impact
 - Test on multiple Windows versions
 </details>
 
@@ -189,10 +201,10 @@ dotnet build
   <summary><b>Pull Request Process</b></summary>
   <br>
 
-1. Fork the repository  
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)  
-3. Commit changes (`git commit -m 'Add amazing feature'`)  
-4. Push to branch (`git push origin feature/amazing-feature`)  
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request with a detailed description
 </details>
 
@@ -200,32 +212,31 @@ dotnet build
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
-### **What this means:**
-- ✅ **Commercial Use** - Use in commercial projects
-- ✅ **Modification** - Modify and distribute changes
-- ✅ **Distribution** - Share with others freely
-- ✅ **Private Use** - Use for personal projects
-- ❌ **Liability** - No warranty or liability
-- ❌ **Trademark** - Cannot use project trademarks
+| Permitted | Restricted |
+|---|---|
+| ✅ Commercial use | ❌ Liability |
+| ✅ Modification | ❌ Trademark use |
+| ✅ Distribution | |
+| ✅ Private use | |
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **Gaming Community** - For feedback and feature requests
-- **Open Source Contributors** - For code improvements and bug fixes
-- **Beta Testers** - For helping identify and resolve issues
-- **.NET Team** - For the excellent framework and tools
+- **Gaming Community** — For feedback and feature requests
+- **Open Source Contributors** — For code improvements and bug fixes
+- **Beta Testers** — For helping identify and resolve issues
+- **.NET Team** — For the excellent framework and tools
 
 ---
 
 ## 📞 Support & Contact
 
-- **Issues**: [GitHub Issues](../../issues) - Bug reports and feature requests
-- **Discussions**: [GitHub Discussions](../../discussions) - Community support
-- **Documentation**: [Wiki](../../wiki) - Detailed guides and tutorials
+- **Issues**: [GitHub Issues](../../issues) — Bug reports and feature requests
+- **Discussions**: [GitHub Discussions](../../discussions) — Community support
+- **Documentation**: [Wiki](../../wiki) — Detailed guides and tutorials
 
 ---
 
