@@ -32,6 +32,7 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
 - **Hardware Accelerated**: Zero-GC allocations and pixel-perfect native memory pinning
 - **Safe FPS Counter**: Uses **ETW/PresentMon** for anti-cheat safe telemetry (no in-game hooking/injection)
 </details>
+- **Independent Flip Mode**: Run the crosshair and FPS overlay in Independent Flip for an ultra-low latency setup. Note: Requires Optimizations for windowed games enabled in Windows 11 settings and MPO (Multi-Plane Overlay) active (Windows default).
 
 <details>
   <summary><b>🎮 Gaming Features</b></summary>
