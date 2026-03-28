@@ -1,0 +1,31 @@
+name: .NET Build and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    # Usiamo un server Windows perché l'app interagisce con le DirectX/Windows API
+    runs-on: windows-latest 
+
+    steps:
+    - name: Checkout del codice
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        # Inserisci qui la versione di .NET che usi (es. 6.0.x, 7.0.x, 8.0.x)
+        dotnet-version: '8.0.x' 
+
+    - name: Ripristino delle dipendenze (Restore)
+      run: dotnet restore
+
+    - name: Compilazione (Build)
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Esecuzione dei Test
+      run: dotnet test --no-build --verbosity normal --configuration Release
