@@ -94,6 +94,23 @@ namespace LightCrosshair
         public int FpsOverlayX { get; set; } = 10;
         public int FpsOverlayY { get; set; } = 10;
         public bool ShowFrametimeGraph { get; set; } = true;
+        public const int GraphRefreshRateDefaultMs = 66;
+        public const int GraphTimeWindowDefaultMs = 2000;
+
+        private int _graphRefreshRateMs = GraphRefreshRateDefaultMs;
+        private int _graphTimeWindowMs = GraphTimeWindowDefaultMs;
+
+        public int GraphRefreshRateMs
+        {
+            get => _graphRefreshRateMs;
+            set => _graphRefreshRateMs = NormalizeGraphRefreshRatePreset(value);
+        }
+
+        public int GraphTimeWindowMs
+        {
+            get => _graphTimeWindowMs;
+            set => _graphTimeWindowMs = NormalizeGraphTimeWindowPreset(value);
+        }
         public bool Show1PercentLows { get; set; } = true;
         public bool ShowGenFrames { get; set; } = true;
         public string FpsOverlayColorSerialized { get; set; } = "255,255,255";
@@ -222,6 +239,8 @@ namespace LightCrosshair
                         FpsOverlayX = loadedConfig.FpsOverlayX;
                         FpsOverlayY = loadedConfig.FpsOverlayY;
                         ShowFrametimeGraph = loadedConfig.ShowFrametimeGraph;
+                        GraphRefreshRateMs = loadedConfig.GraphRefreshRateMs;
+                        GraphTimeWindowMs = loadedConfig.GraphTimeWindowMs;
                         Show1PercentLows = loadedConfig.Show1PercentLows;
                         ShowGenFrames = loadedConfig.ShowGenFrames;
                         FpsOverlayColorSerialized = loadedConfig.FpsOverlayColorSerialized ?? "255,255,255";
@@ -342,6 +361,22 @@ namespace LightCrosshair
                     Debug.WriteLine($"Error in OnSettingsChanged: {ex.Message}");
                 }
             }
+        }
+
+        public static int NormalizeGraphRefreshRatePreset(int value)
+        {
+            if (value <= 0) return GraphRefreshRateDefaultMs;
+            if (value <= 49) return 33;
+            if (value <= 83) return 66;
+            return 100;
+        }
+
+        public static int NormalizeGraphTimeWindowPreset(int value)
+        {
+            if (value <= 0) return GraphTimeWindowDefaultMs;
+            if (value <= 1750) return 1500;
+            if (value <= 2500) return 2000;
+            return 3000;
         }
 
         public void Dispose()

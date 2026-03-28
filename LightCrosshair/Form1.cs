@@ -141,6 +141,7 @@ namespace LightCrosshair
             this.SetStyle(ControlStyles.Selectable, false);
 
             _profileService.CurrentChanged += Service_CurrentChanged_Handler;
+            CrosshairConfig.Instance.SettingsChanged += Config_SettingsChanged_Handler;
 
             // Initialize system tray icon and menu
             InitializeNotifyIcon();
@@ -352,14 +353,39 @@ namespace LightCrosshair
             _recordingDetectionTimer.Start();
 
             _fpsTimer = new System.Windows.Forms.Timer();
-            _fpsTimer.Interval = SystemFpsMonitor.PreferredUiRefreshMs;
+            _fpsTimer.Interval = GetFpsOverlayTimerIntervalMs();
             _fpsTimer.Tick += FpsTimer_Tick;
             _fpsTimer.Start();
         }
 
         private void FpsTimer_Tick(object? sender, EventArgs e)
         {
+            SyncFpsTimerInterval();
+
             UpdateFpsOverlaySurface();
+        }
+
+        private void SyncFpsTimerInterval()
+        {
+            if (_fpsTimer == null)
+            {
+                return;
+            }
+
+            int targetInterval = GetFpsOverlayTimerIntervalMs();
+            if (_fpsTimer.Interval != targetInterval)
+            {
+                _fpsTimer.Interval = targetInterval;
+            }
+        }
+
+        private static int GetFpsOverlayTimerIntervalMs()
+        {
+            var cfg = CrosshairConfig.Instance;
+            int requested = cfg.ShowFrametimeGraph
+                ? CrosshairConfig.NormalizeGraphRefreshRatePreset(cfg.GraphRefreshRateMs)
+                : SystemFpsMonitor.PreferredUiTextRefreshMs;
+            return Math.Clamp(requested, 33, 1000);
         }
 
         private void EnsureFpsOverlayForm()
@@ -2025,6 +2051,44 @@ namespace LightCrosshair
             catch (Exception ex) { Program.LogError(ex, "Form1.Persisted handler"); }
         }
 
+        private void Config_SettingsChanged_Handler(object? sender, EventArgs e)
+        {
+            if (_isExiting || IsDisposed)
+            {
+                return;
+            }
+
+            void Apply()
+            {
+                if (_isExiting || IsDisposed)
+                {
+                    return;
+                }
+
+                SyncFpsTimerInterval();
+            }
+
+            try
+            {
+                if (InvokeRequired)
+                {
+                    BeginInvoke((Action)Apply);
+                }
+                else
+                {
+                    Apply();
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // No-op during shutdown races.
+            }
+            catch (InvalidOperationException)
+            {
+                // No-op when the window handle is not available yet.
+            }
+        }
+
         private void OnApplication_Exit(object? sender, EventArgs e)
         {
             GammaController.RestoreOriginal();
@@ -2052,6 +2116,8 @@ namespace LightCrosshair
                 _profileService.CurrentChanged -= Service_CurrentChanged_Handler;
                 _profileService.Persisted -= ProfileService_Persisted_Handler;
             }
+
+            CrosshairConfig.Instance.SettingsChanged -= Config_SettingsChanged_Handler;
 
             this.Paint -= Form1_Paint_Handler;
             this.DpiChanged -= Form1_DpiChanged;

@@ -19,6 +19,7 @@ namespace LightCrosshair
         double OnePercentLowFps,
         double LatestFrameTimeMs,
         int GeneratedFrameCount,
+        bool IsGeneratedFrameDataAvailable,
         double[] RecentFrameTimesMs
     );
 
@@ -33,6 +34,7 @@ namespace LightCrosshair
         private readonly double[][] _snapshotBuffers;
         private int _snapshotBufIdx;
         private readonly double[] _worstFramesBuffer;
+        private bool _generatedFrameDetectionAvailable;
 
         public FpsMetricsBuffer(int capacity = 1000)
         {
@@ -58,6 +60,15 @@ namespace LightCrosshair
             {
                 _head = 0;
                 _count = 0;
+                _generatedFrameDetectionAvailable = false;
+            }
+        }
+
+        public void SetGeneratedFrameDetectionAvailable(bool isAvailable)
+        {
+            lock (_sync)
+            {
+                _generatedFrameDetectionAvailable = isAvailable;
             }
         }
 
@@ -77,107 +88,138 @@ namespace LightCrosshair
 
         public FpsMetricsSnapshot Snapshot()
         {
+            int currentCount;
+            bool genAvailable;
+            double[] values;
+            bool[] flagsCopy;
+
             lock (_sync)
             {
                 if (_count == 0)
                 {
-                    return new FpsMetricsSnapshot(false, 0, 0, 0, 0, 0, 0, Array.Empty<double>());
+                    return new FpsMetricsSnapshot(false, 0, 0, 0, 0, 0, 0, false, Array.Empty<double>());
                 }
 
                 _snapshotBufIdx = (_snapshotBufIdx + 1) % 3;
-                var values = _snapshotBuffers[_snapshotBufIdx];
+                values = _snapshotBuffers[_snapshotBufIdx];
 
                 int start = (_head - _count + _frameTimesMs.Length) % _frameTimesMs.Length;
                 
                 // Copy all to values for drawing the graph later
-                for (int i = 0; i < _count; i++)
+                if (start + _count <= _frameTimesMs.Length)
                 {
-                    values[i] = _frameTimesMs[(start + i) % _frameTimesMs.Length];
+                    Array.Copy(_frameTimesMs, start, values, 0, _count);
+                }
+                else
+                {
+                    int firstPart = _frameTimesMs.Length - start;
+                    Array.Copy(_frameTimesMs, start, values, 0, firstPart);
+                    Array.Copy(_frameTimesMs, 0, values, firstPart, _count - firstPart);
                 }
 
-                // 1) Fix Spikes (Sliding Window): We compute real-time FPS using the last ~500ms of frames
-                // 3) Fix 1% Low Logic: We compute Average and 1% Low over a rolling ~1000ms window
-                double halfSecTimeSum = 0;
-                int halfSecCount = 0;
-                double oneSecTimeSum = 0;
-                int oneSecCount = 0;
-                int generatedCount = 0;
-
-                for (int i = 0; i < _count; i++)
+                // We can release the lock early for mathematical computations
+                // We just need a copy of generated frame flags
+                flagsCopy = new bool[_count];
+                if (start + _count <= _generatedFlags.Length)
                 {
-                    int idx = (_head - 1 - i + _frameTimesMs.Length) % _frameTimesMs.Length;
-                    double v = _frameTimesMs[idx];
-                    
-                    if (oneSecTimeSum < 1000.0) 
-                    {
-                        oneSecTimeSum += v;
-                        oneSecCount++;
-                        if (_generatedFlags[idx]) generatedCount++;
-                        
-                        if (halfSecTimeSum < 500.0)
-                        {
-                            halfSecTimeSum += v;
-                            halfSecCount++;
-                        }
-                    }
-                    else
-                    {
-                        // Stop going further back once we exceed 1000ms
-                        break;
-                    }
+                    Array.Copy(_generatedFlags, start, flagsCopy, 0, _count);
                 }
-
-                if (oneSecCount == 0) oneSecCount = 1;
-                if (halfSecCount == 0) halfSecCount = 1;
-                if (halfSecTimeSum <= 0) halfSecTimeSum = 1;
-
-                int onePercentCount = Math.Max(1, (int)Math.Ceiling(oneSecCount * 0.01));
-                Array.Clear(_worstFramesBuffer, 0, _worstFramesBuffer.Length);
-
-                for (int i = 0; i < oneSecCount; i++)
+                else
                 {
-                    int idx = (_head - 1 - i + _frameTimesMs.Length) % _frameTimesMs.Length;
-                    double v = _frameTimesMs[idx];
-
-                    // Maintain highest (worst) frame times in descending order
-                    if (v > _worstFramesBuffer[onePercentCount - 1])
-                    {
-                        for (int j = 0; j < onePercentCount; j++)
-                        {
-                            if (v > _worstFramesBuffer[j])
-                            {
-                                // Shift elements down
-                                for (int k = onePercentCount - 1; k > j; k--)
-                                {
-                                    _worstFramesBuffer[k] = _worstFramesBuffer[k - 1];
-                                }
-                                _worstFramesBuffer[j] = v;
-                                break;
-                            }
-                        }
-                    }
+                    int firstPart = _generatedFlags.Length - start;
+                    Array.Copy(_generatedFlags, start, flagsCopy, 0, firstPart);
+                    Array.Copy(_generatedFlags, 0, flagsCopy, firstPart, _count - firstPart);
                 }
-
-                double latest = values[_count - 1];
-                // Sliding window FPS matching the ~500ms time segment
-                double instantFps = halfSecCount * (1000.0 / halfSecTimeSum);
-                double avgFrameTime = oneSecTimeSum / oneSecCount;
                 
-                double badFramesSum = 0;
-                for (int i = 0; i < onePercentCount; i++) badFramesSum += _worstFramesBuffer[i];
-                double onePercentFrameTime = badFramesSum / onePercentCount;
+                currentCount = _count;
+                genAvailable = _generatedFrameDetectionAvailable;
+            } // END LOCK
 
-                return new FpsMetricsSnapshot(
-                    true,
-                    _count,
-                    instantFps,
-                    ToFps(avgFrameTime),
-                    ToFps(onePercentFrameTime),
-                    latest,
-                    generatedCount,
-                    values
-                );
+            // 1) Fix Spikes (Sliding Window): We compute real-time FPS using the last ~500ms of frames
+            // 3) Fix 1% Low Logic: We compute Average and 1% Low over a rolling ~1000ms window
+            double halfSecTimeSum = 0;
+            int halfSecCount = 0;
+            double oneSecTimeSum = 0;
+            int oneSecCount = 0;
+            int generatedCount = 0;
+
+            for (int i = 0; i < currentCount; i++)
+            {
+                int idx = currentCount - 1 - i;
+                double v = values[idx];
+                
+                if (oneSecTimeSum < 1000.0) 
+                {
+                    oneSecTimeSum += v;
+                    oneSecCount++;
+                    if (flagsCopy[idx]) generatedCount++;
+                    
+                    if (halfSecTimeSum < 500.0)
+                    {
+                        halfSecTimeSum += v;
+                        halfSecCount++;
+                    }
+                }
+                else
+                {
+                    // Stop going further back once we exceed 1000ms
+                    break;
+                }
             }
+
+            if (oneSecCount == 0) oneSecCount = 1;
+            if (halfSecCount == 0) halfSecCount = 1;
+            if (halfSecTimeSum <= 0) halfSecTimeSum = 1;
+
+            int onePercentCount = Math.Max(1, (int)Math.Ceiling(oneSecCount * 0.01));
+            Array.Clear(_worstFramesBuffer, 0, _worstFramesBuffer.Length);
+
+            for (int i = 0; i < oneSecCount; i++)
+            {
+                int idx = currentCount - 1 - i;
+                double v = values[idx];
+
+                // Maintain highest (worst) frame times in descending order
+                if (v > _worstFramesBuffer[onePercentCount - 1])
+                {
+                    for (int j = 0; j < onePercentCount; j++)
+                    {
+                        if (v > _worstFramesBuffer[j])
+                        {
+                            // Shift elements down
+                            for (int k = onePercentCount - 1; k > j; k--)
+                            {
+                                _worstFramesBuffer[k] = _worstFramesBuffer[k - 1];
+                            }
+                            _worstFramesBuffer[j] = v;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            double latest = values[currentCount - 1];
+            // Sliding window FPS matching the ~500ms time segment
+            double instantFps = halfSecCount * (1000.0 / halfSecTimeSum);
+            double avgFrameTime = oneSecTimeSum / oneSecCount;
+            
+            double badFramesSum = 0;
+            for (int i = 0; i < onePercentCount; i++) badFramesSum += _worstFramesBuffer[i];
+            double onePercentFrameTime = badFramesSum / onePercentCount;
+
+            int visibleGeneratedCount = genAvailable ? generatedCount : 0;
+
+            return new FpsMetricsSnapshot(
+                true,
+                currentCount,
+                instantFps,
+                ToFps(avgFrameTime),
+                ToFps(onePercentFrameTime),
+                latest,
+                visibleGeneratedCount,
+                genAvailable,
+                values
+            );
         }
 
         private static double ToFps(double frameTimeMs)
@@ -190,7 +232,7 @@ namespace LightCrosshair
     {
         private const int RtssPollMs = 120;
         private const int EtwFallbackQuietWindowSeconds = 2;
-        private const int UiTextRefreshThrottleMs = 100;
+        private const int UiTextRefreshThrottleMs = 333;
         private static readonly TimeSpan TrackingRefreshInterval = TimeSpan.FromMilliseconds(500);
 
         [DllImport("user32.dll")]
@@ -229,11 +271,14 @@ namespace LightCrosshair
         private static long _lastUiTextRefreshTick;
         private static int _trackedProcessId;
         private static string _trackedProcessName = string.Empty;
+        private static double _previousFrameTimeMs;
+        private static bool _lastWasMarkedGenerated;
 
         public static string CurrentFpsText { get; private set; } = "FPS: --";
         public static string StatusText { get; private set; } = "Idle";
         public static string ActiveSource { get; private set; } = "None";
-        public static int PreferredUiRefreshMs => 333; // Aggiornato a 333ms per maggiore reattività
+        public static int PreferredUiRefreshMs => 50;
+        public static int PreferredUiTextRefreshMs => UiTextRefreshThrottleMs;
 
         public static void Start()
         {
@@ -253,6 +298,8 @@ namespace LightCrosshair
             ActiveSource = "None";
             _trackedProcessId = 0;
             _trackedProcessName = string.Empty;
+            _previousFrameTimeMs = 0;
+            _lastWasMarkedGenerated = false;
 
             _dele = new WinEventDelegate(WinEventProc);
             _hook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, _dele, 0, 0, WINEVENT_OUTOFCONTEXT);
@@ -280,6 +327,8 @@ namespace LightCrosshair
             _trackedProcessId = 0;
             _trackedProcessName = string.Empty;
             _lastPresentByPid.Clear();
+            _previousFrameTimeMs = 0;
+            _lastWasMarkedGenerated = false;
         }
 
         public static FpsMetricsSnapshot GetSnapshot() => _metrics.Snapshot();
@@ -546,12 +595,41 @@ namespace LightCrosshair
                     _trackedProcessName = processName;
                     _lastPresentByPid.Clear();
                     _metrics.Clear();
+                    _previousFrameTimeMs = 0;
+                    _lastWasMarkedGenerated = false;
                     ActiveSource = "None";
                     StatusText = nextPid > 0
                         ? $"Tracking {processName} ({nextPid})"
                         : "Waiting for game window focus";
                 }
             }
+        }
+
+        private static bool InferGeneratedFrameEtw(double frameTimeMs)
+        {
+            if (frameTimeMs <= 0.05 || frameTimeMs > 500) return false;
+
+            bool isGeneratedFrame = false;
+
+            if (_previousFrameTimeMs > 0 && frameTimeMs < 16.0)
+            {
+                double ratio = frameTimeMs / _previousFrameTimeMs;
+
+                // If pacing is stable, native FG often doubles frame cadence: alternate tagging.
+                if (ratio >= 0.75 && ratio <= 1.25)
+                {
+                    isGeneratedFrame = !_lastWasMarkedGenerated;
+                }
+                else
+                {
+                    // Real stutter or scene change: reset alternation state.
+                    _lastWasMarkedGenerated = false;
+                }
+            }
+
+            _lastWasMarkedGenerated = isGeneratedFrame;
+            _previousFrameTimeMs = frameTimeMs;
+            return isGeneratedFrame;
         }
 
         private static bool TryGetTrackedProcessId(out int trackedPid, bool forceRefresh = false)
@@ -632,6 +710,18 @@ namespace LightCrosshair
                     _metrics.Clear();
                 }
 
+                bool runGenInference = source == "ETW" && CrosshairConfig.Instance.ShowGenFrames;
+                if (runGenInference)
+                {
+                    isGeneratedFrame = InferGeneratedFrameEtw(frameTimeMs);
+                }
+                else
+                {
+                    isGeneratedFrame = false;
+                }
+
+                bool genDetectionAvailable = runGenInference;
+                _metrics.SetGeneratedFrameDetectionAvailable(genDetectionAvailable);
                 ActiveSource = source;
                 _metrics.AddFrame(frameTimeMs, isGeneratedFrame);
             }
@@ -662,7 +752,9 @@ namespace LightCrosshair
 
             if (CrosshairConfig.Instance.ShowGenFrames)
             {
-                parts.Add($"Gen: {snapshot.GeneratedFrameCount}");
+                parts.Add(snapshot.IsGeneratedFrameDataAvailable
+                    ? $"Gen: {snapshot.GeneratedFrameCount}"
+                    : "Gen: N/A");
             }
             if (!string.IsNullOrEmpty(ActiveSource) && ActiveSource != "None")
             {

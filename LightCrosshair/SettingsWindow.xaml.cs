@@ -636,8 +636,11 @@ namespace LightCrosshair
             FpsYSlider.Value = cfg.FpsOverlayY;
             FpsYValueText.Text = cfg.FpsOverlayY.ToString();
             ShowFrametimeCheckbox.IsChecked = cfg.ShowFrametimeGraph;
+            SelectGraphRefreshPreset(cfg.GraphRefreshRateMs);
+            SelectGraphTimeWindowPreset(cfg.GraphTimeWindowMs);
             Show1PercentCheckbox.IsChecked = cfg.Show1PercentLows;
             ShowGenFramesCheckbox.IsChecked = cfg.ShowGenFrames;
+            UpdateGraphRefreshUiState();
             _suppressUiEvents = false;
             RefreshDisplayBackendInfo();
         }
@@ -925,12 +928,50 @@ namespace LightCrosshair
                 SaveTargetProcessFromUi(cfg);
             };
             // FPS Overlay
-            EnableFpsCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.EnableFpsOverlay = true; cfg.SaveSettings(); } };
-            EnableFpsCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.EnableFpsOverlay = false; cfg.SaveSettings(); } };
+            EnableFpsCheckbox.Checked += (_,__) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.EnableFpsOverlay = true;
+                UpdateGraphRefreshUiState();
+                cfg.SaveSettings();
+            };
+            EnableFpsCheckbox.Unchecked += (_,__) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.EnableFpsOverlay = false;
+                UpdateGraphRefreshUiState();
+                cfg.SaveSettings();
+            };
             FpsXSlider.ValueChanged += (_,__) => { if (!_suppressUiEvents) { cfg.FpsOverlayX = (int)FpsXSlider.Value; FpsXValueText.Text = cfg.FpsOverlayX.ToString(); cfg.SaveSettings(); } };
             FpsYSlider.ValueChanged += (_,__) => { if (!_suppressUiEvents) { cfg.FpsOverlayY = (int)FpsYSlider.Value; FpsYValueText.Text = cfg.FpsOverlayY.ToString(); cfg.SaveSettings(); } };
-            ShowFrametimeCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFrametimeGraph = true; cfg.SaveSettings(); } };
-            ShowFrametimeCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFrametimeGraph = false; cfg.SaveSettings(); } };
+            ShowFrametimeCheckbox.Checked += (_,__) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.ShowFrametimeGraph = true;
+                UpdateGraphRefreshUiState();
+                cfg.SaveSettings();
+            };
+            ShowFrametimeCheckbox.Unchecked += (_,__) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.ShowFrametimeGraph = false;
+                UpdateGraphRefreshUiState();
+                cfg.SaveSettings();
+            };
+            GraphRefreshRateCombo.SelectionChanged += (_, __) =>
+            {
+                if (_suppressUiEvents || GraphRefreshRateCombo.SelectedItem is not ComboBoxItem item) return;
+                if (item.Tag is not string tagValue || !int.TryParse(tagValue, out int parsedMs)) return;
+                cfg.GraphRefreshRateMs = parsedMs;
+                cfg.SaveSettings();
+            };
+            GraphTimeWindowCombo.SelectionChanged += (_, __) =>
+            {
+                if (_suppressUiEvents || GraphTimeWindowCombo.SelectedItem is not ComboBoxItem item) return;
+                if (item.Tag is not string tagValue || !int.TryParse(tagValue, out int parsedMs)) return;
+                cfg.GraphTimeWindowMs = parsedMs;
+                cfg.SaveSettings();
+            };
             Show1PercentCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.Show1PercentLows = true; cfg.SaveSettings(); } };
             Show1PercentCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.Show1PercentLows = false; cfg.SaveSettings(); } };
             ShowGenFramesCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowGenFrames = true; cfg.SaveSettings(); } };
@@ -966,6 +1007,59 @@ namespace LightCrosshair
             var parts = value.Split(',');
             if (parts.Length == 4 && byte.TryParse(parts[3], out byte alpha)) return alpha;
             return fallback;
+        }
+
+        private void SelectGraphRefreshPreset(int refreshMs)
+        {
+            if (GraphRefreshRateCombo == null)
+            {
+                return;
+            }
+
+            int target = CrosshairConfig.NormalizeGraphRefreshRatePreset(refreshMs);
+            foreach (var item in GraphRefreshRateCombo.Items.OfType<ComboBoxItem>())
+            {
+                if (item.Tag is string tag && int.TryParse(tag, out int value) && value == target)
+                {
+                    GraphRefreshRateCombo.SelectedItem = item;
+                    return;
+                }
+            }
+        }
+
+        private void UpdateGraphRefreshUiState()
+        {
+            if (GraphRefreshRateCombo == null || GraphTimeWindowCombo == null)
+            {
+                return;
+            }
+
+            bool fpsOverlayEnabled = EnableFpsCheckbox?.IsChecked == true;
+            bool showGraph = ShowFrametimeCheckbox?.IsChecked == true;
+            bool controlsEnabled = fpsOverlayEnabled && showGraph;
+
+            GraphRefreshRateCombo.IsEnabled = controlsEnabled;
+            GraphRefreshRateCombo.Opacity = controlsEnabled ? 1.0 : 0.55;
+            GraphTimeWindowCombo.IsEnabled = controlsEnabled;
+            GraphTimeWindowCombo.Opacity = controlsEnabled ? 1.0 : 0.55;
+        }
+
+        private void SelectGraphTimeWindowPreset(int timeWindowMs)
+        {
+            if (GraphTimeWindowCombo == null)
+            {
+                return;
+            }
+
+            int target = CrosshairConfig.NormalizeGraphTimeWindowPreset(timeWindowMs);
+            foreach (var item in GraphTimeWindowCombo.Items.OfType<ComboBoxItem>())
+            {
+                if (item.Tag is string tag && int.TryParse(tag, out int value) && value == target)
+                {
+                    GraphTimeWindowCombo.SelectedItem = item;
+                    return;
+                }
+            }
         }
 
     }
