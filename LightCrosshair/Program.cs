@@ -9,9 +9,15 @@ namespace LightCrosshair;
 static class Program
 {
     private static readonly object _logGate = new object();
-    private static readonly string _debugLogPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "debug.log");
+    private static readonly string _logDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "LightCrosshair",
+        "logs");
+    private static readonly string _errorLogPath = Path.Combine(_logDirectory, "error.log");
+    private static readonly string _debugLogPath = Path.Combine(_logDirectory, "debug.log");
+    private const long MaxLogSizeBytes = 2 * 1024 * 1024;
     private static int _shutdownRestoreTriggered;
-    public static bool DebugLoggingEnabled { get; set; } = true;
+    public static bool DebugLoggingEnabled { get; set; } = GetDefaultDebugLoggingEnabled();
 
     [STAThread]
     static void Main()
@@ -107,16 +113,54 @@ static class Program
         }
     }
 
+    private static bool GetDefaultDebugLoggingEnabled()
+    {
+#if DEBUG
+        return true;
+#else
+        string? env = Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DEBUG_LOG");
+        if (string.IsNullOrWhiteSpace(env)) return false;
+        return env.Equals("1", StringComparison.OrdinalIgnoreCase) ||
+               env.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+               env.Equals("yes", StringComparison.OrdinalIgnoreCase);
+#endif
+    }
+
+    private static void EnsureLogDirectory()
+    {
+        Directory.CreateDirectory(_logDirectory);
+    }
+
+    private static void AppendWithRotation(string path, string text)
+    {
+        if (File.Exists(path))
+        {
+            var info = new FileInfo(path);
+            if (info.Length >= MaxLogSizeBytes)
+            {
+                string archived = path + ".1";
+                if (File.Exists(archived))
+                {
+                    File.Delete(archived);
+                }
+
+                File.Move(path, archived);
+            }
+        }
+
+        File.AppendAllText(path, text);
+    }
+
     public static void LogError(Exception ex, string context)
     {
         try
         {
-            string logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "error.log");
             string timestamp = DateTime.Now.ToString("[dd/MM/yyyy HH:mm:ss]");
             string errorMessage = $"{timestamp} {context}: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n\n";
             lock (_logGate)
             {
-                File.AppendAllText(logPath, errorMessage);
+                EnsureLogDirectory();
+                AppendWithRotation(_errorLogPath, errorMessage);
             }
             try { Console.WriteLine(errorMessage); } catch { }
             Debug.WriteLine(errorMessage);
@@ -136,7 +180,8 @@ static class Program
             string line = context is null ? $"{timestamp} {message}\n" : $"{timestamp} {context}: {message}\n";
             lock (_logGate)
             {
-                File.AppendAllText(_debugLogPath, line);
+                EnsureLogDirectory();
+                AppendWithRotation(_debugLogPath, line);
             }
             try { Console.WriteLine(line.TrimEnd()); } catch { }
             Debug.WriteLine(line);

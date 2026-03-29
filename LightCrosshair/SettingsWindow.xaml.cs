@@ -28,11 +28,14 @@ namespace LightCrosshair
         private readonly string _currentVersion;
         private ResourceDictionary? _activeThemeDictionary;
         private static readonly HttpClient Http = new();
+        private readonly EventHandler<CrosshairProfile> _profilesCurrentChangedHandler;
+        private bool _allowWindowClose;
 
         public SettingsWindow(IProfileService profiles)
         {
             _profiles = profiles;
             _prefs = PreferencesStore.Load();
+            _profilesCurrentChangedHandler = (_, p) => Dispatcher.Invoke(() => { LoadFromProfile(p); UpdatePositionStatus(); });
 
             // One-time migration to the new default settings window dimensions.
             if (!_prefs.SettingsWindowSizeMigrated)
@@ -137,7 +140,7 @@ namespace LightCrosshair
             SaveCurrentProfileBtn.Click += (_, __) => SaveCurrentProfileToSelected();
             RefreshProfilesUI();
 
-            _profiles.CurrentChanged += (_, p) => Dispatcher.Invoke(() => { LoadFromProfile(p); UpdatePositionStatus(); });
+            _profiles.CurrentChanged += _profilesCurrentChangedHandler;
 
             // Initial status
             UpdatePositionStatus();
@@ -389,6 +392,13 @@ namespace LightCrosshair
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
+            if (_allowWindowClose)
+            {
+                _profiles.CurrentChanged -= _profilesCurrentChangedHandler;
+                base.OnClosing(e);
+                return;
+            }
+
             base.OnClosing(e);
             try
             {
@@ -405,6 +415,11 @@ namespace LightCrosshair
             // Do not shutdown app; only hide settings window
             e.Cancel = true;
             Hide();
+        }
+
+        internal void AllowCloseForShutdown()
+        {
+            _allowWindowClose = true;
         }
 
         protected override void OnClosed(EventArgs e)
@@ -689,6 +704,16 @@ namespace LightCrosshair
             HkShift2.IsChecked = cfg.CycleProfileHotkeyUseShift;
             LoadKeysCombo(HkKey2Combo, cfg.CycleProfileHotkeyKey);
 
+            HkAlt4.IsChecked = cfg.CycleProfilePrevHotkeyUseAlt;
+            HkCtrl4.IsChecked = cfg.CycleProfilePrevHotkeyUseControl;
+            HkShift4.IsChecked = cfg.CycleProfilePrevHotkeyUseShift;
+            LoadKeysCombo(HkKey4Combo, cfg.CycleProfilePrevHotkeyKey);
+
+            HkAlt3.IsChecked = cfg.SettingsWindowHotkeyUseAlt;
+            HkCtrl3.IsChecked = cfg.SettingsWindowHotkeyUseControl;
+            HkShift3.IsChecked = cfg.SettingsWindowHotkeyUseShift;
+            LoadKeysCombo(HkKey3Combo, cfg.SettingsWindowHotkeyKey);
+
             // Gamma
             EnableGammaCheckbox.IsChecked = cfg.EnableGammaOverride;
             GammaSlider.Value = cfg.GammaValue;
@@ -885,6 +910,36 @@ namespace LightCrosshair
             {
                 if (_suppressUiEvents || HkKey2Combo.SelectedItem == null) return;
                 cfg.CycleProfileHotkeyKey = (System.Windows.Forms.Keys)((System.Windows.Controls.ComboBoxItem)HkKey2Combo.SelectedItem).Tag;
+                cfg.SaveSettings();
+                cfg.ReRegisterHotkeys();
+            };
+
+            // Hotkey Cycle Back
+            HkAlt4.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseAlt = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkAlt4.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseAlt = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkCtrl4.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseControl = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkCtrl4.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseControl = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkShift4.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseShift = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkShift4.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseShift = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkKey4Combo.SelectionChanged += (_, __) =>
+            {
+                if (_suppressUiEvents || HkKey4Combo.SelectedItem == null) return;
+                cfg.CycleProfilePrevHotkeyKey = (System.Windows.Forms.Keys)((System.Windows.Controls.ComboBoxItem)HkKey4Combo.SelectedItem).Tag;
+                cfg.SaveSettings();
+                cfg.ReRegisterHotkeys();
+            };
+
+            // Hotkey Toggle Settings Window
+            HkAlt3.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseAlt = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkAlt3.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseAlt = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkCtrl3.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseControl = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkCtrl3.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseControl = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkShift3.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseShift = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkShift3.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseShift = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkKey3Combo.SelectionChanged += (_, __) =>
+            {
+                if (_suppressUiEvents || HkKey3Combo.SelectedItem == null) return;
+                cfg.SettingsWindowHotkeyKey = (System.Windows.Forms.Keys)((System.Windows.Controls.ComboBoxItem)HkKey3Combo.SelectedItem).Tag;
                 cfg.SaveSettings();
                 cfg.ReRegisterHotkeys();
             };

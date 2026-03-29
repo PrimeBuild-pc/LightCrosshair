@@ -1,7 +1,6 @@
 using System;
 using System.Drawing;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Forms;
@@ -18,18 +17,6 @@ namespace LightCrosshair
         public static CrosshairConfig Instance => _instance ??= new CrosshairConfig();
         [ThreadStatic]
         private static bool _isDeserializing;
-
-        // Constants for hotkey registration
-        private const int WM_HOTKEY = 0x0312;
-        private const int HOTKEY_ID = 9000;
-        private const int HOTKEY_CYCLE_ID = 9001;
-
-        // Windows API imports for hotkey registration
-        [DllImport("user32.dll")]
-        private static extern bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vk);
-
-        [DllImport("user32.dll")]
-        private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
         // File path for settings
         private readonly string _configFilePath;
@@ -82,6 +69,18 @@ namespace LightCrosshair
         public bool CycleProfileHotkeyUseShift { get; set; } = false;
         public bool CycleProfileHotkeyUseWin { get; set; } = false;
 
+        public Keys CycleProfilePrevHotkeyKey { get; set; } = Keys.Left;
+        public bool CycleProfilePrevHotkeyUseAlt { get; set; } = false;
+        public bool CycleProfilePrevHotkeyUseControl { get; set; } = true;
+        public bool CycleProfilePrevHotkeyUseShift { get; set; } = true;
+        public bool CycleProfilePrevHotkeyUseWin { get; set; } = false;
+
+        public Keys SettingsWindowHotkeyKey { get; set; } = Keys.L;
+        public bool SettingsWindowHotkeyUseAlt { get; set; } = true;
+        public bool SettingsWindowHotkeyUseControl { get; set; } = false;
+        public bool SettingsWindowHotkeyUseShift { get; set; } = false;
+        public bool SettingsWindowHotkeyUseWin { get; set; } = false;
+
         // Display (Gamma/Vibrance) Settings
         public bool EnableGammaOverride { get; set; } = false;
         public int GammaValue { get; set; } = 100; // 100 = default
@@ -127,9 +126,8 @@ namespace LightCrosshair
 
         // Event triggered when settings are changed
         public event EventHandler? SettingsChanged;
+        public event EventHandler? HotkeysRegistrationRequested;
 
-        private Form? _ownerForm;
-        private bool _hotkeyRegistered = false;
         private bool _disposed = false;
 
         public CrosshairConfig()
@@ -232,6 +230,18 @@ namespace LightCrosshair
                         CycleProfileHotkeyUseShift = loadedConfig.CycleProfileHotkeyUseShift;
                         CycleProfileHotkeyUseWin = loadedConfig.CycleProfileHotkeyUseWin;
 
+                        CycleProfilePrevHotkeyKey = loadedConfig.CycleProfilePrevHotkeyKey;
+                        CycleProfilePrevHotkeyUseAlt = loadedConfig.CycleProfilePrevHotkeyUseAlt;
+                        CycleProfilePrevHotkeyUseControl = loadedConfig.CycleProfilePrevHotkeyUseControl;
+                        CycleProfilePrevHotkeyUseShift = loadedConfig.CycleProfilePrevHotkeyUseShift;
+                        CycleProfilePrevHotkeyUseWin = loadedConfig.CycleProfilePrevHotkeyUseWin;
+
+                        SettingsWindowHotkeyKey = loadedConfig.SettingsWindowHotkeyKey;
+                        SettingsWindowHotkeyUseAlt = loadedConfig.SettingsWindowHotkeyUseAlt;
+                        SettingsWindowHotkeyUseControl = loadedConfig.SettingsWindowHotkeyUseControl;
+                        SettingsWindowHotkeyUseShift = loadedConfig.SettingsWindowHotkeyUseShift;
+                        SettingsWindowHotkeyUseWin = loadedConfig.SettingsWindowHotkeyUseWin;
+
                         EnableGammaOverride = loadedConfig.EnableGammaOverride;
                         GammaValue = Math.Clamp(loadedConfig.GammaValue, 50, 150);
                         ContrastValue = Math.Clamp(loadedConfig.ContrastValue, 50, 150);
@@ -261,96 +271,16 @@ namespace LightCrosshair
             }
         }
 
-        public void ReRegisterHotkeys() { if (_ownerForm != null) RegisterHotkey(_ownerForm); }
-
-        public void RegisterHotkey(Form ownerForm)
-        {
-            if (_disposed || ownerForm == null || ownerForm.IsDisposed) return;
-            
-            _ownerForm = ownerForm;
-            
-            if (_hotkeyRegistered)
-            {
-                UnregisterHotkey();
-            }
-                
-            try
-            {
-                int modifiers = 0;
-                if (HotkeyUseAlt) modifiers |= HotkeyManager.MOD_ALT;
-                if (HotkeyUseControl) modifiers |= HotkeyManager.MOD_CONTROL;
-                if (HotkeyUseShift) modifiers |= HotkeyManager.MOD_SHIFT;
-                if (HotkeyUseWin) modifiers |= HotkeyManager.MOD_WIN;
-                
-                if (HotkeyManager.Instance.RegisterHotkeyWithId(HOTKEY_ID, modifiers, (int)HotkeyKey))
-                {
-                    _hotkeyRegistered = true;
-                }
-                else
-                {
-                    Debug.WriteLine("Failed to register toggle hotkey. It might be in use by another application.");
-                }
-
-                int cycleModifiers = 0;
-                if (CycleProfileHotkeyUseAlt) cycleModifiers |= HotkeyManager.MOD_ALT;
-                if (CycleProfileHotkeyUseControl) cycleModifiers |= HotkeyManager.MOD_CONTROL;
-                if (CycleProfileHotkeyUseShift) cycleModifiers |= HotkeyManager.MOD_SHIFT;
-                if (CycleProfileHotkeyUseWin) cycleModifiers |= HotkeyManager.MOD_WIN;
-
-                if (HotkeyManager.Instance.RegisterHotkeyWithId(HOTKEY_CYCLE_ID, cycleModifiers, (int)CycleProfileHotkeyKey))
-                {
-                    // Success
-                }
-                else
-                {
-                    Debug.WriteLine("Failed to register cycle hotkey.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error registering hotkey: {ex.Message}");
-            }
-        }
-
-        public void UnregisterHotkey()
+        public void ReRegisterHotkeys()
         {
             try
             {
-                if (_hotkeyRegistered && _ownerForm != null && !_ownerForm.IsDisposed)
-                {
-                    HotkeyManager.Instance.UnregisterHotkey(HOTKEY_ID);
-                    HotkeyManager.Instance.UnregisterHotkey(HOTKEY_CYCLE_ID);
-                    _hotkeyRegistered = false;
-                }
+                HotkeysRegistrationRequested?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error unregistering hotkey: {ex.Message}");
+                Debug.WriteLine($"Error requesting hotkey re-registration: {ex.Message}");
             }
-        }
-
-        public event EventHandler? CycleProfileRequested;
-
-        public bool ProcessHotkey(Message m)
-        {
-            if (_disposed) return false;
-
-            if (m.Msg == WM_HOTKEY)
-            {
-                int id = m.WParam.ToInt32();
-                if (id == HOTKEY_ID)
-                {
-                    Visible = !Visible;
-                    OnSettingsChanged();
-                    return true;
-                }
-                else if (id == HOTKEY_CYCLE_ID)
-                {
-                    CycleProfileRequested?.Invoke(this, EventArgs.Empty);
-                    return true;
-                }
-            }
-            return false;
         }
 
         protected virtual void OnSettingsChanged()
@@ -404,14 +334,12 @@ namespace LightCrosshair
                 {
                     try
                     {
-                        UnregisterHotkey();
                         SaveSettings(); // Save settings before disposing
                     }
                     catch (Exception ex)
                     {
                         Debug.WriteLine($"Error disposing CrosshairConfig: {ex.Message}");
                     }
-                    _ownerForm = null;
                 }
                 _disposed = true;
             }

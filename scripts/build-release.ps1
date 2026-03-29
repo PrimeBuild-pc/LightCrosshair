@@ -2,8 +2,10 @@
 # This script builds optimized portable releases for x64 and ARM64 architectures
 
 param(
-    [string]$Version = "1.0.0",
-    [switch]$SkipClean = $false
+    [string]$Version = "1.1.2",
+    [switch]$SkipClean = $false,
+    [switch]$SelfContained,
+    [switch]$Trim
 )
 
 # Set error action preference
@@ -11,11 +13,23 @@ $ErrorActionPreference = "Stop"
 
 # Get script directory
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectDir = Join-Path $ScriptDir "LightCrosshair"
-$OutputDir = Join-Path $ScriptDir "releases"
+$RepoRoot = (Resolve-Path (Join-Path $ScriptDir "..")).Path
+$ProjectFile = Join-Path $RepoRoot "LightCrosshair\LightCrosshair.csproj"
+$OutputDir = Join-Path $RepoRoot "releases"
+$selfContainedValue = if ($SelfContained) { "true" } else { "false" }
+$trimValue = if ($Trim) { "true" } else { "false" }
+
+$numericVersion = ($Version -split '-')[0]
+if (-not ($numericVersion -match '^\d+\.\d+\.\d+$')) {
+    throw "Version '$Version' must be major.minor.patch or major.minor.patch-label"
+}
+
+$assemblyFileVersion = "$numericVersion.0"
 
 Write-Host "LightCrosshair Release Builder v$Version" -ForegroundColor Green
 Write-Host "=======================================" -ForegroundColor Green
+Write-Host "Self-contained: $selfContainedValue" -ForegroundColor Gray
+Write-Host "PublishTrimmed: $trimValue" -ForegroundColor Gray
 
 # Clean previous builds
 if (-not $SkipClean) {
@@ -25,6 +39,7 @@ if (-not $SkipClean) {
     }
     
     # Clean project bin/obj directories
+    $ProjectDir = Split-Path -Parent $ProjectFile
     $BinDir = Join-Path $ProjectDir "bin"
     $ObjDir = Join-Path $ProjectDir "obj"
     
@@ -50,18 +65,20 @@ foreach ($Arch in $Architectures) {
     # Build the application
     $PublishArgs = @(
         "publish"
-        $ProjectDir
+        $ProjectFile
         "--configuration", "Release"
         "--runtime", $Arch.Runtime
-        "--self-contained", "true"
+        "--self-contained", $selfContainedValue
         "--output", $ArchOutputDir
         "/p:PublishSingleFile=true"
         "/p:PublishReadyToRun=true"
+        "/p:PublishTrimmed=$trimValue"
         "/p:IncludeNativeLibrariesForSelfExtract=true"
         "/p:EnableCompressionInSingleFile=true"
         "/p:Version=$Version"
-        "/p:AssemblyVersion=$Version.0"
-        "/p:FileVersion=$Version.0"
+        "/p:AssemblyVersion=$assemblyFileVersion"
+        "/p:FileVersion=$assemblyFileVersion"
+        "/p:InformationalVersion=$Version"
         "--verbosity", "minimal"
     )
     
@@ -153,7 +170,8 @@ Features:
 - Hardware-accelerated graphics rendering
 - Efficient memory management and CPU usage
 - Enhanced DPI awareness for multi-monitor setups
-- Self-contained deployment (no .NET runtime required)
+- Self-contained: $selfContainedValue
+- PublishTrimmed: $trimValue
 - Single-file executable with embedded resources
 
 Installation:
@@ -165,6 +183,7 @@ Installation:
 System Requirements:
 - Windows 10 version 1809 or later
 - Windows 11 (all versions)
+- .NET Desktop Runtime 8 required when Self-contained=false
 
 Performance Optimizations:
 - Reduced CPU usage through optimized paint refresh
@@ -173,7 +192,7 @@ Performance Optimizations:
 - Efficient event handling and background processing
 - Optimized transparency and layered window operations
 
-For support and updates, visit: https://github.com/your-repo/LightCrosshair
+For support and updates, visit: https://github.com/PrimeBuild-pc/LightCrosshair
 "@
 
 Set-Content -Path $ReleaseInfoPath -Value $ReleaseInfo -Encoding UTF8

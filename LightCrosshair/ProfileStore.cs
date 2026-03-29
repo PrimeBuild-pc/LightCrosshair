@@ -32,8 +32,9 @@ namespace LightCrosshair
             {
                 list = JsonSerializer.Deserialize<List<CrosshairProfile>>(json, JsonOpts);
             }
-            catch
+            catch (Exception ex)
             {
+                Program.LogError(ex, "ProfileStore.LoadAsync: primary parse");
                 // Attempt recover from newest backup
                 for (int i = 1; i <= 3 && list == null; i++)
                 {
@@ -45,7 +46,7 @@ namespace LightCrosshair
                             json = await File.ReadAllTextAsync(bak).ConfigureAwait(false);
                             list = JsonSerializer.Deserialize<List<CrosshairProfile>>(json, JsonOpts);
                         }
-                        catch (Exception ex) { Program.LogError(ex, "ProfileStore: backup load parse"); }
+                        catch (Exception backupEx) { Program.LogError(backupEx, "ProfileStore: backup load parse"); }
                     }
                 }
                 list ??= new();
@@ -101,7 +102,10 @@ namespace LightCrosshair
                             p.EnableCustomCrosshair = true;
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        Program.LogError(ex, $"ProfileStore.LoadAsync: migration for profile {p.Id}");
+                    }
 
                     p.SchemaVersion = ProfileSchema.Current;
                 }
@@ -132,7 +136,10 @@ namespace LightCrosshair
                 if (File.Exists(b1)) File.Move(b1, b2);
                 if (File.Exists(path)) File.Copy(path, b1, true);
             }
-            catch { /* swallow backup rotation issues */ }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "ProfileStore.RotateBackups");
+            }
         }
     }
 }

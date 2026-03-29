@@ -17,7 +17,7 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
   <summary><b>🎨 Advanced Customization</b></summary>
   <br>
 
-- **Multiple Shapes**: Cross, Circle, Dot, Plus, X, and combined shapes
+- **Multiple Shapes**: Cross, Circle, Dot, X, and combined shapes (Circle+Dot, Cross+Dot, Circle+Cross, Circle+X)
 - **Vibrant Colors**: Neon cyan, electric red, neon green, and custom colors
 - **Transparent Edges**: Clean appearance with no unwanted borders
 - **Adjustable Thickness**: 1–10 pixel edge thickness control
@@ -48,7 +48,7 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
   <summary><b>🔧 User Experience</b></summary>
   <br>
 
-- **Persistent Context Menu**: Make multiple adjustments without menu closing
+- **Rich Context Menu**: Full in-app menu for profile, shape, rendering, and color controls
 - **System Tray Integration**: Unobtrusive background operation
 - **Profile Management**: Save and switch between multiple configurations
 - **Atomic Cloud-Ready Saves**: Configuration files safely stored in `%AppData%` using atomic writes to prevent corruption
@@ -69,14 +69,14 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/LightCrosshair.git
+git clone https://github.com/PrimeBuild-pc/LightCrosshair.git
 cd LightCrosshair
 
 # Build the application
-dotnet build --configuration Release
+dotnet build LightCrosshair.sln --configuration Release
 
-# Or create standalone executable
-dotnet publish --configuration Release --runtime win-x64 --self-contained true /p:PublishSingleFile=true
+
+dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --runtime win-x64 --self-contained false /p:PublishSingleFile=true /p:PublishReadyToRun=true /p:PublishTrimmed=false
 ```
 
 ---
@@ -87,17 +87,17 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true /
   <summary><b>Getting Started</b></summary>
   <br>
 
-1. **Launch** the application — a neon cyan cross will appear at screen center
-2. **Right-click** anywhere on screen to open the context menu
-3. **Customize** your crosshair using the menu options
-4. **Close Menu** when finished, or click outside to dismiss
+1. **Launch** the application — on first run, the default profile appears centered on screen and the app starts in the system tray
+2. **Open Settings Window** with `Alt + L` (default) if you want full settings UI (or left click on icon tray)
+3. **Customize** shape, size, colors, rendering, and profiles from menu or settings
+4. **Save profile** from the menu when you want to persist a new variation. Last user settings will be perisistent for following restart
 </details>
 
 <details>
   <summary><b>Context Menu Navigation</b></summary>
   <br>
 
-- **Shape** → Choose from Cross, Circle, Dot, Plus, X, or combined shapes
+- **Shape** → Choose from Cross, Circle, Dot, X, or combined shapes
 - **Size** → Adjust from 5% to 100% in 5% increments
 - **Thickness** → Set line thickness from 1–10 pixels
 - **Edge Color** → Choose color and thickness for borders
@@ -110,8 +110,13 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true /
   <br>
 
 - `Alt + X` — Toggle crosshair visibility
+- `Alt + C` — Cycle to next profile (default)
+- `Ctrl + Shift + Left` — Cycle to previous profile (default)
+- `Alt + L` — Toggle settings window (default)
 - `Escape` — Close context menu
 - Right-click — Open context menu
+
+All hotkeys above are configurable in Settings.
 </details>
 
 <details>
@@ -134,8 +139,8 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true /
   <br>
 
 - **Framework**: .NET 8.0 (Windows) Windows Forms
-- **Graphics**: GDI+ with hardware acceleration
-- **Rendering**: Optimized double-buffering with anti-aliasing
+- **Graphics**: SkiaSharp primary renderer with automatic GDI fallback
+- **Rendering**: Cached rendering with regeneration only when config changes
 - **Threading**: Asynchronous operations for UI responsiveness
 </details>
 

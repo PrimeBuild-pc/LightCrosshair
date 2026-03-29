@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -15,16 +15,15 @@ namespace LightCrosshair
 
         private readonly List<CrosshairProfile> _profiles = new();
         private readonly Debouncer _saveDebounce = new(300);
+        private readonly SemaphoreSlim _persistSemaphore = new(1, 1);
+        private int _pendingPersistRequests;
         public IReadOnlyList<CrosshairProfile> Profiles => _profiles;
         public CrosshairProfile Current { get; private set; } = new CrosshairProfile { Name = "Default" };
 
         public event EventHandler<CrosshairProfile>? CurrentChanged;
         public event EventHandler<ProfilesPersistedEventArgs>? Persisted;
 
-        [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
-        [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
         private const int WM_HOTKEY = 0x0312;
-        private const uint MOD_NONE = 0x0000;
         private readonly Dictionary<int, CrosshairProfile> _hotkeyMap = new();
         
         private IntPtr _windowHandle = IntPtr.Zero;
@@ -86,7 +85,10 @@ namespace LightCrosshair
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "ProfileService.InitializeAsync: defaults migration");
+            }
             CurrentChanged?.Invoke(this, Current);
             ScheduleSave(true);
             RebuildHotkeys();
@@ -96,16 +98,43 @@ namespace LightCrosshair
 
         private async Task PersistInternalAsync()
         {
-            bool success = true;
-            try { await ProfileStore.SaveAtomicAsync(_profiles); }
-            catch { success = false; }
-            Persisted?.Invoke(this, new ProfilesPersistedEventArgs(success, DateTime.Now));
+            Interlocked.Increment(ref _pendingPersistRequests);
+
+            await _persistSemaphore.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                while (Interlocked.Exchange(ref _pendingPersistRequests, 0) > 0)
+                {
+                    bool success = true;
+                    try
+                    {
+                        var snapshot = _profiles.Select(p => p.Clone()).ToList();
+                        await ProfileStore.SaveAtomicAsync(snapshot).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        success = false;
+                        Program.LogError(ex, "ProfileService.PersistInternalAsync");
+                    }
+
+                    Persisted?.Invoke(this, new ProfilesPersistedEventArgs(success, DateTime.Now));
+                }
+            }
+            finally
+            {
+                _persistSemaphore.Release();
+            }
         }
 
         private void ScheduleSave(bool immediate = false)
         {
-            if (immediate) { _ = Task.Run(PersistInternalAsync); return; }
-            _saveDebounce.Trigger(() => _ = Task.Run(PersistInternalAsync));
+            if (immediate)
+            {
+                _ = PersistInternalAsync();
+                return;
+            }
+
+            _saveDebounce.Trigger(() => _ = PersistInternalAsync());
         }
 
         public void Switch(string idOrName)
@@ -264,9 +293,9 @@ namespace LightCrosshair
                 prefs.LastProfileId = id;
                 PreferencesStore.Save(prefs);
             }
-            catch
+            catch (Exception ex)
             {
-                // Best-effort persistence; profile switching must still work even if this fails.
+                Program.LogError(ex, "ProfileService.PersistLastProfileId");
             }
         }
     }

@@ -233,6 +233,20 @@
                             <CheckBox x:Name="HkShift2" Content="Shift" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <ComboBox x:Name="HkKey2Combo" Width="100"/>
                         </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Cycle Profiles Back:" Width="140" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="HkAlt4" Content="Alt" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox x:Name="HkCtrl4" Content="Ctrl" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox x:Name="HkShift4" Content="Shift" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox x:Name="HkKey4Combo" Width="100"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Toggle Settings Window:" Width="140" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="HkAlt3" Content="Alt" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox x:Name="HkCtrl3" Content="Ctrl" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <CheckBox x:Name="HkShift3" Content="Shift" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox x:Name="HkKey3Combo" Width="100"/>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

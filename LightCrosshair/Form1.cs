@@ -46,12 +46,6 @@ namespace LightCrosshair
         [DllImport("user32.dll", SetLastError = true)]
         private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
-        [DllImport("user32.dll")]
-        private static extern bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vk);
-
-        [DllImport("user32.dll")]
-        private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
-
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr FindWindow(string? lpClassName, string? lpWindowName);
 
@@ -79,16 +73,6 @@ namespace LightCrosshair
         private const uint SWP_NOOWNERZORDER = 0x0200;
         private const uint SWP_NOSENDCHANGING = 0x0400;
         private const uint SWP_SHOWWINDOW = 0x0040;
-
-
-        // Modifiers for hotkeys
-        private const int MOD_ALT = 0x0001;
-        private const int MOD_CONTROL = 0x0002;
-        private const int MOD_SHIFT = 0x0004;
-        private const int MOD_WIN = 0x0008;
-
-        // Hotkey IDs
-        private const int TOGGLE_VISIBILITY_HOTKEY_ID = 9000;
     private bool _suppressMenuEvents = false; // prevent feedback loops while syncing menu state
     private bool _isExiting;
     private bool _runtimeInitialized;
@@ -143,6 +127,7 @@ namespace LightCrosshair
 
             _profileService.CurrentChanged += Service_CurrentChanged_Handler;
             CrosshairConfig.Instance.SettingsChanged += Config_SettingsChanged_Handler;
+            CrosshairConfig.Instance.HotkeysRegistrationRequested += Config_HotkeysRegistrationRequested_Handler;
 
             // Initialize system tray icon and menu
             InitializeNotifyIcon();
@@ -860,17 +845,8 @@ namespace LightCrosshair
 
             if (!isCombinedShape) return;
 
-            // Update the menu text to indicate which shape it applies to
-            string innerShapeName = "";
-            if (CurrentProfile.Shape == "CircleDot" || CurrentProfile.Shape == "CrossDot")
-                innerShapeName = "Dot";
-            else if (CurrentProfile.Shape == "CircleCross")
-                innerShapeName = "Cross";
-            
-            else if (CurrentProfile.Shape == "CircleX")
-                innerShapeName = "X";
-
-            innerShapeMenu.Text = innerShapeName.Length > 0 ? $"{innerShapeName} Settings" : "Inner Shape";
+            // Keep this label stable because other menu update paths resolve it by exact text.
+            innerShapeMenu.Text = "Inner Shape";
 
             // Update inner size menu
             var innerSizeMenu = FindMenuItemByText(innerShapeMenu.DropDownItems, "Size");
@@ -1204,7 +1180,7 @@ namespace LightCrosshair
 
             // Inner Gap Size submenu (for inner cross/X in composites)
             var innerGapSizeMenu = new ToolStripMenuItem("Gap Size");
-            innerGapSizeMenu.Enabled = CurrentProfile.Shape == "CirclePlus" || CurrentProfile.Shape == "CircleCross" || CurrentProfile.Shape == "CircleX";
+            innerGapSizeMenu.Enabled = CurrentProfile.Shape == "CircleCross" || CurrentProfile.Shape == "CircleX";
 
             for (int gap = 2; gap <= 20; gap += 2)
             {
@@ -1372,10 +1348,8 @@ namespace LightCrosshair
                 contextMenu?.Close();
             };
 
-
-
-            // Minimal tray menu: About + Exit
-            contextMenu.Items.Clear();
+            // Informative menu items
+            visibilityItem.Checked = isVisible;
 
             var aboutItem = new ToolStripMenuItem("About");
             aboutItem.Click += (sender, e) =>
@@ -1396,6 +1370,22 @@ namespace LightCrosshair
                 BeginInvoke(new Action(() => Close()));
             };
 
+            contextMenu.Items.Add(visibilityItem);
+            contextMenu.Items.Add(new ToolStripSeparator());
+            contextMenu.Items.Add(editMenu);
+            contextMenu.Items.Add(profilesMenu);
+            contextMenu.Items.Add(shapeMenu);
+            contextMenu.Items.Add(sizeMenu);
+            contextMenu.Items.Add(thicknessMenu);
+            contextMenu.Items.Add(gapSizeMenu);
+            contextMenu.Items.Add(innerShapeMenu);
+            contextMenu.Items.Add(edgeColorMenu);
+            contextMenu.Items.Add(innerColorMenu);
+            contextMenu.Items.Add(renderingMenu);
+            contextMenu.Items.Add(hideRecordingItem);
+            contextMenu.Items.Add(saveProfileItem);
+            contextMenu.Items.Add(new ToolStripSeparator());
+            contextMenu.Items.Add(closeMenuItem);
             contextMenu.Items.Add(aboutItem);
             contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add(exitItem);
@@ -1641,20 +1631,7 @@ namespace LightCrosshair
                 ApplyOverlayWindowStyles(Handle);
             }
             HotkeyManager.Instance.SetWindowHandle(this.Handle);
-            
-            // Replaced raw Win32 hotkeys with HotkeyManager
-            if (!HotkeyManager.Instance.RegisterHotkeyWithId(HotkeyManager.TOGGLE_VISIBILITY_ID, HotkeyManager.MOD_ALT, (int)Keys.X))
-            {
-                Program.LogDebug("Toggle Visibility hotkey conflict", "Form1");
-            }
-            if (!HotkeyManager.Instance.RegisterHotkeyWithId(HotkeyManager.CYCLE_PROFILE_NEXT_ID, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_SHIFT, (int)Keys.Right))
-            {
-                Program.LogDebug("Cycle Next hotkey conflict", "Form1");
-            }
-            if (!HotkeyManager.Instance.RegisterHotkeyWithId(HotkeyManager.CYCLE_PROFILE_PREV_ID, HotkeyManager.MOD_CONTROL | HotkeyManager.MOD_SHIFT, (int)Keys.Left))
-            {
-                Program.LogDebug("Cycle Prev hotkey conflict", "Form1");
-            }
+            RegisterConfiguredGlobalHotkeys();
 
             _profileService.RegisterHotkeys(this.Handle);
             InitializeRuntimeIfNeeded();
@@ -1700,6 +1677,11 @@ namespace LightCrosshair
                 if (hotkeyId == HotkeyManager.CYCLE_PROFILE_PREV_ID)
                 {
                     CycleProfile(-1);
+                    return;
+                }
+                if (hotkeyId == HotkeyManager.TOGGLE_SETTINGS_WINDOW_ID)
+                {
+                    ToggleSettingsWindow();
                     return;
                 }
 
@@ -1974,6 +1956,91 @@ namespace LightCrosshair
             ReinforceTopMost();
         }
 
+        private void ToggleSettingsWindow()
+        {
+            if (IsDisposed) return;
+
+            if (InvokeRequired)
+            {
+                try { BeginInvoke(new Action(ToggleSettingsWindow)); }
+                catch { }
+                return;
+            }
+
+            if (WpfSettingsHost.IsVisible)
+            {
+                WpfSettingsHost.Hide();
+                ReinforceTopMost();
+                return;
+            }
+
+            ShowSettingsWindow();
+        }
+
+        private static int BuildHotkeyModifiers(bool useAlt, bool useControl, bool useShift, bool useWin)
+        {
+            int modifiers = 0;
+            if (useAlt) modifiers |= HotkeyManager.MOD_ALT;
+            if (useControl) modifiers |= HotkeyManager.MOD_CONTROL;
+            if (useShift) modifiers |= HotkeyManager.MOD_SHIFT;
+            if (useWin) modifiers |= HotkeyManager.MOD_WIN;
+            return modifiers;
+        }
+
+        private void RegisterConfiguredGlobalHotkeys()
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+
+            var cfg = CrosshairConfig.Instance;
+
+            HotkeyManager.Instance.UnregisterHotkey(HotkeyManager.TOGGLE_VISIBILITY_ID);
+            HotkeyManager.Instance.UnregisterHotkey(HotkeyManager.CYCLE_PROFILE_NEXT_ID);
+            HotkeyManager.Instance.UnregisterHotkey(HotkeyManager.CYCLE_PROFILE_PREV_ID);
+            HotkeyManager.Instance.UnregisterHotkey(HotkeyManager.TOGGLE_SETTINGS_WINDOW_ID);
+
+            int visibilityModifiers = BuildHotkeyModifiers(cfg.HotkeyUseAlt, cfg.HotkeyUseControl, cfg.HotkeyUseShift, cfg.HotkeyUseWin);
+            if (!HotkeyManager.Instance.RegisterHotkeyWithId(HotkeyManager.TOGGLE_VISIBILITY_ID, visibilityModifiers, (int)cfg.HotkeyKey))
+            {
+                Program.LogDebug("Toggle Visibility hotkey conflict", nameof(Form1));
+            }
+
+            int cycleModifiers = BuildHotkeyModifiers(
+                cfg.CycleProfileHotkeyUseAlt,
+                cfg.CycleProfileHotkeyUseControl,
+                cfg.CycleProfileHotkeyUseShift,
+                cfg.CycleProfileHotkeyUseWin);
+            if (!HotkeyManager.Instance.RegisterHotkeyWithId(HotkeyManager.CYCLE_PROFILE_NEXT_ID, cycleModifiers, (int)cfg.CycleProfileHotkeyKey))
+            {
+                Program.LogDebug("Cycle Next hotkey conflict", nameof(Form1));
+            }
+
+            int cyclePrevModifiers = BuildHotkeyModifiers(
+                cfg.CycleProfilePrevHotkeyUseAlt,
+                cfg.CycleProfilePrevHotkeyUseControl,
+                cfg.CycleProfilePrevHotkeyUseShift,
+                cfg.CycleProfilePrevHotkeyUseWin);
+            if (!HotkeyManager.Instance.RegisterHotkeyWithId(
+                HotkeyManager.CYCLE_PROFILE_PREV_ID,
+                cyclePrevModifiers,
+                (int)cfg.CycleProfilePrevHotkeyKey))
+            {
+                Program.LogDebug("Cycle Prev hotkey conflict", nameof(Form1));
+            }
+
+            int settingsModifiers = BuildHotkeyModifiers(
+                cfg.SettingsWindowHotkeyUseAlt,
+                cfg.SettingsWindowHotkeyUseControl,
+                cfg.SettingsWindowHotkeyUseShift,
+                cfg.SettingsWindowHotkeyUseWin);
+            if (!HotkeyManager.Instance.RegisterHotkeyWithId(
+                HotkeyManager.TOGGLE_SETTINGS_WINDOW_ID,
+                settingsModifiers,
+                (int)cfg.SettingsWindowHotkeyKey))
+            {
+                Program.LogDebug("Toggle Settings Window hotkey conflict", nameof(Form1));
+            }
+        }
+
         private void HookNudgeBridge()
         {
             // Ensure single assignment
@@ -2110,6 +2177,44 @@ namespace LightCrosshair
             }
         }
 
+        private void Config_HotkeysRegistrationRequested_Handler(object? sender, EventArgs e)
+        {
+            if (_isExiting || IsDisposed)
+            {
+                return;
+            }
+
+            void Apply()
+            {
+                if (_isExiting || IsDisposed)
+                {
+                    return;
+                }
+
+                RegisterConfiguredGlobalHotkeys();
+            }
+
+            try
+            {
+                if (InvokeRequired)
+                {
+                    BeginInvoke((Action)Apply);
+                }
+                else
+                {
+                    Apply();
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // No-op during shutdown races.
+            }
+            catch (InvalidOperationException)
+            {
+                // No-op when the window handle is not available yet.
+            }
+        }
+
         private void OnApplication_Exit(object? sender, EventArgs e)
         {
             GammaController.RestoreOriginal();
@@ -2139,6 +2244,7 @@ namespace LightCrosshair
             }
 
             CrosshairConfig.Instance.SettingsChanged -= Config_SettingsChanged_Handler;
+            CrosshairConfig.Instance.HotkeysRegistrationRequested -= Config_HotkeysRegistrationRequested_Handler;
 
             this.Paint -= Form1_Paint_Handler;
             this.DpiChanged -= Form1_DpiChanged;

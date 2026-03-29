@@ -24,6 +24,7 @@ namespace LightCrosshair
         public const int TOGGLE_VISIBILITY_ID = 9000;
         public const int CYCLE_PROFILE_NEXT_ID = 9001;
         public const int CYCLE_PROFILE_PREV_ID = 9002;
+        public const int TOGGLE_SETTINGS_WINDOW_ID = 9003;
 
         private int _nextHotkeyId = 1;
 
@@ -77,8 +78,8 @@ namespace LightCrosshair
             hotkeyId = 0;
             lock (_lockObject)
             {
-                // reserve 9000+
-                while (_nextHotkeyId >= 9000 && _nextHotkeyId <= 9002) _nextHotkeyId++;
+                // reserve fixed IDs used by global hotkeys
+                while (_nextHotkeyId >= 9000 && _nextHotkeyId <= 9003) _nextHotkeyId++;
                 int idToTry = _nextHotkeyId++;
                 if (RegisterHotkeyWithId(idToTry, modifierKeys, virtualKey))
                 {

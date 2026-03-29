@@ -38,7 +38,10 @@ namespace LightCrosshair
                     if (prefs != null) return prefs;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "PreferencesStore.Load");
+            }
             return new AppPreferences();
         }
 
@@ -55,7 +58,10 @@ namespace LightCrosshair
                 File.WriteAllText(tmpPath, json);
                 File.Move(tmpPath, PrefsPath, true);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "PreferencesStore.Save");
+            }
         }
     }
 }

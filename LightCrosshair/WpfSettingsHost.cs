@@ -43,12 +43,54 @@ namespace LightCrosshair
             _window.Focus();
         }
 
+        public static bool IsVisible
+        {
+            get
+            {
+                try
+                {
+                    return _window != null && _window.IsLoaded && _window.IsVisible;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        public static void Hide()
+        {
+            try
+            {
+                if (_window != null && _window.IsLoaded)
+                {
+                    _window.Hide();
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "WpfSettingsHost: Hide Failed");
+            }
+        }
+
+        public static void Toggle(IProfileService profiles)
+        {
+            if (IsVisible)
+            {
+                Hide();
+                return;
+            }
+
+            Show(profiles);
+        }
+
         public static void Shutdown()
         {
             try
             {
                 if (_window != null)
                 {
+                    _window.AllowCloseForShutdown();
                     _window.Close();
                     _window = null;
                 }
