@@ -1,7 +1,7 @@
 ; LightCrosshair Installer (requires .NET 8.0 Desktop Runtime installed)
 [Setup]
 AppName=LightCrosshair
-AppVersion=1.0.0
+AppVersion=1.1.2
 DefaultDirName={autopf}\LightCrosshair
 DefaultGroupName=LightCrosshair
 OutputBaseFilename=LightCrosshair-Setup

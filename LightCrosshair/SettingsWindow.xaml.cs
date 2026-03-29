@@ -16,6 +16,8 @@ namespace LightCrosshair
 {
     public partial class SettingsWindow : Window
     {
+        private const int DefaultSettingsWindowWidth = 1020;
+        private const int DefaultSettingsWindowHeight = 500;
         private readonly IProfileService _profiles;
         private AppPreferences _prefs;
         private bool _suppressUiEvents = false; // prevent feedback during programmatic updates
@@ -31,6 +33,24 @@ namespace LightCrosshair
         {
             _profiles = profiles;
             _prefs = PreferencesStore.Load();
+
+            // One-time migration to the new default settings window dimensions.
+            if (!_prefs.SettingsWindowSizeMigrated)
+            {
+                _prefs.WindowWidth = DefaultSettingsWindowWidth;
+                _prefs.WindowHeight = DefaultSettingsWindowHeight;
+                _prefs.SettingsWindowSizeMigrated = true;
+                PreferencesStore.Save(_prefs);
+            }
+
+            // One-time v2 migration to the updated default dimensions (1020x500).
+            if (!_prefs.SettingsWindowSizeMigratedV2)
+            {
+                _prefs.WindowWidth = DefaultSettingsWindowWidth;
+                _prefs.WindowHeight = DefaultSettingsWindowHeight;
+                _prefs.SettingsWindowSizeMigratedV2 = true;
+                PreferencesStore.Save(_prefs);
+            }
 
             // Ensure DynamicResource keys exist before InitializeComponent parses XAML styles.
             _activeThemeDictionary = CreateThemeDictionary(_prefs.Theme);
@@ -49,8 +69,8 @@ namespace LightCrosshair
                 Left = _prefs.WindowX;
                 Top = _prefs.WindowY;
             }
-            Width = _prefs.WindowWidth;
-            Height = _prefs.WindowHeight;
+            Width = _prefs.WindowWidth > 0 ? _prefs.WindowWidth : DefaultSettingsWindowWidth;
+            Height = _prefs.WindowHeight > 0 ? _prefs.WindowHeight : DefaultSettingsWindowHeight;
 
             // Theme
             ApplyTheme(_prefs.Theme);
@@ -230,7 +250,7 @@ namespace LightCrosshair
             if (ProfilesList == null) return;
             ProfilesList.Items.Clear();
             var list = _profiles.Profiles.ToList();
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < ProfileService.MaxProfiles; i++)
             {
                 if (i < list.Count)
                 {
@@ -266,7 +286,19 @@ namespace LightCrosshair
             renameBtn.Click += (_, __) =>
             {
                 var text = ShowInputDialog("Rename Profile", p.Name);
-                if (!string.IsNullOrWhiteSpace(text)) { p.Name = text.Trim(); _profiles.Update(p); RefreshProfilesUI(); }
+                if (string.IsNullOrWhiteSpace(text)) return;
+
+                string newName = text.Trim();
+                if (_profiles.Profiles.Any(x => x.Id != p.Id && string.Equals(x.Name, newName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    ShowAppDialog("Rename profile", "A profile with this name already exists.", MessageBoxImage.Warning);
+                    return;
+                }
+
+                var updated = p.Clone();
+                updated.Name = newName;
+                _profiles.Update(updated);
+                RefreshProfilesUI();
             };
             var deleteBtn = new System.Windows.Controls.Button { Content = "Delete", Width = 80, Margin = new Thickness(6, 0, 0, 0) };
             deleteBtn.Click += (_, __) => { if (_profiles.Delete(p.Id)) RefreshProfilesUI(); };
@@ -296,12 +328,19 @@ namespace LightCrosshair
 
         private void SaveCurrentToNewAtIndex(int targetIndex)
         {
-            var name = $"Profile {targetIndex + 1}";
-            var created = _profiles.AddClone(_profiles.Current, name);
-            int idx = _profiles.Profiles.ToList().FindIndex(x => x.Id == created.Id);
-            int delta = targetIndex - idx;
-            if (delta != 0) _profiles.Move(created.Id, delta);
-            RefreshProfilesUI();
+            try
+            {
+                var name = $"Profile {targetIndex + 1}";
+                var created = _profiles.AddClone(_profiles.Current, name);
+                int idx = _profiles.Profiles.ToList().FindIndex(x => x.Id == created.Id);
+                int delta = targetIndex - idx;
+                if (delta != 0) _profiles.Move(created.Id, delta);
+                RefreshProfilesUI();
+            }
+            catch (InvalidOperationException ex)
+            {
+                ShowAppDialog("Profiles", ex.Message, MessageBoxImage.Information);
+            }
         }
 
         private string? ShowInputDialog(string title, string initial)
@@ -402,24 +441,61 @@ namespace LightCrosshair
 
         private async void OnCheckUpdatesClick(object sender, RoutedEventArgs e)
         {
-            var fetchTask = FetchLatestVersionSafe();
-            await ShowTransientDialog("Check for updates", "Checking for a newer version...", 1000);
-
-            var latest = await fetchTask;
-            if (latest == null)
+            if (CheckUpdatesBtn != null && !CheckUpdatesBtn.IsEnabled)
             {
-                ShowAppDialog("Check for updates", "Could not check for updates right now. Please try again later.", MessageBoxImage.Warning);
                 return;
             }
 
-            if (IsNewer(latest, _currentVersion))
+            if (CheckUpdatesBtn != null)
             {
-                ShowAppDialog("Update available", $"A newer version is available: v{latest}. Opening the releases page.", MessageBoxImage.Information);
-                OpenUrl(LatestReleaseUrl);
+                CheckUpdatesBtn.IsEnabled = false;
             }
-            else
+
+            try
             {
-                ShowAppDialog("Up to date", $"You are on the latest version (v{_currentVersion}).", MessageBoxImage.Information);
+                using var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(8));
+
+                var fetchTask = FetchLatestVersionSafe(cts.Token);
+                _ = ShowTransientDialog("Check for updates", "Checking for a newer version...", 800);
+
+                var latest = await fetchTask;
+                if (latest == null)
+                {
+                    ShowAppDialog("Check for updates", "Could not check for updates right now. Please try again later.", MessageBoxImage.Warning);
+                    return;
+                }
+
+                int? comparison = UpdateVersionComparer.CompareVersions(latest, _currentVersion);
+                if (!comparison.HasValue)
+                {
+                    ShowAppDialog("Check for updates", $"Latest release is v{latest}, but this build version (v{_currentVersion}) could not be compared automatically.", MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (comparison.Value > 0)
+                {
+                    ShowAppDialog("Update available", $"A newer version is available: v{latest}. Opening the releases page.", MessageBoxImage.Information);
+                    OpenUrl(LatestReleaseUrl);
+                }
+                else if (comparison.Value == 0)
+                {
+                    ShowAppDialog("Up to date", $"You are on the latest version (v{_currentVersion}).", MessageBoxImage.Information);
+                }
+                else
+                {
+                    ShowAppDialog("Version check", $"You are running a newer build (v{_currentVersion}) than the latest release (v{latest}).", MessageBoxImage.Information);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                ShowAppDialog("Check for updates", "The update check timed out. Please try again.", MessageBoxImage.Warning);
+            }
+            finally
+            {
+                if (CheckUpdatesBtn != null)
+                {
+                    CheckUpdatesBtn.IsEnabled = true;
+                }
             }
         }
 
@@ -440,26 +516,23 @@ namespace LightCrosshair
             }
         }
 
-        private async System.Threading.Tasks.Task<string?> FetchLatestVersionSafe()
+        private async System.Threading.Tasks.Task<string?> FetchLatestVersionSafe(System.Threading.CancellationToken cancellationToken)
         {
             try
             {
-                var dto = await Http.GetFromJsonAsync<GithubReleaseDto>(LatestReleaseApiUrl);
+                var dto = await Http.GetFromJsonAsync<GithubReleaseDto>(LatestReleaseApiUrl, cancellationToken);
                 var tag = dto?.TagName ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(tag)) return null;
-                return tag.TrimStart('v', 'V');
+                return UpdateVersionComparer.NormalizeVersionTag(tag);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch
             {
                 return null;
             }
-        }
-
-        private static bool IsNewer(string latest, string current)
-        {
-            if (!Version.TryParse(latest, out var latestVer)) return false;
-            if (!Version.TryParse(current, out var currentVer)) return false;
-            return latestVer > currentVer;
         }
 
         private string GetCurrentVersion()
@@ -635,6 +708,8 @@ namespace LightCrosshair
             FpsXValueText.Text = cfg.FpsOverlayX.ToString();
             FpsYSlider.Value = cfg.FpsOverlayY;
             FpsYValueText.Text = cfg.FpsOverlayY.ToString();
+            FpsScaleSlider.Value = cfg.FpsOverlayScale;
+            FpsScaleValueText.Text = $"{cfg.FpsOverlayScale}%";
             ShowFrametimeCheckbox.IsChecked = cfg.ShowFrametimeGraph;
             SelectGraphRefreshPreset(cfg.GraphRefreshRateMs);
             SelectGraphTimeWindowPreset(cfg.GraphTimeWindowMs);
@@ -873,6 +948,13 @@ namespace LightCrosshair
             ContrastSlider.AddHandler(Thumb.DragCompletedEvent, dragCompleteHandler);
             BrightnessSlider.AddHandler(Thumb.DragCompletedEvent, dragCompleteHandler);
             VibranceSlider.AddHandler(Thumb.DragCompletedEvent, dragCompleteHandler);
+
+            // Additional UI helpers: reset buttons for color parameters
+            ResetGammaBtn.Click += (_, __) => { GammaSlider.Value = 100; ApplyDisplaySettingsImmediate(cfg); };
+            ResetContrastBtn.Click += (_, __) => { ContrastSlider.Value = 100; ApplyDisplaySettingsImmediate(cfg); };
+            ResetBrightnessBtn.Click += (_, __) => { BrightnessSlider.Value = 100; ApplyDisplaySettingsImmediate(cfg); };
+            ResetVibranceBtn.Click += (_, __) => { VibranceSlider.Value = 50; ApplyDisplaySettingsImmediate(cfg); };
+
             TargetProcessTextBox.LostFocus += (_, __) =>
             {
                 if (_suppressUiEvents) return;
@@ -944,6 +1026,17 @@ namespace LightCrosshair
             };
             FpsXSlider.ValueChanged += (_,__) => { if (!_suppressUiEvents) { cfg.FpsOverlayX = (int)FpsXSlider.Value; FpsXValueText.Text = cfg.FpsOverlayX.ToString(); cfg.SaveSettings(); } };
             FpsYSlider.ValueChanged += (_,__) => { if (!_suppressUiEvents) { cfg.FpsOverlayY = (int)FpsYSlider.Value; FpsYValueText.Text = cfg.FpsOverlayY.ToString(); cfg.SaveSettings(); } };
+            FpsScaleSlider.ValueChanged += (_,__) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.FpsOverlayScale = CrosshairConfig.NormalizeFpsOverlayScale((int)FpsScaleSlider.Value);
+                if ((int)FpsScaleSlider.Value != cfg.FpsOverlayScale)
+                {
+                    FpsScaleSlider.Value = cfg.FpsOverlayScale;
+                }
+                FpsScaleValueText.Text = $"{cfg.FpsOverlayScale}%";
+                cfg.SaveSettings();
+            };
             ShowFrametimeCheckbox.Checked += (_,__) =>
             {
                 if (_suppressUiEvents) return;

@@ -181,14 +181,15 @@ namespace LightCrosshair
                         : targetName;
 
                     bool isMatch = string.Equals(activeName, targetName, StringComparison.OrdinalIgnoreCase);
+                    bool isAppItself = string.Equals(activeName, "LightCrosshair", StringComparison.OrdinalIgnoreCase);
                     LogTargetDecision(targetName, activeName, isMatch, forceUpdate);
 
-                    if (isMatch)
+                    if (isMatch || isAppItself)
                     {
                         if (!_isGammaApplied || forceUpdate)
                             ApplyTargetGamma();
                     }
-                    else if (!isMatch && _isGammaApplied)
+                    else if (!isMatch && !isAppItself && _isGammaApplied)
                     {
                         GammaController.RestoreOriginal();
                         _isGammaApplied = false;

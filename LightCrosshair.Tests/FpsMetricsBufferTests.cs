@@ -165,5 +165,21 @@ namespace LightCrosshair.Tests
             int normalized = CrosshairConfig.NormalizeGraphTimeWindowPreset(input);
             Assert.Equal(expected, normalized);
         }
+
+        [Theory]
+        [InlineData(-1, 100)]
+        [InlineData(0, 100)]
+        [InlineData(1, 50)]
+        [InlineData(50, 50)]
+        [InlineData(100, 100)]
+        [InlineData(250, 250)]
+        [InlineData(300, 300)]
+        [InlineData(301, 300)]
+        [InlineData(500, 300)]
+        public void NormalizeFpsOverlayScale_Returns_Expected_Value(int input, int expected)
+        {
+            int normalized = CrosshairConfig.NormalizeFpsOverlayScale(input);
+            Assert.Equal(expected, normalized);
+        }
     }
 }

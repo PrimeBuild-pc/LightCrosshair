@@ -135,8 +135,10 @@ namespace LightCrosshair
 
         private void UpdateButtons()
         {
+            bool canAdd = _service.Profiles.Count < ProfileService.MaxProfiles;
+            _btnAdd.Enabled = canAdd;
             _btnDelete.Enabled = _service.Profiles.Count > 1 && _lst.SelectedItem != null;
-            _btnClone.Enabled = _lst.SelectedItem != null;
+            _btnClone.Enabled = _lst.SelectedItem != null && canAdd;
             _btnUp.Enabled = _lst.SelectedIndex > 0;
             _btnDown.Enabled = _lst.SelectedIndex >= 0 && _lst.SelectedIndex < _lst.Items.Count - 1;
         }
@@ -162,19 +164,33 @@ namespace LightCrosshair
         {
             string baseName = "Profile"; int n = 1;
             while (_service.Profiles.Any(p => p.Name.Equals(baseName + n, StringComparison.OrdinalIgnoreCase))) n++;
-            var newProfile = _service.AddClone(_service.Current, baseName + n);
-            _service.Switch(newProfile.Id);
-            LoadData();
-            _lblStatus.Text = "Added.";
+            try
+            {
+                var newProfile = _service.AddClone(_service.Current, baseName + n);
+                _service.Switch(newProfile.Id);
+                LoadData();
+                _lblStatus.Text = "Added.";
+            }
+            catch (InvalidOperationException ex)
+            {
+                _lblStatus.Text = ex.Message;
+            }
         }
 
         private void CloneSelected()
         {
             if (SelectedProfile() is not { } p) return;
-            var clone = _service.AddClone(p, p.Name + " Copy");
-            _service.Switch(clone.Id);
-            LoadData();
-            _lblStatus.Text = "Cloned.";
+            try
+            {
+                var clone = _service.AddClone(p, p.Name + " Copy");
+                _service.Switch(clone.Id);
+                LoadData();
+                _lblStatus.Text = "Cloned.";
+            }
+            catch (InvalidOperationException ex)
+            {
+                _lblStatus.Text = ex.Message;
+            }
         }
 
         private void DeleteSelected()

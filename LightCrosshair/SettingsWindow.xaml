@@ -1,7 +1,7 @@
 <Window x:Class="LightCrosshair.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="LightCrosshair Settings" Height="600" Width="1320"
+        Title="LightCrosshair Settings" Height="500" Width="1020"
         WindowStartupLocation="Manual"
         ResizeMode="CanResize"
         Topmost="False"
@@ -266,24 +266,32 @@
                         <!-- Note: Software fallback was removed from the codebase. -->
                         
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Gamma:" Width="120" VerticalAlignment="Center"/>
-                            <Slider x:Name="GammaSlider" Minimum="50" Maximum="150" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
-                            <TextBlock x:Name="GammaValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                            <TextBlock Text="Gamma (Experimental):" Width="130" VerticalAlignment="Center"/>
+                            <TextBlock Text="[?]" Foreground="#888" ToolTip="Gamma adjustments rely on legacy Win32 APIs. This slider may have no effect if you have Windows HDR enabled, use a laptop with hybrid graphics (Optimus/MUX), or have active color profiles/Night Light blocking the display LUT" Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
+                            <Slider x:Name="GammaSlider" Minimum="50" Maximum="150" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <TextBlock x:Name="GammaValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetGammaBtn" Content="↻" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="Contrast:" Width="120" VerticalAlignment="Center"/>
-                            <Slider x:Name="ContrastSlider" Minimum="50" Maximum="150" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
-                            <TextBlock x:Name="ContrastValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                            <TextBlock Text="Contrast:" Width="130" VerticalAlignment="Center"/>
+                            <TextBlock Text=" " Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
+                            <Slider x:Name="ContrastSlider" Minimum="50" Maximum="150" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <TextBlock x:Name="ContrastValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetContrastBtn" Content="↻" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="Brightness:" Width="120" VerticalAlignment="Center"/>
-                            <Slider x:Name="BrightnessSlider" Minimum="50" Maximum="150" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
-                            <TextBlock x:Name="BrightnessValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                            <TextBlock Text="Brightness:" Width="130" VerticalAlignment="Center"/>
+                            <TextBlock Text=" " Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
+                            <Slider x:Name="BrightnessSlider" Minimum="50" Maximum="150" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <TextBlock x:Name="BrightnessValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetBrightnessBtn" Content="↻" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="Vibrance:" Width="120" VerticalAlignment="Center"/>
-                            <Slider x:Name="VibranceSlider" Minimum="0" Maximum="100" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
-                            <TextBlock x:Name="VibranceValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                            <TextBlock Text="Vibrance:" Width="130" VerticalAlignment="Center"/>
+                            <TextBlock Text=" " Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
+                            <Slider x:Name="VibranceSlider" Minimum="0" Maximum="100" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <TextBlock x:Name="VibranceValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetVibranceBtn" Content="↻" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <TextBlock Text="Note: Hardware path is preferred. If disabled, software fallback will not be used when hardware apply fails." Opacity="0.7" TextWrapping="Wrap"/>
                     </StackPanel>
@@ -306,6 +314,12 @@
                             <TextBlock Text="Position Y:" Width="120" VerticalAlignment="Center"/>
                             <Slider x:Name="FpsYSlider" Minimum="0" Maximum="2160" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
                             <TextBlock x:Name="FpsYValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Overlay Scale:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="FpsScaleSlider" Minimum="50" Maximum="300" Width="260" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
+                            <TextBlock x:Name="FpsScaleValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
                         </StackPanel>
                         
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">

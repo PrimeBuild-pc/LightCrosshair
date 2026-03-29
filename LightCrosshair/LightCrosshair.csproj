@@ -15,9 +15,9 @@
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
 
     <!-- Version information -->
-    <AssemblyVersion>1.1.1.0</AssemblyVersion>
-    <FileVersion>1.1.1.0</FileVersion>
-    <Version>1.1.1</Version>
+    <AssemblyVersion>1.1.2.0</AssemblyVersion>
+    <FileVersion>1.1.2.0</FileVersion>
+    <Version>1.1.2</Version>
     <Product>LightCrosshair</Product>
     <Company>LightCrosshair</Company>
     <Copyright>Copyright © 2024</Copyright>

@@ -12,8 +12,10 @@ namespace LightCrosshair
         public AppTheme Theme { get; set; } = AppTheme.Dark;
         public int WindowX { get; set; } = -1;
         public int WindowY { get; set; } = -1;
-        public int WindowWidth { get; set; } = 1320;
-        public int WindowHeight { get; set; } = 600;
+        public int WindowWidth { get; set; } = 1020;
+        public int WindowHeight { get; set; } = 500;
+        public bool SettingsWindowSizeMigrated { get; set; } = false;
+        public bool SettingsWindowSizeMigratedV2 { get; set; } = false;
         public bool FirstRunDone { get; set; } = false;
         public bool OverlayVisible { get; set; } = true;
         public string LastProfileId { get; set; } = string.Empty;

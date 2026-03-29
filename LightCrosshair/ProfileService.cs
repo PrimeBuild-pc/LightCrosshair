@@ -11,6 +11,7 @@ namespace LightCrosshair
     {
         private static readonly Lazy<ProfileService> _lazy = new(() => new ProfileService());
         public static ProfileService Instance => _lazy.Value;
+        public const int MaxProfiles = 10;
 
         private readonly List<CrosshairProfile> _profiles = new();
         private readonly Debouncer _saveDebounce = new(300);
@@ -126,6 +127,11 @@ namespace LightCrosshair
 
         public CrosshairProfile AddClone(CrosshairProfile src, string newName)
         {
+            if (_profiles.Count >= MaxProfiles)
+            {
+                throw new InvalidOperationException($"Maximum number of profiles reached ({MaxProfiles}).");
+            }
+
             var clone = src.Clone();
             clone.Id = Guid.NewGuid().ToString("N");
             clone.Name = newName;
@@ -161,9 +167,11 @@ namespace LightCrosshair
                 var idx = _profiles.FindIndex(p => p.Id == updated.Id);
                 if (idx >= 0)
                 {
-                    bool wasCurrent = _profiles[idx].Id == Current.Id;
+                    var existing = _profiles[idx];
+                    bool wasCurrent = existing.Id == Current.Id;
+                    bool sameInstance = ReferenceEquals(existing, updated);
                     // Avoid no-op updates that can trigger event loops
-                    if (wasCurrent && updated.ContentEquals(Current))
+                    if (wasCurrent && !sameInstance && updated.ContentEquals(Current))
                     {
                         Program.LogDebug("Update skipped (no changes)", nameof(ProfileService));
                         return;

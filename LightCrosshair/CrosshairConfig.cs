@@ -115,7 +115,12 @@ namespace LightCrosshair
         public bool ShowGenFrames { get; set; } = true;
         public string FpsOverlayColorSerialized { get; set; } = "255,255,255";
         public string FpsOverlayBgColorSerialized { get; set; } = "0,0,0,128"; // Includes alpha
-        public int FpsOverlayScale { get; set; } = 100;
+        private int _fpsOverlayScale = 100;
+        public int FpsOverlayScale
+        {
+            get => _fpsOverlayScale;
+            set => _fpsOverlayScale = NormalizeFpsOverlayScale(value);
+        }
 
     // Rendering flags
     public bool AntiAlias { get; set; } = false; // Used by AA toggle (step B)
@@ -245,7 +250,7 @@ namespace LightCrosshair
                         ShowGenFrames = loadedConfig.ShowGenFrames;
                         FpsOverlayColorSerialized = loadedConfig.FpsOverlayColorSerialized ?? "255,255,255";
                         FpsOverlayBgColorSerialized = loadedConfig.FpsOverlayBgColorSerialized ?? "0,0,0,128";
-                        FpsOverlayScale = loadedConfig.FpsOverlayScale > 0 ? loadedConfig.FpsOverlayScale : 100;
+                        FpsOverlayScale = loadedConfig.FpsOverlayScale;
                     }
                 }
             }
@@ -377,6 +382,12 @@ namespace LightCrosshair
             if (value <= 1750) return 1500;
             if (value <= 2500) return 2000;
             return 3000;
+        }
+
+        public static int NormalizeFpsOverlayScale(int value)
+        {
+            if (value <= 0) return 100;
+            return Math.Clamp(value, 50, 300);
         }
 
         public void Dispose()

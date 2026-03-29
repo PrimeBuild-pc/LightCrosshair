@@ -91,6 +91,7 @@ namespace LightCrosshair
         private const int TOGGLE_VISIBILITY_HOTKEY_ID = 9000;
     private bool _suppressMenuEvents = false; // prevent feedback loops while syncing menu state
     private bool _isExiting;
+    private bool _runtimeInitialized;
 
     // Autosave centralized in ProfileService now
         private readonly UndoStack<CrosshairProfile> _undo = new(10);
@@ -168,7 +169,7 @@ namespace LightCrosshair
 
             // Center the form on screen
             CenterCrosshair();
-            this.Load += Form1_Load; // async profiles load & migration
+            this.Load += Form1_Load; // keep for compatibility; runtime init is now handle-based
             _profileService.Persisted += ProfileService_Persisted_Handler;
 
             // Subscribe to application exit events safely
@@ -186,8 +187,15 @@ namespace LightCrosshair
             // Leave hidden by default to avoid obstructing gameplay overlay
         }
 
-        private async void Form1_Load(object? sender, EventArgs e)
+        private void InitializeRuntimeIfNeeded()
         {
+            if (_runtimeInitialized)
+            {
+                return;
+            }
+
+            _runtimeInitialized = true;
+
             SystemFpsMonitor.Start();
             DisplayManager.StartMonitoring();
             EnsureFpsOverlayForm();
@@ -195,7 +203,7 @@ namespace LightCrosshair
             try
             {
                 if (_profileService.Profiles.Count == 0)
-                    await _profileService.InitializeAsync();
+                    _profileService.InitializeAsync().GetAwaiter().GetResult();
                 var current = _profileService.Current;
                 isVisible = _prefs.OverlayVisible && CrosshairConfig.Instance.Visible;
                 Program.LogDebug($"Startup visibility restore -> prefs={_prefs.OverlayVisible}, config={CrosshairConfig.Instance.Visible}, effective={isVisible}, profileEnabled={current.EnableCustomCrosshair}", nameof(Form1));
@@ -209,6 +217,11 @@ namespace LightCrosshair
         }
         catch (Exception ex) { Program.LogError(ex, "Form1_Load"); }
     }
+
+        private void Form1_Load(object? sender, EventArgs e)
+        {
+            InitializeRuntimeIfNeeded();
+        }
 
         private void InitializeDpiAwareness()
         {
@@ -1594,11 +1607,18 @@ namespace LightCrosshair
 
             if (!string.IsNullOrWhiteSpace(name))
             {
-                baseProfile.Name = name;
-                // Add as new clone (keep current too)
-                var newClone = _profileService.AddClone(CurrentProfile, name);
-                _profileService.Switch(newClone.Id);
-                InitializeContextMenu();
+                try
+                {
+                    baseProfile.Name = name;
+                    // Add as new clone (keep current too)
+                    var newClone = _profileService.AddClone(CurrentProfile, name);
+                    _profileService.Switch(newClone.Id);
+                    InitializeContextMenu();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    MessageBox.Show(this, ex.Message, "Profiles", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
             _ = _profileService.PersistAsync();
         }
@@ -1637,6 +1657,7 @@ namespace LightCrosshair
             }
 
             _profileService.RegisterHotkeys(this.Handle);
+            InitializeRuntimeIfNeeded();
         }
 
         private void ApplyOverlayWindowStyles(IntPtr handle)

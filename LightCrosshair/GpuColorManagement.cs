@@ -408,11 +408,10 @@ namespace LightCrosshair
 
         public static GammaRamp BuildRamp(ColorAdjustment adjustment)
         {
-            double gammaScale = Math.Clamp(adjustment.Gamma / 100.0, 0.5, 1.5);
+            double gammaPower = Math.Clamp(adjustment.Gamma / 100.0, 0.1, 3.0);
             double contrastScale = Math.Clamp(adjustment.Contrast / 100.0, 0.5, 1.5);
             double brightnessShift = Math.Clamp((adjustment.Brightness - 100) / 100.0, -0.5, 0.5);
             double vibranceNormalized = Math.Clamp((adjustment.Vibrance - 50) / 50.0, -1.0, 1.0);
-            double gammaPower = 1.0 / gammaScale;
 
             var ramp = new GammaRamp
             {
@@ -590,13 +589,10 @@ namespace LightCrosshair
 
         public override bool TryCaptureOriginalState(out string? error)
         {
-            if (_adlColorManager.TryCaptureOriginalState(out var adlError))
-            {
-                error = null;
-                return true;
-            }
+            bool adlOk = _adlColorManager.TryCaptureOriginalState(out var adlError);
+            bool win32Ok = Fallback.TryCaptureOriginalState(out var win32Error);
 
-            if (Fallback.TryCaptureOriginalState(out var win32Error))
+            if (adlOk || win32Ok)
             {
                 error = null;
                 return true;
@@ -624,6 +620,22 @@ namespace LightCrosshair
             if (adlCaptureOk && _adlColorManager.TryApply(adjustment, out adlError))
             {
                 _lastAppliedViaDriverPath = true;
+
+                // ADL natively lacks Gamma handling via this API; it only sets brightness/contrast/saturation.
+                // We MUST delegate the Gamma curve to the Win32 fall-back to actually apply the Gamma value.
+                // We pass standard neutral values (100, 100, 50) so we don't multiply the already applied ADL values.
+                var gammaOnlyAdjustment = new ColorAdjustment(adjustment.Gamma, 100, 100, 50);
+                if (Fallback.TryApply(gammaOnlyAdjustment, out string? win32GammaError))
+                {
+                    _win32FallbackPathTouched = true;
+                }
+                else
+                {
+                    Program.LogDebug($"AMD ADL applied brightness/contrast/saturation, but the Win32 fallback for Gamma failed: {win32GammaError}", nameof(AmdColorManager));
+                    error = $"AMD driver path OK, but Win32 Gamma fallback failed: {win32GammaError}";
+                    return false;
+                }
+
                 error = null;
                 return true;
             }
