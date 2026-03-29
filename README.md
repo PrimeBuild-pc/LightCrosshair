@@ -17,11 +17,11 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
   <summary><b>🎨 Advanced Customization</b></summary>
   <br>
 
-- **Multiple Shapes**: Cross, Circle, Dot, X, and combined shapes (Circle+Dot, Cross+Dot, Circle+Cross, Circle+X)
-- **Vibrant Colors**: Neon cyan, electric red, neon green, and custom colors
-- **Transparent Edges**: Clean appearance with no unwanted borders
-- **Adjustable Thickness**: 1–10 pixel edge thickness control
-- **Dynamic Sizing**: 5–100% size adjustment with 5% increments
+- **Custom Crosshair Builder**: Full control over shape, size, thickness, gap, edge, and inner layers
+- **Integrated FPS Counter**: Optional on-screen FPS telemetry powered by an anti-cheat-safe pipeline
+- **Display Color Adjustment**: Per-display gamma, contrast, brightness, and vibrance controls
+- **Profile System**: Save, load, clone, rename, and switch presets for different games and playstyles
+- **Unified Settings Experience**: All customization is centralized in the modern Settings Window
 </details>
 
 <details>
@@ -48,7 +48,8 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
   <summary><b>🔧 User Experience</b></summary>
   <br>
 
-- **Rich Context Menu**: Full in-app menu for profile, shape, rendering, and color controls
+- **Modern Settings Window**: Dedicated settings UI for all crosshair controls, profiles, and hotkeys
+- **Minimal Tray Menu**: Right-click tray menu is intentionally slimmed down to About and Exit
 - **System Tray Integration**: Unobtrusive background operation
 - **Profile Management**: Save and switch between multiple configurations
 - **Atomic Cloud-Ready Saves**: Configuration files safely stored in `%AppData%` using atomic writes to prevent corruption
@@ -63,7 +64,7 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
 1. **Download** the latest `LightCrosshair.exe` from the [Releases](../../releases) page
 2. **Place** the executable in your preferred directory
 3. **Run** `LightCrosshair.exe` — no installation required!
-4. **Configure** your crosshair using the right-click context menu
+4. **Configure** your crosshair from the Settings Window (`Alt + L` by default, or left-click tray icon)
 
 ### Option 2: Build from Source
 
@@ -89,20 +90,17 @@ dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --ru
 
 1. **Launch** the application — on first run, the default profile appears centered on screen and the app starts in the system tray
 2. **Open Settings Window** with `Alt + L` (default) if you want full settings UI (or left click on icon tray)
-3. **Customize** shape, size, colors, rendering, and profiles from menu or settings
-4. **Save profile** from the menu when you want to persist a new variation. Last user settings will be perisistent for following restart
+3. **Customize** shape, size, colors, rendering, and profiles from the Settings Window
+4. **Save and switch profiles** directly in Settings; active configuration is persisted across restarts
 </details>
 
 <details>
   <summary><b>Context Menu Navigation</b></summary>
   <br>
 
-- **Shape** → Choose from Cross, Circle, Dot, X, or combined shapes
-- **Size** → Adjust from 5% to 100% in 5% increments
-- **Thickness** → Set line thickness from 1–10 pixels
-- **Edge Color** → Choose color and thickness for borders
-- **Inner Color** → Set the main crosshair color
-- **Profiles** → Save, load, and manage multiple configurations
+- **About** → Shows app info, license, and project links
+- **Exit** → Safely closes the app and tray process
+- **Left-click tray icon** → Opens the full Settings Window for all crosshair customization
 </details>
 
 <details>
@@ -113,21 +111,9 @@ dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --ru
 - `Alt + C` — Cycle to next profile (default)
 - `Ctrl + Shift + Left` — Cycle to previous profile (default)
 - `Alt + L` — Toggle settings window (default)
-- `Escape` — Close context menu
-- Right-click — Open context menu
+- Right-click tray icon — Open minimal tray menu (About / Exit)
 
 All hotkeys above are configurable in Settings.
-</details>
-
-<details>
-  <summary><b>💡 Pro Tips</b></summary>
-  <br>
-
-- Use **transparent edge color** for a clean appearance
-- **Neon cyan** provides excellent visibility on all backgrounds
-- **15% size** with **5px thickness** works well for most games
-- Create separate profiles for different game types
-- Enable **"Hide during screen recording"** for streaming
 </details>
 
 ---
@@ -150,7 +136,7 @@ All hotkeys above are configurable in Settings.
 
 - **Startup Time**: <500ms (ReadyToRun optimized)
 - **Memory Usage**: ~50MB baseline, stable during operation
-- **CPU Impact**: <1% during idle gaming, <2% during menu operations
+- **CPU Impact**: <1% during idle gaming, <2% during settings interactions
 - **Rendering Latency**: <16ms (60+ FPS equivalent)
 </details>
 
