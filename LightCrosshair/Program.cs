@@ -162,7 +162,11 @@ static class Program
                 EnsureLogDirectory();
                 AppendWithRotation(_errorLogPath, errorMessage);
             }
-            try { Console.WriteLine(errorMessage); } catch { }
+            try { Console.WriteLine(errorMessage); }
+            catch (Exception consoleEx)
+            {
+                Debug.WriteLine($"[LogError->Console] {consoleEx.GetType().Name}: {consoleEx.Message}");
+            }
             Debug.WriteLine(errorMessage);
         }
         catch
@@ -183,9 +187,16 @@ static class Program
                 EnsureLogDirectory();
                 AppendWithRotation(_debugLogPath, line);
             }
-            try { Console.WriteLine(line.TrimEnd()); } catch { }
+            try { Console.WriteLine(line.TrimEnd()); }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[LogDebug->Console] {ex.GetType().Name}: {ex.Message}");
+            }
             Debug.WriteLine(line);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[LogDebug] Logging pipeline failure: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 }
