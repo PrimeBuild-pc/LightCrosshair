@@ -137,7 +137,7 @@ namespace LightCrosshair
             if (NudgeUp != null) NudgeUp.Click += (_, __) => { RequestNudge(0, -1); UpdatePositionStatus(); };
             if (NudgeDown != null) NudgeDown.Click += (_, __) => { RequestNudge(0, 1); UpdatePositionStatus(); };
 
-            if (ResetCenterBtn != null) ResetCenterBtn.Click += (_, __) => { try { WpfSettingsHost.ResetToCenter(); } catch { } UpdatePositionStatus(); };
+            if (ResetCenterBtn != null) ResetCenterBtn.Click += (_, __) => { try { WpfSettingsHost.ResetToCenter(); } catch (Exception ex) { Program.LogError(ex, "SettingsWindow.ResetCenterBtn click"); } UpdatePositionStatus(); };
 
             ThemeToggle.Click += (_, __) => { _prefs.Theme = _prefs.Theme == AppTheme.Dark ? AppTheme.Light : AppTheme.Dark; ApplyTheme(_prefs.Theme); UpdateThemeButtonIcon(); SavePrefs(); };
 
@@ -396,7 +396,10 @@ namespace LightCrosshair
                     ThemeGlyph.Text = _prefs.Theme == AppTheme.Dark ? "\uD83C\uDF19" : "\u2600";
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Program.LogDebug($"UpdateThemeButtonIcon failed: {ex.Message}", nameof(SettingsWindow));
+            }
         }
 
         private static System.Windows.Media.Color ColorFromRgb(byte r, byte g, byte b) => System.Windows.Media.Color.FromRgb(r, g, b);
@@ -559,7 +562,10 @@ namespace LightCrosshair
             {
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "SettingsWindow.OpenUrl");
+            }
         }
 
         private void ConfigureHttpClient()
@@ -600,7 +606,10 @@ namespace LightCrosshair
                     return new Version(v.Major, v.Minor, v.Build < 0 ? 0 : v.Build).ToString();
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Program.LogDebug($"GetCurrentVersion failed: {ex.Message}", nameof(SettingsWindow));
+            }
             return "1.0.0";
         }
 
@@ -713,7 +722,10 @@ namespace LightCrosshair
         private void RequestNudge(int dx, int dy)
         {
             try { WpfSettingsHost.Nudge(dx, dy); }
-            catch { }
+            catch (Exception ex)
+            {
+                Program.LogDebug($"RequestNudge failed: {ex.Message}", nameof(SettingsWindow));
+            }
         }
 
         private void UpdatePositionStatus()
@@ -724,7 +736,10 @@ namespace LightCrosshair
                 if (pt.HasValue && CurrentPositionText != null)
                     CurrentPositionText.Text = $"Current Position: X={pt.Value.X}, Y={pt.Value.Y}";
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Program.LogDebug($"UpdatePositionStatus failed: {ex.Message}", nameof(SettingsWindow));
+            }
         }
     
         private void LoadAdvancedSettings()
