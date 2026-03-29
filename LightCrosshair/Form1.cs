@@ -1785,7 +1785,10 @@ namespace LightCrosshair
                         }
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Program.LogError(ex, "Form1.UpdateShape composite defaults");
+                }
                 _profileService.Update(clone);
                 _undo.Push(baseProfile.Clone());
                 lock (_renderLock) { _configDirty = true; InvalidateThrottled(); }
@@ -1935,7 +1938,11 @@ namespace LightCrosshair
         {
             if (!ShouldDisplayCrosshairOverlay()) return;
             if (IsDisposed || !IsHandleCreated) return;
-            try { SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING); } catch { }
+            try { SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING); }
+            catch (Exception ex)
+            {
+                Program.LogDebug($"ReinforceTopMost SetWindowPos failed: {ex.Message}", nameof(Form1));
+            }
         }
 
 
@@ -1963,7 +1970,10 @@ namespace LightCrosshair
             if (InvokeRequired)
             {
                 try { BeginInvoke(new Action(ToggleSettingsWindow)); }
-                catch { }
+                catch (Exception ex)
+                {
+                    Program.LogError(ex, "Form1.ToggleSettingsWindow BeginInvoke");
+                }
                 return;
             }
 
@@ -2054,7 +2064,10 @@ namespace LightCrosshair
                     this.Location = next;
                     // no need to redraw; bitmap stays the same; only position changes
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Program.LogDebug($"OnNudge failed: {ex.Message}", nameof(Form1));
+                }
             };
 
             WpfSettingsHost.GetPosition = () =>
@@ -2064,14 +2077,22 @@ namespace LightCrosshair
 
             WpfSettingsHost.ResetCenter = () =>
             {
-                try { CenterCrosshair(); } catch { }
+                try { CenterCrosshair(); }
+                catch (Exception ex)
+                {
+                    Program.LogDebug($"ResetCenter failed: {ex.Message}", nameof(Form1));
+                }
             };
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             // Renderer owns cached bitmap; dispose renderer on form close to release GDI resources
-            try { _renderer.Dispose(); } catch { }
+            try { _renderer.Dispose(); }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "Form1.OnFormClosed renderer dispose");
+            }
             _currentFrame = null;
             base.OnFormClosed(e);
         }
