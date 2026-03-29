@@ -20,7 +20,7 @@ if errorlevel 1 (
 )
 
 REM Set version (can be overridden by setting VERSION environment variable)
-if "%VERSION%"=="" set VERSION=1.1.2
+if "%VERSION%"=="" set VERSION=1.2.0
 
 if /I "%1"=="--self-contained" set "SELF_CONTAINED=true"
 
