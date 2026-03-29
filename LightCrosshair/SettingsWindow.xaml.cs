@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using System.Windows.Threading;
 
 namespace LightCrosshair
 {
@@ -30,6 +31,10 @@ namespace LightCrosshair
         private static readonly HttpClient Http = new();
         private readonly EventHandler<CrosshairProfile> _profilesCurrentChangedHandler;
         private bool _allowWindowClose;
+        private readonly DispatcherTimer _settingsSaveTimer;
+        private bool _settingsSavePending;
+        private CrosshairConfig? _pendingSettingsConfig;
+        private const int SettingsSaveDebounceMs = 400;
 
         public SettingsWindow(IProfileService profiles)
         {
@@ -60,6 +65,12 @@ namespace LightCrosshair
             Resources.MergedDictionaries.Add(_activeThemeDictionary);
 
             InitializeComponent();
+
+            _settingsSaveTimer = new DispatcherTimer(DispatcherPriority.Background, Dispatcher)
+            {
+                Interval = TimeSpan.FromMilliseconds(SettingsSaveDebounceMs)
+            };
+            _settingsSaveTimer.Tick += (_, __) => FlushPendingSettingsSave();
 
             _currentVersion = GetCurrentVersion();
             VersionText.Text = $"Version: {_currentVersion}";
@@ -394,22 +405,24 @@ namespace LightCrosshair
         {
             if (_allowWindowClose)
             {
+                FlushPendingSettingsSave();
                 _profiles.CurrentChanged -= _profilesCurrentChangedHandler;
                 base.OnClosing(e);
                 return;
             }
 
             base.OnClosing(e);
-            try
+            FlushPendingSettingsSave();
+            if (!_suppressUiEvents)
             {
-                if (!_suppressUiEvents)
+                try
                 {
                     SaveTargetProcessFromUi(CrosshairConfig.Instance);
                 }
-            }
-            catch
-            {
-                // Closing should never fail because of target persistence.
+                catch (Exception ex)
+                {
+                    Program.LogError(ex, "SettingsWindow.OnClosing SaveTargetProcessFromUi");
+                }
             }
 
             // Do not shutdown app; only hide settings window
@@ -445,6 +458,32 @@ namespace LightCrosshair
             _prefs.WindowWidth = (int)Width;
             _prefs.WindowHeight = (int)Height;
             PreferencesStore.Save(_prefs);
+        }
+
+        private void QueueSettingsSave(CrosshairConfig cfg)
+        {
+            if (_suppressUiEvents)
+            {
+                return;
+            }
+
+            _pendingSettingsConfig = cfg;
+            _settingsSavePending = true;
+            _settingsSaveTimer.Stop();
+            _settingsSaveTimer.Start();
+        }
+
+        private void FlushPendingSettingsSave()
+        {
+            _settingsSaveTimer.Stop();
+            if (!_settingsSavePending || _pendingSettingsConfig == null)
+            {
+                return;
+            }
+
+            _settingsSavePending = false;
+            _pendingSettingsConfig.SaveSettings();
+            _pendingSettingsConfig = null;
         }
 
         private void OnHyperlinkNavigate(object sender, RequestNavigateEventArgs e)
@@ -965,7 +1004,7 @@ namespace LightCrosshair
                 if (_suppressUiEvents) return;
                 cfg.GammaValue = (int)GammaSlider.Value;
                 GammaValueText.Text = cfg.GammaValue.ToString();
-                cfg.SaveSettings();
+                QueueSettingsSave(cfg);
                 ApplyDisplaySettingsDebounced(cfg);
             };
             ContrastSlider.ValueChanged += (_, __) =>
@@ -973,7 +1012,7 @@ namespace LightCrosshair
                 if (_suppressUiEvents) return;
                 cfg.ContrastValue = (int)ContrastSlider.Value;
                 ContrastValueText.Text = cfg.ContrastValue.ToString();
-                cfg.SaveSettings();
+                QueueSettingsSave(cfg);
                 ApplyDisplaySettingsDebounced(cfg);
             };
             BrightnessSlider.ValueChanged += (_, __) =>
@@ -981,7 +1020,7 @@ namespace LightCrosshair
                 if (_suppressUiEvents) return;
                 cfg.BrightnessValue = (int)BrightnessSlider.Value;
                 BrightnessValueText.Text = cfg.BrightnessValue.ToString();
-                cfg.SaveSettings();
+                QueueSettingsSave(cfg);
                 ApplyDisplaySettingsDebounced(cfg);
             };
             VibranceSlider.ValueChanged += (_, __) =>
@@ -989,7 +1028,7 @@ namespace LightCrosshair
                 if (_suppressUiEvents) return;
                 cfg.VibranceValue = (int)VibranceSlider.Value;
                 VibranceValueText.Text = cfg.VibranceValue.ToString();
-                cfg.SaveSettings();
+                QueueSettingsSave(cfg);
                 ApplyDisplaySettingsDebounced(cfg);
             };
 
@@ -997,12 +1036,19 @@ namespace LightCrosshair
             DragCompletedEventHandler dragCompleteHandler = (_, __) =>
             {
                 if (_suppressUiEvents) return;
+                FlushPendingSettingsSave();
                 ApplyDisplaySettingsImmediate(cfg);
             };
             GammaSlider.AddHandler(Thumb.DragCompletedEvent, dragCompleteHandler);
             ContrastSlider.AddHandler(Thumb.DragCompletedEvent, dragCompleteHandler);
             BrightnessSlider.AddHandler(Thumb.DragCompletedEvent, dragCompleteHandler);
             VibranceSlider.AddHandler(Thumb.DragCompletedEvent, dragCompleteHandler);
+
+            DragCompletedEventHandler saveFlushDragCompleteHandler = (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                FlushPendingSettingsSave();
+            };
 
             // Additional UI helpers: reset buttons for color parameters
             ResetGammaBtn.Click += (_, __) => { GammaSlider.Value = 100; ApplyDisplaySettingsImmediate(cfg); };
@@ -1079,8 +1125,8 @@ namespace LightCrosshair
                 UpdateGraphRefreshUiState();
                 cfg.SaveSettings();
             };
-            FpsXSlider.ValueChanged += (_,__) => { if (!_suppressUiEvents) { cfg.FpsOverlayX = (int)FpsXSlider.Value; FpsXValueText.Text = cfg.FpsOverlayX.ToString(); cfg.SaveSettings(); } };
-            FpsYSlider.ValueChanged += (_,__) => { if (!_suppressUiEvents) { cfg.FpsOverlayY = (int)FpsYSlider.Value; FpsYValueText.Text = cfg.FpsOverlayY.ToString(); cfg.SaveSettings(); } };
+            FpsXSlider.ValueChanged += (_,__) => { if (!_suppressUiEvents) { cfg.FpsOverlayX = (int)FpsXSlider.Value; FpsXValueText.Text = cfg.FpsOverlayX.ToString(); QueueSettingsSave(cfg); } };
+            FpsYSlider.ValueChanged += (_,__) => { if (!_suppressUiEvents) { cfg.FpsOverlayY = (int)FpsYSlider.Value; FpsYValueText.Text = cfg.FpsOverlayY.ToString(); QueueSettingsSave(cfg); } };
             FpsScaleSlider.ValueChanged += (_,__) =>
             {
                 if (_suppressUiEvents) return;
@@ -1090,8 +1136,11 @@ namespace LightCrosshair
                     FpsScaleSlider.Value = cfg.FpsOverlayScale;
                 }
                 FpsScaleValueText.Text = $"{cfg.FpsOverlayScale}%";
-                cfg.SaveSettings();
+                QueueSettingsSave(cfg);
             };
+            FpsXSlider.AddHandler(Thumb.DragCompletedEvent, saveFlushDragCompleteHandler);
+            FpsYSlider.AddHandler(Thumb.DragCompletedEvent, saveFlushDragCompleteHandler);
+            FpsScaleSlider.AddHandler(Thumb.DragCompletedEvent, saveFlushDragCompleteHandler);
             ShowFrametimeCheckbox.Checked += (_,__) =>
             {
                 if (_suppressUiEvents) return;

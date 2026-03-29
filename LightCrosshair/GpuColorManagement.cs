@@ -510,7 +510,11 @@ namespace LightCrosshair
             if (_nvapiRuntimeAvailable)
             {
                 NativeLibrary.Free(handle);
-                try { NvAPI_Initialize(); } catch { }
+                try { NvAPI_Initialize(); }
+                catch (Exception ex)
+                {
+                    Program.LogDebug($"NvAPI_Initialize failed: {ex.Message}", nameof(NvidiaColorManager));
+                }
             }
         }
 

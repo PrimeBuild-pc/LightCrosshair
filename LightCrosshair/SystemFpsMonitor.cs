@@ -395,7 +395,11 @@ namespace LightCrosshair
                     StatusText = "ETW active";
                     using var _ = token.Register(() =>
                     {
-                        try { session.Dispose(); } catch { }
+                        try { session.Dispose(); }
+                        catch (Exception ex)
+                        {
+                            Program.LogDebug($"[ETW] session dispose on cancellation failed: {ex.Message}", "SystemFpsMonitor");
+                        }
                     });
                     session.Source.Process();
                 }

@@ -75,7 +75,10 @@ namespace LightCrosshair
                     {
                         CheckForegroundAndApply();
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        Program.LogError(ex, "DisplayManager.StartMonitoring loop");
+                    }
                     await Task.Delay(1000, token); // Poll every 1 second
                 }
             }, token);

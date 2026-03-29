@@ -49,7 +49,10 @@ namespace LightCrosshair
                     return light == 0; // 0 = dark, 1 = light
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "Theme.DetectDarkMode error");
+            }
             return false; // fallback to light
         }
 

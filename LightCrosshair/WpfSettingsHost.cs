@@ -12,7 +12,11 @@ namespace LightCrosshair
 
         public static void Nudge(int dx, int dy)
         {
-            try { OnNudge?.Invoke(dx, dy); } catch { }
+            try { OnNudge?.Invoke(dx, dy); }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "WpfSettingsHost.Nudge failed");
+            }
         }
 
         public static System.Drawing.Point? QueryPosition()
@@ -22,7 +26,11 @@ namespace LightCrosshair
 
         public static void ResetToCenter()
         {
-            try { ResetCenter?.Invoke(); } catch { }
+            try { ResetCenter?.Invoke(); }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "WpfSettingsHost.ResetToCenter failed");
+            }
         }
 
         public static void Show(IProfileService profiles)
