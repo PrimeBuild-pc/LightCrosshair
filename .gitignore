@@ -8,6 +8,8 @@ bin/
 obj/
 out/
 publish/
+Output/
+dist/
 standalone-build/
 fixed-standalone-build/
 test-build/

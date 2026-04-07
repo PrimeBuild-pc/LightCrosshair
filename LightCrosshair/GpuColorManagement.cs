@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace LightCrosshair
@@ -263,8 +264,9 @@ namespace LightCrosshair
                 bool isRemoteSession = GetSystemMetrics(SM_REMOTESESSION) != 0;
                 if (!hasGammaCap)
                 {
-                    error = $"Display context does not expose gamma-ramp capability (RASTERCAPS=0x{rasterCaps:X}, remoteSession={isRemoteSession}).";
-                    return false;
+                    Program.LogDebug(
+                        $"Win32 gamma capability bit missing (RASTERCAPS=0x{rasterCaps:X}, remoteSession={isRemoteSession}); attempting SetDeviceGammaRamp anyway.",
+                        nameof(Win32GammaColorManager));
                 }
 
                 if (!_hasOriginalRamp)
@@ -492,14 +494,67 @@ namespace LightCrosshair
 
     internal sealed class NvidiaColorManager : DelegatingGpuColorManager
     {
+        private const int NVAPI_OK = 0;
+        private const int DISPLAY_DEVICE_ATTACHED_TO_DESKTOP = 0x00000001;
+        private const int RASTERCAPS = 38;
+        private const int RC_GAMMA_RAMP = 0x00000100;
+
         [DllImport("nvapi64.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int NvAPI_Disp_SetGammaRamp(int displayId, ref Win32GammaColorManager.GammaRamp ramp);
 
         [DllImport("nvapi64.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int NvAPI_Initialize();
 
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern bool EnumDisplayDevices(string? lpDevice, uint iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, uint dwFlags);
+
+        [DllImport("gdi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr CreateDC(string lpszDriver, string? lpszDevice, string? lpszOutput, IntPtr lpInitData);
+
+        [DllImport("gdi32.dll", SetLastError = true)]
+        private static extern bool DeleteDC(IntPtr hdc);
+
+        [DllImport("gdi32.dll", SetLastError = true)]
+        private static extern bool GetDeviceGammaRamp(IntPtr hDC, out Win32GammaColorManager.GammaRamp lpRamp);
+
+        [DllImport("gdi32.dll", SetLastError = true)]
+        private static extern bool SetDeviceGammaRamp(IntPtr hDC, ref Win32GammaColorManager.GammaRamp lpRamp);
+
+        [DllImport("gdi32.dll")]
+        private static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct DISPLAY_DEVICE
+        {
+            public int cb;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+            public string DeviceName;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+            public string DeviceString;
+
+            public int StateFlags;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+            public string DeviceID;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+            public string DeviceKey;
+        }
+
+        private readonly record struct DisplayEndpoint(string DeviceName, int NvapiDisplayId);
+
         private readonly GpuDetectionResult _detection;
         private readonly bool _nvapiRuntimeAvailable;
+        private readonly bool _nvapiInitialized;
+        private readonly object _sync = new();
+        private readonly Dictionary<string, Win32GammaColorManager.GammaRamp> _originalRampsByDisplay = new(StringComparer.OrdinalIgnoreCase);
+        private readonly List<DisplayEndpoint> _activeDisplays = new();
+
+        private bool _win32FallbackPathTouched;
+        private bool _lastAppliedViaNvapi;
+        private string _lastRuntimeState = "No color operation performed yet.";
         private string _lastHdrState = "HDR state not sampled yet.";
 
         public NvidiaColorManager(GpuDetectionResult detection, IGpuColorManager fallback)
@@ -510,54 +565,512 @@ namespace LightCrosshair
             if (_nvapiRuntimeAvailable)
             {
                 NativeLibrary.Free(handle);
-                try { NvAPI_Initialize(); }
-                catch (Exception ex)
-                {
-                    Program.LogDebug($"NvAPI_Initialize failed: {ex.Message}", nameof(NvidiaColorManager));
-                }
             }
+
+            _nvapiInitialized = TryInitializeNvapi();
         }
 
-        public override string BackendName => _nvapiRuntimeAvailable
-            ? "NVIDIA (NVAPI Direct)"
-            : "NVIDIA (Win32 fallback)";
+        public override string BackendName
+            => _nvapiInitialized
+                ? (_lastAppliedViaNvapi
+                    ? "NVIDIA (NVAPI multi-display active)"
+                    : "NVIDIA (NVAPI + Win32 fallback policy)")
+                : "NVIDIA (Per-display Win32 fallback)";
 
         public override GpuVendor Vendor => _detection.Vendor;
         public override string AdapterDescription => _detection.AdapterDescription;
-        public override bool IsVendorDriverPath => _nvapiRuntimeAvailable;
-        public override string StatusMessage => _nvapiRuntimeAvailable
-            ? $"NVAPI initialized. Direct Color Path active. {_lastHdrState}"
-            : "NVAPI runtime not found; using global Win32 gamma ramp.";
+        public override bool IsVendorDriverPath => _nvapiInitialized;
+        public override string StatusMessage => _nvapiInitialized
+            ? $"NVAPI initialized. {_lastRuntimeState} {_lastHdrState}"
+            : $"NVAPI runtime not available. {_lastRuntimeState}";
 
-        public override bool TryApply(ColorAdjustment adjustment, out string? error)
+        public override bool TryCaptureOriginalState(out string? error)
         {
-            bool hdrActive = DisplayColorEnvironment.IsHdrActive(out _lastHdrState);
-            if (hdrActive)
+            lock (_sync)
             {
-                error = $"HDR is active. NVAPI color application is aborted to prevent HDR gamma corruption. {_lastHdrState}";
-                return false;
-            }
-
-            if (_nvapiRuntimeAvailable)
-            {
-                try
+                if (_originalRampsByDisplay.Count > 0)
                 {
-                    // Fallback to Desktop for ID 0 as typical usage
-                    var ramp = Win32GammaColorManager.BuildRamp(adjustment);
-                    int result = NvAPI_Disp_SetGammaRamp(0, ref ramp);
-                    if (result == 0) // NVAPI_OK
+                    error = null;
+                    return true;
+                }
+
+                if (!TryEnumerateNvidiaDisplays(out var displays, out var enumError))
+                {
+                    _lastRuntimeState = "No NVIDIA display endpoints detected for baseline capture.";
+                    if (Fallback.TryCaptureOriginalState(out var fallbackError))
                     {
+                        _win32FallbackPathTouched = true;
                         error = null;
                         return true;
                     }
+
+                    error = $"NVIDIA baseline capture failed: {enumError} | Fallback capture failed: {fallbackError}";
+                    return false;
                 }
-                catch (Exception ex)
+
+                _activeDisplays.Clear();
+                _activeDisplays.AddRange(displays);
+
+                int captured = 0;
+                var failures = new List<string>();
+                foreach (var endpoint in displays)
                 {
-                    Program.LogDebug($"NVAPI SetGammaRamp failed: {ex.Message}", nameof(NvidiaColorManager));
+                    if (TryCaptureDisplayBaseline(endpoint.DeviceName, out var ramp, out var captureError))
+                    {
+                        _originalRampsByDisplay[endpoint.DeviceName] = ramp;
+                        captured++;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(captureError))
+                    {
+                        failures.Add($"{endpoint.DeviceName}: {captureError}");
+                    }
                 }
+
+                if (captured > 0)
+                {
+                    _lastRuntimeState = failures.Count == 0
+                        ? $"Baseline captured for {captured} display(s)."
+                        : $"Baseline captured for {captured}/{displays.Count} display(s).";
+                    if (failures.Count > 0)
+                    {
+                        Program.LogDebug($"NVIDIA baseline partial capture. {string.Join(" | ", failures)}", nameof(NvidiaColorManager));
+                    }
+
+                    error = null;
+                    return true;
+                }
+
+                if (Fallback.TryCaptureOriginalState(out var finalFallbackError))
+                {
+                    _win32FallbackPathTouched = true;
+                    _lastRuntimeState = "NVIDIA per-display baseline unavailable; global fallback baseline captured.";
+                    error = null;
+                    return true;
+                }
+
+                error = failures.Count > 0
+                    ? $"NVIDIA baseline capture failed: {string.Join(" | ", failures)} | Fallback capture failed: {finalFallbackError}"
+                    : $"NVIDIA baseline capture failed: {enumError ?? "No readable gamma endpoints."} | Fallback capture failed: {finalFallbackError}";
+                return false;
+            }
+        }
+
+        public override bool TryApply(ColorAdjustment adjustment, out string? error)
+        {
+            lock (_sync)
+            {
+                bool hdrActive = DisplayColorEnvironment.IsHdrActive(out _lastHdrState);
+                if (hdrActive)
+                {
+                    error = $"HDR is active. NVIDIA color application is aborted to prevent HDR gamma corruption. {_lastHdrState}";
+                    _lastRuntimeState = "Apply blocked due to HDR active.";
+                    return false;
+                }
+
+                if (_originalRampsByDisplay.Count == 0 && !TryCaptureOriginalState(out var captureError))
+                {
+                    error = captureError;
+                    return false;
+                }
+
+                bool globalPrimaryApplied = Fallback.TryApply(adjustment, out var globalPrimaryError);
+                if (globalPrimaryApplied)
+                {
+                    _win32FallbackPathTouched = true;
+                }
+
+                if (!TryEnumerateNvidiaDisplays(out var displays, out var enumError))
+                {
+                    if (globalPrimaryApplied)
+                    {
+                        _lastAppliedViaNvapi = false;
+                        _lastRuntimeState = $"Global fallback applied; NVIDIA endpoint enumeration failed. {enumError}";
+                        error = null;
+                        return true;
+                    }
+
+                    if (Fallback.TryApply(adjustment, out var fallbackError))
+                    {
+                        _lastAppliedViaNvapi = false;
+                        _win32FallbackPathTouched = true;
+                        _lastRuntimeState = $"NVIDIA endpoint enumeration failed; global fallback applied. {enumError}";
+                        error = null;
+                        return true;
+                    }
+
+                    error = $"NVIDIA apply failed: {enumError} | Fallback apply failed: {fallbackError}";
+                    return false;
+                }
+
+                _activeDisplays.Clear();
+                _activeDisplays.AddRange(displays);
+
+                var ramp = Win32GammaColorManager.BuildRamp(adjustment);
+                int nvapiSuccess = 0;
+                var nvapiFailures = new List<string>();
+
+                if (_nvapiInitialized)
+                {
+                    foreach (var endpoint in displays)
+                    {
+                        int result;
+                        try
+                        {
+                            var endpointRamp = ramp;
+                            result = NvAPI_Disp_SetGammaRamp(endpoint.NvapiDisplayId, ref endpointRamp);
+                        }
+                        catch (Exception ex)
+                        {
+                            result = int.MinValue;
+                            nvapiFailures.Add($"{endpoint.DeviceName}: exception={ex.Message}");
+                            continue;
+                        }
+
+                        if (result == NVAPI_OK)
+                        {
+                            nvapiSuccess++;
+                            continue;
+                        }
+
+                        nvapiFailures.Add($"{endpoint.DeviceName}: nvapiDisplayId={endpoint.NvapiDisplayId}, code={result}");
+                    }
+                }
+
+                if (nvapiSuccess > 0)
+                {
+                    _lastAppliedViaNvapi = true;
+                    if (nvapiFailures.Count > 0)
+                    {
+                        _lastRuntimeState = $"NVAPI partial success ({nvapiSuccess}/{displays.Count} display(s)).";
+                        Program.LogDebug($"NVIDIA NVAPI partial apply. {string.Join(" | ", nvapiFailures)}", nameof(NvidiaColorManager));
+                    }
+                    else
+                    {
+                        _lastRuntimeState = $"NVAPI apply succeeded on {nvapiSuccess} display(s).";
+                    }
+
+                    if (!globalPrimaryApplied)
+                    {
+                        bool globalSyncOk = Fallback.TryApply(adjustment, out var globalSyncError);
+                        if (globalSyncOk)
+                        {
+                            _win32FallbackPathTouched = true;
+                            _lastRuntimeState += " Global fallback synchronized.";
+                        }
+                        else if (!string.IsNullOrWhiteSpace(globalSyncError))
+                        {
+                            Program.LogDebug($"NVIDIA NVAPI succeeded, but global fallback synchronization failed: {globalSyncError}", nameof(NvidiaColorManager));
+                        }
+                    }
+                    else
+                    {
+                        _lastRuntimeState += " Global fallback already applied.";
+                    }
+
+                    error = null;
+                    return true;
+                }
+
+                if (TryApplyPerDisplayWin32(displays, adjustment, out int win32Success, out var win32Failures))
+                {
+                    _lastAppliedViaNvapi = false;
+                    _win32FallbackPathTouched = true;
+                    _lastRuntimeState = win32Failures.Count == 0
+                        ? $"Per-display Win32 apply succeeded on {win32Success} display(s)."
+                        : $"Per-display Win32 partial success ({win32Success}/{displays.Count} display(s)).";
+
+                    if (nvapiFailures.Count > 0)
+                    {
+                        Program.LogDebug($"NVIDIA NVAPI failed; per-display Win32 succeeded. {string.Join(" | ", nvapiFailures)}", nameof(NvidiaColorManager));
+                    }
+
+                    if (win32Failures.Count > 0)
+                    {
+                        Program.LogDebug($"NVIDIA per-display Win32 partial apply. {string.Join(" | ", win32Failures)}", nameof(NvidiaColorManager));
+                    }
+
+                    if (!globalPrimaryApplied)
+                    {
+                        bool globalSyncOk = Fallback.TryApply(adjustment, out var globalSyncError);
+                        if (globalSyncOk)
+                        {
+                            _win32FallbackPathTouched = true;
+                            _lastRuntimeState += " Global fallback synchronized.";
+                        }
+                        else if (!string.IsNullOrWhiteSpace(globalSyncError))
+                        {
+                            Program.LogDebug($"NVIDIA per-display apply succeeded, but global fallback synchronization failed: {globalSyncError}", nameof(NvidiaColorManager));
+                        }
+                    }
+                    else
+                    {
+                        _lastRuntimeState += " Global fallback already applied.";
+                    }
+
+                    error = null;
+                    return true;
+                }
+
+                if (globalPrimaryApplied)
+                {
+                    _lastAppliedViaNvapi = false;
+                    _lastRuntimeState = "Global fallback applied while NVIDIA-specific paths were unavailable.";
+                    error = null;
+                    return true;
+                }
+
+                if (Fallback.TryApply(adjustment, out var globalFallbackError))
+                {
+                    _lastAppliedViaNvapi = false;
+                    _win32FallbackPathTouched = true;
+                    _lastRuntimeState = "NVAPI and per-display path failed; global fallback applied.";
+                    error = null;
+                    return true;
+                }
+
+                var reasons = new List<string>();
+                if (nvapiFailures.Count > 0)
+                {
+                    reasons.Add($"NVAPI errors: {string.Join(" | ", nvapiFailures)}");
+                }
+
+                reasons.Add($"Per-display path failed: {string.Join(" | ", win32Failures)}");
+                if (!string.IsNullOrWhiteSpace(globalPrimaryError))
+                {
+                    reasons.Add($"Primary global fallback failed: {globalPrimaryError}");
+                }
+                if (!string.IsNullOrWhiteSpace(globalFallbackError))
+                {
+                    reasons.Add($"Fallback failed: {globalFallbackError}");
+                }
+
+                error = string.Join(" | ", reasons);
+                return false;
+            }
+        }
+
+        public override bool TryRestore(out string? error)
+        {
+            lock (_sync)
+            {
+                var failures = new List<string>();
+
+                foreach (var kvp in _originalRampsByDisplay)
+                {
+                    var ramp = kvp.Value;
+                    if (!TrySetDisplayRamp(kvp.Key, ref ramp, out var restoreError))
+                    {
+                        failures.Add($"{kvp.Key}: {restoreError}");
+                    }
+                }
+
+                bool fallbackOk = true;
+                string? fallbackError = null;
+                if (_win32FallbackPathTouched || _originalRampsByDisplay.Count == 0 || failures.Count > 0)
+                {
+                    fallbackOk = Fallback.TryRestore(out fallbackError);
+                }
+
+                _win32FallbackPathTouched = false;
+                _lastAppliedViaNvapi = false;
+
+                if (failures.Count == 0 && fallbackOk)
+                {
+                    _originalRampsByDisplay.Clear();
+                    _lastRuntimeState = "Display state restored.";
+                    error = null;
+                    return true;
+                }
+
+                var reasons = new List<string>();
+                if (failures.Count > 0)
+                {
+                    reasons.Add($"Per-display restore failed: {string.Join(" | ", failures)}");
+                }
+
+                if (!fallbackOk)
+                {
+                    reasons.Add($"Fallback restore failed: {fallbackError}");
+                }
+
+                error = string.Join(" | ", reasons);
+                return false;
+            }
+        }
+
+        private bool TryInitializeNvapi()
+        {
+            if (!_nvapiRuntimeAvailable)
+            {
+                return false;
             }
 
-            return base.TryApply(adjustment, out error);
+            try
+            {
+                int result = NvAPI_Initialize();
+                if (result == NVAPI_OK)
+                {
+                    return true;
+                }
+
+                Program.LogDebug($"NvAPI_Initialize returned code {result}.", nameof(NvidiaColorManager));
+            }
+            catch (Exception ex)
+            {
+                Program.LogDebug($"NvAPI_Initialize failed: {ex.Message}", nameof(NvidiaColorManager));
+            }
+
+            return false;
+        }
+
+        private bool TryEnumerateNvidiaDisplays(out List<DisplayEndpoint> displays, out string? error)
+        {
+            displays = new List<DisplayEndpoint>();
+            int nvapiDisplayId = 0;
+
+            for (uint i = 0; i < 32; i++)
+            {
+                var adapter = new DISPLAY_DEVICE { cb = Marshal.SizeOf<DISPLAY_DEVICE>() };
+                if (!EnumDisplayDevices(null, i, ref adapter, 0))
+                {
+                    break;
+                }
+
+                if ((adapter.StateFlags & DISPLAY_DEVICE_ATTACHED_TO_DESKTOP) == 0)
+                {
+                    continue;
+                }
+
+                string combined = string.Join(" ", adapter.DeviceString ?? string.Empty, adapter.DeviceID ?? string.Empty);
+                if (combined.IndexOf("NVIDIA", StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(adapter.DeviceName))
+                {
+                    continue;
+                }
+
+                displays.Add(new DisplayEndpoint(adapter.DeviceName, nvapiDisplayId));
+                nvapiDisplayId++;
+            }
+
+            if (displays.Count == 0)
+            {
+                error = "No active NVIDIA display endpoints reported by EnumDisplayDevices.";
+                return false;
+            }
+
+            error = null;
+            return true;
+        }
+
+        private bool TryCaptureDisplayBaseline(string deviceName, out Win32GammaColorManager.GammaRamp ramp, out string? error)
+        {
+            ramp = default;
+            if (!TryOpenDisplayDc(deviceName, out var dc, out error))
+            {
+                return false;
+            }
+
+            try
+            {
+                int rasterCaps = GetDeviceCaps(dc, RASTERCAPS);
+                if ((rasterCaps & RC_GAMMA_RAMP) == 0)
+                {
+                    Program.LogDebug(
+                        $"Per-display baseline capture: gamma capability bit missing (RASTERCAPS=0x{rasterCaps:X}) on {deviceName}; attempting GetDeviceGammaRamp anyway.",
+                        nameof(NvidiaColorManager));
+                }
+
+                if (!GetDeviceGammaRamp(dc, out ramp))
+                {
+                    int win32 = Marshal.GetLastWin32Error();
+                    error = win32 == 0
+                        ? "GetDeviceGammaRamp returned false while capturing per-display baseline."
+                        : $"GetDeviceGammaRamp failed while capturing per-display baseline (Win32: {win32}).";
+                    return false;
+                }
+
+                error = null;
+                return true;
+            }
+            finally
+            {
+                _ = DeleteDC(dc);
+            }
+        }
+
+        private bool TryApplyPerDisplayWin32(List<DisplayEndpoint> displays, ColorAdjustment adjustment, out int successCount, out List<string> failures)
+        {
+            successCount = 0;
+            failures = new List<string>();
+
+            foreach (var endpoint in displays)
+            {
+                var ramp = Win32GammaColorManager.BuildRamp(adjustment);
+                if (TrySetDisplayRamp(endpoint.DeviceName, ref ramp, out var endpointError))
+                {
+                    successCount++;
+                    continue;
+                }
+
+                failures.Add($"{endpoint.DeviceName}: {endpointError}");
+            }
+
+            return successCount > 0;
+        }
+
+        private bool TrySetDisplayRamp(string deviceName, ref Win32GammaColorManager.GammaRamp ramp, out string? error)
+        {
+            if (!TryOpenDisplayDc(deviceName, out var dc, out error))
+            {
+                return false;
+            }
+
+            try
+            {
+                int rasterCaps = GetDeviceCaps(dc, RASTERCAPS);
+                if ((rasterCaps & RC_GAMMA_RAMP) == 0)
+                {
+                    Program.LogDebug(
+                        $"Per-display apply: gamma capability bit missing (RASTERCAPS=0x{rasterCaps:X}) on {deviceName}; attempting SetDeviceGammaRamp anyway.",
+                        nameof(NvidiaColorManager));
+                }
+
+                if (!SetDeviceGammaRamp(dc, ref ramp))
+                {
+                    int win32 = Marshal.GetLastWin32Error();
+                    error = win32 == 0
+                        ? "SetDeviceGammaRamp returned false on per-display context."
+                        : $"SetDeviceGammaRamp failed on per-display context (Win32: {win32}).";
+                    return false;
+                }
+
+                error = null;
+                return true;
+            }
+            finally
+            {
+                _ = DeleteDC(dc);
+            }
+        }
+
+        private static bool TryOpenDisplayDc(string deviceName, out IntPtr dc, out string? error)
+        {
+            dc = CreateDC("DISPLAY", deviceName, null, IntPtr.Zero);
+            if (dc == IntPtr.Zero)
+            {
+                int win32 = Marshal.GetLastWin32Error();
+                error = win32 == 0
+                    ? "CreateDC returned null for display context."
+                    : $"CreateDC failed for display context (Win32: {win32}).";
+                return false;
+            }
+
+            error = null;
+            return true;
         }
     }
 

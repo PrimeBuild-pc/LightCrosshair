@@ -14,6 +14,7 @@ namespace LightCrosshair
         private const int WS_EX_TRANSPARENT = 0x20;
         private const int WS_EX_TOOLWINDOW = 0x00000080;
         private const int WS_EX_TOPMOST = 0x00000008;
+        private static readonly Color OverlayTransparencyKey = Color.FromArgb(1, 1, 1);
 
         private FpsMetricsSnapshot _liveSnapshot;
         private FpsMetricsSnapshot _textSnapshot;
@@ -53,6 +54,9 @@ namespace LightCrosshair
         private string? _lastSource;
         private bool _lastShow1Percent;
         private bool _lastShowGen;
+        private readonly Dictionary<string, int> _textWidthCache = new(StringComparer.Ordinal);
+        private Font? _measureFont;
+        private float _lastMeasuredScale = -1f;
 
         protected override CreateParams CreateParams
         {
@@ -79,8 +83,8 @@ namespace LightCrosshair
             }
 
             Bounds = bounds;
-            BackColor = Color.Magenta;
-            TransparencyKey = Color.Magenta;
+            BackColor = OverlayTransparencyKey;
+            TransparencyKey = OverlayTransparencyKey;
         }
 
         public void UpdateState(FpsMetricsSnapshot snapshot, string source, string status)
@@ -114,12 +118,14 @@ namespace LightCrosshair
             if (disposing)
             {
                 _font?.Dispose();
+                _measureFont?.Dispose();
                 _textBrush?.Dispose();
                 _bgBrush?.Dispose();
                 _outlinePen?.Dispose();
                 _gridPen?.Dispose();
                 _targetPen?.Dispose();
                 _linePen?.Dispose();
+                _textWidthCache.Clear();
             }
             base.Dispose(disposing);
         }
@@ -133,7 +139,7 @@ namespace LightCrosshair
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
-            e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+            e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
 
             float scale = Math.Clamp(cfg.FpsOverlayScale / 100f, 0.5f, 3f);
             float x = cfg.FpsOverlayX - Bounds.Left;
@@ -199,10 +205,10 @@ namespace LightCrosshair
             var newFont = new Font("Consolas", 12f * scale, FontStyle.Bold, GraphicsUnit.Pixel);
             var newColor = ParseRgb(cfg.FpsOverlayColorSerialized, Color.White);
             var newTextBrush = new SolidBrush(newColor);
-            var newBgBrush = new SolidBrush(ParseRgba(cfg.FpsOverlayBgColorSerialized, Color.FromArgb(128, 0, 0, 0)));
-            var newOutlinePen = new Pen(Color.FromArgb(140, 255, 255, 255), Math.Max(1f, 1f * scale));
-            var newGridPen = new Pen(Color.FromArgb(80, 255, 255, 255), 1f);
-            var newTargetPen = new Pen(Color.FromArgb(160, 0, 255, 0), 1f);
+            var newBgBrush = new SolidBrush(ParseRgba(cfg.FpsOverlayBgColorSerialized, Color.FromArgb(255, 0, 0, 0)));
+            var newOutlinePen = new Pen(Color.White, Math.Max(1f, 1f * scale));
+            var newGridPen = new Pen(Color.FromArgb(110, 110, 110), 1f);
+            var newTargetPen = new Pen(Color.FromArgb(0, 210, 0), 1f);
             var newLinePen = new Pen(newColor, 2f);
 
             var oldFont = _font;
@@ -236,6 +242,10 @@ namespace LightCrosshair
             // Force line rebuild and reset graph range cache on style change.
             _lastInstantFps = -1;
             _graphScaleMaxMs = 0;
+            _textWidthCache.Clear();
+            _measureFont?.Dispose();
+            _measureFont = null;
+            _lastMeasuredScale = -1f;
         }
 
         private void InvalidateOverlayRegion()
@@ -285,7 +295,7 @@ namespace LightCrosshair
             int textWidth = 0;
             for (int i = 0; i < lines.Count; i++)
             {
-                int w = TextRenderer.MeasureText(lines[i], _font, Size.Empty, TextFormatFlags.NoPadding).Width;
+                int w = MeasureTextWidth(lines[i], _font, scale);
                 if (w > textWidth) textWidth = w;
             }
             
@@ -375,6 +385,37 @@ namespace LightCrosshair
             _cachedLines.Add($"SRC: {_displaySource}");
             
             return _cachedLines;
+        }
+
+        private int MeasureTextWidth(string text, Font font, float scale)
+        {
+            if (_lastMeasuredScale != scale)
+            {
+                _textWidthCache.Clear();
+                _measureFont?.Dispose();
+                _measureFont = new Font(font.FontFamily, font.Size, font.Style, font.Unit);
+                _lastMeasuredScale = scale;
+            }
+
+            if (_textWidthCache.TryGetValue(text, out int width))
+            {
+                return width;
+            }
+
+            if (_measureFont == null)
+            {
+                _measureFont = new Font(font.FontFamily, font.Size, font.Style, font.Unit);
+            }
+
+            width = TextRenderer.MeasureText(text, _measureFont, Size.Empty, TextFormatFlags.NoPadding).Width;
+
+            if (_textWidthCache.Count >= 256)
+            {
+                _textWidthCache.Clear();
+            }
+
+            _textWidthCache[text] = width;
+            return width;
         }
 
         private void DrawFrameTimeGraph(Graphics g, RectangleF graphRect, double[] values, int sampleCountLimit, double graphTimeWindowMs)
@@ -469,7 +510,7 @@ namespace LightCrosshair
                 byte.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out byte g3) &&
                 byte.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out byte b3))
             {
-                return Color.FromArgb(128, r3, g3, b3);
+                return Color.FromArgb(255, r3, g3, b3);
             }
 
             if (parts.Length == 4 &&
@@ -478,7 +519,8 @@ namespace LightCrosshair
                 byte.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out byte b) &&
                 byte.TryParse(parts[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out byte a))
             {
-                return Color.FromArgb(a, r, g, b);
+                _ = a; // Legacy alpha is ignored to avoid TransparencyKey color bleed-through.
+                return Color.FromArgb(255, r, g, b);
             }
 
             return fallback;

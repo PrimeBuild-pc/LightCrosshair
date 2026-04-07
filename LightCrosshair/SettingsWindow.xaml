@@ -227,7 +227,7 @@
                             <ComboBox x:Name="HkKey1Combo" Width="100"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="Cycle Profiles:" Width="140" VerticalAlignment="Center"/>
+                            <TextBlock Text="Cycle Profiles Forward:" Width="140" VerticalAlignment="Center"/>
                             <CheckBox x:Name="HkAlt2" Content="Alt" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <CheckBox x:Name="HkCtrl2" Content="Ctrl" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <CheckBox x:Name="HkShift2" Content="Shift" VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -268,13 +268,13 @@
                         <CheckBox x:Name="EnableGammaCheckbox" Content="Enable Gamma/Contrast/Brightness/Vibrance Override" Margin="0,0,0,12"/>
 
                         <TextBlock Text="Apply Settings To" FontWeight="Bold" Margin="0,0,0,6"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
                             <TextBlock Text="Target Process:" Width="120" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TargetProcessTextBox" Width="180" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Leave empty to apply globally. Example: valorant.exe"/>
-                            <ComboBox x:Name="ProcessPickerComboBox" Width="180" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Select from currently running processes"/>
-                            <Button x:Name="RefreshProcessListBtn" Content="Refresh List" Width="100" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
-                            <Button x:Name="BrowseProcessExeBtn" Content="Browse .exe" Width="110" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
-                            <Button x:Name="ClearTargetProcessBtn" Content="Clear" Width="80" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <TextBox x:Name="TargetProcessTextBox" Width="190" Height="34" Padding="8,6" Margin="0,0,10,0" VerticalContentAlignment="Center" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Leave empty to apply globally. Example: valorant.exe"/>
+                            <ComboBox x:Name="ProcessPickerComboBox" Width="210" Height="34" Padding="8,4" Margin="0,0,10,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Select from currently running processes"/>
+                            <Button x:Name="RefreshProcessListBtn" Content="Refresh List" Width="112" Height="34" Padding="10,6" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <Button x:Name="BrowseProcessExeBtn" Content="Browse .exe" Width="124" Height="34" Padding="10,6" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
+                            <Button x:Name="ClearTargetProcessBtn" Content="Clear" Width="90" Height="34" Padding="10,6" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                         </StackPanel>
                         <TextBlock Text="Manual mode: pick a running process, browse an .exe, or type one. Leave empty to apply globally." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
                         <!-- Note: Software fallback was removed from the codebase. -->
@@ -373,7 +373,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,8">
-                        <Button x:Name="SaveCurrentProfileBtn" Content="Save Current to Selected" Width="220"/>
+                        <Button x:Name="SaveCurrentProfileBtn" Content="Save Current to Selected" Width="220" ToolTip="Overwrites the selected profile in the list with the currently active settings (current state)."/>
                     </StackPanel>
                     <ListBox x:Name="ProfilesList" Grid.Row="1" BorderBrush="{DynamicResource ControlBorder}" Background="{DynamicResource PanelBg}" Foreground="{DynamicResource TextFg}"/>
                     <TextBlock Grid.Row="2" Text="Up to 10 profiles. Select a slot to Save/Load/Rename/Delete." Foreground="{DynamicResource TextFg}" Opacity="0.7" Margin="0,8,0,0"/>

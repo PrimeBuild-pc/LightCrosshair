@@ -101,6 +101,9 @@ namespace LightCrosshair
                         {
                             p.EnableCustomCrosshair = true;
                         }
+
+                        // Migration v5: display color management values are profile-scoped.
+                        // Older profiles keep HasDisplayColorProfile=false until first save from settings.
                     }
                     catch (Exception ex)
                     {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -43,14 +44,19 @@ namespace LightCrosshair
 
         private static bool _isGammaApplied = false;
         private static CancellationTokenSource? _cts;
+        private static Task? _monitorTask;
         private static readonly Debouncer _applyDebouncer = new(100);
         private static readonly object _hookSync = new();
+        private static readonly object _trackedProcessSync = new();
+        private static readonly Dictionary<int, Process> _trackedTargetProcesses = new();
         private static IntPtr _foregroundHookHandle;
         private static WinEventDelegate? _foregroundHookProc;
         private static DateTime _lastApplyLogUtc = DateTime.MinValue;
         private static DateTime _lastApplyAttemptUtc = DateTime.MinValue;
         private static DateTime _lastTargetDecisionLogUtc = DateTime.MinValue;
         private static string _lastTargetDecision = string.Empty;
+        private static string _trackedTargetProcessBaseName = string.Empty;
+        private static bool _targetProcessWasObservedRunning;
 
         private static int _lastGammaValue = int.MinValue;
         private static int _lastContrastValue = int.MinValue;
@@ -61,19 +67,23 @@ namespace LightCrosshair
 
         public static void StartMonitoring()
         {
-            _cts?.Cancel();
+            StopMonitorLoop();
             _cts = new CancellationTokenSource();
             var token = _cts.Token;
 
             EnsureForegroundHook();
 
-            Task.Run(async () =>
+            _monitorTask = Task.Run(async () =>
             {
                 while (!token.IsCancellationRequested)
                 {
                     try
                     {
                         CheckForegroundAndApply();
+                    }
+                    catch (OperationCanceledException) when (token.IsCancellationRequested)
+                    {
+                        break;
                     }
                     catch (Exception ex)
                     {
@@ -86,10 +96,46 @@ namespace LightCrosshair
 
         public static void StopMonitoring()
         {
-            _cts?.Cancel();
+            StopMonitorLoop();
             ReleaseForegroundHook();
+            ClearTrackedTargetProcesses();
             GammaController.RestoreOriginal();
             _isGammaApplied = false;
+        }
+
+        private static void StopMonitorLoop()
+        {
+            var cts = _cts;
+            var monitorTask = _monitorTask;
+
+            _cts = null;
+            _monitorTask = null;
+
+            if (cts != null)
+            {
+                try
+                {
+                    cts.Cancel();
+                }
+                catch
+                {
+                    // Best-effort cancellation.
+                }
+            }
+
+            if (monitorTask != null)
+            {
+                try
+                {
+                    monitorTask.Wait(1000);
+                }
+                catch
+                {
+                    // Best-effort wait.
+                }
+            }
+
+            cts?.Dispose();
         }
         
         public static void ForceApplyNow()
@@ -149,7 +195,8 @@ namespace LightCrosshair
             var cfg = CrosshairConfig.Instance;
             if (!cfg.EnableGammaOverride)
             {
-                if (_isGammaApplied)
+                ClearTrackedTargetProcesses();
+                if (_isGammaApplied || forceUpdate)
                 {
                     GammaController.RestoreOriginal();
                     _isGammaApplied = false;
@@ -160,6 +207,7 @@ namespace LightCrosshair
             // If no specific process is set, we apply it globally
             if (string.IsNullOrWhiteSpace(cfg.TargetProcessName))
             {
+                ClearTrackedTargetProcesses();
                 if (!_isGammaApplied || forceUpdate)
                 {
                     ApplyTargetGamma();
@@ -167,48 +215,275 @@ namespace LightCrosshair
                 return;
             }
 
-            // Try to match foreground window
-            var active = TryGetForegroundProcessName();
-            if (!string.IsNullOrWhiteSpace(active))
+            var targetName = NormalizeProcessName(cfg.TargetProcessName);
+            var targetProcessBaseName = targetName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                ? targetName[..^4]
+                : targetName;
+
+            bool isTargetRunning = UpdateTrackedTargetProcesses(targetProcessBaseName);
+
+            // In target-process mode, force restore as soon as the tracked process is no longer running.
+            if (!isTargetRunning)
+            {
+                LogTargetDecision(targetProcessBaseName, "<not-running>", isMatch: false, forceUpdate);
+                ClearTrackedTargetProcesses();
+
+                if (_targetProcessWasObservedRunning)
+                {
+                    ResetDisplayConfigAfterTargetExit();
+                    _targetProcessWasObservedRunning = false;
+                }
+
+                if (_isGammaApplied || forceUpdate)
+                {
+                    GammaController.RestoreOriginal();
+                    _isGammaApplied = false;
+                }
+
+                return;
+            }
+
+            // Target mode is process-lifecycle based: apply while target is running.
+            LogTargetDecision(targetProcessBaseName, "<running>", isMatch: true, forceUpdate);
+            if (!_isGammaApplied || forceUpdate)
+            {
+                ApplyTargetGamma();
+            }
+        }
+
+        private static void ResetDisplayConfigAfterTargetExit()
+        {
+            WpfSettingsHost.RefreshDisplayUiFromConfig();
+            Program.LogDebug("Target process exited: display restored, profile color settings kept for next auto-detection.", nameof(DisplayManager));
+        }
+
+        private static bool UpdateTrackedTargetProcesses(string processNameNoExt)
+        {
+            if (string.IsNullOrWhiteSpace(processNameNoExt))
+            {
+                ClearTrackedTargetProcesses();
+                return false;
+            }
+
+            Process[] processes = Array.Empty<Process>();
+            var adoptedProcessIds = new HashSet<int>();
+            var observedProcessIds = new HashSet<int>();
+            try
+            {
+                processes = Process.GetProcessesByName(processNameNoExt);
+
+                lock (_trackedProcessSync)
+                {
+                    if (!string.Equals(_trackedTargetProcessBaseName, processNameNoExt, StringComparison.OrdinalIgnoreCase))
+                    {
+                        ClearTrackedTargetProcesses_NoLock();
+                        _trackedTargetProcessBaseName = processNameNoExt;
+                    }
+
+                    foreach (var process in processes)
+                    {
+                        int pid;
+                        try
+                        {
+                            pid = process.Id;
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+
+                        observedProcessIds.Add(pid);
+
+                        if (_trackedTargetProcesses.ContainsKey(pid))
+                        {
+                            continue;
+                        }
+
+                        if (!TryAttachTrackedProcess_NoLock(process, pid))
+                        {
+                            continue;
+                        }
+
+                        adoptedProcessIds.Add(pid);
+                    }
+
+                    if (_trackedTargetProcesses.Count > 0)
+                    {
+                        var staleTrackedIds = new List<int>();
+                        foreach (var tracked in _trackedTargetProcesses.Keys)
+                        {
+                            if (!observedProcessIds.Contains(tracked))
+                            {
+                                staleTrackedIds.Add(tracked);
+                            }
+                        }
+
+                        foreach (int staleId in staleTrackedIds)
+                        {
+                            RemoveTrackedProcess_NoLock(staleId);
+                        }
+                    }
+
+                    bool hasTracked = _trackedTargetProcesses.Count > 0;
+                    if (hasTracked)
+                    {
+                        _targetProcessWasObservedRunning = true;
+                    }
+
+                    return hasTracked;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                foreach (var process in processes)
+                {
+                    int pid;
+                    try
+                    {
+                        pid = process.Id;
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    if (adoptedProcessIds.Contains(pid))
+                    {
+                        // Ownership is transferred to _trackedTargetProcesses.
+                        continue;
+                    }
+
+                    try
+                    {
+                        process.Dispose();
+                    }
+                    catch
+                    {
+                        // Best-effort cleanup.
+                    }
+                }
+            }
+        }
+
+        private static bool TryAttachTrackedProcess_NoLock(Process process, int pid)
+        {
+            try
+            {
+                process.EnableRaisingEvents = true;
+                process.Exited += OnTrackedTargetProcessExited;
+
+                if (process.HasExited)
+                {
+                    process.Exited -= OnTrackedTargetProcessExited;
+                    return false;
+                }
+
+                _trackedTargetProcesses[pid] = process;
+                return true;
+            }
+            catch
             {
                 try
                 {
-                    var activeName = NormalizeProcessName(active);
-                    activeName = activeName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-                        ? activeName[..^4]
-                        : activeName;
-
-                    var targetName = NormalizeProcessName(cfg.TargetProcessName);
-                    targetName = targetName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-                        ? targetName[..^4]
-                        : targetName;
-
-                    bool isMatch = string.Equals(activeName, targetName, StringComparison.OrdinalIgnoreCase);
-                    bool isAppItself = string.Equals(activeName, "LightCrosshair", StringComparison.OrdinalIgnoreCase);
-                    LogTargetDecision(targetName, activeName, isMatch, forceUpdate);
-
-                    if (isMatch || isAppItself)
-                    {
-                        if (!_isGammaApplied || forceUpdate)
-                            ApplyTargetGamma();
-                    }
-                    else if (!isMatch && !isAppItself && _isGammaApplied)
-                    {
-                        GammaController.RestoreOriginal();
-                        _isGammaApplied = false;
-                    }
+                    process.Exited -= OnTrackedTargetProcessExited;
                 }
                 catch
                 {
-                    // Foreground process not available at this moment.
+                    // Best-effort cleanup.
+                }
+
+                return false;
+            }
+        }
+
+        private static void RemoveTrackedProcess_NoLock(int pid)
+        {
+            if (!_trackedTargetProcesses.TryGetValue(pid, out var trackedProcess))
+            {
+                return;
+            }
+
+            _trackedTargetProcesses.Remove(pid);
+            ReleaseTrackedProcess(trackedProcess);
+        }
+
+        private static void ClearTrackedTargetProcesses()
+        {
+            lock (_trackedProcessSync)
+            {
+                ClearTrackedTargetProcesses_NoLock();
+            }
+        }
+
+        private static void ClearTrackedTargetProcesses_NoLock()
+        {
+            foreach (var tracked in _trackedTargetProcesses.Values)
+            {
+                ReleaseTrackedProcess(tracked);
+            }
+
+            _trackedTargetProcesses.Clear();
+            _trackedTargetProcessBaseName = string.Empty;
+            _targetProcessWasObservedRunning = false;
+        }
+
+        private static void ReleaseTrackedProcess(Process process)
+        {
+            try
+            {
+                process.Exited -= OnTrackedTargetProcessExited;
+            }
+            catch
+            {
+                // Best-effort cleanup.
+            }
+
+            try
+            {
+                process.Dispose();
+            }
+            catch
+            {
+                // Best-effort cleanup.
+            }
+        }
+
+        private static void OnTrackedTargetProcessExited(object? sender, EventArgs e)
+        {
+            int exitedPid = -1;
+            if (sender is Process process)
+            {
+                try
+                {
+                    exitedPid = process.Id;
+                }
+                catch
+                {
+                    exitedPid = -1;
                 }
             }
-            else if (_isGammaApplied)
+
+            lock (_trackedProcessSync)
             {
-                // Fail-safe: if foreground cannot be resolved while in target mode, restore.
-                LogTargetDecision(NormalizeProcessName(cfg.TargetProcessName), "<unresolved>", isMatch: false, forceUpdate);
-                GammaController.RestoreOriginal();
-                _isGammaApplied = false;
+                if (exitedPid >= 0)
+                {
+                    RemoveTrackedProcess_NoLock(exitedPid);
+                }
+            }
+
+            Program.LogDebug($"Tracked target process exited (pid={exitedPid}). Re-evaluating display color state.", nameof(DisplayManager));
+
+            try
+            {
+                CheckForegroundAndApply(forceUpdate: true);
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "DisplayManager.OnTrackedTargetProcessExited");
             }
         }
 
@@ -254,6 +529,7 @@ namespace LightCrosshair
         private static void ApplyTargetGamma()
         {
             var cfg = CrosshairConfig.Instance;
+            bool wasApplied = _isGammaApplied;
 
             bool sameAsLast =
                 cfg.GammaValue == _lastGammaValue &&
@@ -276,14 +552,18 @@ namespace LightCrosshair
             _lastBrightnessValue = cfg.BrightnessValue;
             _lastVibranceValue = cfg.VibranceValue;
 
-            if (DateTime.UtcNow - _lastApplyLogUtc > TimeSpan.FromSeconds(2) || applied != _isGammaApplied)
+            // Preserve applied state across transient apply failures so restore is never skipped.
+            if (applied)
             {
-                var info = GammaController.GetBackendInfo();
-                Program.LogDebug($"Display apply -> gamma={cfg.GammaValue} contrast={cfg.ContrastValue} brightness={cfg.BrightnessValue} vibrance={cfg.VibranceValue} target={cfg.TargetProcessName} applied={applied} backend={info.BackendName}", nameof(DisplayManager));
-                _lastApplyLogUtc = DateTime.UtcNow;
+                _isGammaApplied = true;
             }
 
-            _isGammaApplied = applied;
+            if (DateTime.UtcNow - _lastApplyLogUtc > TimeSpan.FromSeconds(2) || applied != wasApplied || wasApplied != _isGammaApplied)
+            {
+                var info = GammaController.GetBackendInfo();
+                Program.LogDebug($"Display apply -> gamma={cfg.GammaValue} contrast={cfg.ContrastValue} brightness={cfg.BrightnessValue} vibrance={cfg.VibranceValue} target={cfg.TargetProcessName} applied={applied} trackedApplied={_isGammaApplied} backend={info.BackendName}", nameof(DisplayManager));
+                _lastApplyLogUtc = DateTime.UtcNow;
+            }
         }
         
         public static void CancelCurrentGamma()

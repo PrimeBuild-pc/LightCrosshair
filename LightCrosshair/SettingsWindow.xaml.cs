@@ -40,7 +40,12 @@ namespace LightCrosshair
         {
             _profiles = profiles;
             _prefs = PreferencesStore.Load();
-            _profilesCurrentChangedHandler = (_, p) => Dispatcher.Invoke(() => { LoadFromProfile(p); UpdatePositionStatus(); });
+            _profilesCurrentChangedHandler = (_, p) => Dispatcher.Invoke(() =>
+            {
+                LoadFromProfile(p);
+                SyncDisplaySettingsFromConfig();
+                UpdatePositionStatus();
+            });
 
             // One-time migration to the new default settings window dimensions.
             if (!_prefs.SettingsWindowSizeMigrated)
@@ -287,6 +292,7 @@ namespace LightCrosshair
 
         private System.Windows.Controls.ListBoxItem BuildProfileListItem(CrosshairProfile p, int index)
         {
+            bool immutableDefault = p.IsImmutableDefault;
             var item = new System.Windows.Controls.ListBoxItem { Tag = p.Id };
             var sp = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, Margin = new Thickness(4) };
             sp.Children.Add(new System.Windows.Controls.TextBlock { Text = $"Slot {index + 1}:", Width = 64, Foreground = GetThemeBrush("TextFg", System.Windows.Media.Brushes.Black) });
@@ -294,11 +300,29 @@ namespace LightCrosshair
             sp.Children.Add(nameBox);
             var loadBtn = new System.Windows.Controls.Button { Content = "Load", Width = 70, Margin = new Thickness(6, 0, 0, 0) };
             loadBtn.Click += (_, __) => { _profiles.Switch(p.Id); };
-            var saveBtn = new System.Windows.Controls.Button { Content = "Save", Width = 70, Margin = new Thickness(6, 0, 0, 0) };
-            saveBtn.Click += (_, __) => { var cur = _profiles.Current.Clone(); cur.Id = p.Id; cur.Name = p.Name; _profiles.Update(cur); };
+            var saveBtn = new System.Windows.Controls.Button { Content = "Save", Width = 70, Margin = new Thickness(6, 0, 0, 0), IsEnabled = !immutableDefault };
+            saveBtn.Click += (_, __) =>
+            {
+                if (immutableDefault)
+                {
+                    ShowAppDialog("Profiles", "The Default profile is immutable and cannot be overwritten.", MessageBoxImage.Information);
+                    return;
+                }
+
+                var cur = StampDisplaySettingsIntoProfile(_profiles.Current.Clone());
+                cur.Id = p.Id;
+                cur.Name = p.Name;
+                _profiles.Update(cur);
+            };
             var renameBtn = new System.Windows.Controls.Button { Content = "Rename", Width = 80, Margin = new Thickness(6, 0, 0, 0) };
             renameBtn.Click += (_, __) =>
             {
+                if (immutableDefault)
+                {
+                    ShowAppDialog("Profiles", "The Default profile is immutable and cannot be renamed.", MessageBoxImage.Information);
+                    return;
+                }
+
                 var text = ShowInputDialog("Rename Profile", p.Name);
                 if (string.IsNullOrWhiteSpace(text)) return;
 
@@ -314,7 +338,7 @@ namespace LightCrosshair
                 _profiles.Update(updated);
                 RefreshProfilesUI();
             };
-            var deleteBtn = new System.Windows.Controls.Button { Content = "Delete", Width = 80, Margin = new Thickness(6, 0, 0, 0) };
+            var deleteBtn = new System.Windows.Controls.Button { Content = "Delete", Width = 80, Margin = new Thickness(6, 0, 0, 0), IsEnabled = !immutableDefault };
             deleteBtn.Click += (_, __) => { if (_profiles.Delete(p.Id)) RefreshProfilesUI(); };
             sp.Children.Add(loadBtn);
             sp.Children.Add(saveBtn);
@@ -331,7 +355,16 @@ namespace LightCrosshair
             {
                 if (lbi.Tag is string id && _profiles.Profiles.FirstOrDefault(x => x.Id == id) is CrosshairProfile existing)
                 {
-                    var cur = _profiles.Current.Clone(); cur.Id = existing.Id; cur.Name = existing.Name; _profiles.Update(cur);
+                    if (existing.IsImmutableDefault)
+                    {
+                        ShowAppDialog("Profiles", "The Default profile is immutable and cannot be overwritten.", MessageBoxImage.Information);
+                        return;
+                    }
+
+                    var cur = StampDisplaySettingsIntoProfile(_profiles.Current.Clone());
+                    cur.Id = existing.Id;
+                    cur.Name = existing.Name;
+                    _profiles.Update(cur);
                 }
                 else if (lbi.Tag is int index)
                 {
@@ -345,7 +378,8 @@ namespace LightCrosshair
             try
             {
                 var name = $"Profile {targetIndex + 1}";
-                var created = _profiles.AddClone(_profiles.Current, name);
+                var source = StampDisplaySettingsIntoProfile(_profiles.Current.Clone());
+                var created = _profiles.AddClone(source, name);
                 int idx = _profiles.Profiles.ToList().FindIndex(x => x.Id == created.Id);
                 int delta = targetIndex - idx;
                 if (delta != 0) _profiles.Move(created.Id, delta);
@@ -834,6 +868,43 @@ namespace LightCrosshair
             RefreshDisplayBackendInfo();
         }
 
+        internal void SyncDisplaySettingsFromConfig()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                _ = Dispatcher.BeginInvoke(new Action(SyncDisplaySettingsFromConfig));
+                return;
+            }
+
+            var cfg = CrosshairConfig.Instance;
+            _suppressUiEvents = true;
+            try
+            {
+                EnableGammaCheckbox.IsChecked = cfg.EnableGammaOverride;
+
+                GammaSlider.Value = cfg.GammaValue;
+                GammaValueText.Text = cfg.GammaValue.ToString();
+
+                ContrastSlider.Value = cfg.ContrastValue;
+                ContrastValueText.Text = cfg.ContrastValue.ToString();
+
+                BrightnessSlider.Value = cfg.BrightnessValue;
+                BrightnessValueText.Text = cfg.BrightnessValue.ToString();
+
+                VibranceSlider.Value = cfg.VibranceValue;
+                VibranceValueText.Text = cfg.VibranceValue.ToString();
+
+                TargetProcessTextBox.Text = cfg.TargetProcessName;
+                RefreshProcessPickerItems();
+            }
+            finally
+            {
+                _suppressUiEvents = false;
+            }
+
+            RefreshDisplayBackendInfo();
+        }
+
         private static string NormalizeTargetProcessInput(string input)
         {
             var trimmed = (input ?? string.Empty).Trim();
@@ -914,6 +985,7 @@ namespace LightCrosshair
             cfg.TargetProcessName = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
             TargetProcessTextBox.Text = cfg.TargetProcessName;
             RefreshProcessPickerItems();
+            SyncDisplaySettingsToCurrentProfile(cfg);
             cfg.SaveSettings();
 
             if (cfg.EnableGammaOverride)
@@ -1003,6 +1075,7 @@ namespace LightCrosshair
             {
                 if (_suppressUiEvents) return;
                 cfg.EnableGammaOverride = true;
+                SyncDisplaySettingsToCurrentProfile(cfg);
                 cfg.SaveSettings();
                 ApplyDisplaySettingsImmediate(cfg);
             };
@@ -1010,6 +1083,7 @@ namespace LightCrosshair
             {
                 if (_suppressUiEvents) return;
                 cfg.EnableGammaOverride = false;
+                SyncDisplaySettingsToCurrentProfile(cfg);
                 cfg.SaveSettings();
                 DisplayManager.CheckForegroundAndApply(forceUpdate: true);
                 RefreshDisplayBackendInfo();
@@ -1051,6 +1125,7 @@ namespace LightCrosshair
             DragCompletedEventHandler dragCompleteHandler = (_, __) =>
             {
                 if (_suppressUiEvents) return;
+                SyncDisplaySettingsToCurrentProfile(cfg);
                 FlushPendingSettingsSave();
                 ApplyDisplaySettingsImmediate(cfg);
             };
@@ -1066,10 +1141,10 @@ namespace LightCrosshair
             };
 
             // Additional UI helpers: reset buttons for color parameters
-            ResetGammaBtn.Click += (_, __) => { GammaSlider.Value = 100; ApplyDisplaySettingsImmediate(cfg); };
-            ResetContrastBtn.Click += (_, __) => { ContrastSlider.Value = 100; ApplyDisplaySettingsImmediate(cfg); };
-            ResetBrightnessBtn.Click += (_, __) => { BrightnessSlider.Value = 100; ApplyDisplaySettingsImmediate(cfg); };
-            ResetVibranceBtn.Click += (_, __) => { VibranceSlider.Value = 50; ApplyDisplaySettingsImmediate(cfg); };
+            ResetGammaBtn.Click += (_, __) => { GammaSlider.Value = 100; SyncDisplaySettingsToCurrentProfile(cfg); ApplyDisplaySettingsImmediate(cfg); };
+            ResetContrastBtn.Click += (_, __) => { ContrastSlider.Value = 100; SyncDisplaySettingsToCurrentProfile(cfg); ApplyDisplaySettingsImmediate(cfg); };
+            ResetBrightnessBtn.Click += (_, __) => { BrightnessSlider.Value = 100; SyncDisplaySettingsToCurrentProfile(cfg); ApplyDisplaySettingsImmediate(cfg); };
+            ResetVibranceBtn.Click += (_, __) => { VibranceSlider.Value = 50; SyncDisplaySettingsToCurrentProfile(cfg); ApplyDisplaySettingsImmediate(cfg); };
 
             TargetProcessTextBox.LostFocus += (_, __) =>
             {
@@ -1202,8 +1277,7 @@ namespace LightCrosshair
                 if (_suppressUiEvents) return;
                 PickColor(c =>
                 {
-                    byte alpha = ParseOverlayAlpha(cfg.FpsOverlayBgColorSerialized, 128);
-                    cfg.FpsOverlayBgColorSerialized = SerializeRgba(c.R, c.G, c.B, alpha);
+                    cfg.FpsOverlayBgColorSerialized = SerializeRgb(c.R, c.G, c.B);
                     cfg.SaveSettings();
                 });
             };
@@ -1213,12 +1287,31 @@ namespace LightCrosshair
 
         private static string SerializeRgba(byte r, byte g, byte b, byte a) => $"{r},{g},{b},{a}";
 
-        private static byte ParseOverlayAlpha(string? value, byte fallback)
+        private CrosshairProfile StampDisplaySettingsIntoProfile(CrosshairProfile profile)
         {
-            if (string.IsNullOrWhiteSpace(value)) return fallback;
-            var parts = value.Split(',');
-            if (parts.Length == 4 && byte.TryParse(parts[3], out byte alpha)) return alpha;
-            return fallback;
+            var cfg = CrosshairConfig.Instance;
+            profile.HasDisplayColorProfile = true;
+            profile.DisplayEnableGammaOverride = cfg.EnableGammaOverride;
+            profile.DisplayGammaValue = cfg.GammaValue;
+            profile.DisplayContrastValue = cfg.ContrastValue;
+            profile.DisplayBrightnessValue = cfg.BrightnessValue;
+            profile.DisplayVibranceValue = cfg.VibranceValue;
+            profile.DisplayTargetProcessName = NormalizeTargetProcessInput(cfg.TargetProcessName);
+            return profile;
+        }
+
+        private void SyncDisplaySettingsToCurrentProfile(CrosshairConfig cfg)
+        {
+            if (_suppressUiEvents)
+            {
+                return;
+            }
+
+            var updated = StampDisplaySettingsIntoProfile(_profiles.Current.Clone());
+            if (!updated.ContentEquals(_profiles.Current))
+            {
+                _profiles.Update(updated);
+            }
         }
 
         private void SelectGraphRefreshPreset(int refreshMs)

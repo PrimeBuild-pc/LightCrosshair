@@ -39,6 +39,7 @@ namespace LightCrosshair
     private FpsOverlayForm? _fpsOverlayForm;
         private bool _isRecordingDetected = false;
         private bool _wasVisibleBeforeRecording = true;
+        private int _recordingDetectionRunning;
 
         // Constants for message handling
         private const int WM_HOTKEY = 0x0312;
@@ -72,9 +73,9 @@ namespace LightCrosshair
         private const uint SWP_FRAMECHANGED = 0x0020;
         private const uint SWP_NOOWNERZORDER = 0x0200;
         private const uint SWP_NOSENDCHANGING = 0x0400;
-        private const uint SWP_SHOWWINDOW = 0x0040;
     private bool _isExiting;
     private bool _runtimeInitialized;
+    private bool _shutdownWatchdogStarted;
 
     // Autosave centralized in ProfileService now
         private StatusStrip? _statusStrip; // simple status surface for Saved HH:MM:SS
@@ -188,6 +189,7 @@ namespace LightCrosshair
                 if (_profileService.Profiles.Count == 0)
                     _profileService.InitializeAsync().GetAwaiter().GetResult();
                 var current = _profileService.Current;
+                Service_CurrentChanged(current);
                 isVisible = _prefs.OverlayVisible && CrosshairConfig.Instance.Visible;
                 Program.LogDebug($"Startup visibility restore -> prefs={_prefs.OverlayVisible}, config={CrosshairConfig.Instance.Visible}, effective={isVisible}, profileEnabled={current.EnableCustomCrosshair}", nameof(Form1));
                 MarkConfigDirty();
@@ -396,7 +398,7 @@ namespace LightCrosshair
             EnsureFpsOverlayForm();
             if (_fpsOverlayForm == null || _fpsOverlayForm.IsDisposed) return;
 
-            bool shouldShow = CrosshairConfig.Instance.EnableFpsOverlay && isVisible && !_isRecordingDetected;
+            bool shouldShow = CrosshairConfig.Instance.EnableFpsOverlay && !_isRecordingDetected;
             if (!shouldShow)
             {
                 if (_fpsOverlayForm.Visible) _fpsOverlayForm.Hide();
@@ -433,6 +435,13 @@ namespace LightCrosshair
 
     private async void RecordingDetectionTimer_Tick(object? sender, EventArgs e)
         {
+            if (Interlocked.Exchange(ref _recordingDetectionRunning, 1) != 0)
+            {
+                return;
+            }
+
+            try
+            {
             if (_profileService.Current.HideDuringScreenRecording)
             {
                 bool isRecording = await Task.Run(() => IsScreenRecordingActive());
@@ -451,6 +460,11 @@ namespace LightCrosshair
                     isVisible = _wasVisibleBeforeRecording;
                     UpdateCrosshairVisibilityState();
                 }
+            }
+            }
+            finally
+            {
+                Volatile.Write(ref _recordingDetectionRunning, 0);
             }
         }
 
@@ -478,10 +492,21 @@ namespace LightCrosshair
                     var processes = System.Diagnostics.Process.GetProcessesByName(
                         software.Replace(".exe", ""));
 
-                    if (processes.Length > 0)
+                    bool foundAny = false;
+                    for (int i = 0; i < processes.Length; i++)
+                    {
+                        if (!foundAny)
+                        {
+                            foundAny = true;
+                        }
+
+                        processes[i].Dispose();
+                    }
+
+                    if (foundAny)
                     {
                         // Additional check for OBS - look for recording indicator
-                        if (software.StartsWith("obs"))
+                        if (software.StartsWith("obs", StringComparison.OrdinalIgnoreCase))
                         {
                             IntPtr obsWindow = FindWindow(null, "OBS");
                             if (obsWindow == IntPtr.Zero)
@@ -501,7 +526,18 @@ namespace LightCrosshair
 
                 // Check for Windows Game Bar recording
                 var gameBarProcesses = System.Diagnostics.Process.GetProcessesByName("GameBarPresenceWriter");
-                if (gameBarProcesses.Length > 0)
+                bool gameBarFound = false;
+                for (int i = 0; i < gameBarProcesses.Length; i++)
+                {
+                    if (!gameBarFound)
+                    {
+                        gameBarFound = true;
+                    }
+
+                    gameBarProcesses[i].Dispose();
+                }
+
+                if (gameBarFound)
                 {
                     return true;
                 }
@@ -517,6 +553,8 @@ namespace LightCrosshair
 
     private void Service_CurrentChanged(CrosshairProfile profile)
         {
+            ApplyDisplaySettingsFromProfile(profile);
+
             // Mark that we need a redraw and invalidate only if profile actually changed
             lock (_renderLock)
             {
@@ -536,6 +574,87 @@ namespace LightCrosshair
                 }
             }
             UpdateCrosshairVisibilityState();
+        }
+
+        private void ApplyDisplaySettingsFromProfile(CrosshairProfile profile)
+        {
+            if (!profile.HasDisplayColorProfile)
+            {
+                return;
+            }
+
+            var cfg = CrosshairConfig.Instance;
+            bool changed = false;
+
+            if (cfg.EnableGammaOverride != profile.DisplayEnableGammaOverride)
+            {
+                cfg.EnableGammaOverride = profile.DisplayEnableGammaOverride;
+                changed = true;
+            }
+
+            int gamma = Math.Clamp(profile.DisplayGammaValue, 50, 150);
+            int contrast = Math.Clamp(profile.DisplayContrastValue, 50, 150);
+            int brightness = Math.Clamp(profile.DisplayBrightnessValue, 50, 150);
+            int vibrance = Math.Clamp(profile.DisplayVibranceValue, 0, 100);
+            string target = NormalizeDisplayTargetProcessName(profile.DisplayTargetProcessName);
+
+            if (cfg.GammaValue != gamma)
+            {
+                cfg.GammaValue = gamma;
+                changed = true;
+            }
+
+            if (cfg.ContrastValue != contrast)
+            {
+                cfg.ContrastValue = contrast;
+                changed = true;
+            }
+
+            if (cfg.BrightnessValue != brightness)
+            {
+                cfg.BrightnessValue = brightness;
+                changed = true;
+            }
+
+            if (cfg.VibranceValue != vibrance)
+            {
+                cfg.VibranceValue = vibrance;
+                changed = true;
+            }
+
+            if (!string.Equals(cfg.TargetProcessName, target, StringComparison.OrdinalIgnoreCase))
+            {
+                cfg.TargetProcessName = target;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                cfg.SaveSettings();
+            }
+
+            DisplayManager.CheckForegroundAndApply(forceUpdate: true);
+        }
+
+        private static string NormalizeDisplayTargetProcessName(string? value)
+        {
+            var trimmed = (value ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                return string.Empty;
+            }
+
+            if (trimmed.Contains('\\') || trimmed.Contains('/'))
+            {
+                trimmed = Path.GetFileName(trimmed);
+            }
+
+            if (trimmed.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                return trimmed;
+            }
+
+            return trimmed.Contains('.') ? trimmed : $"{trimmed}.exe";
         }
 
         private bool ProfilesEqual(CrosshairProfile a, CrosshairProfile b)
@@ -595,33 +714,23 @@ namespace LightCrosshair
             var aboutItem = new ToolStripMenuItem("About");
             aboutItem.Click += (sender, e) =>
             {
-                string text = "LightCrosshair\nAuthor: PrimeBuild\nLicense: MIT (2025)\nWebsite: https://primebuild.website/\nGitHub: https://github.com/PrimeBuild-pc/LightCrosshair";
+                const string text = "LightCrosshair\nAuthor: PrimeBuild\nLicense: MIT (2025)\nWebsite: https://primebuild.website/\nGitHub: https://github.com/PrimeBuild-pc/LightCrosshair";
                 MessageBox.Show(this, text, "About", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
             var exitItem = new ToolStripMenuItem("Exit");
-            exitItem.Click += (sender, e) =>
-            {
-                if (_isExiting)
-                {
-                    return;
-                }
-
-                _isExiting = true;
-                BeginInvoke(new Action(() => Close()));
-            };
+            exitItem.Click += (sender, e) => { RequestFullShutdown(); };
 
             contextMenu.Items.Add(aboutItem);
             contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add(exitItem);
 
             // Set the context menu for both the form and notify icon
-
             this.ContextMenuStrip = contextMenu;
-
-
             if (notifyIcon != null)
+            {
                 notifyIcon.ContextMenuStrip = contextMenu;
+            }
         }
 
         protected override void OnHandleCreated(EventArgs e)
@@ -732,8 +841,95 @@ namespace LightCrosshair
         private void ToggleVisibility()
         {
             isVisible = !isVisible;
+            Program.LogDebug($"Overlay visibility toggled: {(isVisible ? "ON" : "OFF")}", nameof(Form1));
             SaveOverlayVisibilityPreference();
             UpdateCrosshairVisibilityState();
+
+            if (isVisible)
+            {
+                SystemFpsMonitor.RequestTrackingRefresh();
+            }
+        }
+
+        private void RequestFullShutdown()
+        {
+            if (InvokeRequired)
+            {
+                try
+                {
+                    BeginInvoke(new Action(RequestFullShutdown));
+                }
+                catch
+                {
+                    // Best-effort shutdown.
+                }
+                return;
+            }
+
+            if (_isExiting)
+            {
+                return;
+            }
+
+            _isExiting = true;
+
+            try
+            {
+                Hide();
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "Form1.RequestFullShutdown: hide");
+            }
+
+            try
+            {
+                Close();
+                Application.ExitThread();
+                Application.Exit();
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "Form1.RequestFullShutdown: Exit/Close");
+            }
+
+            StartShutdownWatchdog();
+        }
+
+        private void StartShutdownWatchdog()
+        {
+            if (_shutdownWatchdogStarted)
+            {
+                return;
+            }
+
+            _shutdownWatchdogStarted = true;
+
+            int pid = Environment.ProcessId;
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2000).ConfigureAwait(false);
+                if (_isExiting)
+                {
+                    try
+                    {
+                        Environment.Exit(0);
+                    }
+                    catch
+                    {
+                        // Final fallback below.
+                    }
+
+                    try
+                    {
+                        Process.GetProcessById(pid).Kill(true);
+                    }
+                    catch
+                    {
+                        // Last-resort best effort.
+                    }
+                }
+            });
         }
 
         private void CycleProfile(int direction)
@@ -806,6 +1002,7 @@ namespace LightCrosshair
             if (e.Cancel) return;
 
             _isExiting = true;
+            StartShutdownWatchdog();
             CleanupEvents();
             SaveOverlayVisibilityPreference();
             DisplayManager.StopMonitoring();
@@ -821,6 +1018,14 @@ namespace LightCrosshair
             if (notifyIcon != null)
             {
                 notifyIcon.Visible = false; // Hide immediately, disposal happens in Designer
+                notifyIcon.Dispose();
+                notifyIcon = null;
+            }
+
+            if (contextMenu != null)
+            {
+                contextMenu.Dispose();
+                contextMenu = null;
             }
 
             // Stop and dispose timers
@@ -839,6 +1044,7 @@ namespace LightCrosshair
             if (_fpsOverlayForm != null && !_fpsOverlayForm.IsDisposed)
             {
                 _fpsOverlayForm.Hide();
+                _fpsOverlayForm.Close();
                 _fpsOverlayForm.Dispose();
                 _fpsOverlayForm = null;
             }
@@ -888,7 +1094,7 @@ namespace LightCrosshair
         {
             if (!ShouldDisplayCrosshairOverlay()) return;
             if (IsDisposed || !IsHandleCreated) return;
-            try { SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING); }
+            try { SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING); }
             catch (Exception ex)
             {
                 Program.LogDebug($"ReinforceTopMost SetWindowPos failed: {ex.Message}", nameof(Form1));

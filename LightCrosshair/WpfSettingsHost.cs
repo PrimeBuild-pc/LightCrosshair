@@ -1,9 +1,18 @@
 using System;
+using System.Runtime.InteropServices;
 
 namespace LightCrosshair
 {
     internal static class WpfSettingsHost
     {
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        private const int SW_RESTORE = 9;
+
         private static SettingsWindow? _window;
         // Bridge for small interactions (e.g., pixel nudges)
     public static Action<int,int>? OnNudge;
@@ -41,14 +50,98 @@ namespace LightCrosshair
                 _ = new System.Windows.Application { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
             }
 
-            if (_window == null || !_window.IsLoaded)
+            try
             {
-                _window = new SettingsWindow(profiles);
+                if (_window == null || !_window.IsLoaded)
+                {
+                    _window = new SettingsWindow(profiles);
+                }
+
+                _window.SyncDisplaySettingsFromConfig();
+                if (_window.WindowState == System.Windows.WindowState.Minimized)
+                {
+                    _window.WindowState = System.Windows.WindowState.Normal;
+                }
+
+                BringToFront(_window);
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "WpfSettingsHost.Show primary path failed");
+
+                // Recovery path for stale window state (prevents hotkey from becoming a no-op).
+                try
+                {
+                    _window = new SettingsWindow(profiles);
+                    _window.SyncDisplaySettingsFromConfig();
+                    BringToFront(_window);
+                }
+                catch (Exception retryEx)
+                {
+                    Program.LogError(retryEx, "WpfSettingsHost.Show recovery path failed");
+                }
+            }
+        }
+
+        private static void BringToFront(SettingsWindow window)
+        {
+            if (!window.IsVisible)
+            {
+                window.Show();
             }
 
-            _window.Show();
-            _window.Activate();
-            _window.Focus();
+            window.Activate();
+            window.Focus();
+
+            try
+            {
+                var handle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+                if (handle != IntPtr.Zero)
+                {
+                    _ = ShowWindow(handle, SW_RESTORE);
+                    _ = SetForegroundWindow(handle);
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "WpfSettingsHost.BringToFront failed");
+            }
+        }
+
+        public static void RefreshDisplayUiFromConfig()
+        {
+            try
+            {
+                if (_window == null || !_window.IsLoaded)
+                {
+                    return;
+                }
+
+                var dispatcher = _window.Dispatcher;
+                if (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+                {
+                    return;
+                }
+
+                _ = dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        if (_window != null && _window.IsLoaded)
+                        {
+                            _window.SyncDisplaySettingsFromConfig();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Program.LogError(ex, "WpfSettingsHost.RefreshDisplayUiFromConfig invoke failed");
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "WpfSettingsHost.RefreshDisplayUiFromConfig failed");
+            }
         }
 
         public static bool IsVisible

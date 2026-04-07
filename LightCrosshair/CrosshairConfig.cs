@@ -69,10 +69,10 @@ namespace LightCrosshair
         public bool CycleProfileHotkeyUseShift { get; set; } = false;
         public bool CycleProfileHotkeyUseWin { get; set; } = false;
 
-        public Keys CycleProfilePrevHotkeyKey { get; set; } = Keys.Left;
-        public bool CycleProfilePrevHotkeyUseAlt { get; set; } = false;
-        public bool CycleProfilePrevHotkeyUseControl { get; set; } = true;
-        public bool CycleProfilePrevHotkeyUseShift { get; set; } = true;
+        public Keys CycleProfilePrevHotkeyKey { get; set; } = Keys.V;
+        public bool CycleProfilePrevHotkeyUseAlt { get; set; } = true;
+        public bool CycleProfilePrevHotkeyUseControl { get; set; } = false;
+        public bool CycleProfilePrevHotkeyUseShift { get; set; } = false;
         public bool CycleProfilePrevHotkeyUseWin { get; set; } = false;
 
         public Keys SettingsWindowHotkeyKey { get; set; } = Keys.L;
@@ -113,7 +113,7 @@ namespace LightCrosshair
         public bool Show1PercentLows { get; set; } = true;
         public bool ShowGenFrames { get; set; } = true;
         public string FpsOverlayColorSerialized { get; set; } = "255,255,255";
-        public string FpsOverlayBgColorSerialized { get; set; } = "0,0,0,128"; // Includes alpha
+        public string FpsOverlayBgColorSerialized { get; set; } = "0,0,0";
         private int _fpsOverlayScale = 100;
         public int FpsOverlayScale
         {
@@ -183,8 +183,7 @@ namespace LightCrosshair
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error saving settings: {ex.Message}");
-                MessageBox.Show($"Error saving settings: {ex.Message}", "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Program.LogError(ex, "CrosshairConfig.SaveSettings");
             }
         }
 
@@ -236,6 +235,8 @@ namespace LightCrosshair
                         CycleProfilePrevHotkeyUseShift = loadedConfig.CycleProfilePrevHotkeyUseShift;
                         CycleProfilePrevHotkeyUseWin = loadedConfig.CycleProfilePrevHotkeyUseWin;
 
+                        MigrateLegacyCycleBackHotkeyDefaults();
+
                         SettingsWindowHotkeyKey = loadedConfig.SettingsWindowHotkeyKey;
                         SettingsWindowHotkeyUseAlt = loadedConfig.SettingsWindowHotkeyUseAlt;
                         SettingsWindowHotkeyUseControl = loadedConfig.SettingsWindowHotkeyUseControl;
@@ -259,7 +260,7 @@ namespace LightCrosshair
                         Show1PercentLows = loadedConfig.Show1PercentLows;
                         ShowGenFrames = loadedConfig.ShowGenFrames;
                         FpsOverlayColorSerialized = loadedConfig.FpsOverlayColorSerialized ?? "255,255,255";
-                        FpsOverlayBgColorSerialized = loadedConfig.FpsOverlayBgColorSerialized ?? "0,0,0,128";
+                        FpsOverlayBgColorSerialized = loadedConfig.FpsOverlayBgColorSerialized ?? "0,0,0";
                         FpsOverlayScale = loadedConfig.FpsOverlayScale;
                     }
                 }
@@ -318,6 +319,27 @@ namespace LightCrosshair
         {
             if (value <= 0) return 100;
             return Math.Clamp(value, 50, 300);
+        }
+
+        private void MigrateLegacyCycleBackHotkeyDefaults()
+        {
+            bool hasLegacyBackCombo =
+                CycleProfilePrevHotkeyKey == Keys.Left &&
+                !CycleProfilePrevHotkeyUseAlt &&
+                CycleProfilePrevHotkeyUseControl &&
+                CycleProfilePrevHotkeyUseShift &&
+                !CycleProfilePrevHotkeyUseWin;
+
+            if (!hasLegacyBackCombo)
+            {
+                return;
+            }
+
+            CycleProfilePrevHotkeyKey = Keys.V;
+            CycleProfilePrevHotkeyUseAlt = true;
+            CycleProfilePrevHotkeyUseControl = false;
+            CycleProfilePrevHotkeyUseShift = false;
+            CycleProfilePrevHotkeyUseWin = false;
         }
 
         public void Dispose()

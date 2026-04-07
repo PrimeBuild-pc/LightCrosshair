@@ -214,6 +214,19 @@ namespace LightCrosshair
         public bool HideDuringScreenRecording { get; set; } = false;
     public bool AntiAlias { get; set; } = true; // persist AA per profilo
 
+        // State management metadata
+        public bool IsImmutableDefault { get; set; } = false;
+        public string SourceProfileId { get; set; } = string.Empty;
+
+    // Profile-scoped display color management settings
+    public bool HasDisplayColorProfile { get; set; } = false;
+    public bool DisplayEnableGammaOverride { get; set; } = false;
+    public int DisplayGammaValue { get; set; } = 100;
+    public int DisplayContrastValue { get; set; } = 100;
+    public int DisplayBrightnessValue { get; set; } = 100;
+    public int DisplayVibranceValue { get; set; } = 50;
+    public string DisplayTargetProcessName { get; set; } = string.Empty;
+
     // Schema versioning
     public int SchemaVersion { get; set; } = ProfileSchema.Current;
 
@@ -402,6 +415,15 @@ namespace LightCrosshair
                 HotKey = this.HotKey,
                 HideDuringScreenRecording = this.HideDuringScreenRecording,
                 AntiAlias = this.AntiAlias,
+                IsImmutableDefault = this.IsImmutableDefault,
+                SourceProfileId = this.SourceProfileId,
+                HasDisplayColorProfile = this.HasDisplayColorProfile,
+                DisplayEnableGammaOverride = this.DisplayEnableGammaOverride,
+                DisplayGammaValue = this.DisplayGammaValue,
+                DisplayContrastValue = this.DisplayContrastValue,
+                DisplayBrightnessValue = this.DisplayBrightnessValue,
+                DisplayVibranceValue = this.DisplayVibranceValue,
+                DisplayTargetProcessName = this.DisplayTargetProcessName,
                 SchemaVersion = this.SchemaVersion
             };
         }
@@ -463,12 +485,21 @@ namespace LightCrosshair
                    HotKey == other.HotKey &&
                    HideDuringScreenRecording == other.HideDuringScreenRecording &&
                    AntiAlias == other.AntiAlias &&
+                   IsImmutableDefault == other.IsImmutableDefault &&
+                   string.Equals(SourceProfileId, other.SourceProfileId, StringComparison.Ordinal) &&
+                   HasDisplayColorProfile == other.HasDisplayColorProfile &&
+                   DisplayEnableGammaOverride == other.DisplayEnableGammaOverride &&
+                   DisplayGammaValue == other.DisplayGammaValue &&
+                   DisplayContrastValue == other.DisplayContrastValue &&
+                   DisplayBrightnessValue == other.DisplayBrightnessValue &&
+                   DisplayVibranceValue == other.DisplayVibranceValue &&
+                   string.Equals(DisplayTargetProcessName, other.DisplayTargetProcessName, StringComparison.OrdinalIgnoreCase) &&
                    SchemaVersion == other.SchemaVersion;
         }
     }
 
     public static class ProfileSchema
     {
-        public const int Current = 4; // v4: add EnableCustomCrosshair and OutlineEnabled profile flags
+        public const int Current = 5; // v5: add display color management settings per profile
     }
 }

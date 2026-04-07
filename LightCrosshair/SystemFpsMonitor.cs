@@ -267,6 +267,12 @@ namespace LightCrosshair
         private static DateTime _lastRtssUnexpectedLogUtc = DateTime.MinValue;
         private static string _lastRtssUnexpectedSignature = string.Empty;
         private static bool _isRtssProcessAvailable;
+        private static readonly string[] RtssProcessNames =
+        {
+            "RTSS",
+            "RTSSHooksLoader",
+            "RTSSHooksLoader64"
+        };
         private static DateTime _nextRtssMemoryOpenAttemptUtc = DateTime.MinValue;
         private static long _lastUiTextRefreshTick;
         private static int _trackedProcessId;
@@ -274,37 +280,47 @@ namespace LightCrosshair
         private static double _previousFrameTimeMs;
         private static bool _lastWasMarkedGenerated;
 
-        public static string CurrentFpsText { get; private set; } = "FPS: --";
-        public static string StatusText { get; private set; } = "Idle";
-        public static string ActiveSource { get; private set; } = "None";
+        private static string _currentFpsText = "FPS: --";
+        private static string _statusText = "Idle";
+        private static string _activeSource = "None";
+        public static string CurrentFpsText => Volatile.Read(ref _currentFpsText);
+        public static string StatusText => Volatile.Read(ref _statusText);
+        public static string ActiveSource => Volatile.Read(ref _activeSource);
         public static int PreferredUiRefreshMs => 50;
         public static int PreferredUiTextRefreshMs => UiTextRefreshThrottleMs;
 
+        public static void RequestTrackingRefresh()
+        {
+            RefreshTrackedProcessFromForeground(forceRefresh: true);
+        }
+
         public static void Start()
         {
+            StopBackgroundWorkers();
+
             if (_hook != IntPtr.Zero)
             {
                 UnhookWinEvent(_hook);
                 _hook = IntPtr.Zero;
                 _dele = null;
             }
-            _cts?.Cancel();
             _cts = new CancellationTokenSource();
 
             _metrics.Clear();
             _lastPresentByPid.Clear();
-            CurrentFpsText = "FPS: --";
-            StatusText = "Starting telemetry...";
-            ActiveSource = "None";
+            SetCurrentFpsText("FPS: --");
+            SetStatusText("Starting telemetry...");
+            SetActiveSource("None");
             _trackedProcessId = 0;
             _trackedProcessName = string.Empty;
             _previousFrameTimeMs = 0;
             _lastWasMarkedGenerated = false;
+            _lastTrackingRefreshUtc = DateTime.MinValue;
 
             _dele = new WinEventDelegate(WinEventProc);
             _hook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, _dele, 0, 0, WINEVENT_OUTOFCONTEXT);
 
-            // Inizializza col processo attualmente in focus
+            // Initialize tracking from the current foreground window.
             UpdateTrackedProcess(GetForegroundWindow());
 
             _etwTask = Task.Run(() => RunEtwLoop(_cts.Token), _cts.Token);
@@ -313,6 +329,8 @@ namespace LightCrosshair
 
         public static void Stop()
         {
+            StopBackgroundWorkers();
+
             if (_hook != IntPtr.Zero)
             {
                 UnhookWinEvent(_hook);
@@ -320,15 +338,59 @@ namespace LightCrosshair
                 _dele = null;
             }
 
-            _cts?.Cancel();
-            _cts = null;
-            StatusText = "Stopped";
-            ActiveSource = "None";
+            SetStatusText("Stopped");
+            SetActiveSource("None");
             _trackedProcessId = 0;
             _trackedProcessName = string.Empty;
             _lastPresentByPid.Clear();
             _previousFrameTimeMs = 0;
             _lastWasMarkedGenerated = false;
+            _lastTrackingRefreshUtc = DateTime.MinValue;
+        }
+
+        private static void StopBackgroundWorkers()
+        {
+            var cts = _cts;
+            var etwTask = _etwTask;
+            var rtssTask = _rtssTask;
+
+            _cts = null;
+            _etwTask = null;
+            _rtssTask = null;
+
+            if (cts != null)
+            {
+                try
+                {
+                    cts.Cancel();
+                }
+                catch
+                {
+                    // Best-effort cancellation.
+                }
+            }
+
+            WaitForTask(etwTask);
+            WaitForTask(rtssTask);
+
+            cts?.Dispose();
+        }
+
+        private static void WaitForTask(Task? task)
+        {
+            if (task == null)
+            {
+                return;
+            }
+
+            try
+            {
+                task.Wait(1500);
+            }
+            catch
+            {
+                // Best-effort wait.
+            }
         }
 
         public static FpsMetricsSnapshot GetSnapshot() => _metrics.Snapshot();
@@ -355,8 +417,8 @@ namespace LightCrosshair
                     {
                         if (token.IsCancellationRequested) return;
                         
-                        // Allineamento con gli standard DXGI Present di PresentMon
-                        // Evita allocazioni di stringhe per ogni evento ETW (zero-allocation parser pattern)
+                        // Match DXGI Present semantics from PresentMon.
+                        // Keep this parser allocation-free for hot ETW paths.
                         bool isPresentStart = false;
                         if (data.ProviderGuid == DxgiProviderGuid && (int)data.ID == DXGI_PRESENT_START_EVENT_ID)
                         {
@@ -392,7 +454,7 @@ namespace LightCrosshair
                         }
                     };
 
-                    StatusText = "ETW active";
+                    SetStatusText("ETW active");
                     using var _ = token.Register(() =>
                     {
                         try { session.Dispose(); }
@@ -407,14 +469,14 @@ namespace LightCrosshair
                 {
                     if (token.IsCancellationRequested) break;
                     Program.LogDebug($"[ETW] Access denied. Admin privileges required for pure anti-cheat safe FPS monitor. Falling back to legacy RTSS. Error: {ex.Message}", "SystemFpsMonitor");
-                    StatusText = "ETW requires Admin. Legacy mode active.";
+                    SetStatusText("ETW requires Admin. Legacy mode active.");
                     await Task.Delay(5000, token).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     if (token.IsCancellationRequested) break;
                     Program.LogError(ex, "SystemFpsMonitor.RunEtwLoop");
-                    StatusText = "ETW unavailable, legacy mode active.";
+                    SetStatusText("ETW unavailable, legacy mode active.");
                     await Task.Delay(5000, token).ConfigureAwait(false);
                 }
             }
@@ -436,34 +498,34 @@ namespace LightCrosshair
                             OnFrameTime(frameTimeMs, "RTSS", isGeneratedFrame: false);
                             if (ActiveSource != "ETW")
                             {
-                                StatusText = "Fallback source active (RTSS)";
+                                SetStatusText("Fallback source active (RTSS)");
                             }
                         }
                     }
                     else if (ActiveSource == "None")
                     {
-                        StatusText = "Waiting for ETW/RTSS frames";
+                        SetStatusText("Waiting for ETW/RTSS frames");
                     }
                 }
                 catch (FileNotFoundException)
                 {
                     if (ActiveSource == "None")
                     {
-                        StatusText = "Waiting for ETW/RTSS frames";
+                        SetStatusText("Waiting for ETW/RTSS frames");
                     }
                 }
                 catch (IOException)
                 {
                     if (ActiveSource == "None")
                     {
-                        StatusText = "Waiting for ETW/RTSS frames";
+                        SetStatusText("Waiting for ETW/RTSS frames");
                     }
                 }
                 catch (UnauthorizedAccessException)
                 {
                     if (ActiveSource == "None")
                     {
-                        StatusText = "Waiting for ETW/RTSS frames";
+                        SetStatusText("Waiting for ETW/RTSS frames");
                     }
                 }
                 catch (Exception ex)
@@ -475,7 +537,7 @@ namespace LightCrosshair
 
                     if (ActiveSource == "None")
                     {
-                        StatusText = "Telemetry unavailable";
+                        SetStatusText("Telemetry unavailable");
                     }
                 }
 
@@ -566,10 +628,7 @@ namespace LightCrosshair
             _lastRtssProcessProbeUtc = now;
             try
             {
-                _isRtssProcessAvailable =
-                    Process.GetProcessesByName("RTSS").Length > 0 ||
-                    Process.GetProcessesByName("RTSSHooksLoader").Length > 0 ||
-                    Process.GetProcessesByName("RTSSHooksLoader64").Length > 0;
+                _isRtssProcessAvailable = IsAnyProcessRunning(RtssProcessNames);
             }
             catch
             {
@@ -579,9 +638,55 @@ namespace LightCrosshair
             return _isRtssProcessAvailable;
         }
 
+        private static bool IsAnyProcessRunning(string[] processNames)
+        {
+            for (int i = 0; i < processNames.Length; i++)
+            {
+                Process[] processes = Process.GetProcessesByName(processNames[i]);
+                bool found = false;
+
+                for (int p = 0; p < processes.Length; p++)
+                {
+                    if (!found)
+                    {
+                        found = true;
+                    }
+
+                    processes[p].Dispose();
+                }
+
+                if (found)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static void WinEventProc(IntPtr hWinEventHook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint dwEventThread, uint dwmsEventTime)
         {
             UpdateTrackedProcess(hwnd);
+        }
+
+        private static void RefreshTrackedProcessFromForeground(bool forceRefresh)
+        {
+            DateTime now = DateTime.UtcNow;
+            lock (_stateSync)
+            {
+                if (!forceRefresh && now - _lastTrackingRefreshUtc < TrackingRefreshInterval)
+                {
+                    return;
+                }
+
+                _lastTrackingRefreshUtc = now;
+            }
+
+            IntPtr hwnd = GetForegroundWindow();
+            if (hwnd != IntPtr.Zero)
+            {
+                UpdateTrackedProcess(hwnd);
+            }
         }
 
         private static void UpdateTrackedProcess(IntPtr hwnd)
@@ -589,6 +694,12 @@ namespace LightCrosshair
             if (hwnd == IntPtr.Zero) return;
             GetWindowThreadProcessId(hwnd, out uint pidValue);
             if (pidValue == 0) return;
+
+            if (pidValue == (uint)Environment.ProcessId)
+            {
+                // Ignore self-foreground transitions caused by overlay z-order operations.
+                return;
+            }
 
             int nextPid = ResolveCandidateProcessId(out string processName, (int)pidValue);
             lock (_stateSync)
@@ -601,10 +712,16 @@ namespace LightCrosshair
                     _metrics.Clear();
                     _previousFrameTimeMs = 0;
                     _lastWasMarkedGenerated = false;
-                    ActiveSource = "None";
-                    StatusText = nextPid > 0
+                    SetActiveSource("None");
+                    SetStatusText(nextPid > 0
                         ? $"Tracking {processName} ({nextPid})"
-                        : "Waiting for game window focus";
+                        : "Waiting for game window focus");
+
+                    Program.LogDebug(
+                        nextPid > 0
+                            ? $"Tracked process updated to {processName} ({nextPid})"
+                            : "Tracked process cleared (no valid game foreground process)",
+                        nameof(SystemFpsMonitor));
                 }
             }
         }
@@ -638,6 +755,11 @@ namespace LightCrosshair
 
         private static bool TryGetTrackedProcessId(out int trackedPid, bool forceRefresh = false)
         {
+            if (forceRefresh)
+            {
+                RefreshTrackedProcessFromForeground(forceRefresh: false);
+            }
+
             lock (_stateSync)
             {
                 trackedPid = _trackedProcessId;
@@ -726,7 +848,7 @@ namespace LightCrosshair
 
                 bool genDetectionAvailable = runGenInference;
                 _metrics.SetGeneratedFrameDetectionAvailable(genDetectionAvailable);
-                ActiveSource = source;
+                SetActiveSource(source);
                 _metrics.AddFrame(frameTimeMs, isGeneratedFrame);
             }
 
@@ -743,7 +865,7 @@ namespace LightCrosshair
             var snapshot = _metrics.Snapshot();
             if (!snapshot.HasData)
             {
-                CurrentFpsText = "FPS: --";
+                SetCurrentFpsText("FPS: --");
                 return;
             }
 
@@ -764,7 +886,22 @@ namespace LightCrosshair
             {
                 parts.Add($"[{ActiveSource}]");
             }
-            CurrentFpsText = string.Join(" | ", parts);
+            SetCurrentFpsText(string.Join(" | ", parts));
+        }
+
+        private static void SetCurrentFpsText(string value)
+        {
+            Volatile.Write(ref _currentFpsText, value);
+        }
+
+        private static void SetStatusText(string value)
+        {
+            Volatile.Write(ref _statusText, value);
+        }
+
+        private static void SetActiveSource(string value)
+        {
+            Volatile.Write(ref _activeSource, value);
         }
     }
 }

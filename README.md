@@ -7,7 +7,9 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/Release-Latest-brightgreen)](../../releases)
 
-LightCrosshair is a professional-grade crosshair overlay application that provides pixel-perfect accuracy and customization for gamers. With its transparent edges, vibrant neon colors, and intuitive interface, it's designed to enhance your gaming experience without impacting performance.
+LightCrosshair is a professional-grade crosshair and telemetry overlay application built for competitive gaming. It provides pixel-precise rendering, process-aware display color control, and a modern profile workflow with minimal system impact.
+
+**v1.3.0**: Portable standalone release, improved shutdown stability, fixed visibility-toggle FPS tracking regressions, refined process-targeted display color automation, and updated default hotkeys.
 
 ---
 
@@ -18,9 +20,9 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
   <br>
 
 - **Custom Crosshair Builder**: Full control over shape, size, thickness, gap, edge, and inner layers
-- **Integrated FPS Counter**: Optional on-screen FPS telemetry powered by an anti-cheat-safe pipeline
-- **Display Color Adjustment**: Per-display gamma, contrast, brightness, and vibrance controls
-- **Profile System**: Save, load, clone, rename, and switch presets for different games and playstyles
+- **Integrated FPS Overlay**: Optional on-screen FPS, frametime graph, 1% lows, and source status (ETW/RTSS)
+- **Process-Aware Display Color Management**: Per-profile gamma/contrast/brightness/vibrance that auto-applies when the target game process is in foreground
+- **Modern Profile Workflow**: Immutable default profile, up to 10 profile slots, working-state editing, and save-current-to-selected behavior
 - **Unified Settings Experience**: All customization is centralized in the modern Settings Window
 </details>
 
@@ -28,8 +30,8 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
   <summary><b>🚀 Performance Optimized</b></summary>
   <br>
 
-- **<1% CPU Usage**: Minimal impact during gaming sessions, powered by **SkiaSharp** rendering
-- **Hardware Accelerated**: Zero-GC allocations and pixel-perfect native memory pinning
+- **Low CPU Footprint**: Designed for minimal overhead during gameplay sessions
+- **Cached Rendering Path**: SkiaSharp primary renderer with automatic GDI fallback and config-driven redraws
 - **Safe FPS Counter**: Uses **ETW/PresentMon** for anti-cheat safe telemetry (no in-game hooking/injection)
 - **Independent Flip Mode**: Run the crosshair and FPS overlay in Independent Flip for an ultra-low latency setup. Note: Requires Optimizations for windowed games enabled in Windows 11 settings and MPO (Multi-Plane Overlay) active (Windows default).
 </details>
@@ -63,8 +65,9 @@ LightCrosshair is a professional-grade crosshair overlay application that provid
 
 1. **Download** the latest `LightCrosshair.exe` from the [Releases](../../releases) page
 2. **Place** the executable in your preferred directory
-3. **Run** `LightCrosshair.exe` — no installation required!
+3. **Run** `LightCrosshair.exe` — no installation required and no external runtime setup for the portable release package
 4. **Configure** your crosshair from the Settings Window (`Alt + L` by default, or left-click tray icon)
+5. *(Optional)* Use `uninstall.bat` from the release folder to remove local app data and startup registry traces
 
 ### Option 2: Build from Source
 
@@ -77,7 +80,7 @@ cd LightCrosshair
 dotnet build LightCrosshair.sln --configuration Release
 
 
-dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --runtime win-x64 --self-contained false /p:PublishSingleFile=true /p:PublishReadyToRun=true /p:PublishTrimmed=false
+dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --runtime win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 ```
 
 ---
@@ -90,8 +93,9 @@ dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --ru
 
 1. **Launch** the application — on first run, the default profile appears centered on screen and the app starts in the system tray
 2. **Open Settings Window** with `Alt + L` (default) if you want full settings UI (or left click on icon tray)
-3. **Customize** shape, size, colors, rendering, and profiles from the Settings Window
-4. **Save and switch profiles** directly in Settings; active configuration is persisted across restarts
+3. **Customize** shape, size, colors, outline, and rendering from the Settings Window
+4. **Set target process behavior** for crosshair visibility and display color management (global or game-specific)
+5. **Save and switch profiles** directly in Settings; active working state and source profile are persisted across restarts
 </details>
 
 <details>
@@ -109,7 +113,7 @@ dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --ru
 
 - `Alt + X` — Toggle crosshair visibility
 - `Alt + C` — Cycle to next profile (default)
-- `Ctrl + Shift + Left` — Cycle to previous profile (default)
+- `Alt + V` — Cycle to previous profile (default)
 - `Alt + L` — Toggle settings window (default)
 - Right-click tray icon — Open minimal tray menu (About / Exit)
 
