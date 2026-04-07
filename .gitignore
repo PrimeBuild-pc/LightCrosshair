@@ -13,6 +13,10 @@ dist/
 standalone-build/
 fixed-standalone-build/
 test-build/
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
 
 # Visual Studio / Visual Studio Code
 # =============================================================================
@@ -58,6 +62,10 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+Release_*/
+BuildOutput/
+Publish/
+uninstall.bat
 
 # Visual Studio cache files
 # =============================================================================
