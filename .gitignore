@@ -574,6 +574,10 @@ dist/
 Output/
 releases/
 
+# Local release packages/checksums
+/LightCrosshair-v*.zip
+/LightCrosshair-v*.zip.sha256
+
 # Ignora file di test provvisori
 *.exe
 !LightCrosshair.iss

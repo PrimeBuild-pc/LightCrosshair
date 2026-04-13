@@ -2,7 +2,7 @@
 # This script builds optimized portable releases for x64 and ARM64 architectures
 
 param(
-    [string]$Version = "1.2.0",
+    [string]$Version = "1.3.0",
     [switch]$SkipClean = $false,
     [switch]$SelfContained,
     [switch]$Trim
