@@ -9,10 +9,9 @@
 
 LightCrosshair is a professional-grade crosshair and telemetry overlay application built for competitive gaming. It provides pixel-precise rendering, process-aware display color control, and a modern profile workflow with minimal system impact.
 
-<video controls width="100%" poster="https://img.youtube.com/vi/CKbj2eObQ1E/maxresdefault.jpg">
-  <source src="media/demo.mp4" type="video/mp4">
-  Il tuo browser non supporta il tag video.
-</video>
+[![Watch the demo video](https://img.youtube.com/vi/CKbj2eObQ1E/maxresdefault.jpg)](media/demo.mp4)
+
+**▶ Watch demo video:** [Play on GitHub](media/demo.mp4)
 
 **v1.3.0**: Portable standalone release, improved shutdown stability, fixed visibility-toggle FPS tracking regressions, refined process-targeted display color automation, and updated default hotkeys.
 
