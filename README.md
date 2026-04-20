@@ -89,6 +89,8 @@ dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --ru
 
 ## 🎯 Usage Guide
 
+> **Important:** For the overlay to be visible in games, use **Borderless Windowed** mode. In **Exclusive Fullscreen**, the overlay may not be visible.
+
 <details>
   <summary><b>Getting Started</b></summary>
   <br>
