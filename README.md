@@ -11,8 +11,6 @@ LightCrosshair is a professional-grade crosshair and telemetry overlay applicati
 
 [![Watch the demo video](https://img.youtube.com/vi/CKbj2eObQ1E/maxresdefault.jpg)](https://www.youtube.com/watch?v=CKbj2eObQ1E)
 
-<img width="1157" height="635" alt="image" src="https://github.com/user-attachments/assets/f49730f3-d7fd-4c0c-9b72-2570b772d592" />
-
 **v1.3.0**: Portable standalone release, improved shutdown stability, fixed visibility-toggle FPS tracking regressions, refined process-targeted display color automation, and updated default hotkeys.
 
 ---
