@@ -48,5 +48,6 @@ See https://github.com/PrimeBuild-pc/LightCrosshair/releases for full details.
   </metadata>
   <files>
     <file src="tools\**" target="tools" />
+
   </files>
 </package>
