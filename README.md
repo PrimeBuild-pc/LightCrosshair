@@ -66,7 +66,24 @@ LightCrosshair is a professional-grade crosshair and telemetry overlay applicati
 
 ## 📦 Installation
 
-### Option 1: Standalone Executable (Recommended)
+### 🟢 Option 1: Package Manager (Recommended)
+
+#### Chocolatey
+```bash
+choco install lightcrosshair
+```
+
+#### WinGet
+```bash
+winget install PrimeBuild.LightCrosshair
+```
+
+#### PowerShell (One-Liner)
+```powershell
+iwr -useb https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1 | iex
+```
+
+### 🟡 Option 2: Standalone Executable
 
 1. **Download** the latest `LightCrosshair.exe` from the [Releases](../../releases) page
 2. **Place** the executable in your preferred directory
@@ -74,7 +91,7 @@ LightCrosshair is a professional-grade crosshair and telemetry overlay applicati
 4. **Configure** your crosshair from the Settings Window (`Alt + L` by default, or left-click tray icon)
 5. *(Optional)* Use `uninstall.bat` from the release folder to remove local app data and startup registry traces
 
-### Option 2: Build from Source
+### 🔵 Option 3: Build from Source
 
 ```bash
 # Clone the repository
@@ -84,7 +101,7 @@ cd LightCrosshair
 # Build the application
 dotnet build LightCrosshair.sln --configuration Release
 
-
+# Publish
 dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --runtime win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
 ```
 

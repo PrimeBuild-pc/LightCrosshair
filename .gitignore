@@ -582,3 +582,5 @@ releases/
 *.exe
 !LightCrosshair.iss
 !build-release.bat
+
+SpecialK-components/
