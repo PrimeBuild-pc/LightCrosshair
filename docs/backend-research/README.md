@@ -4,6 +4,15 @@ Milestone 9 is a post-1.4.0 research and design spike. It does not implement a
 native backend, target-process hook, PresentMon runtime provider, RTSS control
 path, vendor private API integration, or real frame limiter.
 
+## Product Roadmap Boundary
+
+Backend research supports product decisions; it is not the product roadmap.
+After 1.4.0, LightCrosshair should stay a lightweight gamer-focused crosshair
+overlay with a small optional performance overlay and safe color-visibility
+direction. Research findings here should inform wording, feasibility gates, and
+future backend decisions without turning the app into a PresentMon clone,
+Special K clone, or enterprise profiling tool.
+
 ## Scope
 
 - Document backend options for future frame telemetry, frame-generation
