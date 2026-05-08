@@ -1,10 +1,10 @@
 ; LightCrosshair Installer (requires .NET 8.0 Desktop Runtime installed)
 [Setup]
 AppName=LightCrosshair
-AppVersion=1.2.0
+AppVersion=1.4.0
 DefaultDirName={autopf}\LightCrosshair
 DefaultGroupName=LightCrosshair
-OutputBaseFilename=LightCrosshair-Setup
+OutputBaseFilename=LightCrosshair-Setup-1.4.0
 Compression=lzma
 SolidCompression=yes
 DisableDirPage=no

@@ -1,6 +1,6 @@
 <#
 Lightweight publish script for LightCrosshair
-Generates versioned single-file builds (win-x64) + SHA256 + zip + tag suggestion.
+Generates versioned single-file portable builds (win-x64 by default) + SHA256 + zip.
 Usage:
   powershell -ExecutionPolicy Bypass -File .\publish.ps1 -Version 1.2.3[-prerelease]
 Parameters:
@@ -105,5 +105,4 @@ $notesPath = Join-Path $outRoot "RELEASE-NOTES-v$Version.md"
 if (-not $DryRun) { Set-Content -Path $notesPath -Value $notes -Encoding UTF8 }
 Write-Host "  Notes:     $notesPath" -ForegroundColor Gray
 
-Write-Host "Suggested tag: v$Version" -ForegroundColor Yellow
-Write-Host "Next: git add dist; git commit -m 'release: v$Version'; git tag v$Version" -ForegroundColor DarkCyan
+Write-Host "Portable package prepared. Do not tag or publish a release until the release step is explicitly approved." -ForegroundColor Yellow

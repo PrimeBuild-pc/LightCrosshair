@@ -584,3 +584,19 @@ releases/
 !build-release.bat
 
 SpecialK-components/
+
+# Codex local configuration
+.codex/
+.agents/
+.claude-flow/
+
+# Claude Flow runtime data
+.claude-flow/data/
+.claude-flow/logs/
+.swarm/
+ruvector.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local

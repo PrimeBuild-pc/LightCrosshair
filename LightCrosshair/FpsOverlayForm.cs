@@ -46,14 +46,25 @@ namespace LightCrosshair
         private double _lastInstantFps = -1;
         private double _lastAverageFps = -1;
         private double _lastOnePercentLowFps = -1;
+        private double _lastPointOnePercentLowFps = -1;
+        private double _lastAverageFrameTimeMs = -1;
+        private double _lastJitterMs = -1;
+        private double _lastStandardDeviationMs = -1;
+        private int _lastHitchCount = -1;
+        private double _lastStabilityScore = -1;
+        private bool _lastPacingStatsHasData;
         private int _lastGeneratedFrameCount = -1;
         private bool _lastGeneratedFrameAvailability;
+        private FrameGenerationState _lastFrameGenerationState = FrameGenerationState.Unknown;
+        private double _lastFrameGenerationConfidence = -1;
+        private bool _lastFrameGenerationVerified;
         private double _lastFrameTimeMs = -1;
         private bool _lastHasData;
         private string? _lastStatus;
         private string? _lastSource;
         private bool _lastShow1Percent;
         private bool _lastShowGen;
+        private bool _lastShowDiagnostics;
         private readonly Dictionary<string, int> _textWidthCache = new(StringComparer.Ordinal);
         private Font? _measureFont;
         private float _lastMeasuredScale = -1f;
@@ -328,10 +339,21 @@ namespace LightCrosshair
                 _lastInstantFps == _textSnapshot.InstantFps &&
                 _lastAverageFps == _textSnapshot.AverageFps &&
                 _lastOnePercentLowFps == _textSnapshot.OnePercentLowFps &&
+                _lastPointOnePercentLowFps == _textSnapshot.PacingStats.PointOnePercentLowFps &&
+                _lastPacingStatsHasData == _textSnapshot.PacingStats.HasData &&
+                _lastAverageFrameTimeMs == _textSnapshot.PacingStats.AverageFrameTimeMs &&
+                _lastJitterMs == _textSnapshot.PacingStats.JitterMs &&
+                _lastStandardDeviationMs == _textSnapshot.PacingStats.StandardDeviationFrameTimeMs &&
+                _lastHitchCount == _textSnapshot.PacingStats.HitchCount &&
+                _lastStabilityScore == _textSnapshot.PacingStats.StabilityScore &&
                 _lastGeneratedFrameCount == _textSnapshot.GeneratedFrameCount &&
                 _lastGeneratedFrameAvailability == _textSnapshot.IsGeneratedFrameDataAvailable &&
+                _lastFrameGenerationState == _textSnapshot.FrameGenerationStatus.State &&
+                _lastFrameGenerationConfidence == _textSnapshot.FrameGenerationStatus.Confidence &&
+                _lastFrameGenerationVerified == _textSnapshot.FrameGenerationStatus.IsVerifiedSignal &&
                 _lastShow1Percent == cfg.Show1PercentLows &&
                 _lastShowGen == cfg.ShowGenFrames &&
+                _lastShowDiagnostics == cfg.ShowFpsDiagnostics &&
                 Math.Abs(_lastFrameTimeMs - _textSnapshot.LatestFrameTimeMs) < 0.01)
             {
                 return _cachedLines;
@@ -343,46 +365,25 @@ namespace LightCrosshair
             _lastInstantFps = _textSnapshot.InstantFps;
             _lastAverageFps = _textSnapshot.AverageFps;
             _lastOnePercentLowFps = _textSnapshot.OnePercentLowFps;
+            _lastPointOnePercentLowFps = _textSnapshot.PacingStats.PointOnePercentLowFps;
+            _lastPacingStatsHasData = _textSnapshot.PacingStats.HasData;
+            _lastAverageFrameTimeMs = _textSnapshot.PacingStats.AverageFrameTimeMs;
+            _lastJitterMs = _textSnapshot.PacingStats.JitterMs;
+            _lastStandardDeviationMs = _textSnapshot.PacingStats.StandardDeviationFrameTimeMs;
+            _lastHitchCount = _textSnapshot.PacingStats.HitchCount;
+            _lastStabilityScore = _textSnapshot.PacingStats.StabilityScore;
             _lastGeneratedFrameCount = _textSnapshot.GeneratedFrameCount;
             _lastGeneratedFrameAvailability = _textSnapshot.IsGeneratedFrameDataAvailable;
+            _lastFrameGenerationState = _textSnapshot.FrameGenerationStatus.State;
+            _lastFrameGenerationConfidence = _textSnapshot.FrameGenerationStatus.Confidence;
+            _lastFrameGenerationVerified = _textSnapshot.FrameGenerationStatus.IsVerifiedSignal;
             _lastFrameTimeMs = _textSnapshot.LatestFrameTimeMs;
             _lastShow1Percent = cfg.Show1PercentLows;
             _lastShowGen = cfg.ShowGenFrames;
+            _lastShowDiagnostics = cfg.ShowFpsDiagnostics;
 
             _cachedLines.Clear();
-            if (!_textSnapshot.HasData)
-            {
-                _cachedLines.Add("FPS: --");
-                _cachedLines.Add(_displayStatus);
-                return _cachedLines;
-            }
-
-            _cachedLines.Add($"FPS: {_textSnapshot.InstantFps:0}");
-            _cachedLines.Add($"AVG: {_textSnapshot.AverageFps:0}");
-
-            if (cfg.Show1PercentLows)
-            {
-                _cachedLines.Add($"1% LOW: {_textSnapshot.OnePercentLowFps:0}");
-            }
-
-            if (cfg.ShowGenFrames)
-            {
-                if (!_textSnapshot.IsGeneratedFrameDataAvailable)
-                {
-                    _cachedLines.Add("GEN: N/A");
-                }
-                else if (_textSnapshot.GeneratedFrameCount == 0)
-                {
-                    _cachedLines.Add("GEN: OFF");
-                }
-                else
-                {
-                    _cachedLines.Add($"GEN: {_textSnapshot.GeneratedFrameCount}");
-                }
-            }
-
-            _cachedLines.Add($"FT: {_textSnapshot.LatestFrameTimeMs:0.0} ms");
-            _cachedLines.Add($"SRC: {_displaySource}");
+            FpsOverlayTextFormatter.AppendLines(_cachedLines, _textSnapshot, _displaySource, _displayStatus, cfg);
             
             return _cachedLines;
         }
@@ -526,6 +527,140 @@ namespace LightCrosshair
             return fallback;
         }
     }
+
+    internal static class FpsOverlayTextFormatter
+    {
+        internal static void AppendLines(List<string> lines, FpsMetricsSnapshot snapshot, string source, string status, CrosshairConfig cfg)
+        {
+            AppendLines(lines, snapshot, source, status, new FpsOverlayTextOptions(cfg.Show1PercentLows, cfg.ShowGenFrames, cfg.ShowFpsDiagnostics));
+        }
+
+        internal static void AppendLines(List<string> lines, FpsMetricsSnapshot snapshot, string source, string status, FpsOverlayTextOptions options)
+        {
+            if (!snapshot.HasData)
+            {
+                lines.Add("FPS: --");
+                lines.Add(status);
+                return;
+            }
+
+            lines.Add($"FPS: {snapshot.InstantFps:0}");
+            lines.Add($"AVG: {snapshot.AverageFps:0}");
+
+            if (options.Show1PercentLows)
+            {
+                lines.Add($"1% LOW: {snapshot.OnePercentLowFps:0}");
+            }
+
+            if (options.ShowGeneratedFrames)
+            {
+                lines.Add(options.ShowDiagnostics
+                    ? FormatFrameGenerationStatus(snapshot)
+                    : FormatGeneratedFrames(snapshot));
+            }
+
+            if (options.ShowDiagnostics)
+            {
+                AppendDiagnostics(lines, snapshot.PacingStats);
+            }
+            else
+            {
+                lines.Add($"FT: {snapshot.LatestFrameTimeMs:0.0} ms");
+            }
+
+            lines.Add($"SRC: {source}");
+        }
+
+        private static string FormatGeneratedFrames(FpsMetricsSnapshot snapshot)
+        {
+            if (!snapshot.IsGeneratedFrameDataAvailable)
+            {
+                return "GEN: N/A";
+            }
+
+            var status = snapshot.FrameGenerationStatus;
+            if (status.State == FrameGenerationState.Detected && status.IsVerifiedSignal)
+            {
+                return snapshot.GeneratedFrameCount > 0
+                    ? $"GEN: {snapshot.GeneratedFrameCount}"
+                    : "GEN: OFF";
+            }
+
+            if (status.State == FrameGenerationState.Suspected)
+            {
+                return snapshot.GeneratedFrameCount > 0
+                    ? $"GEN EST: {snapshot.GeneratedFrameCount}"
+                    : $"FG: SUSPECT {status.Confidence * 100:0}%";
+            }
+
+            if (status.State == FrameGenerationState.Unknown)
+            {
+                return "FG: UNKNOWN";
+            }
+
+            if (status.State == FrameGenerationState.Unsupported)
+            {
+                return "FG: N/A";
+            }
+
+            if (snapshot.GeneratedFrameCount == 0)
+            {
+                return "GEN: OFF";
+            }
+
+            return $"GEN EST: {snapshot.GeneratedFrameCount}";
+        }
+
+        private static string FormatFrameGenerationStatus(FpsMetricsSnapshot snapshot)
+        {
+            if (!snapshot.IsGeneratedFrameDataAvailable)
+            {
+                return "FG: N/A";
+            }
+
+            var status = snapshot.FrameGenerationStatus;
+            return status.State switch
+            {
+                FrameGenerationState.Detected when status.IsVerifiedSignal => FormatVerifiedFrameGeneration(status),
+                FrameGenerationState.Detected => $"FG: SUSPECT {status.Confidence * 100:0}%",
+                FrameGenerationState.Suspected => $"FG: SUSPECT {status.Confidence * 100:0}%",
+                FrameGenerationState.Unknown => "FG: UNKNOWN",
+                FrameGenerationState.Unsupported => "FG: N/A",
+                _ => "FG: OFF"
+            };
+        }
+
+        private static string FormatVerifiedFrameGeneration(FrameGenerationDetectionResult status)
+        {
+            string technology = string.IsNullOrWhiteSpace(status.Technology) ? string.Empty : $" {status.Technology}";
+            string ratio = status.EstimatedGeneratedFrameRatio.HasValue ? $" x{status.EstimatedGeneratedFrameRatio.Value:0.#}" : string.Empty;
+            return $"FG: VERIFIED{technology}{ratio}";
+        }
+
+        private static void AppendDiagnostics(List<string> lines, FramePacingStats stats)
+        {
+            if (!stats.HasData)
+            {
+                lines.Add("FT AVG: -- ms");
+                lines.Add("0.1% LOW: --");
+                lines.Add("JIT: -- ms");
+                lines.Add("HITCH: --");
+                lines.Add("PACE: --");
+                return;
+            }
+
+            lines.Add($"FT AVG: {stats.AverageFrameTimeMs:0.0} ms");
+            lines.Add($"0.1% LOW: {stats.PointOnePercentLowFps:0}");
+            lines.Add($"JIT: {stats.JitterMs:0.0} ms SD: {stats.StandardDeviationFrameTimeMs:0.0}");
+            lines.Add($"HITCH: {stats.HitchCount}");
+            lines.Add($"PACE: {stats.StabilityScore:0}");
+        }
+    }
+
+    internal readonly record struct FpsOverlayTextOptions(
+        bool Show1PercentLows,
+        bool ShowGeneratedFrames,
+        bool ShowDiagnostics);
 
     internal static class FrameTimeGraphMath
     {

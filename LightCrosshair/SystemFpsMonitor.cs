@@ -21,7 +21,144 @@ namespace LightCrosshair
         int GeneratedFrameCount,
         bool IsGeneratedFrameDataAvailable,
         double[] RecentFrameTimesMs
-    );
+    )
+    {
+        public FramePacingStats PacingStats { get; init; } = FramePacingStats.Empty;
+        public FrameGenerationDetectionResult FrameGenerationStatus { get; init; } = FrameGenerationDetectionResult.Unknown;
+    }
+
+    public readonly record struct FramePacingStats(
+        bool HasData,
+        int SampleCount,
+        double AverageFrameTimeMs,
+        double MinFrameTimeMs,
+        double MaxFrameTimeMs,
+        double StandardDeviationFrameTimeMs,
+        double FrameTimeVarianceMsSquared,
+        double JitterMs,
+        double OnePercentLowFps,
+        double PointOnePercentLowFps,
+        int HitchCount,
+        double HitchThresholdMs,
+        double StabilityScore
+    )
+    {
+        public static FramePacingStats Empty { get; } = new(false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, FrameTimingStatistics.DefaultHitchThresholdMs, 0);
+    }
+
+    internal static class FrameTimingStatistics
+    {
+        public const double DefaultHitchThresholdMs = 50.0;
+
+        public static FramePacingStats Calculate(ReadOnlySpan<double> frameTimesMs, int sampleCount, double hitchThresholdMs = DefaultHitchThresholdMs)
+        {
+            int count = Math.Min(sampleCount, frameTimesMs.Length);
+            if (count <= 0)
+            {
+                return FramePacingStats.Empty;
+            }
+
+            if (double.IsNaN(hitchThresholdMs) || double.IsInfinity(hitchThresholdMs) || hitchThresholdMs <= 0)
+            {
+                hitchThresholdMs = DefaultHitchThresholdMs;
+            }
+
+            double sum = 0;
+            double sumSquares = 0;
+            double min = double.MaxValue;
+            double max = 0;
+            double jitterSum = 0;
+            int jitterPairs = 0;
+            int hitchCount = 0;
+            double previous = 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                double value = frameTimesMs[i];
+                sum += value;
+                sumSquares += value * value;
+                min = Math.Min(min, value);
+                max = Math.Max(max, value);
+
+                if (value > hitchThresholdMs)
+                {
+                    hitchCount++;
+                }
+
+                if (i > 0)
+                {
+                    jitterSum += Math.Abs(value - previous);
+                    jitterPairs++;
+                }
+
+                previous = value;
+            }
+
+            double average = sum / count;
+            double variance = Math.Max(0, (sumSquares / count) - (average * average));
+            double standardDeviation = Math.Sqrt(variance);
+            double jitter = jitterPairs > 0 ? jitterSum / jitterPairs : 0;
+
+            double[] sorted = frameTimesMs.Slice(0, count).ToArray();
+            Array.Sort(sorted);
+
+            double onePercentLow = CalculateLowFps(sorted, 0.01);
+            double pointOnePercentLow = CalculateLowFps(sorted, 0.001);
+            double stabilityScore = CalculateStabilityScore(average, standardDeviation, jitter, hitchCount, count);
+
+            return new FramePacingStats(
+                true,
+                count,
+                average,
+                min,
+                max,
+                standardDeviation,
+                variance,
+                jitter,
+                onePercentLow,
+                pointOnePercentLow,
+                hitchCount,
+                hitchThresholdMs,
+                stabilityScore);
+        }
+
+        private static double CalculateLowFps(double[] sortedAscendingFrameTimes, double fraction)
+        {
+            int count = sortedAscendingFrameTimes.Length;
+            if (count == 0)
+            {
+                return 0;
+            }
+
+            int worstCount = Math.Max(1, (int)Math.Ceiling(count * fraction));
+            double sum = 0;
+            for (int i = count - worstCount; i < count; i++)
+            {
+                sum += sortedAscendingFrameTimes[i];
+            }
+
+            return ToFps(sum / worstCount);
+        }
+
+        private static double CalculateStabilityScore(double averageFrameTimeMs, double standardDeviationMs, double jitterMs, int hitchCount, int sampleCount)
+        {
+            if (sampleCount <= 0 || averageFrameTimeMs <= 0)
+            {
+                return 0;
+            }
+
+            // Original 0-100 score: lower variance, jitter, and hitch density means steadier pacing.
+            double standardDeviationPenalty = (standardDeviationMs / averageFrameTimeMs) * 45.0;
+            double jitterPenalty = (jitterMs / averageFrameTimeMs) * 35.0;
+            double hitchPenalty = ((double)hitchCount / sampleCount) * 20.0;
+            return Math.Clamp(100.0 - standardDeviationPenalty - jitterPenalty - hitchPenalty, 0, 100);
+        }
+
+        private static double ToFps(double frameTimeMs)
+        {
+            return frameTimeMs <= 0 ? 0 : 1000.0 / frameTimeMs;
+        }
+    }
 
     public sealed class FpsMetricsBuffer
     {
@@ -35,6 +172,7 @@ namespace LightCrosshair
         private int _snapshotBufIdx;
         private readonly double[] _worstFramesBuffer;
         private bool _generatedFrameDetectionAvailable;
+        private FrameGenerationDetectionResult _frameGenerationStatus = FrameGenerationDetectionResult.Unknown;
 
         public FpsMetricsBuffer(int capacity = 1000)
         {
@@ -61,6 +199,7 @@ namespace LightCrosshair
                 _head = 0;
                 _count = 0;
                 _generatedFrameDetectionAvailable = false;
+                _frameGenerationStatus = FrameGenerationDetectionResult.Unknown;
             }
         }
 
@@ -69,6 +208,14 @@ namespace LightCrosshair
             lock (_sync)
             {
                 _generatedFrameDetectionAvailable = isAvailable;
+            }
+        }
+
+        public void SetFrameGenerationStatus(FrameGenerationDetectionResult status)
+        {
+            lock (_sync)
+            {
+                _frameGenerationStatus = status;
             }
         }
 
@@ -90,6 +237,7 @@ namespace LightCrosshair
         {
             int currentCount;
             bool genAvailable;
+            FrameGenerationDetectionResult frameGenerationStatus;
             double[] values;
             bool[] flagsCopy;
 
@@ -133,6 +281,7 @@ namespace LightCrosshair
                 
                 currentCount = _count;
                 genAvailable = _generatedFrameDetectionAvailable;
+                frameGenerationStatus = _frameGenerationStatus;
             } // END LOCK
 
             // 1) Fix Spikes (Sliding Window): We compute real-time FPS using the last ~500ms of frames
@@ -207,7 +356,8 @@ namespace LightCrosshair
             for (int i = 0; i < onePercentCount; i++) badFramesSum += _worstFramesBuffer[i];
             double onePercentFrameTime = badFramesSum / onePercentCount;
 
-            int visibleGeneratedCount = genAvailable ? generatedCount : 0;
+            int visibleGeneratedCount = genAvailable ? Math.Max(generatedCount, frameGenerationStatus.GeneratedFrameCount) : 0;
+            var pacingStats = FrameTimingStatistics.Calculate(values.AsSpan(currentCount - oneSecCount, oneSecCount), oneSecCount);
 
             return new FpsMetricsSnapshot(
                 true,
@@ -219,7 +369,11 @@ namespace LightCrosshair
                 visibleGeneratedCount,
                 genAvailable,
                 values
-            );
+            )
+            {
+                PacingStats = pacingStats,
+                FrameGenerationStatus = frameGenerationStatus
+            };
         }
 
         private static double ToFps(double frameTimeMs)
@@ -277,8 +431,7 @@ namespace LightCrosshair
         private static long _lastUiTextRefreshTick;
         private static int _trackedProcessId;
         private static string _trackedProcessName = string.Empty;
-        private static double _previousFrameTimeMs;
-        private static bool _lastWasMarkedGenerated;
+        private static readonly FrameGenerationDetector _frameGenerationDetector = new();
 
         private static string _currentFpsText = "FPS: --";
         private static string _statusText = "Idle";
@@ -313,8 +466,7 @@ namespace LightCrosshair
             SetActiveSource("None");
             _trackedProcessId = 0;
             _trackedProcessName = string.Empty;
-            _previousFrameTimeMs = 0;
-            _lastWasMarkedGenerated = false;
+            _frameGenerationDetector.Reset();
             _lastTrackingRefreshUtc = DateTime.MinValue;
 
             _dele = new WinEventDelegate(WinEventProc);
@@ -343,8 +495,7 @@ namespace LightCrosshair
             _trackedProcessId = 0;
             _trackedProcessName = string.Empty;
             _lastPresentByPid.Clear();
-            _previousFrameTimeMs = 0;
-            _lastWasMarkedGenerated = false;
+            _frameGenerationDetector.Reset();
             _lastTrackingRefreshUtc = DateTime.MinValue;
         }
 
@@ -385,6 +536,8 @@ namespace LightCrosshair
 
             try
             {
+                // TODO: Replace this blocking shutdown with async cancellation that observes
+                // worker exceptions and disposes the CTS only after both workers complete.
                 task.Wait(1500);
             }
             catch
@@ -710,8 +863,7 @@ namespace LightCrosshair
                     _trackedProcessName = processName;
                     _lastPresentByPid.Clear();
                     _metrics.Clear();
-                    _previousFrameTimeMs = 0;
-                    _lastWasMarkedGenerated = false;
+                    _frameGenerationDetector.Reset();
                     SetActiveSource("None");
                     SetStatusText(nextPid > 0
                         ? $"Tracking {processName} ({nextPid})"
@@ -724,33 +876,6 @@ namespace LightCrosshair
                         nameof(SystemFpsMonitor));
                 }
             }
-        }
-
-        private static bool InferGeneratedFrameEtw(double frameTimeMs)
-        {
-            if (frameTimeMs <= 0.05 || frameTimeMs > 500) return false;
-
-            bool isGeneratedFrame = false;
-
-            if (_previousFrameTimeMs > 0 && frameTimeMs < 16.0)
-            {
-                double ratio = frameTimeMs / _previousFrameTimeMs;
-
-                // If pacing is stable, native FG often doubles frame cadence: alternate tagging.
-                if (ratio >= 0.75 && ratio <= 1.25)
-                {
-                    isGeneratedFrame = !_lastWasMarkedGenerated;
-                }
-                else
-                {
-                    // Real stutter or scene change: reset alternation state.
-                    _lastWasMarkedGenerated = false;
-                }
-            }
-
-            _lastWasMarkedGenerated = isGeneratedFrame;
-            _previousFrameTimeMs = frameTimeMs;
-            return isGeneratedFrame;
         }
 
         private static bool TryGetTrackedProcessId(out int trackedPid, bool forceRefresh = false)
@@ -834,20 +959,25 @@ namespace LightCrosshair
                 {
                     // Reset to avoid mixing stale fallback data with ETW when we promote source quality.
                     _metrics.Clear();
+                    _frameGenerationDetector.Reset();
                 }
 
-                bool runGenInference = source == "ETW" && CrosshairConfig.Instance.ShowGenFrames;
+                bool runGenInference = CrosshairConfig.Instance.ShowGenFrames;
+                FrameGenerationDetectionResult frameGenerationStatus = FrameGenerationDetectionResult.Unknown;
                 if (runGenInference)
                 {
-                    isGeneratedFrame = InferGeneratedFrameEtw(frameTimeMs);
+                    frameGenerationStatus = _frameGenerationDetector.AddFrame(frameTimeMs, source);
+                    isGeneratedFrame = false;
                 }
                 else
                 {
                     isGeneratedFrame = false;
+                    _frameGenerationDetector.Reset();
                 }
 
-                bool genDetectionAvailable = runGenInference;
+                bool genDetectionAvailable = runGenInference && frameGenerationStatus.State != FrameGenerationState.Unsupported;
                 _metrics.SetGeneratedFrameDetectionAvailable(genDetectionAvailable);
+                _metrics.SetFrameGenerationStatus(frameGenerationStatus);
                 SetActiveSource(source);
                 _metrics.AddFrame(frameTimeMs, isGeneratedFrame);
             }
@@ -878,9 +1008,7 @@ namespace LightCrosshair
 
             if (CrosshairConfig.Instance.ShowGenFrames)
             {
-                parts.Add(snapshot.IsGeneratedFrameDataAvailable
-                    ? $"Gen: {snapshot.GeneratedFrameCount}"
-                    : "Gen: N/A");
+                parts.Add(FormatCompactFrameGeneration(snapshot));
             }
             if (!string.IsNullOrEmpty(ActiveSource) && ActiveSource != "None")
             {
@@ -892,6 +1020,23 @@ namespace LightCrosshair
         private static void SetCurrentFpsText(string value)
         {
             Volatile.Write(ref _currentFpsText, value);
+        }
+
+        private static string FormatCompactFrameGeneration(FpsMetricsSnapshot snapshot)
+        {
+            if (!snapshot.IsGeneratedFrameDataAvailable)
+            {
+                return "FG: N/A";
+            }
+
+            var status = snapshot.FrameGenerationStatus;
+            return status.State switch
+            {
+                FrameGenerationState.Detected when status.IsVerifiedSignal => "FG: VERIFIED",
+                FrameGenerationState.Suspected => $"FG: SUSPECT {status.Confidence * 100:0}%",
+                FrameGenerationState.Unknown => "FG: UNKNOWN",
+                _ => "FG: OFF"
+            };
         }
 
         private static void SetStatusText(string value)

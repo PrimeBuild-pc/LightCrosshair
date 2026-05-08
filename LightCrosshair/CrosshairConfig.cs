@@ -112,6 +112,7 @@ namespace LightCrosshair
         }
         public bool Show1PercentLows { get; set; } = true;
         public bool ShowGenFrames { get; set; } = true;
+        public bool ShowFpsDiagnostics { get; set; } = false;
         public string FpsOverlayColorSerialized { get; set; } = "255,255,255";
         public string FpsOverlayBgColorSerialized { get; set; } = "0,0,0";
         private int _fpsOverlayScale = 100;
@@ -259,6 +260,7 @@ namespace LightCrosshair
                         GraphTimeWindowMs = loadedConfig.GraphTimeWindowMs;
                         Show1PercentLows = loadedConfig.Show1PercentLows;
                         ShowGenFrames = loadedConfig.ShowGenFrames;
+                        ShowFpsDiagnostics = loadedConfig.ShowFpsDiagnostics;
                         FpsOverlayColorSerialized = loadedConfig.FpsOverlayColorSerialized ?? "255,255,255";
                         FpsOverlayBgColorSerialized = loadedConfig.FpsOverlayBgColorSerialized ?? "0,0,0";
                         FpsOverlayScale = loadedConfig.FpsOverlayScale;

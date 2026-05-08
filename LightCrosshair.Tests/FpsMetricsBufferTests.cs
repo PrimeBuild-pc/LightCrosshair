@@ -25,6 +25,44 @@ namespace LightCrosshair.Tests
         }
 
         [Fact]
+        public void Snapshot_EmptyBuffer_Returns_No_Pacing_Data()
+        {
+            var buffer = new FpsMetricsBuffer(1000);
+
+            var snapshot = buffer.Snapshot();
+
+            Assert.False(snapshot.HasData);
+            Assert.False(snapshot.PacingStats.HasData);
+            Assert.Equal(0, snapshot.PacingStats.SampleCount);
+            Assert.Equal(0, snapshot.PacingStats.StabilityScore);
+        }
+
+        [Fact]
+        public void Snapshot_Computes_Stable_Frame_Pacing_Stats()
+        {
+            var buffer = new FpsMetricsBuffer(1000);
+
+            for (int i = 0; i < 120; i++)
+            {
+                buffer.AddFrame(16.6667);
+            }
+
+            var stats = buffer.Snapshot().PacingStats;
+
+            Assert.True(stats.HasData);
+            Assert.InRange(stats.AverageFrameTimeMs, 16.66, 16.67);
+            Assert.InRange(stats.MinFrameTimeMs, 16.66, 16.67);
+            Assert.InRange(stats.MaxFrameTimeMs, 16.66, 16.67);
+            Assert.Equal(0, stats.StandardDeviationFrameTimeMs, 3);
+            Assert.Equal(0, stats.FrameTimeVarianceMsSquared, 3);
+            Assert.Equal(0, stats.JitterMs, 3);
+            Assert.Equal(0, stats.HitchCount);
+            Assert.InRange(stats.OnePercentLowFps, 59.9, 60.1);
+            Assert.InRange(stats.PointOnePercentLowFps, 59.9, 60.1);
+            Assert.Equal(100.0, stats.StabilityScore, 3);
+        }
+
+        [Fact]
         public void Snapshot_Computes_OnePercentLow_From_Slowest_Frames()
         {
             var buffer = new FpsMetricsBuffer(1000);
@@ -42,6 +80,65 @@ namespace LightCrosshair.Tests
 
             // 1% low should focus on slowest sample, close to 20 FPS.
             Assert.InRange(snapshot.OnePercentLowFps, 19.5, 20.5);
+            Assert.InRange(snapshot.PacingStats.OnePercentLowFps, 19.5, 20.5);
+        }
+
+        [Fact]
+        public void Snapshot_Computes_PointOnePercentLow_From_Slowest_Frame_Subset()
+        {
+            var buffer = new FpsMetricsBuffer(1200);
+
+            for (int i = 0; i < 1000; i++)
+            {
+                buffer.AddFrame(0.5);
+            }
+            buffer.AddFrame(50.0);
+
+            var stats = buffer.Snapshot().PacingStats;
+
+            Assert.True(stats.HasData);
+            Assert.Equal(1001, stats.SampleCount);
+            Assert.InRange(stats.OnePercentLowFps, 199.5, 200.5);
+            Assert.InRange(stats.PointOnePercentLowFps, 39.5, 39.7);
+        }
+
+        [Fact]
+        public void Snapshot_Counts_Hitches_And_Lowers_Stability_For_Outliers()
+        {
+            var buffer = new FpsMetricsBuffer(1000);
+
+            for (int i = 0; i < 119; i++)
+            {
+                buffer.AddFrame(16.6667);
+            }
+            buffer.AddFrame(80.0);
+
+            var stats = buffer.Snapshot().PacingStats;
+
+            Assert.True(stats.HasData);
+            Assert.Equal(1, stats.HitchCount);
+            Assert.InRange(stats.MinFrameTimeMs, 16.66, 16.67);
+            Assert.Equal(80.0, stats.MaxFrameTimeMs, 3);
+            Assert.True(stats.StandardDeviationFrameTimeMs > 0);
+            Assert.True(stats.FrameTimeVarianceMsSquared > 0);
+            Assert.True(stats.JitterMs > 0);
+            Assert.True(stats.StabilityScore < 100);
+        }
+
+        [Fact]
+        public void FrameTimingStatistics_Uses_Custom_Hitch_Threshold()
+        {
+            double[] frameTimes = { 10.0, 12.0, 24.0, 48.0 };
+
+            var stats = FrameTimingStatistics.Calculate(frameTimes, frameTimes.Length, hitchThresholdMs: 20.0);
+
+            Assert.Equal(2, stats.HitchCount);
+            Assert.Equal(20.0, stats.HitchThresholdMs);
+            Assert.Equal(23.5, stats.AverageFrameTimeMs, 3);
+            Assert.Equal(10.0, stats.MinFrameTimeMs, 3);
+            Assert.Equal(48.0, stats.MaxFrameTimeMs, 3);
+            Assert.True(stats.StandardDeviationFrameTimeMs > 0);
+            Assert.True(stats.JitterMs > 0);
         }
 
         [Fact]
@@ -180,6 +277,137 @@ namespace LightCrosshair.Tests
         {
             int normalized = CrosshairConfig.NormalizeFpsOverlayScale(input);
             Assert.Equal(expected, normalized);
+        }
+
+        [Fact]
+        public void FpsOverlayTextFormatter_Keeps_Standard_Lines_When_Diagnostics_Disabled()
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            var snapshot = CreateSnapshot();
+
+            FpsOverlayTextFormatter.AppendLines(
+                lines,
+                snapshot,
+                source: "ETW",
+                status: "Active",
+                new FpsOverlayTextOptions(Show1PercentLows: true, ShowGeneratedFrames: true, ShowDiagnostics: false));
+
+            Assert.Equal(new[]
+            {
+                "FPS: 60",
+                "AVG: 58",
+                "1% LOW: 45",
+                "FG: UNKNOWN",
+                "FT: 16.7 ms",
+                "SRC: ETW"
+            }, lines);
+        }
+
+        [Fact]
+        public void FpsOverlayTextFormatter_Adds_Diagnostic_Pacing_Lines_When_Enabled()
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            var snapshot = CreateSnapshot();
+
+            FpsOverlayTextFormatter.AppendLines(
+                lines,
+                snapshot,
+                source: "RTSS",
+                status: "Active",
+                new FpsOverlayTextOptions(Show1PercentLows: true, ShowGeneratedFrames: false, ShowDiagnostics: true));
+
+            Assert.Equal(new[]
+            {
+                "FPS: 60",
+                "AVG: 58",
+                "1% LOW: 45",
+                "FT AVG: 17.2 ms",
+                "0.1% LOW: 38",
+                "JIT: 1.3 ms SD: 2.4",
+                "HITCH: 2",
+                "PACE: 86",
+                "SRC: RTSS"
+            }, lines);
+        }
+
+        [Fact]
+        public void FpsOverlayTextFormatter_Uses_Clean_Fallbacks_When_Diagnostic_Data_Is_Missing()
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            var snapshot = new FpsMetricsSnapshot(
+                true,
+                1,
+                30,
+                30,
+                30,
+                33.3,
+                0,
+                false,
+                new[] { 33.3 });
+
+            FpsOverlayTextFormatter.AppendLines(
+                lines,
+                snapshot,
+                source: "None",
+                status: "Waiting",
+                new FpsOverlayTextOptions(Show1PercentLows: false, ShowGeneratedFrames: false, ShowDiagnostics: true));
+
+            Assert.Equal(new[]
+            {
+                "FPS: 30",
+                "AVG: 30",
+                "FT AVG: -- ms",
+                "0.1% LOW: --",
+                "JIT: -- ms",
+                "HITCH: --",
+                "PACE: --",
+                "SRC: None"
+            }, lines);
+        }
+
+        [Fact]
+        public void FpsOverlayTextFormatter_Reports_Status_When_No_Data()
+        {
+            var lines = new System.Collections.Generic.List<string>();
+
+            FpsOverlayTextFormatter.AppendLines(
+                lines,
+                new FpsMetricsSnapshot(false, 0, 0, 0, 0, 0, 0, false, System.Array.Empty<double>()),
+                source: "None",
+                status: "Idle",
+                new FpsOverlayTextOptions(Show1PercentLows: true, ShowGeneratedFrames: true, ShowDiagnostics: true));
+
+            Assert.Equal(new[] { "FPS: --", "Idle" }, lines);
+        }
+
+        private static FpsMetricsSnapshot CreateSnapshot()
+        {
+            return new FpsMetricsSnapshot(
+                true,
+                120,
+                60.2,
+                58.4,
+                44.8,
+                16.7,
+                0,
+                true,
+                new[] { 16.7, 17.0 })
+            {
+                PacingStats = new FramePacingStats(
+                    true,
+                    120,
+                    17.2,
+                    15.9,
+                    42.0,
+                    2.4,
+                    5.76,
+                    1.3,
+                    44.8,
+                    38.2,
+                    2,
+                    50.0,
+                    85.7)
+            };
         }
     }
 }

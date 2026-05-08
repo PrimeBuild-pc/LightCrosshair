@@ -405,10 +405,24 @@ namespace LightCrosshair
                 return;
             }
 
-            if (!_fpsOverlayForm.Visible) _fpsOverlayForm.Show();
+            bool fpsOverlayBecameVisible = !_fpsOverlayForm.Visible;
+            if (fpsOverlayBecameVisible) _fpsOverlayForm.Show();
 
             var snapshot = SystemFpsMonitor.GetSnapshot();
             _fpsOverlayForm.UpdateState(snapshot, SystemFpsMonitor.ActiveSource, SystemFpsMonitor.StatusText);
+
+            if (ShouldReinforceCrosshairAfterFpsOverlayUpdate(ShouldDisplayCrosshairOverlay(), shouldShow, fpsOverlayBecameVisible))
+            {
+                ReinforceTopMost();
+            }
+        }
+
+        internal static bool ShouldReinforceCrosshairAfterFpsOverlayUpdate(
+            bool shouldDisplayCrosshairOverlay,
+            bool shouldShowFpsOverlay,
+            bool fpsOverlayBecameVisible)
+        {
+            return shouldDisplayCrosshairOverlay && shouldShowFpsOverlay && fpsOverlayBecameVisible;
         }
 
         private bool ShouldDisplayCrosshairOverlay()
