@@ -189,9 +189,65 @@ Completed scope:
   capped, high-refresh, DLSS-G, FSR FG, AFMF, unsupported, and desktop/non-game
   cases.
 
+## Milestone 12 Result
+
+Milestone 12 resets the post-1.4.0 roadmap back to product direction. Backend
+research from Milestones 9-11 remains useful decision support, but it is not the
+product roadmap and should not pull LightCrosshair toward becoming a PresentMon
+clone, Special K clone, or enterprise telemetry/profiling tool.
+
+Product direction:
+
+- Crosshair overlay remains the primary feature: lightweight, visible,
+  customizable, profile-friendly, and honest about borderless/windowed versus
+  exclusive fullscreen behavior.
+- Vibrance and color visibility becomes the second major feature direction:
+  crosshair visibility improvements first, safe Windows/display color API
+  feasibility next, and vendor/backend paths only after explicit review.
+- Minimal performance overlay remains the third pillar: compact FPS/app-present
+  FPS, frametime, pacing/stutter hints, and conservative frame-generation
+  wording without false verified claims.
+- Performance and compatibility stay product requirements: ultra-lightweight
+  mode, lower diagnostic update rates, no unnecessary invalidation, no hooks or
+  injection, and clear anti-cheat/overlay caveats.
+- Frame cap work becomes a future Frame Cap Assistant/backend decision, not a
+  fake limiter.
+
+See [PRODUCT_DIRECTION_POST_1.4.md](PRODUCT_DIRECTION_POST_1.4.md).
+
 ## Next
 
-Milestone 12 should run and record local real-capture results in the validation
-matrix. Runtime provider design should remain blocked until real captures show
-which PresentMon columns are reliable across versions, GPUs, drivers, and
-frame-generation technologies.
+### Milestone 13
+
+Performance overlay polish and ultra-lightweight mode:
+
+- Add a clear minimal versus detailed performance overlay mode.
+- Reduce diagnostics overhead where possible.
+- Keep diagnostic overlay off by default or low frequency.
+- Measure CPU, memory, handle, GDI, and GPU impact for crosshair-only and
+  diagnostics-on scenarios.
+- Preserve conservative frame-generation labels: verified only with explicit
+  generated/interpolated provider evidence.
+
+### Milestone 14
+
+Crosshair customization plus vibrance/color feasibility pass:
+
+- Improve crosshair shapes, outline/glow, precision controls, presets, hotkeys,
+  and profile ergonomics.
+- Research safe Windows/display color APIs for vibrance, saturation, contrast,
+  brightness, gamma, and color presets.
+- Clearly separate feasible now from backend/vendor/API-blocked items.
+- Do not claim game post-processing control without a reviewed backend.
+
+### Milestone 15
+
+Frame cap assistant and backend decision:
+
+- Build a product plan for helping users configure in-game caps, driver caps, or
+  external limiter tools.
+- Decide whether RTSS delegation, driver profile APIs, or native approaches are
+  acceptable future backends.
+- Keep native/hook-based limiters blocked unless explicitly reviewed.
+- Do not claim LightCrosshair enforces a real cap until an approved backend does
+  so and telemetry validates the result.
