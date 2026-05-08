@@ -400,8 +400,7 @@ namespace LightCrosshair.Diagnostics.PresentMon
 
             string normalized = NormalizeColumnName(frameType);
             if (normalized.Contains("generated", StringComparison.OrdinalIgnoreCase) ||
-                normalized.Contains("interpolated", StringComparison.OrdinalIgnoreCase) ||
-                normalized.Contains("synthetic", StringComparison.OrdinalIgnoreCase))
+                normalized.Contains("interpolated", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
