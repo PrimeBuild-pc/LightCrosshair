@@ -141,3 +141,30 @@ Milestone 10 should start with read-only PresentMon capability validation using
 captured data and documented provider fields. Runtime provider shipping, RTSS
 control, driver writes, native/in-process work, and verified frame-generation
 claims remain blocked until explicitly approved.
+
+## Milestone 10 Result
+
+Milestone 10 is a PresentMon offline validation spike. It does not launch
+PresentMon, start ETW sessions, add a runtime provider, implement RTSS control,
+add native hooks, or change user-facing runtime claims.
+
+Completed scope:
+
+- Added an offline PresentMon CSV parser and summary model under
+  `LightCrosshair.Diagnostics.PresentMon`.
+- Added conservative frame-generation classification where
+  `VerifiedSignalPresent` requires a dedicated recognized column/value such as
+  `FrameType=Generated` or `FrameType=Interpolated`.
+- Added synthetic xUnit coverage for minimal captures, missing optional columns,
+  unknown columns, p95/p99 frame time, present mode distribution, explicit
+  generated-frame signals, heuristic-only cadence, malformed rows, and quoted
+  CSV fields.
+- Documented manual PresentMon capture expectations and why runtime integration
+  remains blocked.
+
+## Next
+
+Milestone 11 should validate real local PresentMon CSV captures from an ignored
+research fixture folder and compare known native, capped, DLSS-G, FSR FG, AFMF,
+and unsupported scenarios. It should remain offline/read-only unless runtime
+provider approval is granted separately.
