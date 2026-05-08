@@ -106,6 +106,19 @@ Implementation direction:
 - Prefer minimal and detailed display modes over a large fixed dashboard.
 - Keep source labels visible when data is estimated, external, or unavailable.
 
+Milestone 13 implementation notes:
+
+- Runtime display modes are `Off`, `Minimal`, and `Detailed`.
+- `Minimal` is intentionally compact: FPS/app-present timing and optional
+  frametime text only.
+- `Detailed` is the place for optional 1% lows, pacing/stutter text,
+  frame-generation estimate wording, and the frametime graph.
+- Ultra-lightweight mode trades detail for lower overhead by forcing simple text,
+  suppressing graph/detail lines, and using a slower overlay refresh cadence.
+- App/present FPS remains separate from driver-displayed/generated FPS. Timing
+  and cadence alone can support an estimate or suspicion only; verified frame
+  generation still requires explicit provider evidence.
+
 ## Performance And Compatibility Requirements
 
 LightCrosshair should protect its lightweight identity with a standing

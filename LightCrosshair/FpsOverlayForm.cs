@@ -63,8 +63,13 @@ namespace LightCrosshair
         private string? _lastStatus;
         private string? _lastSource;
         private bool _lastShow1Percent;
+        private bool _lastShowFps;
+        private bool _lastShowFrameTime;
+        private bool _lastShowFramePacing;
         private bool _lastShowGen;
         private bool _lastShowDiagnostics;
+        private bool _lastUltraLightweight;
+        private FpsOverlayDisplayMode _lastDisplayMode = FpsOverlayDisplayMode.Detailed;
         private readonly Dictionary<string, int> _textWidthCache = new(StringComparer.Ordinal);
         private Font? _measureFont;
         private float _lastMeasuredScale = -1f;
@@ -172,7 +177,7 @@ namespace LightCrosshair
             }
             float textHeight = lines.Count * lineHeight;
 
-            bool showGraph = cfg.ShowFrametimeGraph && _liveSnapshot.HasData && _liveSnapshot.SampleCount > 2;
+            bool showGraph = FpsOverlayRuntimePolicy.FromConfig(cfg).ShowGraph && _liveSnapshot.HasData && _liveSnapshot.SampleCount > 2;
             float graphWidth = showGraph ? 220f * scale : 0f;
             float graphHeight = showGraph ? 80f * scale : 0f;
             float graphGap = showGraph ? 8f * scale : 0f;
@@ -312,7 +317,7 @@ namespace LightCrosshair
             
             int textHeight = lines.Count * lineHeight;
 
-            bool showGraph = cfg.ShowFrametimeGraph && _liveSnapshot.HasData && _liveSnapshot.SampleCount > 2;
+            bool showGraph = FpsOverlayRuntimePolicy.FromConfig(cfg).ShowGraph && _liveSnapshot.HasData && _liveSnapshot.SampleCount > 2;
             float graphWidth = showGraph ? 220f * scale : 0f;
             float graphHeight = showGraph ? 80f * scale : 0f;
             float graphGap = showGraph ? 8f * scale : 0f;
@@ -352,8 +357,13 @@ namespace LightCrosshair
                 _lastFrameGenerationConfidence == _textSnapshot.FrameGenerationStatus.Confidence &&
                 _lastFrameGenerationVerified == _textSnapshot.FrameGenerationStatus.IsVerifiedSignal &&
                 _lastShow1Percent == cfg.Show1PercentLows &&
+                _lastShowFps == cfg.ShowFps &&
+                _lastShowFrameTime == cfg.ShowFrameTime &&
+                _lastShowFramePacing == cfg.ShowFramePacing &&
                 _lastShowGen == cfg.ShowGenFrames &&
                 _lastShowDiagnostics == cfg.ShowFpsDiagnostics &&
+                _lastUltraLightweight == cfg.UltraLightweightMode &&
+                _lastDisplayMode == cfg.FpsOverlayMode &&
                 Math.Abs(_lastFrameTimeMs - _textSnapshot.LatestFrameTimeMs) < 0.01)
             {
                 return _cachedLines;
@@ -379,8 +389,13 @@ namespace LightCrosshair
             _lastFrameGenerationVerified = _textSnapshot.FrameGenerationStatus.IsVerifiedSignal;
             _lastFrameTimeMs = _textSnapshot.LatestFrameTimeMs;
             _lastShow1Percent = cfg.Show1PercentLows;
+            _lastShowFps = cfg.ShowFps;
+            _lastShowFrameTime = cfg.ShowFrameTime;
+            _lastShowFramePacing = cfg.ShowFramePacing;
             _lastShowGen = cfg.ShowGenFrames;
             _lastShowDiagnostics = cfg.ShowFpsDiagnostics;
+            _lastUltraLightweight = cfg.UltraLightweightMode;
+            _lastDisplayMode = cfg.FpsOverlayMode;
 
             _cachedLines.Clear();
             FpsOverlayTextFormatter.AppendLines(_cachedLines, _textSnapshot, _displaySource, _displayStatus, cfg);
@@ -532,19 +547,45 @@ namespace LightCrosshair
     {
         internal static void AppendLines(List<string> lines, FpsMetricsSnapshot snapshot, string source, string status, CrosshairConfig cfg)
         {
-            AppendLines(lines, snapshot, source, status, new FpsOverlayTextOptions(cfg.Show1PercentLows, cfg.ShowGenFrames, cfg.ShowFpsDiagnostics));
+            var policy = FpsOverlayRuntimePolicy.FromConfig(cfg);
+            AppendLines(
+                lines,
+                snapshot,
+                source,
+                status,
+                new FpsOverlayTextOptions(cfg.Show1PercentLows, policy.ShowGeneratedFrames, cfg.ShowFpsDiagnostics)
+                {
+                    DisplayMode = policy.EffectiveDisplayMode,
+                    UltraLightweight = policy.UltraLightweight,
+                    ShowFps = policy.ShowFps,
+                    ShowFrameTime = policy.ShowFrameTime,
+                    ShowFramePacing = policy.ShowFramePacing,
+                    ShowGeneratedFrames = policy.ShowGeneratedFrames
+                });
         }
 
         internal static void AppendLines(List<string> lines, FpsMetricsSnapshot snapshot, string source, string status, FpsOverlayTextOptions options)
         {
             if (!snapshot.HasData)
             {
-                lines.Add("FPS: --");
+                if (options.ShowFps)
+                {
+                    lines.Add("FPS: --");
+                }
                 lines.Add(status);
                 return;
             }
 
-            lines.Add($"FPS: {snapshot.InstantFps:0}");
+            if (options.UltraLightweight || options.DisplayMode == FpsOverlayDisplayMode.Minimal)
+            {
+                AppendMinimalLines(lines, snapshot, source, options);
+                return;
+            }
+
+            if (options.ShowFps)
+            {
+                lines.Add($"FPS: {snapshot.InstantFps:0}");
+            }
             lines.Add($"AVG: {snapshot.AverageFps:0}");
 
             if (options.Show1PercentLows)
@@ -559,13 +600,33 @@ namespace LightCrosshair
                     : FormatGeneratedFrames(snapshot));
             }
 
-            if (options.ShowDiagnostics)
+            if (options.ShowDiagnostics || options.ShowFramePacing)
             {
                 AppendDiagnostics(lines, snapshot.PacingStats);
             }
-            else
+            else if (options.ShowFrameTime)
             {
                 lines.Add($"FT: {snapshot.LatestFrameTimeMs:0.0} ms");
+            }
+
+            lines.Add($"SRC: {source}");
+        }
+
+        private static void AppendMinimalLines(List<string> lines, FpsMetricsSnapshot snapshot, string source, FpsOverlayTextOptions options)
+        {
+            if (options.ShowFps)
+            {
+                lines.Add($"FPS: {snapshot.InstantFps:0}");
+            }
+
+            if (options.ShowFrameTime)
+            {
+                lines.Add($"FT: {snapshot.LatestFrameTimeMs:0.0} ms");
+            }
+
+            if (lines.Count == 0)
+            {
+                lines.Add($"AVG: {snapshot.AverageFps:0}");
             }
 
             lines.Add($"SRC: {source}");
@@ -660,7 +721,14 @@ namespace LightCrosshair
     internal readonly record struct FpsOverlayTextOptions(
         bool Show1PercentLows,
         bool ShowGeneratedFrames,
-        bool ShowDiagnostics);
+        bool ShowDiagnostics)
+    {
+        public FpsOverlayDisplayMode DisplayMode { get; init; } = FpsOverlayDisplayMode.Detailed;
+        public bool UltraLightweight { get; init; }
+        public bool ShowFps { get; init; } = true;
+        public bool ShowFrameTime { get; init; } = true;
+        public bool ShowFramePacing { get; init; }
+    }
 
     internal static class FrameTimeGraphMath
     {

@@ -258,6 +258,30 @@ namespace LightCrosshair.Tests
         }
 
         [Fact]
+        public void OverlayFormatter_Detailed_Mode_Does_Not_Verify_Heuristic_FrameGeneration()
+        {
+            var lines = new List<string>();
+            var snapshot = CreateSnapshot(FrameGenerationState.Suspected, verified: false, confidence: 0.62);
+
+            FpsOverlayTextFormatter.AppendLines(
+                lines,
+                snapshot,
+                source: "ETW",
+                status: "Active",
+                new FpsOverlayTextOptions(Show1PercentLows: true, ShowGeneratedFrames: true, ShowDiagnostics: true)
+                {
+                    DisplayMode = FpsOverlayDisplayMode.Detailed,
+                    ShowFps = true,
+                    ShowFrameTime = true,
+                    ShowFramePacing = true,
+                    ShowGeneratedFrames = true
+                });
+
+            Assert.Contains("FG: SUSPECT 62%", lines);
+            Assert.DoesNotContain("FG: VERIFIED", lines);
+        }
+
+        [Fact]
         public void OverlayFormatter_Shows_Verified_Only_For_Verified_Signal()
         {
             var lines = new List<string>();

@@ -377,11 +377,7 @@ namespace LightCrosshair
 
         private static int GetFpsOverlayTimerIntervalMs()
         {
-            var cfg = CrosshairConfig.Instance;
-            int requested = cfg.ShowFrametimeGraph
-                ? CrosshairConfig.NormalizeGraphRefreshRatePreset(cfg.GraphRefreshRateMs)
-                : SystemFpsMonitor.PreferredUiTextRefreshMs;
-            return Math.Clamp(requested, 33, 1000);
+            return FpsOverlayRuntimePolicy.FromConfig(CrosshairConfig.Instance).TimerIntervalMs;
         }
 
         private void EnsureFpsOverlayForm()
@@ -398,7 +394,7 @@ namespace LightCrosshair
             EnsureFpsOverlayForm();
             if (_fpsOverlayForm == null || _fpsOverlayForm.IsDisposed) return;
 
-            bool shouldShow = CrosshairConfig.Instance.EnableFpsOverlay && !_isRecordingDetected;
+            bool shouldShow = FpsOverlayRuntimePolicy.FromConfig(CrosshairConfig.Instance).ShouldShow && !_isRecordingDetected;
             if (!shouldShow)
             {
                 if (_fpsOverlayForm.Visible) _fpsOverlayForm.Hide();
