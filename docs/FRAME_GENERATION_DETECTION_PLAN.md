@@ -1,6 +1,6 @@
 # LightCrosshair 1.4.0 - Frame Generation Detection Feasibility
 
-Milestone: 4B feasibility, updated by 4C implementation.
+Milestone: 4B feasibility, updated by 4C implementation and 4D backend design.
 
 This document defines a real, testable path for improving generated/interpolated frame detection in LightCrosshair without hooks, injection, or GPL code reuse.
 
@@ -260,6 +260,100 @@ Reliable AMD FSR FG/AFMF detection requires at least one of:
 - A native component that can observe the relevant render/driver integration.
 
 These paths carry anti-cheat, stability, signing, testing, and licensing risks and should not be implemented in 4C.
+
+## Milestone 4D Backend Design
+
+Milestone 4D defines the path for verified frame-generation signals without
+implementing a real native backend. The code added in 4D is intentionally
+non-invasive:
+
+- `IFrameGenerationSignalProvider` is the future provider boundary.
+- `FrameGenerationProviderSignal` is a provider result that can convert to
+  `FrameGenerationVerifiedSignal` only when it is both available and verified.
+- `FrameGenerationProviderKind` identifies the source class, such as
+  PresentMon, RTSS, native NGX/DLSSG, Streamline, vendor API, or game
+  cooperation.
+- `FrameGenerationProviderCapability` separates unsupported, heuristic,
+  estimated external, verified external frame type, verified in-process state,
+  and verified cooperative app signals.
+- `NoOpFrameGenerationSignalProvider` is the only implemented provider. It is
+  disabled and returns unavailable/unverified, so it cannot produce `Detected`.
+
+The current runtime remains the 4C conservative path. `SystemFpsMonitor` still
+uses ETW/RTSS timing and `FrameGenerationDetector`; it does not query a verified
+provider yet.
+
+### Real Special K Equivalent Path
+
+To replicate Special K's DLSS-G method, a future backend would need access to
+the target process render/NGX/Streamline state. The relevant Special K signals
+are:
+
+- `__SK_IsDLSSGActive`
+- `__SK_DLSSGMultiFrameCount`
+- `SK_NGX_IsUsingDLSS_G()`
+- `SK_NGX_DLSSG_GetMultiFrameCount()`
+- `NVSDK_NGX_Feature_FrameGeneration`
+- `Enable.OFA`
+- `DLSSG.EnableInterp`
+- `DLSSG.NumFrames`
+- `DLSSG.MultiFrameCount`
+- recent NGX frame-generation feature evaluation within the render loop
+
+These are in-process state signals. An out-of-process C# application cannot
+read them from ETW, RTSS frame time, or generic present timing. A real equivalent
+LightCrosshair backend would therefore require one of:
+
+- app/game cooperation exposing the same state over a documented local API;
+- an external provider that exposes verified frame type or active generated
+  frame state, such as a PresentMon provider field when available;
+- a separately approved native research backend that runs in-process and exports
+  a minimal sanitized signal to LightCrosshair.
+
+The third option is not implemented in 4D and must not be implemented without a
+separate written design, review, approval, threat model, rollback plan, and
+sample-app-only validation target.
+
+### Provider Decision Matrix
+
+| Backend path | Verified? | 4D status | Notes |
+| --- | --- | --- | --- |
+| No-op provider | No | Implemented | Safe default. Always unavailable/unverified. |
+| ETW cadence detector | No | Existing fallback | May return `Suspected`; never `Detected`. |
+| RTSS frame-time shared memory | No | Existing fallback | Frame-time-only data is unsupported for verification. |
+| PresentMon frame type | Yes if field exists | Design only | Requires version/capability detection and documented fields. |
+| PresentMon FPS-App/FPS-Presents/FPS-Display | Estimated/derived | Design only | Useful corroboration, not vendor truth by itself. |
+| Game/cooperative plugin | Yes if trusted | Design only | Preferred low-risk verified path when available. |
+| Vendor public API | Depends | Design only | Must prove active generated frames, not only profile/capability. |
+| Native NGX/Streamline in-process backend | Yes | Explicitly blocked in 4D | Requires separate approval and anti-cheat risk review. |
+
+### Anti-cheat and Privacy Gates
+
+Milestone 4D must not ship or prototype injection, hooks, target-process DLLs,
+process memory inspection, Streamline/NGX interception, Reflex overrides, DLL
+redirection, timer/scheduler detours, swapchain hooks, module enumeration, or
+overlay text scraping.
+
+Any future native backend is disabled by default, sample-app-only until
+separately approved, and must refuse anti-cheat protected, multiplayer, unknown,
+or non-allow-listed processes. LightCrosshair should collect only local timing,
+source, and evidence fields required for diagnostics.
+
+### Detection Semantics
+
+The provider boundary preserves the existing 4C rule:
+
+- `Detected` requires a verified provider signal equivalent to frame type,
+  in-process Streamline/NGX/DLSSG state, or trusted game/app cooperation.
+- `Suspected` is allowed for cadence or FPS-ratio inference.
+- `Unsupported` is used when a provider cannot expose useful evidence.
+- `Unknown` is used when there is not enough telemetry.
+- `NotDetected` can come from a verified inactive provider or from enough
+  heuristic samples with no plausible pattern.
+
+Do not claim DLSS-G, MFG, FSR FG, or AFMF from cadence-only evidence. Use
+`GEN EST`/`FG: SUSPECT` for estimates and reserve `GEN`/`FG: VERIFIED` for
+verified provider data.
 
 ## Licensing Notes
 

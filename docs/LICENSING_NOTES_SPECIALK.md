@@ -1,6 +1,6 @@
 # LightCrosshair 1.4.0 - Special K Licensing Notes
 
-Milestone: 4A feasibility only.
+Milestone: 4A feasibility, updated through 4D backend design.
 
 Special K is GPLv3. The files in `SpecialK-components` are technical references only. This repository must not copy, translate, or mechanically port Special K implementation code unless the resulting distribution is license-compatible and attribution is handled correctly.
 
@@ -11,6 +11,8 @@ Special K is GPLv3. The files in `SpecialK-components` are technical references 
 - Document technical prerequisites and risks.
 - Plan an original LightCrosshair architecture.
 - Implement no Special K-derived code.
+- Add generic C# interfaces, result models, and no-op providers that do not
+  copy Special K names, structs, comments, algorithms, or control flow.
 
 ## Clean-Room Boundary
 
@@ -57,6 +59,16 @@ Attribution and license review are required if any future change:
 - If implementation substantially follows Special K internals, decide explicitly whether LightCrosshair or the relevant component will be GPL-compatible before coding.
 - `SpecialK-components` contains GPLv3 source files for reference. Do not include that directory in installers, portable packages, or release assets unless GPLv3 license text and third-party notices are deliberately shipped with it.
 - If the repository itself is redistributed with `SpecialK-components`, add or keep clear third-party attribution identifying Special K as GPLv3 reference material, not MIT-licensed LightCrosshair code.
+- Milestone 4D C# provider scaffolding is original architecture only. It is
+  acceptable because it does not implement NGX/Streamline probing, copy Special
+  K data structures, or translate Special K logic.
+- Current vendor DLL probes in LightCrosshair must remain calls to
+  user-installed system/driver DLLs. Do not redistribute NVIDIA, AMD, Intel,
+  PresentMon, RTSS, or vendor SDK binaries unless their license explicitly
+  allows it and the release notes include the required notices.
+- Any future PresentMon, RTSS, NVIDIA, AMD, or Intel integration must cite public
+  provider/API documentation as the implementation source. Special K must remain
+  a behavioral reference only.
 
 ## Do Not Promise
 

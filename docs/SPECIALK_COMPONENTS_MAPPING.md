@@ -1,6 +1,6 @@
 # LightCrosshair 1.4.0 - SpecialK Components Mapping
 
-Milestone: 4A feasibility only.
+Milestone: 4A feasibility, updated through 4D backend design.
 
 This document maps observed behavior in `SpecialK-components` to what LightCrosshair can implement safely. It does not copy Special K code. The goal is to separate real capabilities from diagnostics, advisory UI, and invasive techniques.
 
@@ -71,9 +71,24 @@ PresentMon 2.x style frame-type or FPS-App/FPS-Presents/FPS-Display data is the 
 
 Special K's strongest functionality sits here: swapchain-aware limiter placement, precise present pacing, Latent Sync, Reflex markers, render queue control, and sleep/timer detours. A real LightCrosshair equivalent would need a separate native component and a deliberate security/anti-cheat policy.
 
+Milestone 4D did not implement this category. It only added a C# provider
+boundary and a no-op provider for future verified frame-generation evidence.
+
 ### D. Not recommended
 
 LightCrosshair should not claim or ship broad game injection, Reflex override, DLSS redirection, or scheduler detours as a casual 1.4.0 feature. These are high-risk technically and legally.
+
+Hard stop gates for future native research:
+
+- no injection, present hooks, timer/scheduler detours, DLL redirection, Reflex
+  overrides, Streamline/NGX interception, or process memory inspection without a
+  separate approved design;
+- no attachment to anti-cheat protected, multiplayer, unknown, or arbitrary
+  third-party game processes;
+- native experiments must be limited to an owned local sample renderer until a
+  later milestone explicitly approves broader testing;
+- no process module scraping, overlay text scraping, window-title collection, or
+  command-line/path inventory for frame-generation detection.
 
 ## What Not To Promise
 
