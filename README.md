@@ -14,7 +14,7 @@ LightCrosshair is a professional-grade crosshair and telemetry overlay applicati
 
 **⬆️ Watch demo video on YouTube**
 
-**v1.3.0**: Portable standalone release, improved shutdown stability, fixed visibility-toggle FPS tracking regressions, refined process-targeted display color automation, and updated default hotkeys.
+**v1.4.0 baseline**: Distribution is prepared for portable ZIP, Inno Setup, Chocolatey, WinGet, and the PowerShell install script. MSIX is intentionally excluded.
 
 ---
 
@@ -66,24 +66,33 @@ LightCrosshair is a professional-grade crosshair and telemetry overlay applicati
 
 ## 📦 Installation
 
-### 🟢 Option 1: Package Manager (Recommended)
+### Package Managers
 
 #### Chocolatey
+
 ```bash
 choco install lightcrosshair
 ```
 
 #### WinGet
+
 ```bash
 winget install PrimeBuild.LightCrosshair
 ```
 
-#### PowerShell (One-Liner)
+### PowerShell Install Script
+
 ```powershell
-iwr -useb https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1 | iex
+irm https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1 | iex
 ```
 
-### 🟡 Option 2: Standalone Executable
+For a release-pinned install with checksum verification:
+
+```powershell
+& ([scriptblock]::Create((irm https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1))) -Version 1.4.0 -Checksum '<SHA256>'
+```
+
+### Portable Package
 
 1. **Download** the latest `LightCrosshair.exe` from the [Releases](../../releases) page
 2. **Place** the executable in your preferred directory
@@ -91,7 +100,11 @@ iwr -useb https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/insta
 4. **Configure** your crosshair from the Settings Window (`Alt + L` by default, or left-click tray icon)
 5. *(Optional)* Use `uninstall.bat` from the release folder to remove local app data and startup registry traces
 
-### 🔵 Option 3: Build from Source
+### Inno Setup Installer
+
+The 1.4.0 distribution flow supports an Inno Setup installer generated from `setup/LightCrosshair.iss` after publishing the `win-x64` output.
+
+### Build from Source
 
 ```bash
 # Clone the repository

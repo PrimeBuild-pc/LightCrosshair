@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>lightcrosshair</id>
-    <version>1.3.0</version>
+    <version>1.4.0</version>
     <packageSourceUrl>https://github.com/PrimeBuild-pc/LightCrosshair</packageSourceUrl>
     <owners>PrimeBuild</owners>
     <title>LightCrosshair</title>
@@ -34,7 +34,7 @@ After installation, launch LightCrosshair from your Start Menu or find the execu
     </description>
     <summary>Lightweight gaming crosshair overlay with FPS counter and color management</summary>
     <releaseNotes>
-v1.3.0 (May 2026): Portable standalone release, improved shutdown stability, fixed visibility-toggle FPS tracking regressions, refined process-targeted display color automation, and updated default hotkeys.
+v1.4.0 (May 2026): Baseline for portable ZIP, Inno Setup, Chocolatey, WinGet, and PowerShell install script distribution. MSIX is intentionally excluded.
 
 See https://github.com/PrimeBuild-pc/LightCrosshair/releases for full details.
     </releaseNotes>

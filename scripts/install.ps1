@@ -5,13 +5,13 @@
 .DESCRIPTION
     Downloads and installs LightCrosshair from GitHub Releases.
     This script can be run directly with:
-      iwr -useb https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1 | iex
+      irm https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1 | iex
     
     Or with parameters:
-      & ([scriptblock]::Create((iwr -useb https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1))) -Version 1.3.0 -InstallPath "C:\Program Files\LightCrosshair"
+      & ([scriptblock]::Create((irm https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1))) -Version 1.4.0 -InstallPath "C:\Program Files\LightCrosshair" -Checksum "<SHA256>"
 
 .PARAMETER Version
-    Version to install (default: 1.3.0)
+    Version to install (default: 1.4.0)
 
 .PARAMETER InstallPath
     Installation directory (default: C:\Program Files\LightCrosshair)
@@ -19,19 +19,23 @@
 .PARAMETER SkipChecksum
     Skip SHA256 verification (not recommended)
 
+.PARAMETER Checksum
+    Expected SHA256 for the downloaded executable. The release process should pass or embed this value after the final artifact is built.
+
 .PARAMETER SkipStartMenu
     Skip creating Start Menu shortcut
 
 .EXAMPLE
-    iwr -useb https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1 | iex
+    irm https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1 | iex
 
 .EXAMPLE
-    powershell -Command "& ([scriptblock]::Create((iwr -useb https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1))) -Version 1.3.0"
+    powershell -Command "& ([scriptblock]::Create((irm https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1))) -Version 1.4.0 -Checksum '<SHA256>'"
 #>
 
 param(
-    [string]$Version = '1.3.0',
+    [string]$Version = '1.4.0',
     [string]$InstallPath = "$env:ProgramFiles\LightCrosshair",
+    [string]$Checksum = '',
     [switch]$SkipChecksum,
     [switch]$SkipStartMenu
 )
@@ -41,7 +45,12 @@ $ErrorActionPreference = 'Stop'
 # Configuration
 $packageName = 'LightCrosshair'
 $releaseUrl = "https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v$Version/LightCrosshair.exe"
-$sha256Hash = '7847452EFCBA0975C46DA43A0BA9BE0A52C8D67B3F0982E49BB194B6641BC46C'
+$knownChecksums = @{
+}
+
+if ([string]::IsNullOrWhiteSpace($Checksum) -and $knownChecksums.ContainsKey($Version)) {
+    $Checksum = $knownChecksums[$Version]
+}
 
 Write-Host "╔════════════════════════════════════════╗" -ForegroundColor Cyan
 Write-Host "║  $packageName Installation Script      ║" -ForegroundColor Cyan
@@ -81,17 +90,19 @@ try {
 }
 
 # Verify checksum
-if (-not $SkipChecksum) {
+if (-not $SkipChecksum -and -not [string]::IsNullOrWhiteSpace($Checksum)) {
     Write-Host "[3/4] Verifying file integrity (SHA256)..." -ForegroundColor Yellow
     $actualHash = (Get-FileHash -Path $exePath -Algorithm SHA256).Hash
     
-    if ($actualHash -eq $sha256Hash) {
+    if ($actualHash -eq $Checksum) {
         Write-Host "      ✓ Checksum verified successfully" -ForegroundColor Green
     } else {
         Remove-Item $exePath -Force
-        Write-Error "Checksum verification failed!`n  Expected: $sha256Hash`n  Got:      $actualHash`n`nDownload may be corrupted. Please try again."
+        Write-Error "Checksum verification failed!`n  Expected: $Checksum`n  Got:      $actualHash`n`nDownload may be corrupted. Please try again."
         exit 1
     }
+} elseif (-not $SkipChecksum) {
+    Write-Host "[3/4] Checksum verification unavailable for v$Version. Provide -Checksum after the release artifact is finalized." -ForegroundColor Yellow
 } else {
     Write-Host "[3/4] Checksum verification skipped (not recommended)" -ForegroundColor Yellow
 }
