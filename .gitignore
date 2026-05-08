@@ -600,3 +600,8 @@ ruvector.db
 .env
 .env.local
 .env.*.local
+
+# Local PresentMon research captures
+/research/presentmon-captures/**
+!/research/presentmon-captures/
+!/research/presentmon-captures/README.md

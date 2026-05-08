@@ -168,3 +168,30 @@ Milestone 11 should validate real local PresentMon CSV captures from an ignored
 research fixture folder and compare known native, capped, DLSS-G, FSR FG, AFMF,
 and unsupported scenarios. It should remain offline/read-only unless runtime
 provider approval is granted separately.
+
+## Milestone 11 Result
+
+Milestone 11 is a real PresentMon capture validation workflow. It does not
+launch PresentMon from LightCrosshair, start ETW sessions from the app, add a
+runtime provider, implement RTSS control, add native hooks, or change
+user-facing runtime claims.
+
+Completed scope:
+
+- Added ignored local capture workspace documentation under
+  `research/presentmon-captures/`.
+- Added `.gitignore` rules so real local PresentMon CSV/ETL captures are not
+  committed.
+- Added `scripts/research/analyze-presentmon-capture.ps1`, a research-only CSV
+  analyzer that reads existing capture files and prints conservative summary
+  fields without launching PresentMon.
+- Added real capture scenario documentation and a validation matrix for native,
+  capped, high-refresh, DLSS-G, FSR FG, AFMF, unsupported, and desktop/non-game
+  cases.
+
+## Next
+
+Milestone 12 should run and record local real-capture results in the validation
+matrix. Runtime provider design should remain blocked until real captures show
+which PresentMon columns are reliable across versions, GPUs, drivers, and
+frame-generation technologies.
