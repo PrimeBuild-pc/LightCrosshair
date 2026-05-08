@@ -2,7 +2,8 @@
 # Performs local, non-publishing checks only.
 
 param(
-    [string]$ExpectedVersion = "1.4.0"
+    [string]$ExpectedVersion = "1.4.0",
+    [switch]$AllowMain
 )
 
 $ErrorActionPreference = "Stop"
@@ -61,7 +62,12 @@ try {
         Add-Fail "Could not determine current Git branch."
     }
     elseif ($branch -in @("main", "master")) {
-        Add-Fail "Current branch is '$branch'. Release preflight must not run on main/master."
+        if ($AllowMain) {
+            Add-Pass "Current branch is $branch and -AllowMain was provided for final release validation."
+        }
+        else {
+            Add-Fail "Current branch is '$branch'. Release preflight must not run on main/master unless -AllowMain is provided for final release validation."
+        }
     }
     else {
         Add-Pass "Current branch '$branch' is not main/master."

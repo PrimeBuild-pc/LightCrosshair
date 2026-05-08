@@ -78,6 +78,14 @@ dotnet test LightCrosshair.sln
 .\scripts\validate-release-preflight.ps1
 ```
 
+Use the normal preflight command on feature branches and release-candidate branches. After the PR is merged and final release artifact validation is intentionally running from `main`, use:
+
+```powershell
+.\scripts\validate-release-preflight.ps1 -AllowMain
+```
+
+`-AllowMain` is only a branch-gate override for final release validation. The script remains non-publishing and must not tag, upload, submit, or publish artifacts.
+
 ## Portable ZIP
 
 Recommended command:
