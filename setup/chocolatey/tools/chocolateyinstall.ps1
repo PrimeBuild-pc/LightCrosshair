@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 # Package information
 $packageName = 'lightcrosshair'
-$version = '1.4.0'
+$version = '1.5.0'
 
 # Installation paths
 $toolsDir = "$(Split-Path -Parent $MyInvocation.MyCommand.Definition)"

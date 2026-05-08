@@ -1,4 +1,4 @@
-# LightCrosshair 1.4.0 QA Checklist
+# LightCrosshair 1.5.0 QA Checklist
 
 Use this checklist for release-candidate validation only. Do not publish, tag,
 submit manifests, or advertise install commands from this checklist.
@@ -16,7 +16,7 @@ submit manifests, or advertise install commands from this checklist.
 
 ## Portable ZIP
 
-- [ ] Extract `LightCrosshair-v1.4.0-x64.zip` to a clean folder.
+- [ ] Extract `LightCrosshair-v1.5.0-x64.zip` to a clean folder.
 - [ ] Confirm `LightCrosshair.exe` launches without installer registration.
 - [ ] Repeat with ARM64 package on ARM64 hardware or document as not tested.
 - [ ] Confirm launch fails gracefully or runtime requirement is clear when the
@@ -25,7 +25,7 @@ submit manifests, or advertise install commands from this checklist.
 
 ## Inno Installer
 
-- [ ] Install from the locally compiled `LightCrosshair-Setup-1.4.0.exe`.
+- [ ] Install from the locally compiled `LightCrosshair-Setup-1.5.0.exe`.
 - [ ] Confirm Start Menu shortcut launches the app.
 - [ ] Confirm optional desktop shortcut launches the app when selected.
 - [ ] Confirm the installer text or task points users to the .NET 8 Desktop
@@ -45,6 +45,9 @@ submit manifests, or advertise install commands from this checklist.
 ## Overlay And FPS Diagnostics
 
 - [ ] Toggle overlay on and off from the app UI or tray workflow.
+- [ ] Confirm Off, Minimal, and Detailed performance overlay modes are selectable.
+- [ ] Confirm Minimal mode shows only essential metrics.
+- [ ] Enable ultra-lightweight mode and confirm graph/detail behavior is reduced.
 - [ ] Enable FPS overlay.
 - [ ] Disable FPS overlay.
 - [ ] Enable advanced FPS diagnostics.
@@ -85,10 +88,17 @@ submit manifests, or advertise install commands from this checklist.
 
 ## Frame Limiter Scaffold
 
-- [ ] Confirm any limiter status is unavailable, inactive, or no-op.
+- [ ] Confirm Frame Cap Assistant can show a target FPS recommendation.
+- [ ] Confirm any limiter status is unavailable, inactive, assistant-only, or no-op.
 - [ ] Confirm the app does not claim to apply a real FPS cap.
 - [ ] Confirm docs or diagnostics do not imply active limiting without a real
       backend and telemetry validation.
+
+## Crosshair Visibility Presets
+
+- [ ] Apply each crosshair visibility preset.
+- [ ] Confirm the preset changes only crosshair visibility/color/outline behavior.
+- [ ] Confirm presets do not claim game vibrance, contrast, gamma, or post-processing control.
 
 ## Anti-Cheat And Compatibility Wording
 

@@ -4,12 +4,12 @@
     
 .DESCRIPTION
     Prepared installer template for LightCrosshair GitHub Releases.
-    Do not advertise or use this as a hosted 1.4.0 install command until final
+    Do not advertise or use this as a hosted 1.5.0 install command until final
     public artifacts, SHA256 checksums, a hosted script URL, and explicit
     release approval exist.
 
 .PARAMETER Version
-    Version to install (default: 1.4.0)
+    Version to install (default: 1.5.0)
 
 .PARAMETER InstallPath
     Installation directory (default: C:\Program Files\LightCrosshair)
@@ -24,14 +24,14 @@
     Skip creating Start Menu shortcut
 
 .EXAMPLE
-    .\scripts\install.ps1 -Version 1.4.0 -Checksum '<FINAL_SHA256>'
+    .\scripts\install.ps1 -Version 1.5.0 -Checksum '<FINAL_SHA256>'
 
-    Future/final-release-only example. Use only after the 1.4.0 release
+    Future/final-release-only example. Use only after the 1.5.0 release
     artifact, checksum, hosted script URL, and publication approval are final.
 #>
 
 param(
-    [string]$Version = '1.4.0',
+    [string]$Version = '1.5.0',
     [string]$InstallPath = "$env:ProgramFiles\LightCrosshair",
     [string]$Checksum = '',
     [switch]$SkipChecksum,

@@ -1,8 +1,8 @@
-# LightCrosshair 1.4.0 release preflight validation.
+# LightCrosshair 1.5.0 release preflight validation.
 # Performs local, non-publishing checks only.
 
 param(
-    [string]$ExpectedVersion = "1.4.0",
+    [string]$ExpectedVersion = "1.5.0",
     [switch]$AllowMain
 )
 
@@ -91,7 +91,7 @@ finally {
 $csproj = Read-RepoFile "LightCrosshair/LightCrosshair.csproj"
 $buildScript = Read-RepoFile "scripts/build-release.ps1"
 $readme = Read-RepoFile "README.md"
-$releasePrep = Read-RepoFile "setup/RELEASE_PREP_1.4.0.md"
+$releasePrep = Read-RepoFile "setup/RELEASE_PREP_1.5.0.md"
 $inno = Read-RepoFile "setup/LightCrosshair.iss"
 $nuspec = Read-RepoFile "setup/chocolatey/LightCrosshair.nuspec"
 $wingetSubmission = Read-RepoFile "setup/WINGET_SUBMISSION.md"
@@ -109,7 +109,7 @@ Assert-Contains "setup/chocolatey/LightCrosshair.nuspec" $nuspec "<version>$([re
 
 $publicReleaseDocs = @{
     "README.md" = $readme
-    "setup/RELEASE_PREP_1.4.0.md" = $releasePrep
+    "setup/RELEASE_PREP_1.5.0.md" = $releasePrep
     "setup/chocolatey/LightCrosshair.nuspec" = $nuspec
     "setup/WINGET_SUBMISSION.md" = $wingetSubmission
     "scripts/install.ps1" = $installScript
