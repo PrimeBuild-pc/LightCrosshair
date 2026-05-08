@@ -278,5 +278,136 @@ namespace LightCrosshair.Tests
             int normalized = CrosshairConfig.NormalizeFpsOverlayScale(input);
             Assert.Equal(expected, normalized);
         }
+
+        [Fact]
+        public void FpsOverlayTextFormatter_Keeps_Standard_Lines_When_Diagnostics_Disabled()
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            var snapshot = CreateSnapshot();
+
+            FpsOverlayTextFormatter.AppendLines(
+                lines,
+                snapshot,
+                source: "ETW",
+                status: "Active",
+                new FpsOverlayTextOptions(Show1PercentLows: true, ShowGeneratedFrames: true, ShowDiagnostics: false));
+
+            Assert.Equal(new[]
+            {
+                "FPS: 60",
+                "AVG: 58",
+                "1% LOW: 45",
+                "GEN: OFF",
+                "FT: 16.7 ms",
+                "SRC: ETW"
+            }, lines);
+        }
+
+        [Fact]
+        public void FpsOverlayTextFormatter_Adds_Diagnostic_Pacing_Lines_When_Enabled()
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            var snapshot = CreateSnapshot();
+
+            FpsOverlayTextFormatter.AppendLines(
+                lines,
+                snapshot,
+                source: "RTSS",
+                status: "Active",
+                new FpsOverlayTextOptions(Show1PercentLows: true, ShowGeneratedFrames: false, ShowDiagnostics: true));
+
+            Assert.Equal(new[]
+            {
+                "FPS: 60",
+                "AVG: 58",
+                "1% LOW: 45",
+                "FT AVG: 17.2 ms",
+                "0.1% LOW: 38",
+                "JIT: 1.3 ms SD: 2.4",
+                "HITCH: 2",
+                "PACE: 86",
+                "SRC: RTSS"
+            }, lines);
+        }
+
+        [Fact]
+        public void FpsOverlayTextFormatter_Uses_Clean_Fallbacks_When_Diagnostic_Data_Is_Missing()
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            var snapshot = new FpsMetricsSnapshot(
+                true,
+                1,
+                30,
+                30,
+                30,
+                33.3,
+                0,
+                false,
+                new[] { 33.3 });
+
+            FpsOverlayTextFormatter.AppendLines(
+                lines,
+                snapshot,
+                source: "None",
+                status: "Waiting",
+                new FpsOverlayTextOptions(Show1PercentLows: false, ShowGeneratedFrames: false, ShowDiagnostics: true));
+
+            Assert.Equal(new[]
+            {
+                "FPS: 30",
+                "AVG: 30",
+                "FT AVG: -- ms",
+                "0.1% LOW: --",
+                "JIT: -- ms",
+                "HITCH: --",
+                "PACE: --",
+                "SRC: None"
+            }, lines);
+        }
+
+        [Fact]
+        public void FpsOverlayTextFormatter_Reports_Status_When_No_Data()
+        {
+            var lines = new System.Collections.Generic.List<string>();
+
+            FpsOverlayTextFormatter.AppendLines(
+                lines,
+                new FpsMetricsSnapshot(false, 0, 0, 0, 0, 0, 0, false, System.Array.Empty<double>()),
+                source: "None",
+                status: "Idle",
+                new FpsOverlayTextOptions(Show1PercentLows: true, ShowGeneratedFrames: true, ShowDiagnostics: true));
+
+            Assert.Equal(new[] { "FPS: --", "Idle" }, lines);
+        }
+
+        private static FpsMetricsSnapshot CreateSnapshot()
+        {
+            return new FpsMetricsSnapshot(
+                true,
+                120,
+                60.2,
+                58.4,
+                44.8,
+                16.7,
+                0,
+                true,
+                new[] { 16.7, 17.0 })
+            {
+                PacingStats = new FramePacingStats(
+                    true,
+                    120,
+                    17.2,
+                    15.9,
+                    42.0,
+                    2.4,
+                    5.76,
+                    1.3,
+                    44.8,
+                    38.2,
+                    2,
+                    50.0,
+                    85.7)
+            };
+        }
     }
 }
