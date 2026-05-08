@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Threading;
+using LightCrosshair.FrameLimiting;
 
 namespace LightCrosshair
 {
@@ -136,6 +137,14 @@ namespace LightCrosshair
                 p.EdgeColor = col;
                 p.InnerShapeColor = col;
             }));
+            if (VisibilityPresetCombo != null)
+            {
+                VisibilityPresetCombo.SelectedIndex = 0;
+            }
+            if (ApplyVisibilityPresetBtn != null)
+            {
+                ApplyVisibilityPresetBtn.Click += (_, __) => ApplySelectedVisibilityPreset();
+            }
 
             if (NudgeLeft != null) NudgeLeft.Click += (_, __) => { RequestNudge(-1, 0); UpdatePositionStatus(); };
             if (NudgeRight != null) NudgeRight.Click += (_, __) => { RequestNudge(1, 0); UpdatePositionStatus(); };
@@ -834,6 +843,12 @@ namespace LightCrosshair
             ShowFpsDiagnosticsCheckbox.IsChecked = cfg.ShowFpsDiagnostics;
             ShowGenFramesCheckbox.IsChecked = cfg.ShowGenFrames;
             UpdateGraphRefreshUiState();
+
+            FrameCapRefreshRateSlider.Value = cfg.FrameCapAssistantRefreshRateHz;
+            FrameCapRefreshRateText.Text = $"{cfg.FrameCapAssistantRefreshRateHz:0} Hz";
+            FrameCapTargetFpsSlider.Value = cfg.FrameCapAssistantTargetFps;
+            FrameCapTargetFpsText.Text = cfg.FrameCapAssistantTargetFps.ToString();
+            RefreshFrameCapAssistantStatus(cfg);
             _suppressUiEvents = false;
             RefreshDisplayBackendInfo();
         }
@@ -1327,6 +1342,33 @@ namespace LightCrosshair
                     cfg.SaveSettings();
                 });
             };
+            FrameCapRefreshRateSlider.ValueChanged += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.FrameCapAssistantRefreshRateHz = CrosshairConfig.NormalizeFrameCapAssistantRefreshRate(FrameCapRefreshRateSlider.Value);
+                FrameCapRefreshRateText.Text = $"{cfg.FrameCapAssistantRefreshRateHz:0} Hz";
+                QueueSettingsSave(cfg);
+                RefreshFrameCapAssistantStatus(cfg);
+            };
+            FrameCapTargetFpsSlider.ValueChanged += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.FrameCapAssistantTargetFps = CrosshairConfig.NormalizeFrameCapAssistantTargetFps((int)FrameCapTargetFpsSlider.Value);
+                FrameCapTargetFpsText.Text = cfg.FrameCapAssistantTargetFps.ToString();
+                QueueSettingsSave(cfg);
+                RefreshFrameCapAssistantStatus(cfg);
+            };
+            FrameCapRefreshRateSlider.AddHandler(Thumb.DragCompletedEvent, saveFlushDragCompleteHandler);
+            FrameCapTargetFpsSlider.AddHandler(Thumb.DragCompletedEvent, saveFlushDragCompleteHandler);
+            FrameCapUseRecommendationBtn.Click += (_, __) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.FrameCapAssistantTargetFps = FrameCapAssistant.RecommendTargetFps(cfg.FrameCapAssistantRefreshRateHz);
+                FrameCapTargetFpsSlider.Value = cfg.FrameCapAssistantTargetFps;
+                FrameCapTargetFpsText.Text = cfg.FrameCapAssistantTargetFps.ToString();
+                cfg.SaveSettings();
+                RefreshFrameCapAssistantStatus(cfg);
+            };
         }
 
         private static string SerializeRgb(byte r, byte g, byte b) => $"{r},{g},{b}";
@@ -1422,6 +1464,42 @@ namespace LightCrosshair
             if (Show1PercentCheckbox != null) Show1PercentCheckbox.IsEnabled = detailedControlsEnabled;
             if (ShowFpsDiagnosticsCheckbox != null) ShowFpsDiagnosticsCheckbox.IsEnabled = detailedControlsEnabled;
             if (ShowGenFramesCheckbox != null) ShowGenFramesCheckbox.IsEnabled = detailedControlsEnabled;
+        }
+
+        private void ApplySelectedVisibilityPreset()
+        {
+            if (_suppressUiEvents || VisibilityPresetCombo?.SelectedItem is not ComboBoxItem item)
+            {
+                return;
+            }
+
+            if (item.Tag is not string tag || !Enum.TryParse(tag, ignoreCase: true, out CrosshairVisibilityPresetKind kind))
+            {
+                return;
+            }
+
+            ApplyChange(p => CrosshairVisibilityPreset.Apply(p, kind));
+            LoadFromProfile(_profiles.Current);
+        }
+
+        private void RefreshFrameCapAssistantStatus(CrosshairConfig cfg)
+        {
+            if (FrameCapAssistantStatusText == null)
+            {
+                return;
+            }
+
+            var capability = FrameLimiterCapability.Unavailable(
+                FrameLimiterBackendKind.None,
+                "No limiter backend",
+                "No active limiter backend; assistant only.");
+            var status = FrameCapAssistant.BuildStatus(
+                cfg.FrameCapAssistantRefreshRateHz,
+                cfg.FrameCapAssistantTargetFps,
+                capability);
+
+            FrameCapAssistantStatusText.Text =
+                $"{status.StatusText} Suggested target: {status.TargetFps} FPS. {status.HelpText}";
         }
 
         private void SelectGraphTimeWindowPreset(int timeWindowMs)

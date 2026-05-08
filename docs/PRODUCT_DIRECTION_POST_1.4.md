@@ -119,6 +119,18 @@ Milestone 13 implementation notes:
   and cadence alone can support an estimate or suspicion only; verified frame
   generation still requires explicit provider evidence.
 
+Milestone 14 1.5.0 product polish notes:
+
+- Crosshair visibility presets are crosshair-only helpers. They apply strong
+  main colors with a black outline and do not alter game rendering.
+- The Frame Cap Assistant remains assistant-only. It can suggest a target FPS
+  below the display refresh rate, but it reports "No active limiter backend" and
+  does not claim LightCrosshair enforced a cap.
+- Color/vibrance direction remains non-invasive: safe crosshair visibility
+  changes are available now, while game/display color changes require supported
+  OS/display paths or a future reviewed backend. LightCrosshair must not imply
+  private vendor control or game post-processing without explicit support.
+
 ## Performance And Compatibility Requirements
 
 LightCrosshair should protect its lightweight identity with a standing
