@@ -7,6 +7,20 @@ are created manually outside LightCrosshair and stored under
 Use short captures first: 30 to 90 seconds per scenario is enough to confirm
 column availability and classification behavior.
 
+PresentMon Capture App CSV exports may contain duplicate column names, such as
+multiple `MsPCLatency` headers. The offline analyzer normalizes later duplicate
+headers deterministically (`MsPCLatency__2`, `MsPCLatency__3`, and so on), keeps
+the first occurrence under the original name, and prints a warning listing each
+mapping.
+
+AMD real-capture observation: RX 6950 XT, driver 26.3.1, CoD DX12, 1440p
+borderless, 360 Hz, VSync off, FreeSync off, and AntiLag 2 on produced native,
+capped, FSR3 FG ON, and AFMF ON captures where `FrameType` was present but only
+`Application` values were observed. The AFMF driver overlay may report
+generated/displayed FPS that the PresentMon app/present metrics do not expose in
+these captures. Classification remains `Inconclusive`, not verified, unless
+PresentMon exposes explicit `Generated` or `Interpolated` frame evidence.
+
 ## Scenario Matrix
 
 | Scenario | Expected useful columns | Useful signals | Heuristic-only signals | Verified evidence | Manual notes to record |

@@ -42,6 +42,53 @@ namespace LightCrosshair.Tests
             Assert.Contains("Ratios/cadence are not verified evidence.", result.Output);
         }
 
+        [Fact]
+        public void AnalyzePresentMonCaptureScript_NormalizesDuplicateHeaders()
+        {
+            string csv = string.Join(Environment.NewLine,
+                "Application,FPS,MsBetweenPresents,MsPCLatency,MsPCLatency,PresentMode",
+                "Sample.exe,120,8.33,1.1,2.2,Hardware: Independent Flip");
+
+            ScriptResult result = RunScript(csv);
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.Contains("Samples: 1", result.Output);
+            Assert.Contains("Application: Sample.exe", result.Output);
+            Assert.Contains("Duplicate columns normalized: MsPCLatency -> MsPCLatency__2", result.Output);
+        }
+
+        [Fact]
+        public void AnalyzePresentMonCaptureScript_DerivesPresentedAppFpsWhenExplicitFpsIsMissing()
+        {
+            string csv = string.Join(Environment.NewLine,
+                "Application,MsBetweenPresents,PresentMode",
+                "Sample.exe,10,Hardware: Independent Flip",
+                "Sample.exe,10,Hardware: Independent Flip");
+
+            ScriptResult result = RunScript(csv);
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.Contains("Average Presented/App FPS (derived): 100", result.Output);
+            Assert.Contains("Derived from average frame time; may exclude driver-generated frames unless PresentMon exposes them explicitly.", result.Output);
+            Assert.DoesNotContain("Average FPS: 100", result.Output);
+        }
+
+        [Fact]
+        public void AnalyzePresentMonCaptureScript_DerivedFpsDoesNotVerifyFrameGeneration()
+        {
+            string csv = string.Join(Environment.NewLine,
+                "Application,MsBetweenPresents,FrameType",
+                "Sample.exe,5,Application",
+                "Sample.exe,5,Application");
+
+            ScriptResult result = RunScript(csv);
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.Contains("Average Presented/App FPS (derived): 200", result.Output);
+            Assert.Contains("Frame Generation Classification: Inconclusive", result.Output);
+            Assert.DoesNotContain("Frame Generation Classification: VerifiedSignalPresent", result.Output);
+        }
+
         private static ScriptResult RunScript(string csv)
         {
             string root = FindRepoRoot();

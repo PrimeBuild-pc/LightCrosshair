@@ -121,17 +121,124 @@ function Test-GeneratedFrameType([string]$FrameType) {
     }
 
     return $normalized.Contains("generated") -or
-        $normalized.Contains("interpolated") -or
-        $normalized.Contains("synthetic")
+        $normalized.Contains("interpolated")
+}
+
+function Read-CsvFields([string]$Path) {
+    Add-Type -AssemblyName Microsoft.VisualBasic
+
+    $reader = [System.IO.StreamReader]::new($Path, [System.Text.Encoding]::UTF8, $true)
+    try {
+        $parser = [Microsoft.VisualBasic.FileIO.TextFieldParser]::new($reader)
+        try {
+            $parser.TextFieldType = [Microsoft.VisualBasic.FileIO.FieldType]::Delimited
+            $parser.SetDelimiters(",")
+            $parser.HasFieldsEnclosedInQuotes = $true
+            $parser.TrimWhiteSpace = $false
+
+            while (-not $parser.EndOfData) {
+                try {
+                    Write-Output -NoEnumerate $parser.ReadFields()
+                }
+                catch [Microsoft.VisualBasic.FileIO.MalformedLineException] {
+                    Write-Warning "Skipping malformed CSV row $($parser.ErrorLineNumber): $($_.Exception.Message)"
+                }
+            }
+        }
+        finally {
+            $parser.Close()
+        }
+    }
+    finally {
+        $reader.Dispose()
+    }
+}
+
+function Get-NormalizedHeaders([string[]]$Headers) {
+    $seen = @{}
+    $normalized = New-Object System.Collections.Generic.List[string]
+    $duplicates = New-Object System.Collections.Generic.List[string]
+
+    foreach ($header in $Headers) {
+        $name = if ($null -eq $header) { "" } else { $header.Trim() }
+        if ([string]::IsNullOrWhiteSpace($name)) {
+            $name = "Column$($normalized.Count + 1)"
+        }
+
+        if (-not $seen.ContainsKey($name)) {
+            $seen[$name] = 1
+            $normalized.Add($name)
+            continue
+        }
+
+        $seen[$name] = [int]$seen[$name] + 1
+        $deduped = "$name`__$($seen[$name])"
+        while ($seen.ContainsKey($deduped)) {
+            $seen[$name] = [int]$seen[$name] + 1
+            $deduped = "$name`__$($seen[$name])"
+        }
+
+        $seen[$deduped] = 1
+        $normalized.Add($deduped)
+        $duplicates.Add("$name -> $deduped")
+    }
+
+    return [pscustomobject]@{
+        Headers = [string[]]$normalized.ToArray()
+        DuplicateMappings = [string[]]$duplicates.ToArray()
+    }
+}
+
+function ConvertTo-SafeCsvRows([string]$Path) {
+    $csvRows = @(Read-CsvFields $Path)
+    if ($csvRows.Count -eq 0) {
+        return [pscustomobject]@{
+            Rows = @()
+            Columns = @()
+            DuplicateMappings = @()
+        }
+    }
+
+    $headerInfo = Get-NormalizedHeaders ([string[]]$csvRows[0])
+    $headers = [string[]]$headerInfo.Headers
+    $rows = New-Object System.Collections.Generic.List[object]
+
+    for ($rowIndex = 1; $rowIndex -lt $csvRows.Count; $rowIndex++) {
+        $fields = [string[]]$csvRows[$rowIndex]
+        if ($fields.Count -eq 0 -or (($fields | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }).Count -eq 0)) {
+            continue
+        }
+
+        $row = [ordered]@{}
+        for ($columnIndex = 0; $columnIndex -lt $headers.Count; $columnIndex++) {
+            $row[$headers[$columnIndex]] = if ($columnIndex -lt $fields.Count) { $fields[$columnIndex] } else { "" }
+        }
+
+        if ($fields.Count -gt $headers.Count) {
+            Write-Warning "Row $($rowIndex + 1) has $($fields.Count) field(s), but the header has $($headers.Count); extra fields were ignored."
+        }
+
+        $rows.Add([pscustomobject]$row)
+    }
+
+    return [pscustomobject]@{
+        Rows = @($rows.ToArray())
+        Columns = $headers
+        DuplicateMappings = [string[]]$headerInfo.DuplicateMappings
+    }
 }
 
 $resolvedPath = Resolve-Path -LiteralPath $CsvPath
-$rows = @(Import-Csv -LiteralPath $resolvedPath)
+$csv = ConvertTo-SafeCsvRows $resolvedPath
+$rows = @($csv.Rows)
 if ($rows.Count -eq 0) {
     Write-Error "No CSV samples were found in $resolvedPath"
 }
 
-$columns = @($rows[0].PSObject.Properties.Name)
+$columns = @($csv.Columns)
+foreach ($mapping in $csv.DuplicateMappings) {
+    Write-Warning "Duplicate columns normalized: $mapping"
+}
 
 $appColumn = Find-Column $columns @("Application", "App", "Process", "ProcessName", "ExecutableName")
 $fpsColumn = Find-Column $columns @("FPS", "Average FPS", "Avg FPS", "Displayed FPS", "Presented FPS", "FPS-Display", "FPS-Presents", "FPS-App")
@@ -201,6 +308,7 @@ if ($appCounts.Count -gt 0) {
 
 $averageFps = if ($fpsValues.Count -gt 0) { ($fpsValues | Measure-Object -Average).Average } else { $null }
 $averageFrameTime = if ($frameTimes.Count -gt 0) { ($frameTimes | Measure-Object -Average).Average } else { $null }
+$derivedPresentedAppFps = if ($null -eq $averageFps -and $null -ne $averageFrameTime -and $averageFrameTime -gt 0) { 1000.0 / $averageFrameTime } else { $null }
 $p95FrameTime = Get-Percentile ([double[]]$frameTimes.ToArray()) 0.95
 $p99FrameTime = Get-Percentile ([double[]]$frameTimes.ToArray()) 0.99
 
@@ -230,7 +338,16 @@ Write-Host "=================================="
 Write-Host "File: $resolvedPath"
 Write-Host "Samples: $($rows.Count)"
 Write-Host "Application: $appName"
-Write-Host "Average FPS: $(Format-Number $averageFps)"
+if ($null -ne $averageFps) {
+    Write-Host "Average FPS: $(Format-Number $averageFps)"
+}
+elseif ($null -ne $derivedPresentedAppFps) {
+    Write-Host "Average Presented/App FPS (derived): $(Format-Number $derivedPresentedAppFps)"
+    Write-Host "FPS Derivation Note: Derived from average frame time; may exclude driver-generated frames unless PresentMon exposes them explicitly."
+}
+else {
+    Write-Host "Average FPS: N/A"
+}
 Write-Host "Average Frame Time: $(Format-Number $averageFrameTime) ms"
 Write-Host "P95 Frame Time: $(Format-Number $p95FrameTime) ms"
 Write-Host "P99 Frame Time: $(Format-Number $p99FrameTime) ms"

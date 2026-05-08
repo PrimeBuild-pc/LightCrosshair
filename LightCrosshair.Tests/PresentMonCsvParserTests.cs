@@ -120,6 +120,19 @@ namespace LightCrosshair.Tests
         }
 
         [Fact]
+        public void Parse_FrameTypeSyntheticValue_IsNotVerifiedEvidence()
+        {
+            string csv = string.Join(Environment.NewLine,
+                "FrameTime,FrameType",
+                "8.3,Synthetic");
+
+            PresentMonCaptureSummary summary = PresentMonCsvParser.Parse(csv).Summary;
+
+            Assert.Equal(0, summary.ExplicitGeneratedFrameSampleCount);
+            Assert.Equal(PresentMonFrameGenerationClassification.Inconclusive, summary.FrameGenerationClassification);
+        }
+
+        [Fact]
         public void Parse_FpsRatioOrCadenceWithoutFrameType_RemainsHeuristicOnly()
         {
             string csv = string.Join(Environment.NewLine,
