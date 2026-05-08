@@ -11,6 +11,7 @@
 - Milestone 4C: conservative frame generation detection fallback
 - Milestone 4D: real backend path for Special K-like frame generation detection
 - Milestone 5: frame limiter backend architecture
+- Milestone 6: diagnostics and manual validation tooling
 
 ## Milestone 4D Result
 
@@ -52,19 +53,27 @@ Completed scope:
 
 ## Next
 
-### Milestone 6
+## Milestone 6 Result
 
-Manual validation tools and diagnostics:
+Milestone 6 is diagnostics/manual validation only. It did not implement RTSS
+profile writes, driver profile writes, native hooks, injection, in-process
+runtime behavior, target-process DLL loading, packaging publication, release
+work, or Special K-derived code.
 
-- test profiles
-- telemetry logging
-- debug overlay
-- reproducible validation checklist
+Completed scope:
 
-Safety gate: Milestone 6 may add diagnostics, telemetry export, validation
-checklists, and sample-runner documentation only. Stop before implementing
-native present hooks, injection, detours, target-process DLL loading, RTSS
-profile writes, driver writes, packaging publication, or release work.
+- Added a pure diagnostic report builder that formats existing telemetry
+  snapshots and frame limiter status into stable text/export fields.
+- Added CSV export formatting for manual diagnostics without autonomous file
+  writes or background sampling.
+- Added xUnit coverage for empty snapshots, pacing stats, invariant numeric
+  formatting, CSV escaping, conservative frame-generation labels, RTSS
+  unsupported semantics, and no-op limiter status.
+- Added a manual validation checklist covering normal FPS overlay, advanced FPS
+  diagnostics, frame-generation states, no-op limiter status, read-only external
+  comparison tools, false positives/negatives, and anti-cheat-safe guidance.
+
+## Next
 
 ### Milestone 7
 
@@ -76,3 +85,9 @@ Packaging validation:
 - WinGet manifest prep
 - PowerShell installer
 - no release publication without approval
+
+Safety gate: Milestone 7 may validate packaging inputs and documentation only.
+Do not create an official release, push, tag, publish packages, submit WinGet,
+push Chocolatey, create MSIX, or continue into RTSS writes, driver writes,
+native hooks, injection, or in-process runtime behavior without explicit
+approval.

@@ -1,6 +1,6 @@
 # LightCrosshair 1.4.0 - SpecialK Components Mapping
 
-Milestone: 4A feasibility, updated through 5 frame limiter backend scaffolding.
+Milestone: 4A feasibility, updated through 6 diagnostics/manual validation tooling.
 
 This document maps observed behavior in `SpecialK-components` to what LightCrosshair can implement safely. It does not copy Special K code. The goal is to separate real capabilities from diagnostics, advisory UI, and invasive techniques.
 
@@ -78,6 +78,11 @@ verified frame-generation evidence and frame-limiter backends.
 Milestone 5 frame limiter scaffolding remains non-invasive: interfaces,
 capability models, no-op/unavailable backend behavior, and documentation only.
 It does not implement a Special K-like limiter or any target-process control.
+
+Milestone 6 diagnostic tooling remains non-invasive: it formats existing
+LightCrosshair telemetry snapshots and no-op frame limiter status for manual
+validation. It does not add a real limiter, external profile writer, native
+component, hook, injection path, or Special K-derived pacing logic.
 
 ### D. Not recommended
 
