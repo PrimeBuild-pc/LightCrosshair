@@ -90,6 +90,8 @@ namespace LightCrosshair
 
         // FPS Overlay Settings
         public bool EnableFpsOverlay { get; set; } = false;
+        public FpsOverlayDisplayMode FpsOverlayMode { get; set; } = FpsOverlayDisplayMode.Minimal;
+        public bool UltraLightweightMode { get; set; } = false;
         public int FpsOverlayX { get; set; } = 10;
         public int FpsOverlayY { get; set; } = 10;
         public bool ShowFrametimeGraph { get; set; } = true;
@@ -111,6 +113,9 @@ namespace LightCrosshair
             set => _graphTimeWindowMs = NormalizeGraphTimeWindowPreset(value);
         }
         public bool Show1PercentLows { get; set; } = true;
+        public bool ShowFps { get; set; } = true;
+        public bool ShowFrameTime { get; set; } = true;
+        public bool ShowFramePacing { get; set; } = false;
         public bool ShowGenFrames { get; set; } = true;
         public bool ShowFpsDiagnostics { get; set; } = false;
         public string FpsOverlayColorSerialized { get; set; } = "255,255,255";
@@ -131,7 +136,11 @@ namespace LightCrosshair
 
         private bool _disposed = false;
 
-        public CrosshairConfig()
+        public CrosshairConfig() : this(loadSettings: true)
+        {
+        }
+
+        internal CrosshairConfig(bool loadSettings)
         {
             try
             {
@@ -149,7 +158,7 @@ namespace LightCrosshair
                 _configFilePath = Path.Combine(appDataPath, "crosshair_settings.json");
                 
                 // Load settings
-                if (!_isDeserializing)
+                if (loadSettings && !_isDeserializing)
                 {
                     LoadSettings();
                 }
@@ -253,12 +262,19 @@ namespace LightCrosshair
                         VibranceValue = Math.Clamp(loadedConfig.VibranceValue, 0, 100);
 
                         EnableFpsOverlay = loadedConfig.EnableFpsOverlay;
+                        FpsOverlayMode = Enum.IsDefined(typeof(FpsOverlayDisplayMode), loadedConfig.FpsOverlayMode)
+                            ? loadedConfig.FpsOverlayMode
+                            : FpsOverlayDisplayMode.Minimal;
+                        UltraLightweightMode = loadedConfig.UltraLightweightMode;
                         FpsOverlayX = loadedConfig.FpsOverlayX;
                         FpsOverlayY = loadedConfig.FpsOverlayY;
                         ShowFrametimeGraph = loadedConfig.ShowFrametimeGraph;
                         GraphRefreshRateMs = loadedConfig.GraphRefreshRateMs;
                         GraphTimeWindowMs = loadedConfig.GraphTimeWindowMs;
                         Show1PercentLows = loadedConfig.Show1PercentLows;
+                        ShowFps = loadedConfig.ShowFps;
+                        ShowFrameTime = loadedConfig.ShowFrameTime;
+                        ShowFramePacing = loadedConfig.ShowFramePacing || loadedConfig.ShowFpsDiagnostics;
                         ShowGenFrames = loadedConfig.ShowGenFrames;
                         ShowFpsDiagnostics = loadedConfig.ShowFpsDiagnostics;
                         FpsOverlayColorSerialized = loadedConfig.FpsOverlayColorSerialized ?? "255,255,255";

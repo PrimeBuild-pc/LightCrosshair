@@ -318,6 +318,16 @@
                     <StackPanel Margin="12">
                         <TextBlock Text="Performance Overlay" FontWeight="Bold" Margin="0,0,0,12"/>
                         <CheckBox x:Name="EnableFpsCheckbox" Content="Enable FPS Overlay" Margin="0,0,0,12"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Display Mode:" Width="120" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="FpsOverlayModeCombo" Width="180" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}" ToolTip="Minimal keeps the overlay compact. Detailed enables optional pacing and frame-generation estimate lines.">
+                                <ComboBoxItem Content="Off" Tag="Off"/>
+                                <ComboBoxItem Content="Minimal" Tag="Minimal"/>
+                                <ComboBoxItem Content="Detailed" Tag="Detailed"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <CheckBox x:Name="UltraLightweightCheckbox" Content="Ultra-lightweight mode" Margin="0,0,0,6" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}" ToolTip="Prioritizes low overhead: slower updates, simple text, no graph, and no detailed diagnostics."/>
                         
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <TextBlock Text="Position X:" Width="120" VerticalAlignment="Center"/>
@@ -336,8 +346,10 @@
                             <TextBlock x:Name="FpsScaleValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
                         </StackPanel>
                         
+                        <CheckBox x:Name="ShowFpsMetricCheckbox" Content="Show FPS" Margin="0,0,0,6" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
+                        <CheckBox x:Name="ShowFrameTimeMetricCheckbox" Content="Show frametime text" Margin="0,0,0,6" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <CheckBox x:Name="ShowFrametimeCheckbox" Content="Show Frametime Graph" VerticalAlignment="Center" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
+                            <CheckBox x:Name="ShowFrametimeCheckbox" Content="Show frametime graph" VerticalAlignment="Center" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
                             <ComboBox x:Name="GraphRefreshRateCombo" Width="160" Margin="10,0,0,0" VerticalAlignment="Center" ToolTip="Controls how often the frametime graph is redrawn.&#x0D;&#x0A;Lower values feel smoother but use more CPU/GPU.&#x0D;&#x0A;Higher values reduce overhead but update less frequently.">
                                 <ComboBoxItem Content="Ultra (33ms)" Tag="33"/>
                                 <ComboBoxItem Content="Smooth (66ms)" Tag="66"/>
@@ -350,7 +362,7 @@
                             </ComboBox>
                         </StackPanel>
                         <CheckBox x:Name="Show1PercentCheckbox" Content="Show 1% Lows" Margin="0,0,0,6" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
-                        <CheckBox x:Name="ShowFpsDiagnosticsCheckbox" Content="Show advanced FPS diagnostics" Margin="0,0,0,6" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}" ToolTip="Adds frame pacing diagnostics to the FPS overlay."/>
+                        <CheckBox x:Name="ShowFpsDiagnosticsCheckbox" Content="Show pacing/stutter details" Margin="0,0,0,6" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}" ToolTip="Adds frame pacing, jitter, hitch, and stability details to the FPS overlay."/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <CheckBox x:Name="ShowGenFramesCheckbox" Content="Show frame-generation estimate" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}" VerticalAlignment="Center"/>
                             <TextBlock Text=" [?]" Foreground="{DynamicResource TextFg}" Opacity="0.6" Cursor="Help" VerticalAlignment="Center" FontWeight="Bold" ToolTip="Without a verified provider signal, this is heuristic suspicion from present cadence only.&#x0D;&#x0A;Only verified provider signals may be labeled as detected frame generation."/>

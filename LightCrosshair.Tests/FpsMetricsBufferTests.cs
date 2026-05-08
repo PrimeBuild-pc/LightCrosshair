@@ -280,6 +280,96 @@ namespace LightCrosshair.Tests
         }
 
         [Fact]
+        public void DefaultFpsOverlaySettings_Are_Lightweight()
+        {
+            var cfg = new CrosshairConfig(loadSettings: false);
+
+            Assert.False(cfg.EnableFpsOverlay);
+            Assert.Equal(FpsOverlayDisplayMode.Minimal, cfg.FpsOverlayMode);
+            Assert.True(cfg.ShowFps);
+            Assert.True(cfg.ShowFrameTime);
+            Assert.False(cfg.ShowFramePacing);
+            Assert.False(cfg.ShowFpsDiagnostics);
+            Assert.False(cfg.UltraLightweightMode);
+        }
+
+        [Fact]
+        public void FpsOverlayTextFormatter_Minimal_Mode_Does_Not_Require_Detailed_Metrics()
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            var snapshot = CreateSnapshot();
+
+            FpsOverlayTextFormatter.AppendLines(
+                lines,
+                snapshot,
+                source: "ETW",
+                status: "Active",
+                new FpsOverlayTextOptions(Show1PercentLows: true, ShowGeneratedFrames: true, ShowDiagnostics: true)
+                {
+                    DisplayMode = FpsOverlayDisplayMode.Minimal,
+                    ShowFps = true,
+                    ShowFrameTime = true,
+                    ShowFramePacing = false,
+                    ShowGeneratedFrames = false
+                });
+
+            Assert.Equal(new[]
+            {
+                "FPS: 60",
+                "FT: 16.7 ms",
+                "SRC: ETW"
+            }, lines);
+        }
+
+        [Fact]
+        public void FpsOverlayTextFormatter_UltraLightweight_Mode_Uses_Simple_Text()
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            var snapshot = CreateSnapshot();
+
+            FpsOverlayTextFormatter.AppendLines(
+                lines,
+                snapshot,
+                source: "ETW",
+                status: "Active",
+                new FpsOverlayTextOptions(Show1PercentLows: true, ShowGeneratedFrames: true, ShowDiagnostics: true)
+                {
+                    DisplayMode = FpsOverlayDisplayMode.Detailed,
+                    UltraLightweight = true,
+                    ShowFps = true,
+                    ShowFrameTime = true,
+                    ShowFramePacing = true,
+                    ShowGeneratedFrames = true
+                });
+
+            Assert.Equal(new[]
+            {
+                "FPS: 60",
+                "FT: 16.7 ms",
+                "SRC: ETW"
+            }, lines);
+        }
+
+        [Fact]
+        public void FpsOverlayRuntimePolicy_UltraLightweight_Disables_Graph_And_Slows_Refresh()
+        {
+            var cfg = new CrosshairConfig(loadSettings: false)
+            {
+                EnableFpsOverlay = true,
+                FpsOverlayMode = FpsOverlayDisplayMode.Detailed,
+                ShowFrametimeGraph = true,
+                GraphRefreshRateMs = 33,
+                UltraLightweightMode = true
+            };
+
+            var policy = FpsOverlayRuntimePolicy.FromConfig(cfg);
+
+            Assert.False(policy.ShowGraph);
+            Assert.True(policy.TimerIntervalMs >= 500);
+            Assert.Equal(FpsOverlayDisplayMode.Minimal, policy.EffectiveDisplayMode);
+        }
+
+        [Fact]
         public void FpsOverlayTextFormatter_Keeps_Standard_Lines_When_Diagnostics_Disabled()
         {
             var lines = new System.Collections.Generic.List<string>();

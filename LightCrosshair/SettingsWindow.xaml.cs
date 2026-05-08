@@ -817,6 +817,8 @@ namespace LightCrosshair
 
             // FPS Overlay
             EnableFpsCheckbox.IsChecked = cfg.EnableFpsOverlay;
+            SelectFpsOverlayMode(cfg.FpsOverlayMode);
+            UltraLightweightCheckbox.IsChecked = cfg.UltraLightweightMode;
             FpsXSlider.Value = cfg.FpsOverlayX;
             FpsXValueText.Text = cfg.FpsOverlayX.ToString();
             FpsYSlider.Value = cfg.FpsOverlayY;
@@ -826,6 +828,8 @@ namespace LightCrosshair
             ShowFrametimeCheckbox.IsChecked = cfg.ShowFrametimeGraph;
             SelectGraphRefreshPreset(cfg.GraphRefreshRateMs);
             SelectGraphTimeWindowPreset(cfg.GraphTimeWindowMs);
+            ShowFpsMetricCheckbox.IsChecked = cfg.ShowFps;
+            ShowFrameTimeMetricCheckbox.IsChecked = cfg.ShowFrameTime;
             Show1PercentCheckbox.IsChecked = cfg.Show1PercentLows;
             ShowFpsDiagnosticsCheckbox.IsChecked = cfg.ShowFpsDiagnostics;
             ShowGenFramesCheckbox.IsChecked = cfg.ShowGenFrames;
@@ -1206,6 +1210,11 @@ namespace LightCrosshair
             {
                 if (_suppressUiEvents) return;
                 cfg.EnableFpsOverlay = true;
+                if (cfg.FpsOverlayMode == FpsOverlayDisplayMode.Off)
+                {
+                    cfg.FpsOverlayMode = FpsOverlayDisplayMode.Minimal;
+                    SelectFpsOverlayMode(cfg.FpsOverlayMode);
+                }
                 UpdateGraphRefreshUiState();
                 cfg.SaveSettings();
             };
@@ -1213,6 +1222,36 @@ namespace LightCrosshair
             {
                 if (_suppressUiEvents) return;
                 cfg.EnableFpsOverlay = false;
+                UpdateGraphRefreshUiState();
+                cfg.SaveSettings();
+            };
+            FpsOverlayModeCombo.SelectionChanged += (_, __) =>
+            {
+                if (_suppressUiEvents || FpsOverlayModeCombo.SelectedItem is not ComboBoxItem item) return;
+                if (item.Tag is not string tagValue) return;
+                if (!Enum.TryParse(tagValue, ignoreCase: true, out FpsOverlayDisplayMode mode)) return;
+                cfg.FpsOverlayMode = mode;
+                cfg.EnableFpsOverlay = mode != FpsOverlayDisplayMode.Off && EnableFpsCheckbox.IsChecked == true;
+                if (mode == FpsOverlayDisplayMode.Off && EnableFpsCheckbox.IsChecked == true)
+                {
+                    _suppressUiEvents = true;
+                    EnableFpsCheckbox.IsChecked = false;
+                    _suppressUiEvents = false;
+                }
+                UpdateGraphRefreshUiState();
+                cfg.SaveSettings();
+            };
+            UltraLightweightCheckbox.Checked += (_,__) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.UltraLightweightMode = true;
+                UpdateGraphRefreshUiState();
+                cfg.SaveSettings();
+            };
+            UltraLightweightCheckbox.Unchecked += (_,__) =>
+            {
+                if (_suppressUiEvents) return;
+                cfg.UltraLightweightMode = false;
                 UpdateGraphRefreshUiState();
                 cfg.SaveSettings();
             };
@@ -1260,10 +1299,14 @@ namespace LightCrosshair
                 cfg.GraphTimeWindowMs = parsedMs;
                 cfg.SaveSettings();
             };
+            ShowFpsMetricCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFps = true; cfg.SaveSettings(); } };
+            ShowFpsMetricCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFps = false; cfg.SaveSettings(); } };
+            ShowFrameTimeMetricCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFrameTime = true; cfg.SaveSettings(); } };
+            ShowFrameTimeMetricCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFrameTime = false; cfg.SaveSettings(); } };
             Show1PercentCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.Show1PercentLows = true; cfg.SaveSettings(); } };
             Show1PercentCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.Show1PercentLows = false; cfg.SaveSettings(); } };
-            ShowFpsDiagnosticsCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFpsDiagnostics = true; cfg.SaveSettings(); } };
-            ShowFpsDiagnosticsCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFpsDiagnostics = false; cfg.SaveSettings(); } };
+            ShowFpsDiagnosticsCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFpsDiagnostics = true; cfg.ShowFramePacing = true; cfg.SaveSettings(); } };
+            ShowFpsDiagnosticsCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFpsDiagnostics = false; cfg.ShowFramePacing = false; cfg.SaveSettings(); } };
             ShowGenFramesCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowGenFrames = true; cfg.SaveSettings(); } };
             ShowGenFramesCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowGenFrames = false; cfg.SaveSettings(); } };
             FpsTextColorBtn.Click += (_, __) =>
@@ -1335,6 +1378,27 @@ namespace LightCrosshair
             }
         }
 
+        private void SelectFpsOverlayMode(FpsOverlayDisplayMode mode)
+        {
+            if (FpsOverlayModeCombo == null)
+            {
+                return;
+            }
+
+            string target = Enum.IsDefined(typeof(FpsOverlayDisplayMode), mode)
+                ? mode.ToString()
+                : FpsOverlayDisplayMode.Minimal.ToString();
+
+            foreach (var item in FpsOverlayModeCombo.Items.OfType<ComboBoxItem>())
+            {
+                if (string.Equals(item.Tag as string, target, StringComparison.OrdinalIgnoreCase))
+                {
+                    FpsOverlayModeCombo.SelectedItem = item;
+                    return;
+                }
+            }
+        }
+
         private void UpdateGraphRefreshUiState()
         {
             if (GraphRefreshRateCombo == null || GraphTimeWindowCombo == null)
@@ -1342,14 +1406,22 @@ namespace LightCrosshair
                 return;
             }
 
+            var cfg = CrosshairConfig.Instance;
             bool fpsOverlayEnabled = EnableFpsCheckbox?.IsChecked == true;
             bool showGraph = ShowFrametimeCheckbox?.IsChecked == true;
-            bool controlsEnabled = fpsOverlayEnabled && showGraph;
+            bool isDetailed = cfg.FpsOverlayMode == FpsOverlayDisplayMode.Detailed;
+            bool isUltra = UltraLightweightCheckbox?.IsChecked == true;
+            bool detailedControlsEnabled = fpsOverlayEnabled && isDetailed && !isUltra;
+            bool controlsEnabled = detailedControlsEnabled && showGraph;
 
             GraphRefreshRateCombo.IsEnabled = controlsEnabled;
             GraphRefreshRateCombo.Opacity = controlsEnabled ? 1.0 : 0.55;
             GraphTimeWindowCombo.IsEnabled = controlsEnabled;
             GraphTimeWindowCombo.Opacity = controlsEnabled ? 1.0 : 0.55;
+            if (ShowFrametimeCheckbox != null) ShowFrametimeCheckbox.IsEnabled = detailedControlsEnabled;
+            if (Show1PercentCheckbox != null) Show1PercentCheckbox.IsEnabled = detailedControlsEnabled;
+            if (ShowFpsDiagnosticsCheckbox != null) ShowFpsDiagnosticsCheckbox.IsEnabled = detailedControlsEnabled;
+            if (ShowGenFramesCheckbox != null) ShowGenFramesCheckbox.IsEnabled = detailedControlsEnabled;
         }
 
         private void SelectGraphTimeWindowPreset(int timeWindowMs)
