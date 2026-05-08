@@ -25,6 +25,44 @@ namespace LightCrosshair.Tests
         }
 
         [Fact]
+        public void Snapshot_EmptyBuffer_Returns_No_Pacing_Data()
+        {
+            var buffer = new FpsMetricsBuffer(1000);
+
+            var snapshot = buffer.Snapshot();
+
+            Assert.False(snapshot.HasData);
+            Assert.False(snapshot.PacingStats.HasData);
+            Assert.Equal(0, snapshot.PacingStats.SampleCount);
+            Assert.Equal(0, snapshot.PacingStats.StabilityScore);
+        }
+
+        [Fact]
+        public void Snapshot_Computes_Stable_Frame_Pacing_Stats()
+        {
+            var buffer = new FpsMetricsBuffer(1000);
+
+            for (int i = 0; i < 120; i++)
+            {
+                buffer.AddFrame(16.6667);
+            }
+
+            var stats = buffer.Snapshot().PacingStats;
+
+            Assert.True(stats.HasData);
+            Assert.InRange(stats.AverageFrameTimeMs, 16.66, 16.67);
+            Assert.InRange(stats.MinFrameTimeMs, 16.66, 16.67);
+            Assert.InRange(stats.MaxFrameTimeMs, 16.66, 16.67);
+            Assert.Equal(0, stats.StandardDeviationFrameTimeMs, 3);
+            Assert.Equal(0, stats.FrameTimeVarianceMsSquared, 3);
+            Assert.Equal(0, stats.JitterMs, 3);
+            Assert.Equal(0, stats.HitchCount);
+            Assert.InRange(stats.OnePercentLowFps, 59.9, 60.1);
+            Assert.InRange(stats.PointOnePercentLowFps, 59.9, 60.1);
+            Assert.Equal(100.0, stats.StabilityScore, 3);
+        }
+
+        [Fact]
         public void Snapshot_Computes_OnePercentLow_From_Slowest_Frames()
         {
             var buffer = new FpsMetricsBuffer(1000);
@@ -42,6 +80,65 @@ namespace LightCrosshair.Tests
 
             // 1% low should focus on slowest sample, close to 20 FPS.
             Assert.InRange(snapshot.OnePercentLowFps, 19.5, 20.5);
+            Assert.InRange(snapshot.PacingStats.OnePercentLowFps, 19.5, 20.5);
+        }
+
+        [Fact]
+        public void Snapshot_Computes_PointOnePercentLow_From_Slowest_Frame_Subset()
+        {
+            var buffer = new FpsMetricsBuffer(1200);
+
+            for (int i = 0; i < 1000; i++)
+            {
+                buffer.AddFrame(0.5);
+            }
+            buffer.AddFrame(50.0);
+
+            var stats = buffer.Snapshot().PacingStats;
+
+            Assert.True(stats.HasData);
+            Assert.Equal(1001, stats.SampleCount);
+            Assert.InRange(stats.OnePercentLowFps, 199.5, 200.5);
+            Assert.InRange(stats.PointOnePercentLowFps, 39.5, 39.7);
+        }
+
+        [Fact]
+        public void Snapshot_Counts_Hitches_And_Lowers_Stability_For_Outliers()
+        {
+            var buffer = new FpsMetricsBuffer(1000);
+
+            for (int i = 0; i < 119; i++)
+            {
+                buffer.AddFrame(16.6667);
+            }
+            buffer.AddFrame(80.0);
+
+            var stats = buffer.Snapshot().PacingStats;
+
+            Assert.True(stats.HasData);
+            Assert.Equal(1, stats.HitchCount);
+            Assert.InRange(stats.MinFrameTimeMs, 16.66, 16.67);
+            Assert.Equal(80.0, stats.MaxFrameTimeMs, 3);
+            Assert.True(stats.StandardDeviationFrameTimeMs > 0);
+            Assert.True(stats.FrameTimeVarianceMsSquared > 0);
+            Assert.True(stats.JitterMs > 0);
+            Assert.True(stats.StabilityScore < 100);
+        }
+
+        [Fact]
+        public void FrameTimingStatistics_Uses_Custom_Hitch_Threshold()
+        {
+            double[] frameTimes = { 10.0, 12.0, 24.0, 48.0 };
+
+            var stats = FrameTimingStatistics.Calculate(frameTimes, frameTimes.Length, hitchThresholdMs: 20.0);
+
+            Assert.Equal(2, stats.HitchCount);
+            Assert.Equal(20.0, stats.HitchThresholdMs);
+            Assert.Equal(23.5, stats.AverageFrameTimeMs, 3);
+            Assert.Equal(10.0, stats.MinFrameTimeMs, 3);
+            Assert.Equal(48.0, stats.MaxFrameTimeMs, 3);
+            Assert.True(stats.StandardDeviationFrameTimeMs > 0);
+            Assert.True(stats.JitterMs > 0);
         }
 
         [Fact]
