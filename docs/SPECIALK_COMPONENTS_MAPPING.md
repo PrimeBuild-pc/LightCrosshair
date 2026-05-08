@@ -37,6 +37,8 @@ This document maps observed behavior in `SpecialK-components` to what LightCross
 | Frame pacing tied to swapchain/present mode | Native/hook | `framerate.cpp`, `dxgi.cpp`, `render_backend.cpp` | Chooses where to delay frames and reacts to present mode, vblank, queue depth, and missed frames. | In-process access to swapchain/backend state. | Yes | Yes | High | High if porting logic | Controlled DXGI/D3D9/Vulkan sample with cap on/off and ETW comparison. |
 | Latent Sync / tearline control | Native/hook | `framerate.cpp`, `widget.cpp`, `config.cpp` `FrameRate.LatentSync` | Coordinates frame timing with scanline/vblank and may skip frames for tearline placement. | In-process present path, D3DKMT scanline/vblank APIs, display mode knowledge. | Yes | Yes | High | High | Dedicated sample app on known display; high-speed/FCAT/PresentMon validation. |
 | NVIDIA Reflex markers and sleep | Native/hook/vendor API | `reflex.cpp`, `latency.cpp`, `config.cpp` `NVIDIA.Reflex` | Places latency markers, controls Reflex sleep mode, fetches pipeline latency reports. | NVIDIA GPU, NVAPI, render device pointer, correct per-frame marker order. | Yes | Usually yes unless the target app explicitly exposes integration points | High if injected into games | High if adapting Special K behavior; clean-room/vendor docs required | Instrumented local D3D sample with NVAPI; verify latency reports and marker validity. |
+| DLSS Frame Generation status and multi-frame count | Native/hook/vendor API | `text.cpp`, `cfg_osd.cpp`, `core.cpp`, `control_panel.cpp`, `reflex.cpp` | Reports DLSS/FG only when in-process NGX/Streamline state says DLSS-G is active, then adjusts display/pacing behavior around that state. | Streamline/NGX state, render backend context, D3D11/D3D12 frame handling. | Yes for LightCrosshair unless using external app cooperation | Usually yes | High if injected into games | High if adapting Special K probing; clean-room/vendor docs required | Known DLSS-G title or sample app; compare app state, PresentMon/FrameView display FPS, and reported FG multiplier. |
+| AMD AFMF / FSR FG direct state | External/native integration | `render_backend.cpp` has display/VRR capability handling, but no out-of-process AFMF truth signal in selected components | No direct AFMF/FSR FG per-frame signal was found in selected components. Detection must come from driver/provider instrumentation, app cooperation, or heuristics. | PresentMon frame type/provider data, AMD/vendor API if available, or game/plugin signal. | Possibly | Possibly | Medium to High depending path | Low if using public provider/API; high if adapting GPL or injecting | Known AFMF/FSR FG title; compare PresentMon FPS-App/FPS-Display/frame type and AMD overlay/profile state. |
 | Render queue / prerender limit manipulation | Native/vendor integration | `config.cpp`, `framerate.cpp`, `dxgi.cpp` | Changes CPU/GPU queueing behavior, waitable swapchain usage, or driver low latency policy. | Swapchain/device access or vendor driver API. | Yes for reliable implementation | Often yes | Medium to High | Medium to High | Sample renderer with queue depth telemetry before/after. |
 | Sleep/QPC/timer detours | Not recommended for LightCrosshair default | `scheduler.cpp`, `framerate.cpp` | Detours process scheduling APIs to influence limiter precision and timing behavior. | Native code in target process and function detours. | Yes | Yes | High | High | Only in isolated sample process if ever researched. |
 | Reflex native override or disabling game Reflex | Not recommended | `reflex.cpp`, `latency.cpp`, `config.cpp` | Overrides or suppresses a game's native Reflex behavior. | Deep in-process NVAPI interception. | Yes | Yes | Very high | High | Not suitable for LightCrosshair 1.4.0. |
@@ -53,6 +55,7 @@ LightCrosshair can safely extend diagnostics and verification:
 - Display refresh and foreground process correlation.
 - Frame pacing statistics, stability scores, hitches, percentiles.
 - Validation that an external/native limiter actually changed observed FPS.
+- Conservative frame-generation suspicion from timing patterns, clearly labeled as heuristic.
 
 This category cannot implement a real frame cap for a game process by itself because LightCrosshair does not control the target render loop.
 
@@ -61,6 +64,8 @@ This category cannot implement a real frame cap for a game process by itself bec
 The most practical first real limiter path is an RTSS integration where RTSS performs the actual limiting. LightCrosshair would only manage capability detection, profile configuration, and telemetry validation.
 
 Driver/vendor profile integration is also possible, but it is hardware-specific and should be behind capability checks.
+
+PresentMon 2.x style frame-type or FPS-App/FPS-Presents/FPS-Display data is the safest external route for verified or near-verified frame-generation evidence. LightCrosshair should not treat cadence-only ETW heuristics as a verified NVIDIA/AMD signal.
 
 ### C. Native/hook component
 
@@ -76,3 +81,4 @@ LightCrosshair should not claim or ship broad game injection, Reflex override, D
 - Do not call ETW/RTSS observations latency reduction.
 - Do not claim Reflex support without NVAPI markers/sleep/report integration.
 - Do not claim frame pacing control unless LightCrosshair controls the target frame boundary through RTSS, driver API, or native in-process code.
+- Do not claim DLSS-G, MFG, FSR FG, or AFMF detection unless the source is a verified provider/API signal. Cadence-only analysis must be labeled `Suspected`.

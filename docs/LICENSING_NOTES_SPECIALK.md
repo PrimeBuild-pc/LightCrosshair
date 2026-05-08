@@ -33,6 +33,8 @@ For future implementation, keep these boundaries:
 | In-process frame limiter | High | Special K implementation is GPL and complex. A clean-room design or GPL-compatible licensing decision is required. |
 | Latent Sync / scanline pacing | High | Requires native graphics knowledge and risks substantial similarity if based too closely on Special K. |
 | Reflex marker/sleep override | High | Requires NVAPI, in-process integration, and careful clean-room design. |
+| DLSS-G/MFG status detection | Medium to High | Low if implemented from NVIDIA Streamline documentation or external provider data; high if adapting Special K NGX/Streamline probing. |
+| AMD AFMF/FSR FG detection | Medium | Low if based on public PresentMon/vendor provider data; high if using injection or copied detection logic. |
 | Scheduler/timer detours | High | Do not port Special K detour implementation. |
 | DLSS/Streamline/DLL redirection | Very High | Out of scope and high contamination/compatibility risk. |
 
@@ -51,6 +53,7 @@ Attribution and license review are required if any future change:
 - Milestone 4B should prefer RTSS external integration or capability detection.
 - Native/injected work should be a separate design checkpoint.
 - Any native limiter should be developed against a local sample renderer first.
+- Frame-generation detection should expose confidence and source quality; cadence-only logic must be labeled heuristic.
 - If implementation substantially follows Special K internals, decide explicitly whether LightCrosshair or the relevant component will be GPL-compatible before coding.
 
 ## Do Not Promise
@@ -59,3 +62,4 @@ Attribution and license review are required if any future change:
 - "Reflex support" unless NVAPI marker/sleep/report integration exists.
 - "Frame cap" for overlay-only telemetry.
 - "Latency reduction" for diagnostics-only measurements.
+- "DLSS-G", "MFG", "FSR FG", or "AFMF detected" from timing heuristics alone.

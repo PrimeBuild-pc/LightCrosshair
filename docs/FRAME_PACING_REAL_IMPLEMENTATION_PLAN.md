@@ -52,8 +52,11 @@ Responsibilities:
 - Frame pacing stats.
 - Source/status reporting.
 - Validation of external/native limiter effects.
+- Frame-generation status display when evidence is available.
 
 No frame cap should be implemented here unless it delegates to a real backend.
+
+Frame generation detection belongs in a separate detector layer. The current C# telemetry can suspect generated/interpolated frames from timing patterns, but verified DLSS-G/MFG/FSR FG/AFMF state requires a trusted external provider, app cooperation, or native in-process access.
 
 ### Layer 2: Capability and limiter abstraction
 
@@ -225,3 +228,5 @@ The current safe path is:
 2. Add real external limiter integration first, preferably RTSS if safe profile control is available.
 3. Add driver/vendor integration only behind capability checks.
 4. Treat a native hook backend as a separate, explicit, high-risk project, not a minor extension of the overlay.
+
+For frame generation, Milestone 4C should first replace the existing cadence-only generated-frame count with a state/confidence model. It should not claim vendor-specific support until a verified provider/API signal is integrated.
