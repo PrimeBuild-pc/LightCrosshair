@@ -1,6 +1,6 @@
 # LightCrosshair 1.4.0 - Frame Generation Detection Feasibility
 
-Milestone: 4B feasibility only.
+Milestone: 4B feasibility, updated by 4C implementation.
 
 This document defines a real, testable path for improving generated/interpolated frame detection in LightCrosshair without hooks, injection, or GPL code reuse.
 
@@ -20,13 +20,13 @@ Current behavior:
 
 - `ShowGenFrames` defaults to `true` and the settings UI labels it experimental.
 - `SystemFpsMonitor` stores generated-frame flags in `FpsMetricsBuffer`.
-- ETW frames are marked by `InferGeneratedFrameEtw`.
+- ETW frames are analyzed by `FrameGenerationDetector` as cadence-only evidence.
 - RTSS frames are always passed as `isGeneratedFrame: false`.
-- The overlay prints `GEN: N/A`, `GEN: OFF`, or `GEN: <count>`.
+- The overlay prints state-aware labels. Verified provider data may show `FG: VERIFIED ...` or `GEN: <count>`. Timing-only estimates use `FG: SUSPECT ...` or `GEN EST: <count>`, never plain `GEN: <count>`.
 
-Current detection weakness:
+Current detection boundary:
 
-- The ETW heuristic only checks stable sub-16 ms frame cadence and alternates generated-frame tagging.
+- The ETW heuristic only checks presentation cadence and optional presented/app FPS ratios.
 - It does not know whether DLSS-G, MFG, FSR FG, or AFMF is active.
 - It cannot distinguish a real generated frame from a high-refresh native game, limiter behavior, duplicate presents, VRR pacing, menu/cutscene cadence, or CPU-bound timing changes.
 - It should be treated as `Suspected` at best, not `Detected`.
@@ -49,15 +49,24 @@ Files analyzed:
 - `SpecialK-components/overlay-latency-sync-SK.md`
 - `SpecialK-components/frame-cap-SK.md`
 
-Special K does not infer DLSS Frame Generation from frame cadence alone. Relevant behavior is in-process:
+Special K does not infer DLSS Frame Generation from frame cadence alone. The selected components show consumers of in-process state:
 
-- `text.cpp` shows DLSS/FG only when NGX/DLSS-G state reports it.
-- `core.cpp` updates DLSS-G status inside D3D11/D3D12 frame handling.
+- `framerate.h` declares `__SK_HasDLSSGStatusSupport`, `__SK_IsDLSSGActive`, `__SK_ForceDLSSGPacing`, and `__SK_DLSSGMultiFrameCount`.
+- `text.cpp` shows DLSS/FG only when `SK_NGX_IsUsingDLSS_G()` is true, then prints `SK_NGX_DLSSG_GetMultiFrameCount() + 1`.
+- `core.cpp` calls `SK_NGX_UpdateDLSSGStatus()` during frame/update paths.
 - `control_panel.cpp` adjusts VRR/LFC and VSYNC UI behavior when `__SK_IsDLSSGActive` changes.
 - `reflex.cpp` alters Reflex sleep intervals when DLSS-G is active and accounts for multi-frame count.
 - `render_backend.cpp` contains render backend and display capability logic, but not an out-of-process AMD AFMF truth signal.
 
-SpecialK-main was not used.
+SpecialK-main was used as read-only fallback because `SpecialK-components` contains the state consumers but not the full NGX implementation. Relevant implementation files:
+
+- `SpecialK-main/src/render/ngx/ngx.cpp` defines `__SK_HasDLSSGStatusSupport`, `__SK_IsDLSSGActive`, `__SK_DLSSGMultiFrameCount`, `__SK_ForceDLSSGPacing`, `SK_NGX_IsUsingDLSS_G()`, and `SK_NGX_DLSSG_GetMultiFrameCount()`.
+- `SpecialK-main/src/render/ngx/ngx_d3d11.cpp` detects `NVSDK_NGX_Feature_FrameGeneration`, stores the NGX frame-generation feature instance, reads `Enable.OFA`, `DLSSG.EnableInterp`, `DLSSG.NumFrames`, and `DLSSG.MultiFrameCount`, and refreshes state in `SK_NGX11_UpdateDLSSGStatus()`.
+- `SpecialK-main/src/render/ngx/ngx_d3d12.cpp` follows the same pattern for D3D12. Its runtime status check relies on recent `frame_gen.LastFrame`, `DLSSG.EnableInterp`, and `Enable.OFA`; the inspected code comments out the older `DLSSG.NumFrames` gate.
+- `SpecialK-main/src/render/ngx/ngx_vulkan.cpp` follows the same NGX feature-instance pattern for Vulkan and checks `DLSSG.EnableInterp`; the inspected Vulkan path does not use the D3D `Enable.OFA` gate.
+- `SpecialK-main/src/plugins/bethesda.cpp` shows an app/plugin-specific cooperative path that reads DLSSG state through `f2sGetDLSSGInfo`.
+
+Special K therefore detects **DLSS-G active state and multi-frame count**, not a generic per-present generated-frame classifier. The status depends on in-process NGX/Streamline/plugin state and recent frame-generation feature evaluation.
 
 ## External References
 
@@ -71,7 +80,7 @@ SpecialK-main was not used.
 
 | Strategy | Category | NVIDIA DLSS-G/MFG | AMD FSR FG/AFMF | Confidence | Requirements | Risk |
 | --- | --- | --- | --- | --- | --- | --- |
-| Streamline/NGX in-process state | D. Native/in-process | Directly verifies DLSS-G status and multi-frame count | Not applicable | High | Hook/in-process SDK access or app cooperation | High anti-cheat, native complexity |
+| Streamline/NGX in-process state | D. Native/in-process | Directly verifies DLSS-G active state and multi-frame count | Not applicable | High | Hook/in-process SDK access or app cooperation | High anti-cheat, native complexity |
 | PresentMon `FrameType` / Intel-PresentMon provider | A/B. Verified external signal when available | Possible if provider reports frame type | Possible for driver/app-instrumented stacks | High if frame type present | PresentMon API/service/CSV with frame type tracking | Medium dependency/version risk |
 | PresentMon FPS-App vs FPS-Presents vs FPS-Display | B. Derived external signal | Strong indicator when FPS-Display > FPS-App | Strong indicator for driver/app FG when exposed | Medium to High | PresentMon 2.x API/service or process capture | Medium: not a per-frame vendor truth signal |
 | RTSS shared memory extended fields | B/E. Depends on verified structure | Unknown from current LightCrosshair parser | Unknown | Unknown | Documented RTSS fields beyond frame time | Risky if undocumented |
@@ -198,32 +207,41 @@ Detection rules:
 - `Unsupported` is used when the active source cannot produce useful evidence.
 - `NotDetected` requires enough samples and no verified or heuristic evidence.
 
-Overlay changes for a later milestone:
+Overlay behavior in 4C:
 
-- Replace `GEN: <count>` with state-aware output:
+- State-aware output:
   - `FG: N/A`
   - `FG: OFF`
   - `FG: SUSPECT 62%`
-  - `FG: DLSS-G x2`
-  - `FG: AFMF?`
+  - `FG: VERIFIED DLSS-G x2`
+  - `GEN EST: <count>` for non-diagnostic estimated counts
+  - `GEN: <count>` only for verified generated-frame data
 - Keep experimental labeling unless `IsVerifiedSignal` is true.
 
 ## Milestone 4C Implementable Without Hook/Injection
 
-Milestone 4C can safely improve the current state without claiming full NVIDIA/AMD support:
+Milestone 4C safely improved the current state without claiming full NVIDIA/AMD support:
 
-1. Extract current ETW cadence logic into `FrameGenerationDetector`.
-2. Add `FrameGenerationState`, confidence, evidence text, and verified/suspected distinction.
-3. Rename behavior from generated-frame count to frame-generation status in telemetry internals.
-4. Keep overlay conservative: show `SUSPECT` for heuristic results, not `Detected`.
-5. Add unit tests for:
+1. Extracted the old ETW cadence logic into `FrameGenerationDetector`.
+2. Added `FrameGenerationState`, confidence, reason code, evidence text, and verified/suspected distinction.
+3. Added `FrameGenerationDetectionResult` to `FpsMetricsSnapshot` while preserving existing generated-frame count compatibility.
+4. Kept overlay conservative: diagnostic mode shows `FG: SUSPECT <confidence>%`, `FG: UNKNOWN`, `FG: OFF`, `FG: N/A`, or `FG: VERIFIED ...` only when `IsVerifiedSignal` is true. Non-diagnostic mode no longer shows a heuristic count as plain `GEN: <count>`; it uses `GEN EST: <count>`.
+5. Added unit tests for:
    - no data / insufficient samples
    - stable native high-FPS false positive guard
    - clear 2:1 cadence suspicion
    - MFG-like 3:1 or 4:1 cadence suspicion
    - jitter/outlier rejection
    - RTSS-only unsupported/unknown behavior unless richer source exists
-6. Optionally add a `PresentMonIntegration` design stub only as documentation or interface, not a fake implementation.
+6. Did not add a fake `PresentMonIntegration` implementation.
+
+Runtime limits after 4C:
+
+- ETW/RTSS timing alone still cannot verify NVIDIA DLSS-G/MFG, AMD FSR FG, or AFMF.
+- RTSS frame-time-only telemetry is treated as unsupported for generated-frame verification.
+- Stable high-refresh cadence is treated as native rendering unless an independent app/render FPS or verified provider signal is available.
+- `Detected` is reserved for a verified external or in-process signal; current LightCrosshair runtime has no such signal yet.
+- The current heuristic can estimate suspicious ratios, but it does not reproduce Special K's real method. Special K's method requires in-process NGX/Streamline/plugin state.
 
 ## Requires Native/In-process
 
@@ -232,6 +250,8 @@ Reliable NVIDIA DLSS-G/MFG detection requires at least one of:
 - Streamline/NGX state inside the target app.
 - App cooperation exposing DLSS-G state.
 - A native injected component that can query the render/Streamline context.
+
+To replicate Special K's method specifically, LightCrosshair would need a native/in-process backend able to observe NGX frame-generation feature creation/evaluation and read parameters equivalent to `Enable.OFA`, `DLSSG.EnableInterp`, `DLSSG.NumFrames`, and `DLSSG.MultiFrameCount`. An out-of-process C# ETW monitor cannot read those signals.
 
 Reliable AMD FSR FG/AFMF detection requires at least one of:
 

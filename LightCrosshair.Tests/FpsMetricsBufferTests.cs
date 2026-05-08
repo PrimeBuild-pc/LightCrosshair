@@ -297,7 +297,7 @@ namespace LightCrosshair.Tests
                 "FPS: 60",
                 "AVG: 58",
                 "1% LOW: 45",
-                "GEN: OFF",
+                "FG: UNKNOWN",
                 "FT: 16.7 ms",
                 "SRC: ETW"
             }, lines);

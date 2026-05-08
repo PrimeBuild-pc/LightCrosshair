@@ -55,6 +55,8 @@ Attribution and license review are required if any future change:
 - Any native limiter should be developed against a local sample renderer first.
 - Frame-generation detection should expose confidence and source quality; cadence-only logic must be labeled heuristic.
 - If implementation substantially follows Special K internals, decide explicitly whether LightCrosshair or the relevant component will be GPL-compatible before coding.
+- `SpecialK-components` contains GPLv3 source files for reference. Do not include that directory in installers, portable packages, or release assets unless GPLv3 license text and third-party notices are deliberately shipped with it.
+- If the repository itself is redistributed with `SpecialK-components`, add or keep clear third-party attribution identifying Special K as GPLv3 reference material, not MIT-licensed LightCrosshair code.
 
 ## Do Not Promise
 

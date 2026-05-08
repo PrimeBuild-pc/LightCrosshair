@@ -55,6 +55,9 @@ namespace LightCrosshair
         private bool _lastPacingStatsHasData;
         private int _lastGeneratedFrameCount = -1;
         private bool _lastGeneratedFrameAvailability;
+        private FrameGenerationState _lastFrameGenerationState = FrameGenerationState.Unknown;
+        private double _lastFrameGenerationConfidence = -1;
+        private bool _lastFrameGenerationVerified;
         private double _lastFrameTimeMs = -1;
         private bool _lastHasData;
         private string? _lastStatus;
@@ -345,6 +348,9 @@ namespace LightCrosshair
                 _lastStabilityScore == _textSnapshot.PacingStats.StabilityScore &&
                 _lastGeneratedFrameCount == _textSnapshot.GeneratedFrameCount &&
                 _lastGeneratedFrameAvailability == _textSnapshot.IsGeneratedFrameDataAvailable &&
+                _lastFrameGenerationState == _textSnapshot.FrameGenerationStatus.State &&
+                _lastFrameGenerationConfidence == _textSnapshot.FrameGenerationStatus.Confidence &&
+                _lastFrameGenerationVerified == _textSnapshot.FrameGenerationStatus.IsVerifiedSignal &&
                 _lastShow1Percent == cfg.Show1PercentLows &&
                 _lastShowGen == cfg.ShowGenFrames &&
                 _lastShowDiagnostics == cfg.ShowFpsDiagnostics &&
@@ -368,6 +374,9 @@ namespace LightCrosshair
             _lastStabilityScore = _textSnapshot.PacingStats.StabilityScore;
             _lastGeneratedFrameCount = _textSnapshot.GeneratedFrameCount;
             _lastGeneratedFrameAvailability = _textSnapshot.IsGeneratedFrameDataAvailable;
+            _lastFrameGenerationState = _textSnapshot.FrameGenerationStatus.State;
+            _lastFrameGenerationConfidence = _textSnapshot.FrameGenerationStatus.Confidence;
+            _lastFrameGenerationVerified = _textSnapshot.FrameGenerationStatus.IsVerifiedSignal;
             _lastFrameTimeMs = _textSnapshot.LatestFrameTimeMs;
             _lastShow1Percent = cfg.Show1PercentLows;
             _lastShowGen = cfg.ShowGenFrames;
@@ -545,7 +554,9 @@ namespace LightCrosshair
 
             if (options.ShowGeneratedFrames)
             {
-                lines.Add(FormatGeneratedFrames(snapshot));
+                lines.Add(options.ShowDiagnostics
+                    ? FormatFrameGenerationStatus(snapshot)
+                    : FormatGeneratedFrames(snapshot));
             }
 
             if (options.ShowDiagnostics)
@@ -567,12 +578,63 @@ namespace LightCrosshair
                 return "GEN: N/A";
             }
 
+            var status = snapshot.FrameGenerationStatus;
+            if (status.State == FrameGenerationState.Detected && status.IsVerifiedSignal)
+            {
+                return snapshot.GeneratedFrameCount > 0
+                    ? $"GEN: {snapshot.GeneratedFrameCount}"
+                    : "GEN: OFF";
+            }
+
+            if (status.State == FrameGenerationState.Suspected)
+            {
+                return snapshot.GeneratedFrameCount > 0
+                    ? $"GEN EST: {snapshot.GeneratedFrameCount}"
+                    : $"FG: SUSPECT {status.Confidence * 100:0}%";
+            }
+
+            if (status.State == FrameGenerationState.Unknown)
+            {
+                return "FG: UNKNOWN";
+            }
+
+            if (status.State == FrameGenerationState.Unsupported)
+            {
+                return "FG: N/A";
+            }
+
             if (snapshot.GeneratedFrameCount == 0)
             {
                 return "GEN: OFF";
             }
 
-            return $"GEN: {snapshot.GeneratedFrameCount}";
+            return $"GEN EST: {snapshot.GeneratedFrameCount}";
+        }
+
+        private static string FormatFrameGenerationStatus(FpsMetricsSnapshot snapshot)
+        {
+            if (!snapshot.IsGeneratedFrameDataAvailable)
+            {
+                return "FG: N/A";
+            }
+
+            var status = snapshot.FrameGenerationStatus;
+            return status.State switch
+            {
+                FrameGenerationState.Detected when status.IsVerifiedSignal => FormatVerifiedFrameGeneration(status),
+                FrameGenerationState.Detected => $"FG: SUSPECT {status.Confidence * 100:0}%",
+                FrameGenerationState.Suspected => $"FG: SUSPECT {status.Confidence * 100:0}%",
+                FrameGenerationState.Unknown => "FG: UNKNOWN",
+                FrameGenerationState.Unsupported => "FG: N/A",
+                _ => "FG: OFF"
+            };
+        }
+
+        private static string FormatVerifiedFrameGeneration(FrameGenerationDetectionResult status)
+        {
+            string technology = string.IsNullOrWhiteSpace(status.Technology) ? string.Empty : $" {status.Technology}";
+            string ratio = status.EstimatedGeneratedFrameRatio.HasValue ? $" x{status.EstimatedGeneratedFrameRatio.Value:0.#}" : string.Empty;
+            return $"FG: VERIFIED{technology}{ratio}";
         }
 
         private static void AppendDiagnostics(List<string> lines, FramePacingStats stats)
