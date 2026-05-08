@@ -21,6 +21,7 @@ path, vendor private API integration, or real frame limiter.
 | [backend-options-matrix.md](backend-options-matrix.md) | Research matrix for PresentMon, RTSS, NVIDIA/AMD frame-generation signals, real frame limiter paths, and the Special K boundary. |
 | [provider-architecture.md](provider-architecture.md) | Proposed provider model for future unavailable, heuristic, verified, unsupported, external-tool, and opt-in states. |
 | [backend-safety-gates.md](backend-safety-gates.md) | Checklist that blocks future user-facing backend claims until licensing, anti-cheat, admin, packaging, tests, wording, and QA gates are complete. |
+| [presentmon-offline-validation.md](presentmon-offline-validation.md) | Offline PresentMon CSV validation spike notes, supported columns, conservative inference rules, and runtime integration blockers. |
 
 ## Current Recommendation
 
