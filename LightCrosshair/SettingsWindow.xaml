@@ -350,6 +350,7 @@
                             </ComboBox>
                         </StackPanel>
                         <CheckBox x:Name="Show1PercentCheckbox" Content="Show 1% Lows" Margin="0,0,0,6" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}"/>
+                        <CheckBox x:Name="ShowFpsDiagnosticsCheckbox" Content="Show advanced FPS diagnostics" Margin="0,0,0,6" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}" ToolTip="Adds frame pacing diagnostics to the FPS overlay."/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <CheckBox x:Name="ShowGenFramesCheckbox" Content="Show Generated Frames (Experimental)" IsEnabled="{Binding IsChecked, ElementName=EnableFpsCheckbox}" VerticalAlignment="Center"/>
                             <TextBlock Text=" [?]" Foreground="{DynamicResource TextFg}" Opacity="0.6" Cursor="Help" VerticalAlignment="Center" FontWeight="Bold" ToolTip="This only works with Frame Generation enabled in the IN-GAME settings.&#x0D;&#x0A;If Frame Gen is not enabled in the game, any generated frames detected here are false positives caused by engine fluctuations and should be ignored."/>

@@ -827,6 +827,7 @@ namespace LightCrosshair
             SelectGraphRefreshPreset(cfg.GraphRefreshRateMs);
             SelectGraphTimeWindowPreset(cfg.GraphTimeWindowMs);
             Show1PercentCheckbox.IsChecked = cfg.Show1PercentLows;
+            ShowFpsDiagnosticsCheckbox.IsChecked = cfg.ShowFpsDiagnostics;
             ShowGenFramesCheckbox.IsChecked = cfg.ShowGenFrames;
             UpdateGraphRefreshUiState();
             _suppressUiEvents = false;
@@ -1261,6 +1262,8 @@ namespace LightCrosshair
             };
             Show1PercentCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.Show1PercentLows = true; cfg.SaveSettings(); } };
             Show1PercentCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.Show1PercentLows = false; cfg.SaveSettings(); } };
+            ShowFpsDiagnosticsCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFpsDiagnostics = true; cfg.SaveSettings(); } };
+            ShowFpsDiagnosticsCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowFpsDiagnostics = false; cfg.SaveSettings(); } };
             ShowGenFramesCheckbox.Checked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowGenFrames = true; cfg.SaveSettings(); } };
             ShowGenFramesCheckbox.Unchecked += (_,__) => { if (!_suppressUiEvents) { cfg.ShowGenFrames = false; cfg.SaveSettings(); } };
             FpsTextColorBtn.Click += (_, __) =>
