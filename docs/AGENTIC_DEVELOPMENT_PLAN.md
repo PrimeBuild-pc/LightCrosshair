@@ -117,3 +117,27 @@ Do not create an official release, push, tag, publish packages, submit WinGet,
 push Chocolatey, create MSIX, or continue into RTSS writes, driver writes,
 native hooks, injection, or in-process runtime behavior without explicit
 approval.
+
+## Milestone 9 Result
+
+Milestone 9 is a post-1.4.0 backend research/design spike. It does not implement
+PresentMon runtime support, RTSS write/control, native hooks, injection, vendor
+private APIs, or a real frame limiter.
+
+Completed scope:
+
+- Added `docs/backend-research/` as the research area for future backend
+  architecture.
+- Documented PresentMon, RTSS, NVIDIA/AMD frame-generation signal, real limiter,
+  and Special K reference boundaries.
+- Proposed provider capability reporting for unavailable, unsupported,
+  heuristic, estimated, verified, external-tool, admin, native, and opt-in
+  states.
+- Added safety gates that must pass before any backend becomes user-facing.
+
+## Next
+
+Milestone 10 should start with read-only PresentMon capability validation using
+captured data and documented provider fields. Runtime provider shipping, RTSS
+control, driver writes, native/in-process work, and verified frame-generation
+claims remain blocked until explicitly approved.
