@@ -36,6 +36,26 @@ Out of scope until explicit release approval:
 - Chocolatey package version: `1.4.0`
 - PowerShell install script default version: `1.4.0`
 
+## Readiness Matrix
+
+| Area | 1.4.0 status | Required before public release |
+| --- | --- | --- |
+| Build | Done locally when `dotnet build LightCrosshair.sln` passes. | Re-run on the final release candidate commit. |
+| Tests | Done locally when `dotnet test LightCrosshair.sln` passes. | Re-run on the final release candidate commit. |
+| Release preflight | Prepared through `scripts/validate-release-preflight.ps1`. | Must pass with no failures before commit/release approval. |
+| Manual QA | Prepared through `setup/QA_CHECKLIST_1.4.0.md`. | Complete the checklist against final local artifacts. |
+| Portable ZIP | Dry-run/local artifact only. | Generate final ZIPs, inspect contents, record SHA256, then get release approval. |
+| Inno installer | Prepared for local compile only. | Compile with Inno Setup, smoke test install/uninstall, record SHA256, then get release approval. |
+| Chocolatey | Metadata prepared only; not published. | Validate local pack, confirm final artifact/checksum/dependency behavior, then get explicit approval before push. |
+| WinGet | Submission docs prepared only; no 1.4.0 manifest should be submitted yet. | Create final manifests only after public final artifact URL and SHA256 exist; validate locally before any PR. |
+| PowerShell install script | Prepared for future hosted use only. | Do not advertise hosted usage until final artifact URL and SHA256 exist. |
+| Docs | Conservative release wording prepared. | Recheck no live package-manager/install commands are advertised before publication. |
+| Special K attribution | Conservative notes and mapping prepared. | Confirm no GPL code or substantial logic was copied. |
+| Frame pacing diagnostics | Diagnostics-only, read-only telemetry. | Manual validation on stable and jittery workloads. |
+| Frame-generation estimate | Heuristic estimate/suspicion only unless a verified provider signal exists. | Keep `Detected`/verified wording gated to verified provider signals. |
+| Limiter scaffold | No-op/unavailable backend model only. | Do not claim active limiting until a real backend exists and telemetry validation proves it. |
+| Native backend | Blocked/out of scope for 1.4.0. | Requires separate design, licensing, signing, anti-cheat review, and explicit approval. |
+
 ## Secrets
 
 No real API keys, tokens, passwords, or signing secrets should be committed.
@@ -55,6 +75,7 @@ Run from the repository root:
 dotnet restore
 dotnet build LightCrosshair.sln
 dotnet test LightCrosshair.sln
+.\scripts\validate-release-preflight.ps1
 ```
 
 ## Portable ZIP

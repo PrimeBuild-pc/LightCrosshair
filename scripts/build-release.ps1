@@ -74,7 +74,7 @@ foreach ($Arch in $Architectures) {
         "/p:PublishReadyToRun=true"
         "/p:PublishTrimmed=$trimValue"
         "/p:IncludeNativeLibrariesForSelfExtract=true"
-        "/p:EnableCompressionInSingleFile=true"
+        "/p:EnableCompressionInSingleFile=$selfContainedValue"
         "/p:Version=$Version"
         "/p:AssemblyVersion=$assemblyFileVersion"
         "/p:FileVersion=$assemblyFileVersion"
@@ -91,7 +91,7 @@ foreach ($Arch in $Architectures) {
             throw "Build failed with exit code $LASTEXITCODE"
         }
         
-        Write-Host "✓ $($Arch.Name) build completed successfully" -ForegroundColor Green
+        Write-Host "[OK] $($Arch.Name) build completed successfully" -ForegroundColor Green
         
         # Create ZIP package
         $ZipName = "LightCrosshair-v$Version-$($Arch.Name).zip"
@@ -103,6 +103,7 @@ foreach ($Arch in $Architectures) {
         $FilesToZip = Get-ChildItem -Path $ArchOutputDir -File
         
         # Create ZIP using .NET compression
+        Add-Type -AssemblyName System.IO.Compression
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         
         if (Test-Path $ZipPath) {
@@ -131,7 +132,7 @@ foreach ($Arch in $Architectures) {
             $Zip.Dispose()
         }
         
-        Write-Host "✓ ZIP package created: $ZipPath" -ForegroundColor Green
+        Write-Host "[OK] ZIP package created: $ZipPath" -ForegroundColor Green
         
         # Display file sizes
         $ExeFile = Get-ChildItem -Path $ArchOutputDir -Filter "*.exe" | Select-Object -First 1
@@ -145,7 +146,7 @@ foreach ($Arch in $Architectures) {
         
     }
     catch {
-        Write-Host "✗ Failed to build $($Arch.Name): $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[FAIL] Failed to build $($Arch.Name): $($_.Exception.Message)" -ForegroundColor Red
         throw
     }
     
