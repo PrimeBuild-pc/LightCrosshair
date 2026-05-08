@@ -89,6 +89,7 @@ $releasePrep = Read-RepoFile "setup/RELEASE_PREP_1.4.0.md"
 $inno = Read-RepoFile "setup/LightCrosshair.iss"
 $nuspec = Read-RepoFile "setup/chocolatey/LightCrosshair.nuspec"
 $wingetSubmission = Read-RepoFile "setup/WINGET_SUBMISSION.md"
+$installScript = Read-RepoFile "scripts/install.ps1"
 
 Assert-Contains "LightCrosshair.csproj" $csproj "<Version>$([regex]::Escape($ExpectedVersion))</Version>" "project version is $ExpectedVersion"
 Assert-Contains "LightCrosshair.csproj" $csproj "<AssemblyVersion>$([regex]::Escape($ExpectedVersion)).0</AssemblyVersion>" "assembly version is $ExpectedVersion.0"
@@ -105,15 +106,20 @@ $publicReleaseDocs = @{
     "setup/RELEASE_PREP_1.4.0.md" = $releasePrep
     "setup/chocolatey/LightCrosshair.nuspec" = $nuspec
     "setup/WINGET_SUBMISSION.md" = $wingetSubmission
+    "scripts/install.ps1" = $installScript
 }
 
 foreach ($entry in $publicReleaseDocs.GetEnumerator()) {
     Assert-DoesNotContain $entry.Key $entry.Value "(?i)choco\s+install\s+lightcrosshair" "must not advertise a live Chocolatey install command before publication"
     Assert-DoesNotContain $entry.Key $entry.Value "(?i)winget\s+install\s+PrimeBuild\.LightCrosshair" "must not advertise a live WinGet install command before publication"
     Assert-DoesNotContain $entry.Key $entry.Value "(?i)irm\s+https://github\.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install\.ps1\s*\|\s*iex" "must not advertise a live hosted PowerShell install command before publication"
+    Assert-DoesNotContain $entry.Key $entry.Value "(?i)iwr\s+https://github\.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install\.ps1\s*\|\s*iex" "must not advertise a live hosted PowerShell install command before publication"
     Assert-DoesNotContain $entry.Key $entry.Value "(?i)ETW/PresentMon" "must not claim ETW/PresentMon runtime support"
     Assert-DoesNotContain $entry.Key $entry.Value "(?i)PresentMon\s+(runtime\s+support|backend)" "must not claim PresentMon runtime backend support"
 }
+
+Assert-Contains "scripts/install.ps1" $installScript "(?i)Prepared installer template" "marks install script as a prepared template"
+Assert-Contains "scripts/install.ps1" $installScript "(?i)explicit\s+release\s+approval" "gates hosted install usage on release approval"
 
 $packagingDocs = $readme + "`n" + $releasePrep + "`n" + $inno + "`n" + $nuspec
 Assert-Contains "packaging docs" $packagingDocs "(?i)framework-dependent" "state framework-dependent output"

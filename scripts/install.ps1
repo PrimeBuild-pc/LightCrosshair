@@ -3,12 +3,10 @@
     LightCrosshair Install Script
     
 .DESCRIPTION
-    Downloads and installs LightCrosshair from GitHub Releases.
-    This script can be run directly with:
-      irm https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1 | iex
-    
-    Or with parameters:
-      & ([scriptblock]::Create((irm https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1))) -Version 1.4.0 -InstallPath "C:\Program Files\LightCrosshair" -Checksum "<SHA256>"
+    Prepared installer template for LightCrosshair GitHub Releases.
+    Do not advertise or use this as a hosted 1.4.0 install command until final
+    public artifacts, SHA256 checksums, a hosted script URL, and explicit
+    release approval exist.
 
 .PARAMETER Version
     Version to install (default: 1.4.0)
@@ -26,10 +24,10 @@
     Skip creating Start Menu shortcut
 
 .EXAMPLE
-    irm https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1 | iex
+    .\scripts\install.ps1 -Version 1.4.0 -Checksum '<FINAL_SHA256>'
 
-.EXAMPLE
-    powershell -Command "& ([scriptblock]::Create((irm https://github.com/PrimeBuild-pc/LightCrosshair/raw/main/scripts/install.ps1))) -Version 1.4.0 -Checksum '<SHA256>'"
+    Future/final-release-only example. Use only after the 1.4.0 release
+    artifact, checksum, hosted script URL, and publication approval are final.
 #>
 
 param(
