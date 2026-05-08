@@ -88,6 +88,10 @@ namespace LightCrosshair
         public int BrightnessValue { get; set; } = 100; // 100 = default
         public int VibranceValue { get; set; } = 50; // 50 = default
 
+        // Frame Cap Assistant settings. Assistant-only; no real limiter backend is applied.
+        public double FrameCapAssistantRefreshRateHz { get; set; } = FrameLimiting.FrameCapAssistant.DefaultRefreshRateHz;
+        public int FrameCapAssistantTargetFps { get; set; } = FrameLimiting.FrameCapAssistant.RecommendTargetFps(FrameLimiting.FrameCapAssistant.DefaultRefreshRateHz);
+
         // FPS Overlay Settings
         public bool EnableFpsOverlay { get; set; } = false;
         public FpsOverlayDisplayMode FpsOverlayMode { get; set; } = FpsOverlayDisplayMode.Minimal;
@@ -260,6 +264,8 @@ namespace LightCrosshair
                             ? 100
                             : Math.Clamp(loadedConfig.BrightnessValue, 50, 150);
                         VibranceValue = Math.Clamp(loadedConfig.VibranceValue, 0, 100);
+                        FrameCapAssistantRefreshRateHz = NormalizeFrameCapAssistantRefreshRate(loadedConfig.FrameCapAssistantRefreshRateHz);
+                        FrameCapAssistantTargetFps = NormalizeFrameCapAssistantTargetFps(loadedConfig.FrameCapAssistantTargetFps);
 
                         EnableFpsOverlay = loadedConfig.EnableFpsOverlay;
                         FpsOverlayMode = Enum.IsDefined(typeof(FpsOverlayDisplayMode), loadedConfig.FpsOverlayMode)
@@ -337,6 +343,18 @@ namespace LightCrosshair
         {
             if (value <= 0) return 100;
             return Math.Clamp(value, 50, 300);
+        }
+
+        public static double NormalizeFrameCapAssistantRefreshRate(double value)
+        {
+            if (!double.IsFinite(value) || value <= 0) return FrameLimiting.FrameCapAssistant.DefaultRefreshRateHz;
+            return Math.Clamp(value, 30.0, 500.0);
+        }
+
+        public static int NormalizeFrameCapAssistantTargetFps(int value)
+        {
+            if (value <= 0) return FrameLimiting.FrameCapAssistant.RecommendTargetFps(FrameLimiting.FrameCapAssistant.DefaultRefreshRateHz);
+            return Math.Clamp(value, 15, 1000);
         }
 
         private void MigrateLegacyCycleBackHotkeyDefaults()

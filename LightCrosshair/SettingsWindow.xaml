@@ -200,6 +200,17 @@
                             <Button x:Name="OuterColorBtn" Content="Main Color" Width="140"/>
                             <Button x:Name="InnerShapeColorBtn" Content="Secondary/Edge Color" Width="190" Margin="8,0,0,0"/>
                         </StackPanel>
+
+                        <TextBlock Text="Visibility Presets" FontWeight="Bold" Margin="0,12,0,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <ComboBox x:Name="VisibilityPresetCombo" Width="180" ToolTip="Applies crosshair-only high visibility colors and a black outline.">
+                                <ComboBoxItem Content="Neon Cyan" Tag="NeonCyan"/>
+                                <ComboBoxItem Content="Lime" Tag="Lime"/>
+                                <ComboBoxItem Content="Magenta" Tag="Magenta"/>
+                                <ComboBoxItem Content="Yellow" Tag="Yellow"/>
+                            </ComboBox>
+                            <Button x:Name="ApplyVisibilityPresetBtn" Content="Apply Preset" Width="120" Margin="8,0,0,0"/>
+                        </StackPanel>
                         
                         <TextBlock Text="Position &amp; Tweaks" FontWeight="Bold" Margin="0,12,0,6"/>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
@@ -256,6 +267,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
                         <TextBlock Text="Display Adjustments" FontWeight="Bold" Margin="0,0,0,12"/>
+                        <TextBlock Text="Crosshair visibility presets are the safest color path. Display color changes depend on supported OS/display backend paths and do not modify game post-processing." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
                         <Border Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,12">
                             <StackPanel>
@@ -373,6 +385,21 @@
                             <Button x:Name="FpsTextColorBtn" Content="Text Color" Width="140"/>
                             <Button x:Name="FpsBgColorBtn" Content="Background Color" Width="140" Margin="8,0,0,0"/>
                         </StackPanel>
+
+                        <TextBlock Text="Frame Cap Assistant" FontWeight="Bold" Margin="0,12,0,6"/>
+                        <TextBlock Text="Assistant only. No active limiter backend." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Refresh Rate:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="FrameCapRefreshRateSlider" Minimum="30" Maximum="500" Width="260"/>
+                            <TextBlock x:Name="FrameCapRefreshRateText" Width="70" TextAlignment="Right" Margin="8,0,0,0"/>
+                            <Button x:Name="FrameCapUseRecommendationBtn" Content="Use Recommendation" Width="150" Margin="12,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                            <TextBlock Text="Target FPS:" Width="120" VerticalAlignment="Center"/>
+                            <Slider x:Name="FrameCapTargetFpsSlider" Minimum="15" Maximum="1000" Width="260"/>
+                            <TextBlock x:Name="FrameCapTargetFpsText" Width="70" TextAlignment="Right" Margin="8,0,0,0"/>
+                        </StackPanel>
+                        <TextBlock x:Name="FrameCapAssistantStatusText" Text="Assistant only: No active limiter backend." Opacity="0.8" TextWrapping="Wrap"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
