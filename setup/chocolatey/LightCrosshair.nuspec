@@ -16,7 +16,7 @@ LightCrosshair is a lightweight, high-performance crosshair overlay for competit
 
 ## Features
 - Custom crosshair builder with full shape control
-- Integrated FPS overlay with ETW/PresentMon anti-cheat safe telemetry
+- Integrated FPS overlay with ETW-style present telemetry and optional RTSS fallback
 - Process-aware display color management (per-profile gamma/contrast/brightness)
 - Modern profile workflow with immutable defaults
 - Low CPU footprint optimized for gameplay
@@ -25,21 +25,21 @@ LightCrosshair is a lightweight, high-performance crosshair overlay for competit
 
 ## Requirements
 - Windows 10 or later
-- .NET 8.0 Runtime (automatically installed if needed)
+- .NET 8.0 Windows Desktop Runtime (required for the current framework-dependent package)
 
 ## Installation
-Simply run: `choco install lightcrosshair`
+The 1.4.0 Chocolatey package is not final until release artifacts and checksums are approved and the package is pushed.
 
 After installation, launch LightCrosshair from your Start Menu or find the executable in Program Files.
     </description>
     <summary>Lightweight gaming crosshair overlay with FPS counter and color management</summary>
     <releaseNotes>
-v1.4.0 (May 2026): Baseline for portable ZIP, Inno Setup, Chocolatey, WinGet, and PowerShell install script distribution. MSIX is intentionally excluded.
+v1.4.0 (May 2026): Candidate baseline for portable ZIP, Inno Setup, Chocolatey, WinGet, and PowerShell install script distribution. Package-manager channels are prepared only until final artifacts and checksums are approved. MSIX is intentionally excluded.
 
 See https://github.com/PrimeBuild-pc/LightCrosshair/releases for full details.
     </releaseNotes>
     <dependencies>
-      <dependency id="dotnet-8.0-runtime" version="8.0" />
+      <dependency id="dotnet-8.0-desktopruntime" version="8.0" />
     </dependencies>
     <tags>gaming crosshair overlay fps-counter color-management competitive</tags>
     <docsUrl>https://github.com/PrimeBuild-pc/LightCrosshair#readme</docsUrl>

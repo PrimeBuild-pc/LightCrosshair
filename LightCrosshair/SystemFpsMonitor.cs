@@ -536,6 +536,8 @@ namespace LightCrosshair
 
             try
             {
+                // TODO: Replace this blocking shutdown with async cancellation that observes
+                // worker exceptions and disposes the CTS only after both workers complete.
                 task.Wait(1500);
             }
             catch

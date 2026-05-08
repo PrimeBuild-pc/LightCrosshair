@@ -12,6 +12,7 @@
 - Milestone 4D: real backend path for Special K-like frame generation detection
 - Milestone 5: frame limiter backend architecture
 - Milestone 6: diagnostics and manual validation tooling
+- Milestone 7: safe diagnostics polish and release-claim cleanup
 
 ## Milestone 4D Result
 
@@ -75,7 +76,32 @@ Completed scope:
 
 ## Next
 
-### Milestone 7
+## Milestone 7 Result
+
+Milestone 7 is safe diagnostics polish and release-claim cleanup only. It did
+not implement PresentMon, RTSS profile writes, frame limiting, verified
+frame-generation providers, native hooks, injection, in-process DLLs, package
+publication, tags, releases, or MSIX.
+
+Completed scope:
+
+- Cleaned public README/install wording so Chocolatey, WinGet, PowerShell
+  install script, GitHub Releases, and Inno Setup are described as prepared or
+  future channels until final artifacts and checksums exist.
+- Replaced runtime ETW-plus-PresentMon claims with ETW-style present telemetry plus
+  optional RTSS fallback, and documented RTSS compatibility/anti-cheat caveats.
+- Aligned portable and Chocolatey runtime wording around the current
+  framework-dependent default and .NET 8 Windows Desktop Runtime requirement.
+- Renamed the settings UI from generated-frame wording to a conservative
+  frame-generation estimate/suspicion label.
+- Reduced synchronous FPS monitor worker wait time during stop/shutdown.
+- Added release-claim guard tests covering live install commands, PresentMon
+  runtime claims, framework-dependent packaging defaults, and frame-generation
+  UI wording.
+
+## Next
+
+### Milestone 8
 
 Packaging validation:
 

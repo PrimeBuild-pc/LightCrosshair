@@ -4,13 +4,15 @@ This document tracks the safe packaging baseline for LightCrosshair 1.4.0.
 
 ## Scope
 
-Supported distribution channels:
+Prepared distribution channels:
 
 - Portable ZIP package.
 - Inno Setup installer.
 - Chocolatey package.
 - WinGet manifest submission.
-- PowerShell install script with `irm https://example.com/install.ps1 | iex`.
+- PowerShell install script, pending final artifact URL and SHA256 checksum.
+
+These channels are not published yet. Chocolatey, WinGet, GitHub Releases, hosted install-script usage, and public installer distribution all require explicit release approval.
 
 Excluded packaging:
 
@@ -68,6 +70,8 @@ Expected package names:
 - `LightCrosshair-v1.4.0-x64.zip`
 - `LightCrosshair-v1.4.0-ARM64.zip`
 
+Current release scripts default to framework-dependent output. These ZIPs require the .NET 8 Windows Desktop Runtime unless `-SelfContained` is explicitly used and separately validated.
+
 ## Inno Setup
 
 Publish `win-x64` output into the path expected by `setup/LightCrosshair.iss`:
@@ -99,6 +103,8 @@ choco pack LightCrosshair.nuspec
 Pop-Location
 ```
 
+The current package metadata is a release candidate only. If the package remains framework-dependent, it must depend on the .NET 8 Windows Desktop Runtime package and must not be pushed until the final executable, checksum, and dependency behavior are validated.
+
 Authenticate and push only after explicit release approval:
 
 ```powershell
@@ -121,11 +127,7 @@ Then update `PackageVersion`, `InstallerUrl`, `InstallerSha256`, release notes U
 
 ## PowerShell Install Script
 
-The script `scripts/install.ps1` supports:
-
-```powershell
-irm https://example.com/install.ps1 | iex
-```
+The script `scripts/install.ps1` is prepared for future hosted use. Do not advertise a live pipeline install command until the final 1.4.0 release artifact and SHA256 checksum are available.
 
 Before a real release, update the script checksum map or invoke it with:
 
