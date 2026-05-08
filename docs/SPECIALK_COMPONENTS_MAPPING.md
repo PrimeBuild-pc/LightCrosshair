@@ -1,6 +1,6 @@
 # LightCrosshair 1.4.0 - SpecialK Components Mapping
 
-Milestone: 4A feasibility, updated through 4D backend design.
+Milestone: 4A feasibility, updated through 5 frame limiter backend scaffolding.
 
 This document maps observed behavior in `SpecialK-components` to what LightCrosshair can implement safely. It does not copy Special K code. The goal is to separate real capabilities from diagnostics, advisory UI, and invasive techniques.
 
@@ -71,8 +71,13 @@ PresentMon 2.x style frame-type or FPS-App/FPS-Presents/FPS-Display data is the 
 
 Special K's strongest functionality sits here: swapchain-aware limiter placement, precise present pacing, Latent Sync, Reflex markers, render queue control, and sleep/timer detours. A real LightCrosshair equivalent would need a separate native component and a deliberate security/anti-cheat policy.
 
-Milestone 4D did not implement this category. It only added a C# provider
-boundary and a no-op provider for future verified frame-generation evidence.
+Milestones 4D and 5 did not implement this category. They only added managed
+provider/backend boundaries and no-op/unavailable implementations for future
+verified frame-generation evidence and frame-limiter backends.
+
+Milestone 5 frame limiter scaffolding remains non-invasive: interfaces,
+capability models, no-op/unavailable backend behavior, and documentation only.
+It does not implement a Special K-like limiter or any target-process control.
 
 ### D. Not recommended
 

@@ -1,6 +1,6 @@
 # LightCrosshair 1.4.0 - Special K Licensing Notes
 
-Milestone: 4A feasibility, updated through 4D backend design.
+Milestone: 4A feasibility, updated through 5 frame limiter backend scaffolding.
 
 Special K is GPLv3. The files in `SpecialK-components` are technical references only. This repository must not copy, translate, or mechanically port Special K implementation code unless the resulting distribution is license-compatible and attribution is handled correctly.
 
@@ -62,6 +62,11 @@ Attribution and license review are required if any future change:
 - Milestone 4D C# provider scaffolding is original architecture only. It is
   acceptable because it does not implement NGX/Streamline probing, copy Special
   K data structures, or translate Special K logic.
+- Milestone 5 C# frame limiter backend scaffolding is original architecture
+  only. It is acceptable because it adds generic managed interfaces, capability
+  models, request/status/result objects, and a no-op unavailable backend without
+  implementing or porting Special K frame limiter, scheduler, DXGI/D3D, Reflex,
+  Latent Sync, or timing control logic.
 - Current vendor DLL probes in LightCrosshair must remain calls to
   user-installed system/driver DLLs. Do not redistribute NVIDIA, AMD, Intel,
   PresentMon, RTSS, or vendor SDK binaries unless their license explicitly
