@@ -1,6 +1,6 @@
 # 🎯 LightCrosshair
 
-> **A lightweight, high-performance crosshair overlay designed for competitive gaming**
+> **A lightweight crosshair overlay for competitive gaming on Windows**
 
 [![Windows](https://img.shields.io/badge/Windows-10%2F11-blue?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
@@ -8,254 +8,150 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/Release-Latest-brightgreen)](../../releases)
 
-LightCrosshair is a professional-grade crosshair and telemetry overlay application built for competitive gaming. It provides pixel-precise rendering, process-aware display color control, and a modern profile workflow with minimal system impact.
+LightCrosshair is a lightweight, gamer-focused crosshair overlay for Windows 10/11. It keeps the core experience simple: a visible, customizable crosshair, profile-based settings, and optional low-overhead performance information for borderless/windowed games.
 
 [![Watch the demo video](https://img.youtube.com/vi/CKbj2eObQ1E/maxresdefault.jpg)](https://www.youtube.com/watch?v=CKbj2eObQ1E)
 
 **⬆️ Watch demo video on YouTube**
 
-**v1.5.0 release prep**: Distribution assets are being prepared for portable ZIP, Inno Setup, Chocolatey, WinGet, and the PowerShell install script. These channels are not final until release artifacts, checksums, and explicit publication approval exist. MSIX is intentionally excluded.
+**v1.5.0 status:** GitHub Release downloads are live. WinGet is pending maintainer review. Chocolatey package metadata is locally validated, but publication is currently blocked by a Chocolatey account/API permission issue.
 
 ---
 
-## ✨ Key Features
+## Highlights
 
-<details>
-  <summary><b>🎨 Advanced Customization</b></summary>
-  <br>
-
-- **Custom Crosshair Builder**: Full control over shape, size, thickness, gap, edge, and inner layers
-- **Integrated FPS Overlay**: Optional Off, Minimal, and Detailed modes with ultra-lightweight behavior for lower-overhead sessions
-- **Frame Cap Assistant**: Target-FPS guidance only; no active real limiter backend is included
-- **Crosshair Visibility Presets**: Quick high-visibility crosshair color presets for product polish without changing game rendering
-- **Process-Aware Display Color Management**: Per-profile gamma/contrast/brightness/vibrance that auto-applies when the target game process is in foreground
-- **Modern Profile Workflow**: Immutable default profile, up to 10 profile slots, working-state editing, and save-current-to-selected behavior
-- **Unified Settings Experience**: All customization is centralized in the modern Settings Window
-</details>
-
-<details>
-  <summary><b>🚀 Performance Optimized</b></summary>
-  <br>
-
-- **Low CPU Footprint**: Designed for minimal overhead during gameplay sessions
-- **Cached Rendering Path**: SkiaSharp primary renderer with automatic GDI fallback and config-driven redraws
-- **Non-injected FPS Counter**: LightCrosshair uses ETW-style present telemetry and does not inject into games. Optional RTSS fallback may inherit RTSS compatibility or anti-cheat risks depending on RTSS configuration and the target game. PresentMon is not an implemented runtime backend in 1.5.0.
-- **Independent Flip Mode**: Run the crosshair and FPS overlay in Independent Flip for an ultra-low latency setup. Note: Requires Optimizations for windowed games enabled in Windows 11 settings and MPO (Multi-Plane Overlay) active (Windows default).
-</details>
-
-<details>
-  <summary><b>🎮 Gaming Features</b></summary>
-  <br>
-
-- **Pixel-Perfect Centering**: Mathematically precise positioning on all displays
-- **Screen Recording Detection**: Auto-hide during streaming/recording
-- **Multi-Monitor Support**: Works correctly on all display configurations
-- **DPI Awareness**: Scales properly on high-DPI displays
-</details>
-
-<details>
-  <summary><b>🔧 User Experience</b></summary>
-  <br>
-
-- **Modern Settings Window**: Dedicated settings UI for all crosshair controls, profiles, and hotkeys
-- **Minimal Tray Menu**: Right-click tray menu is intentionally slimmed down to About and Exit
-- **System Tray Integration**: Unobtrusive background operation
-- **Profile Management**: Save and switch between multiple configurations
-- **Atomic Cloud-Ready Saves**: Configuration files safely stored in `%AppData%` using atomic writes to prevent corruption
-</details>
+- **Crosshair-first overlay:** customizable shape, size, thickness, gap, colors, opacity, outline, and profile workflow.
+- **Visibility presets:** quick high-contrast crosshair presets for better visibility without changing game rendering.
+- **Performance overlay modes:** Off, Minimal, and Detailed modes, plus ultra-lightweight behavior for lower-overhead sessions.
+- **Frame Cap Assistant:** target-FPS guidance only. It does not enforce a real frame limit and has no active limiter backend.
+- **Non-injected FPS telemetry:** optional ETW-style present telemetry with optional RTSS fallback caveats when detailed metrics are unavailable.
+- **Borderless/windowed oriented:** normal overlays are expected to work best in borderless windowed or windowed games.
+- **Anti-cheat-conscious design:** LightCrosshair avoids game hooks, injection, and native runtime backends.
 
 ---
 
-## 📦 Installation
+## Installation
 
-### Release Status
+### GitHub Release Downloads
 
-The 1.5.0 release is not published yet. GitHub Releases, Chocolatey, WinGet, and the PowerShell install script are prepared/planned channels only until final artifacts and SHA256 checksums are created and explicitly approved for publication.
+Download v1.5.0 from the [GitHub Releases page](../../releases/tag/v1.5.0).
 
-### Portable Package
+Available assets:
 
-The current portable ZIP pipeline is framework-dependent by default. The prepared ZIPs require the .NET 8 Windows Desktop Runtime unless a self-contained package is built explicitly.
+- **Installer:** `LightCrosshair-Setup-1.5.0.exe`
+- **Portable ZIP x64:** `LightCrosshair-v1.5.0-x64.zip`
+- **Portable ZIP ARM64:** `LightCrosshair-v1.5.0-ARM64.zip`
 
-Future release flow after approval:
+Recommended path for most users: download the installer, run it, then launch LightCrosshair from the Start Menu.
 
-1. Download the final `LightCrosshair-v1.5.0-<arch>.zip` from GitHub Releases.
-2. Verify the published SHA256 checksum.
-3. Extract the ZIP and run `LightCrosshair.exe`.
-4. Configure your crosshair from the Settings Window (`Alt + L` by default, or left-click tray icon).
+Portable ZIP flow:
 
-### Prepared Package Channels
+1. Download the ZIP matching your CPU architecture.
+2. Extract it to a folder you control.
+3. Run `LightCrosshair.exe`.
+4. Open Settings with `Alt + L` or by left-clicking the tray icon.
 
-- Chocolatey: package metadata is prepared, but no 1.5.0 package should be installed or advertised until it is pushed after release approval.
-- WinGet: manifest work is prepared/planned, but no 1.5.0 submission should be advertised until final release URLs and hashes exist.
-- PowerShell install script: the script is prepared, but should not be hosted or advertised for 1.5.0 until it has a final artifact URL and SHA256 checksum.
-- Inno Setup: `setup/LightCrosshair.iss` can build a local installer from `setup/publish/win-x64` after publish, but the installer must not be published without release approval.
+### Package Managers
 
-### Build from Source
+- **WinGet:** manifest PR is open and checks pass, but maintainer review is still required. Do not use a `winget install` command until the manifest is merged and available from the public WinGet source.
+- **Chocolatey:** package files are prepared and locally validated. Public publication is blocked by a Chocolatey `403` account/API/permission issue, so no live Chocolatey install command is advertised yet.
+- **PowerShell install script:** planned only. A live `irm`/`iwr` command is not advertised until the hosted script is public, versioned for v1.5.0, downloads the correct artifact, and verifies the final SHA256.
+
+---
+
+## Requirements
+
+- Windows 10 or Windows 11.
+- .NET 8 Windows Desktop Runtime for the current framework-dependent packages.
+- Borderless windowed or windowed game mode is recommended for overlay visibility.
+
+---
+
+## Usage
+
+1. Launch LightCrosshair.
+2. Open Settings with `Alt + L` or the tray icon.
+3. Customize the crosshair shape, size, colors, opacity, outline, and visibility preset.
+4. Save profiles for different games or visibility needs.
+5. Enable the performance overlay only if you want FPS/frametime information.
+
+Default hotkeys:
+
+- `Alt + X` toggles crosshair visibility.
+- `Alt + C` cycles to the next profile.
+- `Alt + V` cycles to the previous profile.
+- `Alt + L` toggles the Settings window.
+
+---
+
+## Limitations And Safety
+
+- LightCrosshair does not inject into games and does not install hook/native backends.
+- Exclusive fullscreen can hide normal overlays. Use borderless windowed or windowed mode when possible.
+- Frame Cap Assistant is assistant-only; it does not apply or enforce a real FPS cap.
+- Frame-generation information is conservative. Timing/FPS differences are treated as estimates or suspicion unless explicit provider evidence is available.
+- PresentMon is not a LightCrosshair runtime provider in v1.5.0.
+- Some games and anti-cheat systems may block overlays or behave differently. No overlay can guarantee universal compatibility.
+
+---
+
+## Build From Source
 
 ```bash
-# Clone the repository
 git clone https://github.com/PrimeBuild-pc/LightCrosshair.git
 cd LightCrosshair
-
-# Build the application
+dotnet restore
 dotnet build LightCrosshair.sln --configuration Release
+dotnet test LightCrosshair.sln
+```
 
-# Publish framework-dependent output matching the current release baseline
+Publish framework-dependent output:
+
+```bash
 dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --runtime win-x64 --self-contained false /p:PublishSingleFile=true /p:PublishReadyToRun=true /p:PublishTrimmed=false
 ```
 
 ---
 
-## 🎯 Usage Guide
+## Architecture
 
-> **Important:** For the overlay to be visible in games, use **Borderless Windowed** mode. In **Exclusive Fullscreen**, the overlay may not be visible.
-
-<details>
-  <summary><b>Getting Started</b></summary>
-  <br>
-
-1. **Launch** the application — on first run, the default profile appears centered on screen and the app starts in the system tray
-2. **Open Settings Window** with `Alt + L` (default) if you want full settings UI (or left click on icon tray)
-3. **Customize** shape, size, colors, outline, and rendering from the Settings Window
-4. **Set target process behavior** for crosshair visibility and display color management (global or game-specific)
-5. **Save and switch profiles** directly in Settings; active working state and source profile are persisted across restarts
-</details>
-
-<details>
-  <summary><b>Context Menu Navigation</b></summary>
-  <br>
-
-- **About** → Shows app info, license, and project links
-- **Exit** → Safely closes the app and tray process
-- **Left-click tray icon** → Opens the full Settings Window for all crosshair customization
-</details>
-
-<details>
-  <summary><b>Keyboard Shortcuts</b></summary>
-  <br>
-
-- `Alt + X` — Toggle crosshair visibility
-- `Alt + C` — Cycle to next profile (default)
-- `Alt + V` — Cycle to previous profile (default)
-- `Alt + L` — Toggle settings window (default)
-- Right-click tray icon — Open minimal tray menu (About / Exit)
-
-All hotkeys above are configurable in Settings.
-</details>
+- **Framework:** .NET 8.0 Windows desktop app.
+- **Graphics:** SkiaSharp primary renderer with automatic GDI fallback.
+- **Settings:** profile-based configuration saved under the user profile.
+- **Performance:** cached rendering and config-driven redraws to keep idle overhead low.
 
 ---
 
-## 🛠️ Technical Specifications
+## Contributing
 
-<details>
-  <summary><b>Architecture</b></summary>
-  <br>
+Bug reports, focused feature requests, documentation improvements, and tested pull requests are welcome.
 
-- **Framework**: .NET 8.0 (Windows) Windows Forms
-- **Graphics**: SkiaSharp primary renderer with automatic GDI fallback
-- **Rendering**: Cached rendering with regeneration only when config changes
-- **Threading**: Asynchronous operations for UI responsiveness
-</details>
+Development prerequisites:
 
-<details>
-  <summary><b>Performance Metrics</b></summary>
-  <br>
+- Visual Studio 2022 or VS Code.
+- .NET 8 SDK.
+- Windows 10/11 for desktop app testing.
 
-- **Startup Time**: <500ms (ReadyToRun optimized)
-- **Memory Usage**: ~50MB baseline, stable during operation
-- **CPU Impact**: <1% during idle gaming, <2% during settings interactions
-- **Rendering Latency**: <16ms (60+ FPS equivalent)
-</details>
-
-<details>
-  <summary><b>Compatibility</b></summary>
-  <br>
-
-- **Windows Versions**: 10 (1809+), 11 (all versions)
-- **Display Scaling**: 100%, 125%, 150%, 200% DPI scaling
-- **Multi-Monitor**: Primary and secondary display support
-- **Gaming Software**: Compatible with OBS, XSplit, Discord overlay
-</details>
-
----
-
-## 🤝 Contributing
-
-We welcome contributions from the gaming and development community! Here's how you can help:
-
-### Ways to Contribute
-
-- 🐛 **Report Bugs** — Submit detailed issue reports
-- 💡 **Suggest Features** — Share ideas for new functionality
-- 🔧 **Submit Code** — Fix bugs or implement new features
-- 📖 **Improve Documentation** — Help make guides clearer
-- 🧪 **Test Builds** — Try pre-release versions and provide feedback
-
-### Development Setup
+Before opening a pull request, run:
 
 ```bash
-# Prerequisites:
-# - Visual Studio 2022 or VS Code
-# - .NET 8.0 SDK
-# - Git
-
-git clone https://github.com/PrimeBuild-pc/LightCrosshair.git
-cd LightCrosshair
-dotnet restore
-dotnet build
+dotnet build LightCrosshair.sln
+dotnet test LightCrosshair.sln
 ```
 
-<details>
-  <summary><b>Coding Standards</b></summary>
-  <br>
+---
 
-- Follow C# naming conventions
-- Add XML documentation for public methods
-- Include unit tests for new features
-- Maintain <1% performance impact
-- Test on multiple Windows versions
-</details>
+## License
 
-<details>
-  <summary><b>Pull Request Process</b></summary>
-  <br>
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request with a detailed description
-</details>
+This project is licensed under the **MIT License**. See [LICENSE](LICENSE).
 
 ---
 
-## 📄 License
+## Support
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
-| Permitted | Restricted |
-|---|---|
-| ✅ Commercial use | ❌ Liability |
-| ✅ Modification | ❌ Trademark use |
-| ✅ Distribution | |
-| ✅ Private use | |
-
----
-
-## 🙏 Acknowledgments
-
-- **Gaming Community** — For feedback and feature requests
-- **Open Source Contributors** — For code improvements and bug fixes
-- **Beta Testers** — For helping identify and resolve issues
-- **.NET Team** — For the excellent framework and tools
-
----
-
-## 📞 Support & Contact
-
-- **Issues**: [GitHub Issues](../../issues) — Bug reports and feature requests
-- **Discussions**: [GitHub Discussions](../../discussions) — Community support
-- **Documentation**: [Wiki](../../wiki) — Detailed guides and tutorials
+- **Issues:** [GitHub Issues](../../issues)
+- **Discussions:** [GitHub Discussions](../../discussions)
+- **Releases:** [GitHub Releases](../../releases)
 
 ---
 
