@@ -1,34 +1,29 @@
-$ErrorActionPreference = 'SilentlyContinue'
+$ErrorActionPreference = 'Stop'
 
-# Package information
 $packageName = 'lightcrosshair'
-$installDir = Join-Path $env:ProgramFiles 'LightCrosshair'
+$softwareName = 'LightCrosshair*'
+$uninstallKeys = @(Get-UninstallRegistryKey -SoftwareName $softwareName)
 
-Write-Host "Uninstalling $packageName..."
+if ($uninstallKeys.Count -eq 0) {
+    Write-Warning "LightCrosshair uninstall entry was not found. It may already be removed."
+    return
+}
 
-# Remove executable
-$exePath = Join-Path $installDir 'LightCrosshair.exe'
-if (Test-Path $exePath) {
-    try {
-        Remove-Item $exePath -Force
-        Write-Host "Removed: $exePath"
-    } catch {
-        Write-Warning "Could not remove $exePath. It may still be running."
+foreach ($key in $uninstallKeys) {
+    $uninstallString = $key.UninstallString
+    if ([string]::IsNullOrWhiteSpace($uninstallString)) {
+        Write-Warning "LightCrosshair uninstall entry has no uninstall command: $($key.DisplayName)"
+        continue
     }
-}
 
-# Remove installation directory if empty
-if ((Test-Path $installDir) -and ((Get-ChildItem $installDir -ErrorAction SilentlyContinue | Measure-Object).Count -eq 0)) {
-    Remove-Item $installDir -Force
-    Write-Host "Removed installation directory: $installDir"
-}
+    $file = $uninstallString.Trim('"')
+    $packageArgs = @{
+        PackageName    = $packageName
+        FileType       = 'exe'
+        SilentArgs     = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
+        ValidExitCodes = @(0)
+        File           = $file
+    }
 
-# Remove Start Menu shortcuts
-$startMenuDir = [System.IO.Path]::Combine($env:AppData, 'Microsoft\Windows\Start Menu\Programs\LightCrosshair')
-if (Test-Path $startMenuDir) {
-    Remove-Item $startMenuDir -Recurse -Force
-    Write-Host "Removed Start Menu shortcuts"
+    Uninstall-ChocolateyPackage @packageArgs
 }
-
-# Note: AppData config is intentionally left behind (user preference to keep settings)
-Write-Host "Uninstall complete. User configuration saved in %AppData%\LightCrosshair (can be manually deleted if desired)."
