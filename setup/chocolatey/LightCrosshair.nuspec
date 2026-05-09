@@ -8,9 +8,9 @@
     <title>LightCrosshair</title>
     <authors>PrimeBuild</authors>
     <licenseUrl>https://github.com/PrimeBuild-pc/LightCrosshair/blob/main/LICENSE.md</licenseUrl>
-    <projectUrl>https://github.com/PrimeBuild-pc/LightCrosshair</projectUrl>
-    <iconUrl>https://raw.githubusercontent.com/PrimeBuild-pc/LightCrosshair/main/LightCrosshair/assets/icon.ico</iconUrl>
-    <copyright>Copyright © 2024 PrimeBuild</copyright>
+    <projectUrl>https://github.com/PrimeBuild-pc/LightCrosshair/releases/tag/v1.5.0</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/PrimeBuild-pc/LightCrosshair/main/LightCrosshair/assets/icon.png</iconUrl>
+    <copyright>Copyright © 2024-2026 PrimeBuild</copyright>
     <description>
 LightCrosshair is a lightweight, high-performance crosshair overlay for competitive gaming on Windows 10/11.
 
@@ -29,13 +29,13 @@ LightCrosshair is a lightweight, high-performance crosshair overlay for competit
 - .NET 8.0 Windows Desktop Runtime (required for the current framework-dependent package)
 
 ## Installation
-The 1.5.0 Chocolatey package is not final until release artifacts and checksums are approved and the package is pushed.
+This package downloads the official LightCrosshair 1.5.0 installer from the GitHub Release and verifies its SHA256 checksum before installation.
 
-After installation, launch LightCrosshair from your Start Menu or find the executable in Program Files.
+After installation, launch LightCrosshair from your Start Menu.
     </description>
     <summary>Lightweight gaming crosshair overlay with FPS counter and color management</summary>
     <releaseNotes>
-v1.5.0 (May 2026): Product polish release prep with lightweight performance overlay modes, ultra-lightweight mode, crosshair visibility presets, and a Frame Cap Assistant. The assistant does not enforce a real frame limit; no active limiter backend or PresentMon runtime provider is included. Package-manager channels are prepared only until final artifacts and checksums are approved. MSIX is intentionally excluded.
+v1.5.0 (May 2026): Product polish release with lightweight performance overlay modes, ultra-lightweight mode, crosshair visibility presets, and a Frame Cap Assistant. The assistant does not enforce a real frame limit; no active limiter backend or PresentMon runtime provider is included. MSIX is intentionally excluded.
 
 See https://github.com/PrimeBuild-pc/LightCrosshair/releases for full details.
     </releaseNotes>
