@@ -615,7 +615,9 @@ namespace LightCrosshair
         {
             if (!Http.DefaultRequestHeaders.Contains("User-Agent"))
             {
-                Http.DefaultRequestHeaders.UserAgent.ParseAdd("LightCrosshair/1.0");
+                var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                var userAgent = $"LightCrosshair/{version?.Major}.{version?.Minor}.{version?.Build}";
+                Http.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
             }
         }
 
