@@ -12,7 +12,7 @@ DisableProgramGroupPage=yes
 ArchitecturesInstallIn64BitMode=x64compatible
 
 [Files]
-Source: "publish\win-x64\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+Source: "..\releases\x64\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
 [Icons]
 Name: "{group}\LightCrosshair"; Filename: "{app}\LightCrosshair.exe"
