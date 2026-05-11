@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 $packageName = 'lightcrosshair'
 $installerUrl = 'https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.5.0/LightCrosshair-Setup-1.5.0.exe'
-$checksum = 'e79186a1dffdd2223bf694a2c3c6b7c21a7f61d4ab6c47d695f3a9e15db26d21'
+$checksum = '60F334865960AB20F2DBD1F337BF33BE9AC237E7709E77DB495D5C6050B8B416'
 
 $packageArgs = @{
     PackageName    = $packageName
