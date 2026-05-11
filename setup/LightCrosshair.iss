@@ -23,5 +23,5 @@ Name: "desktopicon"; Description: "Create a desktop icon"; GroupDescription: "Ad
 Name: "runtimelink"; Description: "Open .NET 8.0 Desktop Runtime download page (required if not installed)"; GroupDescription: "Additional tasks:"; Flags: unchecked
 
 [Run]
-Filename: "{app}\LightCrosshair.exe"; Description: "Launch LightCrosshair"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\LightCrosshair.exe"; Description: "Launch LightCrosshair"; Flags: nowait postinstall skipifsilent runasoriginaluser
 Filename: "https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime"; Description: "Open .NET 8.0 Desktop Runtime download page"; Flags: postinstall shellexec skipifsilent runasoriginaluser; Tasks: runtimelink
