@@ -16,6 +16,10 @@ LightCrosshair is a lightweight, gamer-focused crosshair overlay for Windows 10/
 
 **v1.5.0 status:** GitHub Release downloads are live. WinGet is pending maintainer review. Chocolatey package metadata is locally validated, but publication is currently blocked by a Chocolatey account/API permission issue.
 
+## Documentation
+
+- [Settings & Options Guide](docs/SETTINGS.md) — Complete documentation for every setting, hotkey, profile, and performance overlay option.
+
 ---
 
 ## Highlights
