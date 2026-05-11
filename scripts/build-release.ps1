@@ -198,6 +198,16 @@ For support and updates, visit: https://github.com/PrimeBuild-pc/LightCrosshair
 
 Set-Content -Path $ReleaseInfoPath -Value $ReleaseInfo -Encoding UTF8
 
+# Build Inno Setup installer if ISCC is available
+$iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+if (Test-Path $iscc) {
+    Write-Host "Building installer..." -ForegroundColor Yellow
+    & $iscc "$PSScriptRoot\..\setup\LightCrosshair.iss"
+    Write-Host "Installer built: setup\Output\LightCrosshair-Setup-$Version.exe" -ForegroundColor Green
+} else {
+    Write-Host "ISCC not found - skipping installer build. Install Inno Setup 6 to build installer." -ForegroundColor Gray
+}
+
 Write-Host "Release build completed successfully!" -ForegroundColor Green
 Write-Host "Output directory: $OutputDir" -ForegroundColor Cyan
 Write-Host ""
