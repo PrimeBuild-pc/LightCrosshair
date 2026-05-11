@@ -189,9 +189,9 @@ namespace LightCrosshair
                 if (_profileService.Profiles.Count == 0)
                     _profileService.InitializeAsync().GetAwaiter().GetResult();
                 var current = _profileService.Current;
-                Service_CurrentChanged(current);
                 isVisible = _prefs.OverlayVisible && CrosshairConfig.Instance.Visible;
                 Program.LogDebug($"Startup visibility restore -> prefs={_prefs.OverlayVisible}, config={CrosshairConfig.Instance.Visible}, effective={isVisible}, profileEnabled={current.EnableCustomCrosshair}", nameof(Form1));
+                Service_CurrentChanged(current);
                 MarkConfigDirty();
                 UpdateCrosshairVisibilityState();
 
@@ -1335,6 +1335,7 @@ namespace LightCrosshair
                 }
 
                 SyncFpsTimerInterval();
+                UpdateCrosshairVisibilityState();
             }
 
             try
