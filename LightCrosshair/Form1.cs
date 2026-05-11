@@ -423,7 +423,9 @@ namespace LightCrosshair
 
         private bool ShouldDisplayCrosshairOverlay()
         {
-            return isVisible && CurrentProfile.EnableCustomCrosshair && !_isRecordingDetected;
+            bool result = isVisible && CurrentProfile.EnableCustomCrosshair && !_isRecordingDetected;
+            Program.LogDebug($"[DIAG] ShouldDisplayCrosshairOverlay={result} (isVisible={isVisible}, EnableCustomCrosshair={CurrentProfile.EnableCustomCrosshair}, _isRecordingDetected={_isRecordingDetected})", nameof(Form1));
+            return result;
         }
 
         private void UpdateCrosshairVisibilityState()
@@ -1087,6 +1089,7 @@ namespace LightCrosshair
         {
             try
             {
+                Program.LogDebug($"[DIAG] SaveOverlayVisibilityPreference saving isVisible={isVisible}", nameof(Form1));
                 _prefs.OverlayVisible = isVisible;
                 PreferencesStore.Save(_prefs);
 
@@ -1275,6 +1278,7 @@ namespace LightCrosshair
         {
             if (value && !ShouldDisplayCrosshairOverlay())
             {
+                Program.LogDebug($"[DIAG] SetVisibleCore BLOCKED visibility (value={value}, isVisible={isVisible}, EnableCustomCrosshair={CurrentProfile.EnableCustomCrosshair}, _isRecordingDetected={_isRecordingDetected})", nameof(Form1));
                 value = false;
             }
 
