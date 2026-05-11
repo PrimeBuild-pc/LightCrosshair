@@ -155,9 +155,9 @@ namespace LightCrosshair
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             e.Graphics.CompositingQuality = CompositingQuality.HighQuality;
-            e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+            e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-            float scale = Math.Clamp(cfg.FpsOverlayScale / 100f, 0.5f, 3f);
+            float scale = Math.Clamp(cfg.FpsOverlayScale / 100f, 0.75f, 3f);
             float x = cfg.FpsOverlayX - Bounds.Left;
             float y = cfg.FpsOverlayY - Bounds.Top;
             float padding = 6f * scale;
@@ -222,7 +222,12 @@ namespace LightCrosshair
             var newColor = ParseRgb(cfg.FpsOverlayColorSerialized, Color.White);
             var newTextBrush = new SolidBrush(newColor);
             var newBgBrush = new SolidBrush(ParseRgba(cfg.FpsOverlayBgColorSerialized, Color.FromArgb(255, 0, 0, 0)));
-            var newOutlinePen = new Pen(Color.White, Math.Max(1f, 1f * scale));
+
+            // Compute a contrasting outline color for readability
+            var outlineColor = (newColor.GetBrightness() > 0.5f)
+                ? Color.FromArgb(180, 0, 0, 0)       // dark semi-transparent outline for light text
+                : Color.FromArgb(180, 255, 255, 255); // light semi-transparent outline for dark text
+            var newOutlinePen = new Pen(outlineColor, Math.Max(1.5f, 1.5f * scale));
             var newGridPen = new Pen(Color.FromArgb(110, 110, 110), 1f);
             var newTargetPen = new Pen(Color.FromArgb(0, 210, 0), 1f);
             var newLinePen = new Pen(newColor, 2f);
@@ -298,7 +303,7 @@ namespace LightCrosshair
                 return Rectangle.Empty;
             }
 
-            float scale = Math.Clamp(cfg.FpsOverlayScale / 100f, 0.5f, 3f);
+            float scale = Math.Clamp(cfg.FpsOverlayScale / 100f, 0.75f, 3f);
             EnsureRenderResources(cfg, scale);
             if (_font == null)
             {
