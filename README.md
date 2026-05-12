@@ -27,6 +27,7 @@ LightCrosshair is a lightweight, gamer-focused crosshair overlay for Windows 10/
 - **Crosshair-first overlay:** customizable shape, size, thickness, gap, colors, opacity, outline, and profile workflow.
 - **Visibility presets:** quick high-contrast crosshair presets for better visibility without changing game rendering.
 - **Performance overlay modes:** Off, Minimal, and Detailed modes, plus ultra-lightweight behavior for lower-overhead sessions.
+- **GPU Driver Integration:** Direct NVIDIA driver integration for FPS cap (via DRS) and digital vibrance. AMD color management via ADL2. Capability matrix shown in settings.
 - **Frame Cap Assistant:** target-FPS guidance only. It does not enforce a real frame limit and has no active limiter backend.
 - **Non-injected FPS telemetry:** optional ETW-style present telemetry with optional RTSS fallback caveats when detailed metrics are unavailable.
 - **Borderless/windowed oriented:** normal overlays are expected to work best in borderless windowed or windowed games.
@@ -142,6 +143,14 @@ Before opening a pull request, run:
 dotnet build LightCrosshair.sln
 dotnet test LightCrosshair.sln
 ```
+
+---
+
+## Third-Party Notices
+
+This application uses the following third-party libraries:
+- **NvAPIWrapper.Net** (LGPL-3.0) — NVIDIA GPU driver integration. See [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) for details.
+- **AMD ADLX SDK** (Proprietary AMD License) — AMD GPU detection. See [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) for details.
 
 ---
 

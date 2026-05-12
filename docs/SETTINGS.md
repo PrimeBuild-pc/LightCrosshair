@@ -7,7 +7,8 @@
 3. [Hotkeys](#hotkeys)
 4. [Profiles](#profiles)
 5. [Display Settings (Gamma / Vibrance)](#display-settings-gamma--vibrance)
-6. [Advanced / Troubleshooting](#advanced--troubleshooting)
+6. [GPU Driver Integration](#gpu-driver-integration)
+7. [Advanced / Troubleshooting](#advanced--troubleshooting)
 
 ---
 
@@ -408,6 +409,101 @@ The Display Settings tab provides adjustments to the display's colour characteri
 - **UI control:** Slider + reset button.
 - **Default:** 50.
 - **Recommendation:** Values above 70 may oversaturate some colours. Values below 30 may look washed out.
+
+---
+
+## GPU Driver Integration
+
+LightCrosshair 1.5.0 introduces a GPU driver integration layer that enables direct communication with NVIDIA and AMD GPU drivers for advanced features.
+
+### GPU Detection
+
+LightCrosshair automatically detects the primary GPU vendor on startup:
+- **NVIDIA**: Full driver integration via NvAPIWrapper.Net
+- **AMD**: Color management via ADL2 API
+- **Intel / Unknown**: No driver integration (unsupported for now)
+
+The detected GPU and driver API status are shown in the **GPU Driver** settings tab.
+
+### Feature Support Matrix
+
+| Feature | NVIDIA | AMD | Intel |
+|---------|--------|-----|-------|
+| Driver FPS Cap | ✓ Supported | ✗ Not Supported | ✗ Not Supported |
+| Color/Vibrance | ✓ Supported | ✓ Supported (ADL2) | ✗ Not Supported |
+| Radeon Chill | N/A | ✗ Not Supported (future) | N/A |
+| G-Sync | ✗ Not Supported | N/A | N/A |
+| FreeSync | N/A | ✗ Not Supported (future) | N/A |
+
+### NVIDIA Driver FPS Cap
+
+LightCrosshair can apply a frame rate limit via the NVIDIA driver profile system (DRS — Driver Registry Settings).
+
+**How it works:**
+- Uses the NVIDIA DRS API to set `PerformanceStateFrameRateLimiter` in a driver profile
+- Supports **Application Profile** (recommended): applies only to the selected target process
+- Supports **Global Profile**: applies to all NVIDIA applications
+
+**Behavior:**
+- Setting a cap writes to the NVIDIA driver profile and persists until cleared
+- Clearing the cap sets the limiter to 0 (disabled)
+- The current cap value can be read back from the driver
+
+**Limitations:**
+- Requires NVIDIA GPU with driver installed
+- Application profile requires the target process executable path
+- Does not require administrator rights (user-mode DRS API)
+
+**UI Controls (GPU Driver tab → NVIDIA Driver FPS Cap):**
+- Scope: Application Profile or Global Profile
+- Target FPS slider: 15–300 FPS
+- Apply / Clear buttons
+- Status display showing current operation result
+
+### NVIDIA Digital Vibrance
+
+LightCrosshair can adjust digital vibrance (color saturation) via the NVIDIA driver's Digital Vibrance Control (DVC) API.
+
+**How it works:**
+- Uses `NvAPIWrapper.Native.DisplayApi.GetDVCInfo()` and `SetDVCLevel()`
+- Applies to the primary NVIDIA display
+- Range: 0–100 (mapped to driver's internal min/max range)
+- Default/neutral value: 50
+
+**Limitations:**
+- Applies to primary display only
+- Requires NVIDIA GPU with driver installed
+- Does not require administrator rights
+
+**UI Controls (GPU Driver tab → NVIDIA Digital Vibrance):**
+- Vibrance slider: 0–100
+- Apply / Reset to Default buttons
+
+### AMD Color Management
+
+AMD color management (brightness, contrast, saturation, vibrance) uses the existing ADL2 API integration, which is unchanged from previous versions. The GPU driver abstraction layer wraps this existing functionality.
+
+See the **Display Settings** tab for AMD color controls (gamma, contrast, brightness, vibrance sliders).
+
+### AMD Radeon Chill (Not Supported)
+
+AMD Radeon Chill control requires the AMD ADLX SDK C++/CLI wrapper (`ADLXCSharpBind.dll`), which is not bundled in this release. This feature is planned for a future update.
+
+### AMD FreeSync (Not Supported)
+
+AMD FreeSync status and control requires the AMD ADLX SDK C++/CLI wrapper, which is not bundled in this release. This feature is planned for a future update.
+
+### NVIDIA G-Sync (Not Supported)
+
+NVIDIA G-Sync control is not exposed by the NvAPIWrapper.Net library. G-Sync is managed by the NVIDIA driver and monitor; use the NVIDIA Control Panel to configure G-Sync.
+
+### Intel GPU (Not Supported)
+
+Intel GPU driver integration is not implemented. Intel GPUs are detected but no driver API is used.
+
+### Graceful Fallback
+
+If no supported GPU driver API is available (e.g., running on Intel, or NVIDIA/AMD driver not installed), LightCrosshair falls back to a null driver service. All GPU driver features are disabled with explanatory tooltips. The app will not crash.
 
 ---
 
