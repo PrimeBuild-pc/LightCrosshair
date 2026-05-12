@@ -2,13 +2,13 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>lightcrosshair</id>
-    <version>1.5.0</version>
+    <version>1.6.0</version>
     <packageSourceUrl>https://github.com/PrimeBuild-pc/LightCrosshair</packageSourceUrl>
     <owners>PrimeBuild</owners>
     <title>LightCrosshair</title>
     <authors>PrimeBuild</authors>
     <licenseUrl>https://github.com/PrimeBuild-pc/LightCrosshair/blob/main/LICENSE.md</licenseUrl>
-    <projectUrl>https://github.com/PrimeBuild-pc/LightCrosshair/releases/tag/v1.5.0</projectUrl>
+    <projectUrl>https://github.com/PrimeBuild-pc/LightCrosshair/releases/tag/v1.6.0</projectUrl>
     <iconUrl>https://raw.githubusercontent.com/PrimeBuild-pc/LightCrosshair/main/LightCrosshair/assets/icon.png</iconUrl>
     <copyright>Copyright © 2024-2026 PrimeBuild</copyright>
     <description>
@@ -29,13 +29,13 @@ LightCrosshair is a lightweight, high-performance crosshair overlay for competit
 - .NET 8.0 Windows Desktop Runtime (required for the current framework-dependent package)
 
 ## Installation
-This package downloads the official LightCrosshair 1.5.0 installer from the GitHub Release and verifies its SHA256 checksum before installation.
+This package downloads the official LightCrosshair 1.6.0 installer from the GitHub Release and verifies its SHA256 checksum before installation.
 
 After installation, launch LightCrosshair from your Start Menu.
     </description>
     <summary>Lightweight gaming crosshair overlay with FPS counter and color management</summary>
     <releaseNotes>
-v1.5.0 (May 2026): Product polish release with lightweight performance overlay modes, ultra-lightweight mode, crosshair visibility presets, and a Frame Cap Assistant. The assistant does not enforce a real frame limit; no active limiter backend or PresentMon runtime provider is included. MSIX is intentionally excluded.
+v1.6.0 (May 2026): Release with updated Chocolatey and WinGet packaging, continued stability improvements, and updated dependencies.
 
 See https://github.com/PrimeBuild-pc/LightCrosshair/releases for full details.
     </releaseNotes>
