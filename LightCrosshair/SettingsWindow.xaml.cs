@@ -13,6 +13,8 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Threading;
 using LightCrosshair.FrameLimiting;
+using LightCrosshair.GpuDriver;
+using GpuDetResult = LightCrosshair.GpuDriver.GpuDetectionResult;
 
 namespace LightCrosshair
 {
@@ -36,6 +38,8 @@ namespace LightCrosshair
         private bool _settingsSavePending;
         private CrosshairConfig? _pendingSettingsConfig;
         private const int SettingsSaveDebounceMs = 400;
+        private IGpuDriverService? _gpuDriverService;
+        private GpuDetResult _gpuDetectionResult;
 
         public SettingsWindow(IProfileService profiles)
         {
@@ -169,6 +173,26 @@ namespace LightCrosshair
 
             // Initial status
             UpdatePositionStatus();
+
+            // GPU Driver service initialization
+            InitializeGpuDriverService();
+
+            // GPU Driver event wiring
+            GpuRefreshButton.Click += (_, __) => GpuRefreshButton_Click();
+            NvidiaFpsCapSlider.ValueChanged += (_, __) =>
+            {
+                if (NvidiaFpsCapValueText != null)
+                    NvidiaFpsCapValueText.Text = ((int)NvidiaFpsCapSlider.Value).ToString();
+            };
+            NvidiaFpsCapApplyButton.Click += (_, __) => NvidiaFpsCapApplyButton_Click();
+            NvidiaFpsCapClearButton.Click += (_, __) => NvidiaFpsCapClearButton_Click();
+            NvidiaVibranceSlider.ValueChanged += (_, __) =>
+            {
+                if (NvidiaVibranceValueText != null)
+                    NvidiaVibranceValueText.Text = ((int)NvidiaVibranceSlider.Value).ToString();
+            };
+            NvidiaVibranceApplyButton.Click += (_, __) => NvidiaVibranceApplyButton_Click();
+            NvidiaVibranceResetButton.Click += (_, __) => NvidiaVibranceResetButton_Click();
         }
 
         private void PickColor(Action<System.Windows.Media.Color> onPick)
@@ -1519,6 +1543,270 @@ namespace LightCrosshair
                     GraphTimeWindowCombo.SelectedItem = item;
                     return;
                 }
+            }
+        }
+
+        // ----- GPU Driver Integration -----
+
+        private void InitializeGpuDriverService()
+        {
+            try
+            {
+                _gpuDriverService = GpuDriverServiceFactory.Create();
+                _gpuDetectionResult = _gpuDriverService.Detect();
+                RefreshGpuDriverUI();
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "SettingsWindow.InitializeGpuDriverService");
+                _gpuDetectionResult = GpuDetResult.Unknown();
+                _gpuDriverService = null;
+                GpuVendorText.Text = "Detection failed";
+                GpuDriverApiText.Text = "Error";
+                GpuDriverStatusText.Text = $"Initialization error: {ex.Message}";
+            }
+        }
+
+        private void RefreshGpuDriverUI()
+        {
+            try
+            {
+                // Update detection info
+                string vendorText = _gpuDetectionResult.Vendor switch
+                {
+                    GpuVendorKind.Nvidia => "NVIDIA",
+                    GpuVendorKind.Amd => "AMD",
+                    GpuVendorKind.Intel => "Intel",
+                    _ => "Unknown"
+                };
+
+                if (!string.IsNullOrEmpty(_gpuDetectionResult.AdapterDescription))
+                {
+                    GpuVendorText.Text = $"{vendorText} {_gpuDetectionResult.AdapterDescription}";
+                }
+                else
+                {
+                    GpuVendorText.Text = vendorText;
+                }
+
+                GpuDriverApiText.Text = _gpuDetectionResult.IsDriverApiAvailable ? "Available" : "Not available";
+                GpuDriverStatusText.Text = _gpuDetectionResult.DriverApiStatusMessage;
+
+                // Update capability matrix
+                var caps = _gpuDetectionResult.Capabilities;
+                GpuCapNvidiaFpsCap.Text = CapabilityStatusText(caps.NvidiaFpsCap);
+                GpuCapNvidiaColorVibrance.Text = CapabilityStatusText(caps.NvidiaColorVibrance);
+                GpuCapAmdColorManagement.Text = CapabilityStatusText(caps.AmdColorManagement);
+                GpuCapAmdChill.Text = CapabilityStatusText(caps.AmdChill);
+                GpuCapNvidiaGSync.Text = CapabilityStatusText(caps.NvidiaGSync);
+                GpuCapAmdFreeSync.Text = CapabilityStatusText(caps.AmdFreeSync);
+
+                // Enable/disable NVIDIA FPS cap controls
+                bool fpsCapSupported = caps.NvidiaFpsCap == GpuCapabilityStatus.Supported;
+                NvidiaFpsCapGroup.IsEnabled = fpsCapSupported;
+                if (!fpsCapSupported)
+                {
+                    NvidiaFpsCapGroup.Opacity = 0.55;
+                    NvidiaFpsCapGroup.ToolTip = caps.NvidiaFpsCap switch
+                    {
+                        GpuCapabilityStatus.Unavailable => "NVIDIA driver API not available. Ensure NVIDIA drivers are installed.",
+                        GpuCapabilityStatus.ReadOnly => "NVIDIA FPS cap is read-only on this system.",
+                        GpuCapabilityStatus.Unsupported => "NVIDIA FPS cap not supported on this hardware/driver.",
+                        _ => "NVIDIA FPS cap not available."
+                    };
+                }
+                else
+                {
+                    NvidiaFpsCapGroup.Opacity = 1.0;
+                    NvidiaFpsCapGroup.ToolTip = null;
+                }
+
+                // Enable/disable NVIDIA vibrance controls
+                bool vibranceSupported = caps.NvidiaColorVibrance == GpuCapabilityStatus.Supported;
+                NvidiaVibranceGroup.IsEnabled = vibranceSupported;
+                if (!vibranceSupported)
+                {
+                    NvidiaVibranceGroup.Opacity = 0.55;
+                    NvidiaVibranceGroup.ToolTip = caps.NvidiaColorVibrance switch
+                    {
+                        GpuCapabilityStatus.Unavailable => "NVIDIA driver API not available. Ensure NVIDIA drivers are installed.",
+                        GpuCapabilityStatus.ReadOnly => "NVIDIA digital vibrance is read-only on this system.",
+                        GpuCapabilityStatus.Unsupported => "NVIDIA digital vibrance not supported on this hardware/driver.",
+                        _ => "NVIDIA digital vibrance not available."
+                    };
+                }
+                else
+                {
+                    NvidiaVibranceGroup.Opacity = 1.0;
+                    NvidiaVibranceGroup.ToolTip = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "SettingsWindow.RefreshGpuDriverUI");
+            }
+        }
+
+        private static string CapabilityStatusText(GpuCapabilityStatus status)
+        {
+            return status switch
+            {
+                GpuCapabilityStatus.Supported => "✓ Supported",
+                GpuCapabilityStatus.ReadOnly => "◎ Read-Only",
+                GpuCapabilityStatus.Unavailable => "⚠ Unavailable",
+                GpuCapabilityStatus.Unsupported => "✗ Not Supported",
+                _ => "? Unknown"
+            };
+        }
+
+        private void GpuRefreshButton_Click()
+        {
+            try
+            {
+                GpuRefreshButton.IsEnabled = false;
+                GpuVendorText.Text = "Detecting...";
+                GpuDriverApiText.Text = "-";
+                GpuDriverStatusText.Text = "Refreshing...";
+                InitializeGpuDriverService();
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "SettingsWindow.GpuRefreshButton_Click");
+            }
+            finally
+            {
+                try { GpuRefreshButton.IsEnabled = true; } catch { }
+            }
+        }
+
+        private void NvidiaFpsCapApplyButton_Click()
+        {
+            try
+            {
+                if (_gpuDriverService == null)
+                {
+                    NvidiaFpsCapStatusText.Text = "GPU driver service not initialized.";
+                    return;
+                }
+
+                int targetFps = (int)NvidiaFpsCapSlider.Value;
+                string? appExePath = null;
+
+                // If scope is Application Profile (index 0), use the target process
+                if (NvidiaFpsCapScopeCombo.SelectedIndex == 0)
+                {
+                    string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
+                    if (!string.IsNullOrWhiteSpace(targetProcess))
+                    {
+                        appExePath = targetProcess;
+                    }
+                }
+
+                if (_gpuDriverService.TrySetNvidiaFpsCap(targetFps, appExePath, out string error))
+                {
+                    NvidiaFpsCapStatusText.Text = $"FPS cap of {targetFps} applied successfully.";
+                }
+                else
+                {
+                    NvidiaFpsCapStatusText.Text = $"Failed to apply FPS cap: {error}";
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "SettingsWindow.NvidiaFpsCapApplyButton_Click");
+                NvidiaFpsCapStatusText.Text = $"Error: {ex.Message}";
+            }
+        }
+
+        private void NvidiaFpsCapClearButton_Click()
+        {
+            try
+            {
+                if (_gpuDriverService == null)
+                {
+                    NvidiaFpsCapStatusText.Text = "GPU driver service not initialized.";
+                    return;
+                }
+
+                string? appExePath = null;
+
+                // If scope is Application Profile (index 0), use the target process
+                if (NvidiaFpsCapScopeCombo.SelectedIndex == 0)
+                {
+                    string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
+                    if (!string.IsNullOrWhiteSpace(targetProcess))
+                    {
+                        appExePath = targetProcess;
+                    }
+                }
+
+                if (_gpuDriverService.TryClearNvidiaFpsCap(appExePath, out string error))
+                {
+                    NvidiaFpsCapStatusText.Text = "FPS cap cleared successfully.";
+                }
+                else
+                {
+                    NvidiaFpsCapStatusText.Text = $"Failed to clear FPS cap: {error}";
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "SettingsWindow.NvidiaFpsCapClearButton_Click");
+                NvidiaFpsCapStatusText.Text = $"Error: {ex.Message}";
+            }
+        }
+
+        private void NvidiaVibranceApplyButton_Click()
+        {
+            try
+            {
+                if (_gpuDriverService == null)
+                {
+                    NvidiaVibranceStatusText.Text = "GPU driver service not initialized.";
+                    return;
+                }
+
+                int vibrance = (int)NvidiaVibranceSlider.Value;
+                if (_gpuDriverService.TrySetNvidiaVibrance(vibrance, out string error))
+                {
+                    NvidiaVibranceStatusText.Text = $"Digital vibrance set to {vibrance}.";
+                }
+                else
+                {
+                    NvidiaVibranceStatusText.Text = $"Failed to set vibrance: {error}";
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "SettingsWindow.NvidiaVibranceApplyButton_Click");
+                NvidiaVibranceStatusText.Text = $"Error: {ex.Message}";
+            }
+        }
+
+        private void NvidiaVibranceResetButton_Click()
+        {
+            try
+            {
+                if (_gpuDriverService == null)
+                {
+                    NvidiaVibranceStatusText.Text = "GPU driver service not initialized.";
+                    return;
+                }
+
+                if (_gpuDriverService.TrySetNvidiaVibrance(50, out string error))
+                {
+                    NvidiaVibranceSlider.Value = 50;
+                    NvidiaVibranceStatusText.Text = "Digital vibrance reset to default (50).";
+                }
+                else
+                {
+                    NvidiaVibranceStatusText.Text = $"Failed to reset vibrance: {error}";
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "SettingsWindow.NvidiaVibranceResetButton_Click");
+                NvidiaVibranceStatusText.Text = $"Error: {ex.Message}";
             }
         }
 
