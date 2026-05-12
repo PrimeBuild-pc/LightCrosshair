@@ -20,10 +20,9 @@ namespace LightCrosshair.GpuDriver
                 Debug.WriteLine(
                     $"[GpuDriverServiceFactory] Detected vendor: {vendor}, adapter: {adapterDescription}");
 
-                // TODO: Replace NullGpuDriverService with NvidiaDriverService / AmdDriverService once implemented
                 return vendor switch
                 {
-                    GpuVendorKind.Nvidia => new NullGpuDriverService(),
+                    GpuVendorKind.Nvidia => new NvidiaDriverService(),
                     GpuVendorKind.Amd => new NullGpuDriverService(),
                     _ => new NullGpuDriverService()
                 };
