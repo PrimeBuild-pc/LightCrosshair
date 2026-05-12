@@ -440,22 +440,22 @@ The detected GPU and driver API status are shown in the **GPU Driver** settings 
 LightCrosshair can apply a frame rate limit via the NVIDIA driver profile system (DRS — Driver Registry Settings).
 
 **How it works:**
-- Uses the NVIDIA DRS API to set `PerformanceStateFrameRateLimiter` in a driver profile
-- Supports **Application Profile** (recommended): applies only to the selected target process
-- Supports **Global Profile**: applies to all NVIDIA applications
+- Uses the NVIDIA DRS API to set `PerformanceStateFrameRateLimiter` in an application-specific driver profile
+- Applies only to the **target process** configured in Display Settings → Target Process
+- Global profile fallback is **not available** — a target process must be set before applying
 
 **Behavior:**
-- Setting a cap writes to the NVIDIA driver profile and persists until cleared
-- Clearing the cap sets the limiter to 0 (disabled)
-- The current cap value can be read back from the driver
+- Setting a cap writes to the NVIDIA driver profile for the specified application and persists until cleared
+- Clearing the cap sets the limiter to 0 (disabled) for the specified application
+- The current cap value can be read back from the driver for the specified application
+- Reading a cap never creates or modifies a driver profile (read-only)
 
 **Limitations:**
 - Requires NVIDIA GPU with driver installed
-- Application profile requires the target process executable path
+- Requires the target process executable path (e.g., `valorant.exe`)
 - Does not require administrator rights (user-mode DRS API)
 
 **UI Controls (GPU Driver tab → NVIDIA Driver FPS Cap):**
-- Scope: Application Profile or Global Profile
 - Target FPS slider: 15–300 FPS
 - Apply / Clear buttons
 - Status display showing current operation result
