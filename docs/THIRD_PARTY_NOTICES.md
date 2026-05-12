@@ -15,3 +15,15 @@ Per LGPL-3.0 requirements:
 - NvAPIWrapper.Net is used as an unmodified library
 - The source code of NvAPIWrapper.Net is available at the repository above
 - LightCrosshair does not modify NvAPIWrapper.Net source code
+
+## AMD ADLX SDK
+
+**License:** AMD ADLX SDK License Agreement (Proprietary)
+**Repository:** https://gpuopen.com/adlx/
+**Documentation:** https://gpuopen.com/manuals/adlx/
+
+LightCrosshair references the AMD ADLX SDK for AMD GPU driver integration. The ADLX SDK is used for AMD GPU detection and capability probing.
+
+Note: Full AMD Chill and FreeSync control via ADLX requires the ADLXCSharpBind C++/CLI wrapper, which is not bundled in this release. AMD color management uses the existing ADL2 API integration.
+
+AMD ADLX SDK License: Proprietary AMD license. Distribution of compiled binaries is permitted. Source code redistribution is not permitted.

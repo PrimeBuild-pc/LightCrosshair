@@ -23,7 +23,7 @@ namespace LightCrosshair.GpuDriver
                 return vendor switch
                 {
                     GpuVendorKind.Nvidia => new NvidiaDriverService(),
-                    GpuVendorKind.Amd => new NullGpuDriverService(),
+                    GpuVendorKind.Amd => new AmdDriverService(),
                     _ => new NullGpuDriverService()
                 };
             }
