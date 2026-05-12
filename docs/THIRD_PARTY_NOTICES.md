@@ -22,8 +22,8 @@ Per LGPL-3.0 requirements:
 **Repository:** https://gpuopen.com/adlx/
 **Documentation:** https://gpuopen.com/manuals/adlx/
 
-LightCrosshair references the AMD ADLX SDK for AMD GPU driver integration. The ADLX SDK is used for AMD GPU detection and capability probing.
+LightCrosshair references the AMD ADLX SDK documentation for future AMD GPU driver integration planning. The ADLX SDK is **not bundled, not referenced at runtime, and not required to run LightCrosshair**. AMD GPU detection uses the existing ADL2 (atiadlxx.dll / atiadlxy.dll) API only.
 
-Note: Full AMD Chill and FreeSync control via ADLX requires the ADLXCSharpBind C++/CLI wrapper, which is not bundled in this release. AMD color management uses the existing ADL2 API integration.
+Note: Full AMD Chill and FreeSync control via ADLX would require the ADLXCSharpBind C++/CLI wrapper, which is not bundled in this release. These features remain marked Unsupported. AMD color management uses the existing ADL2 API integration.
 
 AMD ADLX SDK License: Proprietary AMD license. Distribution of compiled binaries is permitted. Source code redistribution is not permitted.

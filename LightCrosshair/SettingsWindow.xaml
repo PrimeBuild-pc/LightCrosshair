@@ -282,13 +282,13 @@
                         <TextBlock Text="Apply Settings To" FontWeight="Bold" Margin="0,0,0,6"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
                             <TextBlock Text="Target Process:" Width="120" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TargetProcessTextBox" Width="190" Height="34" Padding="8,6" Margin="0,0,10,0" VerticalContentAlignment="Center" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Leave empty to apply globally. Example: valorant.exe"/>
+                            <TextBox x:Name="TargetProcessTextBox" Width="190" Height="34" Padding="8,6" Margin="0,0,10,0" VerticalContentAlignment="Center" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Required for NVIDIA driver FPS cap. Specify the game executable name. Example: valorant.exe"/>
                             <ComboBox x:Name="ProcessPickerComboBox" Width="210" Height="34" Padding="8,4" Margin="0,0,10,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Select from currently running processes"/>
                             <Button x:Name="RefreshProcessListBtn" Content="Refresh List" Width="112" Height="34" Padding="10,6" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <Button x:Name="BrowseProcessExeBtn" Content="Browse .exe" Width="124" Height="34" Padding="10,6" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <Button x:Name="ClearTargetProcessBtn" Content="Clear" Width="90" Height="34" Padding="10,6" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                         </StackPanel>
-                        <TextBlock Text="Manual mode: pick a running process, browse an .exe, or type one. Leave empty to apply globally." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <TextBlock Text="Manual mode: pick a running process, browse an .exe, or type one. Required for NVIDIA driver FPS cap." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
                         <!-- Note: Software fallback was removed from the codebase. -->
                         
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -385,13 +385,6 @@
                                 <TextBlock Text="NVIDIA Driver FPS Cap" FontWeight="Bold" Margin="0,0,0,6"/>
                                 <TextBlock Text="Apply a frame rate limit via NVIDIA driver profile settings." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                    <TextBlock Text="Scope:" Width="120" VerticalAlignment="Center"/>
-                                    <ComboBox x:Name="NvidiaFpsCapScopeCombo" Width="260">
-                                        <ComboBoxItem Content="Application Profile (recommended)" IsSelected="True"/>
-                                        <ComboBoxItem Content="Global Profile"/>
-                                    </ComboBox>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                     <TextBlock Text="Target FPS:" Width="120" VerticalAlignment="Center"/>
                                     <Slider x:Name="NvidiaFpsCapSlider" Minimum="15" Maximum="300" Width="260"/>
                                     <TextBlock x:Name="NvidiaFpsCapValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
@@ -401,7 +394,7 @@
                                     <Button x:Name="NvidiaFpsCapClearButton" Content="Clear FPS Cap" Width="130" Margin="0,0,8,0"/>
                                 </StackPanel>
                                 <TextBlock x:Name="NvidiaFpsCapStatusText" Text="" Opacity="0.8" TextWrapping="Wrap" Margin="0,4,0,0"/>
-                                <TextBlock Text="Note: Application profile applies only to the selected target process. Global profile affects all NVIDIA applications." Opacity="0.6" FontStyle="Italic" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBlock Text="Note: Applies only to the target process set in Display Settings > Target Process. Set a target process before applying." Opacity="0.6" FontStyle="Italic" TextWrapping="Wrap" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Border>
 
@@ -409,7 +402,7 @@
                         <Border x:Name="NvidiaVibranceGroup" Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,12" IsEnabled="False">
                             <StackPanel>
                                 <TextBlock Text="NVIDIA Digital Vibrance" FontWeight="Bold" Margin="0,0,0,6"/>
-                                <TextBlock Text="Adjust digital vibrance (saturation) via NVIDIA driver." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                <TextBlock Text="Adjust digital vibrance (saturation) via NVIDIA driver. Applies to primary NVIDIA display only." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                     <TextBlock Text="Vibrance:" Width="120" VerticalAlignment="Center"/>
                                     <Slider x:Name="NvidiaVibranceSlider" Minimum="0" Maximum="100" Width="260"/>
@@ -420,6 +413,7 @@
                                     <Button x:Name="NvidiaVibranceResetButton" Content="Reset to Default" Width="130" Margin="0,0,8,0"/>
                                 </StackPanel>
                                 <TextBlock x:Name="NvidiaVibranceStatusText" Text="" Opacity="0.8" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBlock Text="Applies to primary NVIDIA display only. Does not target a specific application." Opacity="0.6" FontStyle="Italic" TextWrapping="Wrap" Margin="0,4,0,0"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>

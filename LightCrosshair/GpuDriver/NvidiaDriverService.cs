@@ -73,15 +73,26 @@ namespace LightCrosshair.GpuDriver
                 return false;
             }
 
+            if (string.IsNullOrWhiteSpace(applicationExePath))
+            {
+                errorMessage =
+                    "Select a target application before applying an NVIDIA driver FPS cap. " +
+                    "Global profile fallback is not available. Go to Display Settings and set a Target Process.";
+                return false;
+            }
+
             try
             {
                 using var session = DriverSettingsSession.CreateAndLoad();
 
-                var profile = ResolveProfile(session, applicationExePath, out string? profileNote);
-                if (profileNote != null)
-                    errorMessage = profileNote;
-                else
-                    errorMessage = string.Empty;
+                var profile = ResolveOrCreateProfile(session, applicationExePath, out string? profileNote);
+                if (profile == null)
+                {
+                    errorMessage = profileNote ?? "Could not resolve or create an application profile.";
+                    return false;
+                }
+
+                errorMessage = string.Empty;
 
                 profile.SetSetting(KnownSettingId.PerformanceStateFrameRateLimiter, (uint)targetFps);
                 session.Save();
@@ -98,6 +109,20 @@ namespace LightCrosshair.GpuDriver
         /// <inheritdoc />
         public bool TryClearNvidiaFpsCap(string? applicationExePath, out string errorMessage)
         {
+            if (!_initialized)
+            {
+                errorMessage = "NVIDIA driver API not available";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(applicationExePath))
+            {
+                errorMessage =
+                    "Select a target application before clearing an NVIDIA driver FPS cap. " +
+                    "Global profile fallback is not available. Go to Display Settings and set a Target Process.";
+                return false;
+            }
+
             return TrySetNvidiaFpsCap(0, applicationExePath, out errorMessage);
         }
 
@@ -112,11 +137,26 @@ namespace LightCrosshair.GpuDriver
                 return false;
             }
 
+            if (string.IsNullOrWhiteSpace(applicationExePath))
+            {
+                statusMessage = "No target application configured. Set a Target Process in Display Settings to read an FPS cap.";
+                return false;
+            }
+
             try
             {
                 using var session = DriverSettingsSession.CreateAndLoad();
 
-                var profile = ResolveProfile(session, applicationExePath, out string? _);
+                // Read-only: find existing profile, do NOT create one
+                string exeName = Path.GetFileName(applicationExePath);
+                var profile = session.FindApplicationProfile(exeName);
+
+                if (profile == null)
+                {
+                    currentFps = 0;
+                    statusMessage = $"No FPS cap (no profile found for '{exeName}')";
+                    return true;
+                }
 
                 var setting = profile.GetSetting(KnownSettingId.PerformanceStateFrameRateLimiter);
                 currentFps = (int)(uint)setting.CurrentValue;
@@ -292,26 +332,24 @@ namespace LightCrosshair.GpuDriver
         }
 
         /// <summary>
-        /// Resolves a DRS profile for the given executable path.
-        /// Falls back to global profile if application-specific profile cannot be found or created.
+        /// Resolves or creates a DRS application-specific profile for the given executable path.
+        /// Does NOT fall back to global profile. Returns null if no profile can be found or created.
         /// </summary>
-        private static DriverSettingsProfile ResolveProfile(
+        private static DriverSettingsProfile? ResolveOrCreateProfile(
             DriverSettingsSession session,
-            string? applicationExePath,
-            out string? warningMessage)
+            string applicationExePath,
+            out string? errorMessage)
         {
-            warningMessage = null;
-
-            if (string.IsNullOrEmpty(applicationExePath))
-                return session.CurrentGlobalProfile;
+            errorMessage = null;
 
             string exeName = Path.GetFileName(applicationExePath);
 
+            // Try to find an existing profile first
             var profile = session.FindApplicationProfile(exeName);
             if (profile != null)
                 return profile;
 
-            // Try to create a new profile for this application
+            // Create a new profile for this application
             try
             {
                 profile = DriverSettingsProfile.CreateProfile(session, "LightCrosshair_" + exeName, null);
@@ -319,8 +357,8 @@ namespace LightCrosshair.GpuDriver
             }
             catch (Exception ex)
             {
-                warningMessage = $"Could not create application profile for '{exeName}': {ex.Message}. Falling back to global profile.";
-                return session.CurrentGlobalProfile;
+                errorMessage = $"Could not create application profile for '{exeName}': {ex.Message}";
+                return null;
             }
         }
     }

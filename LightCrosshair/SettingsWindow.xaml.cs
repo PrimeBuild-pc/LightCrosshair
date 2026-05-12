@@ -1690,21 +1690,21 @@ namespace LightCrosshair
                 }
 
                 int targetFps = (int)NvidiaFpsCapSlider.Value;
-                string? appExePath = null;
 
-                // If scope is Application Profile (index 0), use the target process
-                if (NvidiaFpsCapScopeCombo.SelectedIndex == 0)
+                // Application-specific profile only (global profile fallback removed).
+                // Validate that a target process is configured before proceeding.
+                string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
+                if (string.IsNullOrWhiteSpace(targetProcess))
                 {
-                    string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
-                    if (!string.IsNullOrWhiteSpace(targetProcess))
-                    {
-                        appExePath = targetProcess;
-                    }
+                    NvidiaFpsCapStatusText.Text =
+                        "Select a target application before applying an NVIDIA driver FPS cap. " +
+                        "Go to Display Settings and set a Target Process.";
+                    return;
                 }
 
-                if (_gpuDriverService.TrySetNvidiaFpsCap(targetFps, appExePath, out string error))
+                if (_gpuDriverService.TrySetNvidiaFpsCap(targetFps, targetProcess, out string error))
                 {
-                    NvidiaFpsCapStatusText.Text = $"FPS cap of {targetFps} applied successfully.";
+                    NvidiaFpsCapStatusText.Text = $"FPS cap of {targetFps} applied successfully to '{targetProcess}'.";
                 }
                 else
                 {
@@ -1728,21 +1728,20 @@ namespace LightCrosshair
                     return;
                 }
 
-                string? appExePath = null;
-
-                // If scope is Application Profile (index 0), use the target process
-                if (NvidiaFpsCapScopeCombo.SelectedIndex == 0)
+                // Application-specific profile only (global profile fallback removed).
+                // Validate that a target process is configured before proceeding.
+                string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
+                if (string.IsNullOrWhiteSpace(targetProcess))
                 {
-                    string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
-                    if (!string.IsNullOrWhiteSpace(targetProcess))
-                    {
-                        appExePath = targetProcess;
-                    }
+                    NvidiaFpsCapStatusText.Text =
+                        "Select a target application before clearing an NVIDIA driver FPS cap. " +
+                        "Go to Display Settings and set a Target Process.";
+                    return;
                 }
 
-                if (_gpuDriverService.TryClearNvidiaFpsCap(appExePath, out string error))
+                if (_gpuDriverService.TryClearNvidiaFpsCap(targetProcess, out string error))
                 {
-                    NvidiaFpsCapStatusText.Text = "FPS cap cleared successfully.";
+                    NvidiaFpsCapStatusText.Text = $"FPS cap cleared for '{targetProcess}'.";
                 }
                 else
                 {
