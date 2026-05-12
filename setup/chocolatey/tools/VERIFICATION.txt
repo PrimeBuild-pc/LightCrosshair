@@ -5,7 +5,7 @@ downloads the official LightCrosshair 1.6.0 installer from the GitHub Release at
 install time using Chocolatey's built-in Install-ChocolateyPackage helper.
 
 Installer URL:
-https://github.com/PrimeBuild/LightCrosshair/releases/download/v1.6.0/LightCrosshair-Setup-1.6.0.exe
+https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.6.0/LightCrosshair-Setup-1.6.0.exe
 
 SHA256:
 414E50D3A6E24F107A48CF7A35E6C7E06A9CA4E2C3527912CC79C2BBF723EDD8

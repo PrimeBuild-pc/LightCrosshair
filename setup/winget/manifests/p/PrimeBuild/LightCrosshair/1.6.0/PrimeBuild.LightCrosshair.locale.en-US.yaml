@@ -5,11 +5,11 @@ PackageVersion: 1.6.0
 PackageLocale: en-US
 Publisher: PrimeBuild
 PublisherUrl: https://github.com/PrimeBuild
-PublisherSupportUrl: https://github.com/PrimeBuild/LightCrosshair/issues
+PublisherSupportUrl: https://github.com/PrimeBuild-pc/LightCrosshair/issues
 PackageName: LightCrosshair
-PackageUrl: https://github.com/PrimeBuild/LightCrosshair
+PackageUrl: https://github.com/PrimeBuild-pc/LightCrosshair
 License: GPL-3.0
-LicenseUrl: https://github.com/PrimeBuild/LightCrosshair/blob/main/LICENSE.md
+LicenseUrl: https://github.com/PrimeBuild-pc/LightCrosshair/blob/main/LICENSE.md
 Copyright: Copyright (c) PrimeBuild
 ShortDescription: LightCrosshair is a Windows desktop application that provides a customizable crosshair overlay for gaming and other applications.
 Description: >-

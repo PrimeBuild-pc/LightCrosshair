@@ -10,7 +10,7 @@ Do not submit a PR to `microsoft/winget-pkgs`, push a branch, or publish any art
 - Fork of `microsoft/winget-pkgs`.
 - Git CLI.
 - WinGet CLI for local validation, or access to a manifest validator.
-- Final 1.6.0 release artifact URL: `https://github.com/PrimeBuild/LightCrosshair/releases/download/v1.6.0/LightCrosshair-Setup-1.6.0.exe`.
+- Final 1.6.0 release artifact URL: `https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.6.0/LightCrosshair-Setup-1.6.0.exe`.
 - Final 1.6.0 artifact SHA256: `414E50D3A6E24F107A48CF7A35E6C7E06A9CA4E2C3527912CC79C2BBF723EDD8`.
 
 Do not store GitHub tokens or other credentials in this repository.
@@ -42,9 +42,9 @@ Copy-Item `
 Then update the copied manifests:
 
 - `PackageVersion: 1.6.0`
-- `InstallerUrl: https://github.com/PrimeBuild/LightCrosshair/releases/download/v1.6.0/LightCrosshair-Setup-1.6.0.exe`
+- `InstallerUrl: https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.6.0/LightCrosshair-Setup-1.6.0.exe`
 - `InstallerSha256: 414E50D3A6E24F107A48CF7A35E6C7E06A9CA4E2C3527912CC79C2BBF723EDD8`
-- `ReleaseNotesUrl: https://github.com/PrimeBuild/LightCrosshair/releases/tag/v1.6.0`
+- `ReleaseNotesUrl: https://github.com/PrimeBuild-pc/LightCrosshair/releases/tag/v1.6.0`
 - `ReleaseDate`, if present, to the actual release date.
 
 ## Validate Locally
