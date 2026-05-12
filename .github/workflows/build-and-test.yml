@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     # Windows runner required because the app interacts with DirectX/Windows APIs
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
     - name: Checkout
