@@ -3,11 +3,12 @@
 ## Table of Contents
 
 1. [Crosshair Settings](#crosshair-settings)
-2. [FPS Overlay Settings](#fps-overlay-settings)
-3. [Hotkeys](#hotkeys)
-4. [Profiles](#profiles)
-5. [Display Settings (Gamma / Vibrance)](#display-settings-gamma--vibrance)
-6. [Advanced / Troubleshooting](#advanced--troubleshooting)
+2. [Hotkeys](#hotkeys)
+3. [Display Settings (Gamma / Vibrance / GPU Status)](#display-settings-gamma--vibrance--gpu-status)
+4. [FPS Overlay Settings](#fps-overlay-settings)
+5. [GPU Driver Integration](#gpu-driver-integration)
+6. [Profiles](#profiles)
+7. [Advanced / Troubleshooting](#advanced--troubleshooting)
 
 ---
 
@@ -112,6 +113,136 @@ The crosshair can be nudged in 1-pixel increments to fine-tune its screen positi
 - **What it does:** Shows the current X,Y coordinates of the crosshair centre.
 - **UI control:** Read-only text label.
 - **Example:** `Current Position: X=960, Y=540`
+
+---
+
+## Hotkeys
+
+The Hotkeys tab lets you configure global keyboard shortcuts. LightCrosshair uses Win32 `RegisterHotKey` for global hotkey registration, which works even when the app is minimised or in the background.
+
+**Important:** Hotkey conflicts with other apps or games may prevent registration. If a hotkey doesn't work, try a different combination.
+
+### Available Hotkeys
+
+| Action                     | Default Combination | Config Properties (CrosshairConfig)           |
+|----------------------------|---------------------|-----------------------------------------------|
+| Toggle Crosshair Visibility | `Alt + X`          | `HotkeyKey`, `HotkeyUseAlt/Ctrl/Shift/Win`    |
+| Cycle Profiles Forward     | `Alt + C`           | `CycleProfileHotkeyKey`, `CycleProfileHotkeyUse*` |
+| Cycle Profiles Backward    | `Alt + V`           | `CycleProfilePrevHotkeyKey`, `CycleProfilePrevHotkeyUse*` |
+| Toggle Settings Window     | `Alt + L`           | `SettingsWindowHotkeyKey`, `SettingsWindowHotkeyUse*` |
+
+### Customising a Hotkey
+
+For each hotkey, you can set:
+- **Modifier keys:** Alt, Ctrl, Shift, Win (any combination).
+- **Base key:** Select from a dropdown of all `System.Windows.Forms.Keys` values.
+
+**Recommendation:** Use combinations with Alt or Ctrl to avoid interfering with in-game keybinds. Avoid single-key hotkeys as they may conflict with typing or gameplay inputs.
+
+### Hotkey Registration Errors
+
+If a hotkey combination is already registered by another application, LightCrosshair will silently skip registration. The Settings window does not currently display registration failures, but the action simply won't trigger. Try a different key combination if a hotkey seems unresponsive.
+
+---
+
+## Display Settings (Gamma / Vibrance / GPU Status)
+
+The Display Settings tab provides adjustments to the display's colour characteristics via hardware-level GPU LUT (Look-Up Table) operations, as well as read-only status information for GPU colour management and display sync technologies. These settings are **experimental** and depend on your display hardware and driver support.
+
+### Color Backend Info
+
+- **What it does:** Displays the active colour management backend and GPU information.
+- **UI control:** Read-only info box.
+- **Example:** `GPU: NVIDIA GeForce RTX 3080 | Hardware path active`
+
+### Enable Gamma/Contrast/Brightness/Vibrance Override
+
+- **What it does:** Master toggle for display colour adjustments. When disabled, no gamma/vibrance changes are applied.
+- **UI control:** Checkbox.
+- **Default:** Off.
+- **Warning:** These settings depend on legacy Win32 API paths. They may have **no effect** if:
+  - Windows HDR is enabled.
+  - You are using a laptop with hybrid graphics (Optimus/MUX switch).
+  - Active colour profiles or Night Light are blocking the display LUT.
+
+### Target Process
+
+- **What it does:** Restricts display colour adjustments to a specific game/application process. Leave empty to apply globally.
+- **UI controls:**
+  - Text box — type the process name (e.g., `valorant.exe`).
+  - Dropdown — pick from currently running processes.
+  - "Refresh List" — refreshes the running process list.
+  - "Browse .exe" — opens a file picker to select an executable.
+  - "Clear" — clears the target process (applies globally).
+- **Default:** Empty (global).
+- **Note:** The process name is matched to the foreground window. When the target process is in the foreground, display adjustments are applied. When it's not, they are reverted.
+
+### Gamma
+
+- **What it does:** Adjusts the gamma ramp of the display (mid-tone brightness).
+- **Range:** 50–150 (100 = default/normal).
+- **UI control:** Slider + reset button (↻).
+- **Default:** 100.
+- **Recommendation:** Start with small adjustments (±5–10). Large gamma shifts can wash out colours or crush blacks.
+
+### Contrast
+
+- **What it does:** Adjusts the contrast of the display.
+- **Range:** 50–150 (100 = default/normal).
+- **UI control:** Slider + reset button.
+- **Default:** 100.
+
+### Brightness
+
+- **What it does:** Adjusts the overall brightness of the display.
+- **Range:** 50–150 (100 = default/normal).
+- **UI control:** Slider + reset button.
+- **Default:** 100.
+
+### Vibrance
+
+- **What it does:** Increases colour saturation. A higher value makes colours more vivid.
+- **Range:** 0–100 (50 = default/normal).
+- **UI control:** Slider + reset button.
+- **Default:** 50.
+- **Recommendation:** Values above 70 may oversaturate some colours. Values below 30 may look washed out.
+
+### NVIDIA Digital Vibrance (GPU Driver)
+
+- **What it does:** Adjusts the NVIDIA Digital Vibrance Control (DVC) level via the NVIDIA driver API. This provides hardware-level colour saturation control, independent of the software-based Vibrance slider above.
+- **Range:** 0–100 (50 = default/neutral).
+- **UI controls:**
+  - Vibrance slider: 0–100.
+  - "Apply" / "Reset to Default" buttons.
+  - Read-only status label showing current DVC level.
+  - Help "[?]" indicator with extended description.
+- **Note:** Applies to primary display only. Requires NVIDIA GPU with driver installed. No administrator rights needed.
+- **Disabled state:** When no NVIDIA GPU is detected, the control group is disabled with a tooltip explaining the reason (e.g., "AMD GPU detected — NVIDIA Digital Vibrance requires an NVIDIA GPU").
+
+### GPU Color Management Status
+
+Read-only status indicators showing the availability of hardware-level colour management APIs:
+
+| Indicator | Description | Possible Values |
+|-----------|-------------|-----------------|
+| **AMD Color Management** | Status of the AMD ADL2 colour management API (brightness, contrast, saturation) | Supported / Read Only / Unavailable / Unsupported |
+| **NVIDIA Color Vibrance** | Status of the NVIDIA DVC (Digital Vibrance Control) API | Supported / Read Only / Unavailable / Unsupported |
+
+- **UI controls:** Read-only text labels (`DispAmdColorManagement`, `DispNvidiaColorVibrance`).
+- **How it works:** These values are populated automatically from the GPU driver detection service on startup and when the "Refresh GPU Status" button is clicked.
+
+### Display Sync Technology Status
+
+Read-only status indicators showing the availability of variable refresh rate (VRR) technologies:
+
+| Indicator | Description | Possible Values |
+|-----------|-------------|-----------------|
+| **NVIDIA G-Sync** | Status of G-Sync detection via NVIDIA driver API | Supported / Read Only / Unavailable / Unsupported |
+| **AMD FreeSync** | Status of FreeSync detection via AMD ADL2 API | Supported / Read Only / Unavailable / Unsupported |
+
+- **UI controls:** Read-only text labels (`DispNvidiaGSync`, `DispAmdFreeSync`).
+- **Note:** G-Sync and FreeSync are detected but **not controllable** through LightCrosshair. These indicators only show whether the display technology is available. Use the NVIDIA Control Panel or AMD Adrenalin to configure VRR settings.
+- **Help "[?]" indicators:** Each status label has a tooltip explaining why a technology may be unsupported (e.g., "NVIDIA G-Sync control is not exposed by NvAPIWrapper.Net. G-Sync is managed by the NVIDIA driver and monitor; use the NVIDIA Control Panel to configure G-Sync.")
 
 ---
 
@@ -277,32 +408,99 @@ When the overlay is active, it displays several lines of text. Here is what each
 
 ---
 
-## Hotkeys
+## GPU Driver Integration
 
-The Hotkeys tab lets you configure global keyboard shortcuts. LightCrosshair uses Win32 `RegisterHotKey` for global hotkey registration, which works even when the app is minimised or in the background.
+LightCrosshair 1.6.0 introduces a GPU driver integration layer that enables direct communication with NVIDIA and AMD GPU drivers for advanced features.
 
-**Important:** Hotkey conflicts with other apps or games may prevent registration. If a hotkey doesn't work, try a different combination.
+### GPU Detection
 
-### Available Hotkeys
+LightCrosshair automatically detects the primary GPU vendor on startup:
+- **NVIDIA**: Full driver integration via NvAPIWrapper.Net
+- **AMD**: Color management via ADL2 API
+- **Intel / Unknown**: No driver integration (unsupported for now)
 
-| Action                     | Default Combination | Config Properties (CrosshairConfig)           |
-|----------------------------|---------------------|-----------------------------------------------|
-| Toggle Crosshair Visibility | `Alt + X`          | `HotkeyKey`, `HotkeyUseAlt/Ctrl/Shift/Win`    |
-| Cycle Profiles Forward     | `Alt + C`           | `CycleProfileHotkeyKey`, `CycleProfileHotkeyUse*` |
-| Cycle Profiles Backward    | `Alt + V`           | `CycleProfilePrevHotkeyKey`, `CycleProfilePrevHotkeyUse*` |
-| Toggle Settings Window     | `Alt + L`           | `SettingsWindowHotkeyKey`, `SettingsWindowHotkeyUse*` |
+The detected GPU and driver API status are shown in the **GPU Driver** settings tab.
 
-### Customising a Hotkey
+### NVIDIA Driver FPS Cap
 
-For each hotkey, you can set:
-- **Modifier keys:** Alt, Ctrl, Shift, Win (any combination).
-- **Base key:** Select from a dropdown of all `System.Windows.Forms.Keys` values.
+LightCrosshair can apply a frame rate limit via the NVIDIA driver profile system (DRS — Driver Registry Settings).
 
-**Recommendation:** Use combinations with Alt or Ctrl to avoid interfering with in-game keybinds. Avoid single-key hotkeys as they may conflict with typing or gameplay inputs.
+**How it works:**
+- Uses the NVIDIA DRS API to set `PerformanceStateFrameRateLimiter` in an application-specific driver profile
+- Applies only to the **target process** configured in Display Settings → Target Process
+- Global profile fallback is **not available** — a target process must be set before applying
 
-### Hotkey Registration Errors
+**Behavior:**
+- Setting a cap writes to the NVIDIA driver profile for the specified application and persists until cleared
+- Clearing the cap sets the limiter to 0 (disabled) for the specified application
+- The current cap value can be read back from the driver for the specified application
+- Reading a cap never creates or modifies a driver profile (read-only)
 
-If a hotkey combination is already registered by another application, LightCrosshair will silently skip registration. The Settings window does not currently display registration failures, but the action simply won't trigger. Try a different key combination if a hotkey seems unresponsive.
+**Limitations:**
+- Requires NVIDIA GPU with driver installed
+- Requires the target process executable path (e.g., `valorant.exe`)
+- Does not require administrator rights (user-mode DRS API)
+
+**UI Controls (GPU Driver tab → NVIDIA Driver FPS Cap):**
+- Target FPS slider: 15–300 FPS
+- Apply / Clear buttons
+- Status display showing current operation result
+- Help "[?]" indicator explaining the feature
+
+### Frame Cap Assistant (GPU Driver tab)
+
+Located in the **GPU Driver** tab (under the NVIDIA FPS Cap controls), the Frame Cap Assistant provides **guidance only** — it does not enforce or apply an actual frame rate cap.
+
+**How it works:**
+- Reads the NVIDIA driver FPS cap (if set) as a baseline
+- Suggests a target FPS based on the configured refresh rate
+- Displays assistant-only status text
+
+**UI Controls (GPU Driver tab → Frame Cap Assistant):**
+- **Refresh Rate** slider: 30–500 Hz — sets the display refresh rate used for FPS target recommendations
+- **Target FPS** slider: 15–1000 FPS — the FPS value you want to target
+- **Use Recommendation** button — automatically sets the target FPS to a recommended value based on the current refresh rate (e.g., for 60 Hz it recommends 60 FPS; for 144 Hz it may recommend 141 FPS to stay below the tear line with V-Sync off)
+- **Status Text** — read-only label showing assistant status and recommended target
+  - Example: `Assistant only: No active limiter backend. Suggested target: 141 FPS.`
+
+**Note:** The Frame Cap Assistant was moved from the FPS & Performance tab to the GPU Driver tab in v1.6.0 to keep all frame-cap-related controls together.
+
+### NVIDIA Digital Vibrance
+
+NVIDIA Digital Vibrance controls have been moved to the **Display Settings** tab in v1.6.0. See the [Display Settings section](#nvidia-digital-vibrance-gpu-driver) for details.
+
+LightCrosshair can adjust digital vibrance (color saturation) via the NVIDIA driver's Digital Vibrance Control (DVC) API.
+
+**How it works:**
+- Uses `NvAPIWrapper.Native.DisplayApi.GetDVCInfo()` and `SetDVCLevel()`
+- Applies to the primary NVIDIA display
+- Range: 0–100 (mapped to driver's internal min/max range)
+- Default/neutral value: 50
+
+**Limitations:**
+- Applies to primary display only
+- Requires NVIDIA GPU with driver installed
+- Does not require administrator rights
+
+### AMD Color Management
+
+AMD color management (brightness, contrast, saturation, vibrance) uses the existing ADL2 API integration, which is unchanged from previous versions. The GPU driver abstraction layer wraps this existing functionality.
+
+See the **Display Settings** tab for AMD color controls (gamma, contrast, brightness, vibrance sliders).
+
+The status of AMD color management API availability is shown as a read-only indicator in the **GPU Color Management Status** section of the Display Settings tab.
+
+### GPU Status Refresh
+
+- **UI control:** "Refresh GPU Status" button in the GPU Driver tab.
+- **What it does:** Re-detects the GPU vendor, re-queries all capability statuses, and refreshes:
+  - GPU Driver tab controls (NVIDIA FPS cap status, vibrance status)
+  - Display Settings tab status indicators (GPU Color Management Status, Display Sync Technology Status)
+- **When to use:** If you've connected a new GPU, updated drivers, or changed display configuration while LightCrosshair is running.
+
+### Graceful Fallback
+
+If no supported GPU driver API is available (e.g., running on Intel, or NVIDIA/AMD driver not installed), LightCrosshair falls back to a null driver service. All GPU driver features are disabled with explanatory tooltips. The app will not crash.
 
 ---
 
@@ -344,102 +542,6 @@ Profiles are stored as JSON files in:
 ```
 %APPDATA%\LightCrosshair\Profiles\
 ```
-
----
-
-## Display Settings (Gamma / Vibrance)
-
-The Display Settings tab provides adjustments to the display's colour characteristics via hardware-level GPU LUT (Look-Up Table) operations. These settings are **experimental** and depend on your display hardware and driver support.
-
-### Color Backend Info
-
-- **What it does:** Displays the active colour management backend and GPU information.
-- **UI control:** Read-only info box.
-- **Example:** `GPU: NVIDIA GeForce RTX 3080 | Hardware path active`
-
-### Enable Gamma/Contrast/Brightness/Vibrance Override
-
-- **What it does:** Master toggle for display colour adjustments. When disabled, no gamma/vibrance changes are applied.
-- **UI control:** Checkbox.
-- **Default:** Off.
-- **Warning:** These settings depend on legacy Win32 API paths. They may have **no effect** if:
-  - Windows HDR is enabled.
-  - You are using a laptop with hybrid graphics (Optimus/MUX switch).
-  - Active colour profiles or Night Light are blocking the display LUT.
-
-### Target Process
-
-- **What it does:** Restricts display colour adjustments to a specific game/application process. Leave empty to apply globally.
-- **UI controls:**
-  - Text box — type the process name (e.g., `valorant.exe`).
-  - Dropdown — pick from currently running processes.
-  - "Refresh List" — refreshes the running process list.
-  - "Browse .exe" — opens a file picker to select an executable.
-  - "Clear" — clears the target process (applies globally).
-- **Default:** Empty (global).
-- **Note:** The process name is matched to the foreground window. When the target process is in the foreground, display adjustments are applied. When it's not, they are reverted.
-
-### Gamma
-
-- **What it does:** Adjusts the gamma ramp of the display (mid-tone brightness).
-- **Range:** 50–150 (100 = default/normal).
-- **UI control:** Slider + reset button (↻).
-- **Default:** 100.
-- **Recommendation:** Start with small adjustments (±5–10). Large gamma shifts can wash out colours or crush blacks.
-
-### Contrast
-
-- **What it does:** Adjusts the contrast of the display.
-- **Range:** 50–150 (100 = default/normal).
-- **UI control:** Slider + reset button.
-- **Default:** 100.
-
-### Brightness
-
-- **What it does:** Adjusts the overall brightness of the display.
-- **Range:** 50–150 (100 = default/normal).
-- **UI control:** Slider + reset button.
-- **Default:** 100.
-
-### Vibrance
-
-- **What it does:** Increases colour saturation. A higher value makes colours more vivid.
-- **Range:** 0–100 (50 = default/normal).
-- **UI control:** Slider + reset button.
-- **Default:** 50.
-- **Recommendation:** Values above 70 may oversaturate some colours. Values below 30 may look washed out.
-
----
-
-## Frame Cap Assistant
-
-Located in the FPS & Performance tab, the Frame Cap Assistant provides **guidance only** — it does not enforce or apply an actual frame rate cap.
-
-### Refresh Rate
-
-- **What it does:** Sets the display refresh rate used for FPS target recommendations.
-- **Range:** 30–500 Hz.
-- **UI control:** Slider.
-- **Default:** 60 Hz (or whatever `FrameCapAssistant.DefaultRefreshRateHz` evaluates to).
-- **Recommendation:** Set this to your monitor's actual refresh rate.
-
-### Target FPS
-
-- **What it does:** The FPS value you want to target. The assistant uses this to recommend a cap.
-- **Range:** 15–1000 FPS.
-- **UI control:** Slider.
-- **Default:** Based on the refresh rate recommendation.
-
-### Use Recommendation
-
-- **What it does:** Automatically sets the target FPS to a recommended value based on the current refresh rate (e.g., for 60 Hz it recommends 60 FPS, for 144 Hz it may recommend 141 FPS to stay below the tear line with V-Sync off).
-- **UI control:** Button labelled "Use Recommendation".
-
-### Status Text
-
-- **What it shows:** The assistant's current status, recommended target FPS, and help text.
-- **UI control:** Read-only text label.
-- **Example:** `Assistant only: No active limiter backend. Suggested target: 141 FPS.`
 
 ---
 
@@ -499,7 +601,7 @@ When launching LightCrosshair, if you see an error about elevation (Error 740), 
 2. **Reset settings:** Close LightCrosshair, then delete or rename the files in:
    - `%APPDATA%\LightCrosshair\crosshair_settings.json`
    - `%APPDATA%\LightCrosshair\prefs.json`
-   
+    
    The app will create fresh defaults on next launch.
 3. **Antivirus:** Some antivirus software may prevent writing to the AppData folder. Add an exception for LightCrosshair.
 4. **Multiple instances:** Running multiple instances of LightCrosshair may cause settings conflicts. Ensure only one instance is running.
@@ -511,6 +613,7 @@ When launching LightCrosshair, if you see an error about elevation (Error 740), 
 3. **Hybrid graphics:** Laptops with Optimus or MUX switches route the display through the integrated GPU, which may not support LUT modifications.
 4. **Night Light / colour filters:** Active colour filters can override gamma adjustments.
 5. **Check the backend info:** The Color Backend info box in the Display Settings tab shows whether the hardware path is active.
+6. **Check GPU status indicators:** The GPU Color Management Status section in the Display Settings tab shows whether the AMD or NVIDIA colour APIs are available. If both show "Unavailable" or "Unsupported", the display LUT path may be blocked.
 
 ### Hotkey Issues
 

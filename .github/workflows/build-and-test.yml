@@ -11,33 +11,32 @@ permissions:
 
 jobs:
   build:
-    # Usiamo un server Windows perché l'app interagisce con le DirectX/Windows API
-    runs-on: windows-latest 
+    # Windows runner required because the app interacts with DirectX/Windows APIs
+    runs-on: windows-latest
 
     steps:
-    - name: Checkout del codice
+    - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Setup .NET
+    - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
       with:
-        # Inserisci qui la versione di .NET che usi (es. 6.0.x, 7.0.x, 8.0.x)
-        dotnet-version: '8.0.x' 
+        dotnet-version: '8.0.x'
 
-    - name: Ripristino delle dipendenze (Restore)
+    - name: Restore dependencies
       run: dotnet restore
 
-    - name: Compilazione (Build)
+    - name: Build Release
       run: dotnet build --no-restore --configuration Release
 
-    - name: Esecuzione dei Test con Coverage
-      run: dotnet test --no-build --verbosity normal --configuration Release --collect:"XPlat Code Coverage" --results-directory coverage
+    - name: Run tests with coverage
+      run: dotnet test --no-build --verbosity normal --configuration Release --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
-    - name: Upload Coverage Report a Codecov
+    - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage/**/coverage.cobertura.xml
+        files: ./TestResults/**/coverage.cobertura.xml
         flags: unittests
         name: codecov-coverage
         fail_ci_if_error: false

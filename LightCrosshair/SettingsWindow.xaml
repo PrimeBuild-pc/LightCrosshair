@@ -153,12 +153,12 @@
         <!-- Top bar: theme toggle fixed at top-left -->
         <StackPanel Orientation="Horizontal" Margin="8" Grid.Row="0">
             <Button x:Name="ThemeToggle" Width="40" Height="28" ToolTip="Toggle Theme" Foreground="{DynamicResource AccentBrush}">
-                <TextBlock x:Name="ThemeGlyph" Text="🌙" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="ThemeGlyph" Text="&#x1F319;" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Center"/>
             </Button>
         </StackPanel>
 
         <!-- Main content with left tabs -->
-                <TabControl TabStripPlacement="Left" Margin="8" Grid.Row="1">
+        <TabControl TabStripPlacement="Left" Margin="8" Grid.Row="1">
             <!-- Crosshair Builder Tab -->
             <TabItem x:Name="BuilderTab" Header="Crosshair Builder">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -214,10 +214,10 @@
                         
                         <TextBlock Text="Position &amp; Tweaks" FontWeight="Bold" Margin="0,12,0,6"/>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
-                            <Button x:Name="NudgeLeft" Content="←" Width="40" ToolTip="Move left 1px"/>
-                            <Button x:Name="NudgeUp" Content="↑" Width="40" ToolTip="Move up 1px"/>
-                            <Button x:Name="NudgeDown" Content="↓" Width="40" ToolTip="Move down 1px"/>
-                            <Button x:Name="NudgeRight" Content="→" Width="40" ToolTip="Move right 1px"/>
+                            <Button x:Name="NudgeLeft" Content="&#x2190;" Width="40" ToolTip="Move left 1px"/>
+                            <Button x:Name="NudgeUp" Content="&#x2191;" Width="40" ToolTip="Move up 1px"/>
+                            <Button x:Name="NudgeDown" Content="&#x2193;" Width="40" ToolTip="Move down 1px"/>
+                            <Button x:Name="NudgeRight" Content="&#x2192;" Width="40" ToolTip="Move right 1px"/>
                             <Button x:Name="ResetCenterBtn" Content="Reset Center" Width="100" Margin="12,0,0,0"/>
                         </StackPanel>
                         <TextBlock x:Name="CurrentPositionText" Text="Current Position: X=0, Y=0" Opacity="0.7"/>
@@ -262,7 +262,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <!-- Gamma & Vibrance Tab -->
+            <!-- Display Settings Tab -->
             <TabItem x:Name="DisplayTab" Header="Display Settings">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
@@ -282,13 +282,13 @@
                         <TextBlock Text="Apply Settings To" FontWeight="Bold" Margin="0,0,0,6"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
                             <TextBlock Text="Target Process:" Width="120" VerticalAlignment="Center"/>
-                            <TextBox x:Name="TargetProcessTextBox" Width="190" Height="34" Padding="8,6" Margin="0,0,10,0" VerticalContentAlignment="Center" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Leave empty to apply globally. Example: valorant.exe"/>
+                            <TextBox x:Name="TargetProcessTextBox" Width="190" Height="34" Padding="8,6" Margin="0,0,10,0" VerticalContentAlignment="Center" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Required for NVIDIA driver FPS cap. Specify the game executable name. Example: valorant.exe"/>
                             <ComboBox x:Name="ProcessPickerComboBox" Width="210" Height="34" Padding="8,4" Margin="0,0,10,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}" ToolTip="Select from currently running processes"/>
                             <Button x:Name="RefreshProcessListBtn" Content="Refresh List" Width="112" Height="34" Padding="10,6" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <Button x:Name="BrowseProcessExeBtn" Content="Browse .exe" Width="124" Height="34" Padding="10,6" Margin="0,0,8,0" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <Button x:Name="ClearTargetProcessBtn" Content="Clear" Width="90" Height="34" Padding="10,6" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                         </StackPanel>
-                        <TextBlock Text="Manual mode: pick a running process, browse an .exe, or type one. Leave empty to apply globally." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                        <TextBlock Text="Manual mode: pick a running process, browse an .exe, or type one. Required for NVIDIA driver FPS cap." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
                         <!-- Note: Software fallback was removed from the codebase. -->
                         
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
@@ -296,35 +296,92 @@
                             <TextBlock Text="[?]" Foreground="#888" ToolTip="Gamma adjustments rely on legacy Win32 APIs. This slider may have no effect if you have Windows HDR enabled, use a laptop with hybrid graphics (Optimus/MUX), or have active color profiles/Night Light blocking the display LUT" Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
                             <Slider x:Name="GammaSlider" Minimum="50" Maximum="150" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <TextBlock x:Name="GammaValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
-                            <Button x:Name="ResetGammaBtn" Content="↻" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetGammaBtn" Content="&#x21BB;" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="Contrast:" Width="130" VerticalAlignment="Center"/>
                             <TextBlock Text=" " Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
                             <Slider x:Name="ContrastSlider" Minimum="50" Maximum="150" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <TextBlock x:Name="ContrastValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
-                            <Button x:Name="ResetContrastBtn" Content="↻" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetContrastBtn" Content="&#x21BB;" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="Brightness:" Width="130" VerticalAlignment="Center"/>
                             <TextBlock Text=" " Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
                             <Slider x:Name="BrightnessSlider" Minimum="50" Maximum="150" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <TextBlock x:Name="BrightnessValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
-                            <Button x:Name="ResetBrightnessBtn" Content="↻" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetBrightnessBtn" Content="&#x21BB;" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="Vibrance:" Width="130" VerticalAlignment="Center"/>
                             <TextBlock Text=" " Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
                             <Slider x:Name="VibranceSlider" Minimum="0" Maximum="100" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <TextBlock x:Name="VibranceValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
-                            <Button x:Name="ResetVibranceBtn" Content="↻" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetVibranceBtn" Content="&#x21BB;" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="Note: Hardware path is preferred. If disabled, software fallback will not be used when hardware apply fails." Opacity="0.7" TextWrapping="Wrap"/>
+                        <TextBlock Text="Note: Hardware path is preferred. If disabled, software fallback will not be used when hardware apply fails." Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                        <!-- NVIDIA Digital Vibrance Controls (moved from GPU Driver tab) -->
+                        <Border x:Name="NvidiaVibranceGroup" Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,12" IsEnabled="False">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="NVIDIA Digital Vibrance" FontWeight="Bold" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="[?]" Foreground="#888" ToolTip="Adjusts color saturation via NVIDIA driver DVC API. Applies to primary NVIDIA display only." VerticalAlignment="Center" Cursor="Help" Margin="0,0,0,6"/>
+                                </StackPanel>
+                                <TextBlock Text="Adjust digital vibrance (saturation) via NVIDIA driver. Applies to primary NVIDIA display only." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Text="Vibrance:" Width="120" VerticalAlignment="Center"/>
+                                    <Slider x:Name="NvidiaVibranceSlider" Minimum="0" Maximum="100" Width="260"/>
+                                    <TextBlock x:Name="NvidiaVibranceValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button x:Name="NvidiaVibranceApplyButton" Content="Apply" Width="100" Margin="0,0,8,0"/>
+                                    <Button x:Name="NvidiaVibranceResetButton" Content="Reset to Default" Width="130" Margin="0,0,8,0"/>
+                                </StackPanel>
+                                <TextBlock x:Name="NvidiaVibranceStatusText" Text="" Opacity="0.8" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBlock Text="Applies to primary NVIDIA display only. Does not target a specific application." Opacity="0.6" FontStyle="Italic" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- AMD Color Management Status -->
+                        <Border Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="GPU Color Management Status" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="AMD Color Management:" Width="200" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="DispAmdColorManagement" Text="-" Width="160" VerticalAlignment="Center"/>
+                                    <TextBlock Text="[?]" Foreground="#888" ToolTip="AMD ADL2 API for brightness, contrast, saturation, and vibrance control." VerticalAlignment="Center" Cursor="Help" Margin="4,0,0,0"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="NVIDIA Color/Vibrance:" Width="200" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="DispNvidiaColorVibrance" Text="-" Width="160" VerticalAlignment="Center"/>
+                                    <TextBlock Text="[?]" Foreground="#888" ToolTip="NVIDIA Digital Vibrance Control (DVC) API for color saturation adjustment." VerticalAlignment="Center" Cursor="Help" Margin="4,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Sync Technology Status -->
+                        <Border Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="Display Sync Technology Status" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <TextBlock Text="Status is read-only. Use your GPU driver control panel to configure sync settings." Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="NVIDIA G-Sync:" Width="200" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="DispNvidiaGSync" Text="-" Width="160" VerticalAlignment="Center"/>
+                                    <TextBlock Text="[?]" Foreground="#888" ToolTip="G-Sync is not exposed by the current NvAPIWrapper integration. Configure via NVIDIA Control Panel." VerticalAlignment="Center" Cursor="Help" Margin="4,0,0,0"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="AMD FreeSync:" Width="200" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="DispAmdFreeSync" Text="-" Width="160" VerticalAlignment="Center"/>
+                                    <TextBlock Text="[?]" Foreground="#888" ToolTip="FreeSync is not exposed by the current ADL2 integration. Configure via AMD Software Adrenalin." VerticalAlignment="Center" Cursor="Help" Margin="4,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-            <!-- FPS Overlay Tab -->
+            <!-- FPS &amp; Performance Tab -->
             <TabItem x:Name="FpsTab" Header="FPS &amp; Performance">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
@@ -385,26 +442,90 @@
                             <Button x:Name="FpsTextColorBtn" Content="Text Color" Width="140"/>
                             <Button x:Name="FpsBgColorBtn" Content="Background Color" Width="140" Margin="8,0,0,0"/>
                         </StackPanel>
-
-                        <TextBlock Text="Frame Cap Assistant" FontWeight="Bold" Margin="0,12,0,6"/>
-                        <TextBlock Text="Assistant only. No active limiter backend." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Refresh Rate:" Width="120" VerticalAlignment="Center"/>
-                            <Slider x:Name="FrameCapRefreshRateSlider" Minimum="30" Maximum="500" Width="260"/>
-                            <TextBlock x:Name="FrameCapRefreshRateText" Width="70" TextAlignment="Right" Margin="8,0,0,0"/>
-                            <Button x:Name="FrameCapUseRecommendationBtn" Content="Use Recommendation" Width="150" Margin="12,0,0,0"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Target FPS:" Width="120" VerticalAlignment="Center"/>
-                            <Slider x:Name="FrameCapTargetFpsSlider" Minimum="15" Maximum="1000" Width="260"/>
-                            <TextBlock x:Name="FrameCapTargetFpsText" Width="70" TextAlignment="Right" Margin="8,0,0,0"/>
-                        </StackPanel>
-                        <TextBlock x:Name="FrameCapAssistantStatusText" Text="Assistant only: No active limiter backend." Opacity="0.8" TextWrapping="Wrap"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
-<!-- Profiles Tab -->
+            <!-- GPU Driver Tab -->
+            <TabItem x:Name="GpuDriverTab" Header="GPU Driver">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12">
+                        <!-- Section 1: Detection Status -->
+                        <Border Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="GPU Detection" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Detected GPU:" Width="140" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="GpuVendorText" Text="Detecting..." VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Driver API:" Width="140" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="GpuDriverApiText" Text="-" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="Status:" Width="140" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="GpuDriverStatusText" Text="-" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <Button x:Name="GpuRefreshButton" Content="Refresh Detection" Width="150" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Section 2: FPS Limiting / Driver Frame Cap -->
+                        <Border Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="FPS Limiting &amp; Driver Frame Cap" FontWeight="Bold" Margin="0,0,0,8"/>
+
+                                <!-- NVIDIA FPS Cap Controls -->
+                                <Border x:Name="NvidiaFpsCapGroup" Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,12" IsEnabled="False">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="NVIDIA Driver FPS Cap" FontWeight="Bold" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="[?]" Foreground="#888" ToolTip="Applies a frame rate limit via NVIDIA driver profile system (DRS). Requires NVIDIA GPU and a target process set in Display Settings." VerticalAlignment="Center" Cursor="Help" Margin="0,0,0,6"/>
+                                        </StackPanel>
+                                        <TextBlock Text="Apply a frame rate limit via NVIDIA driver profile settings." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <TextBlock Text="Target FPS:" Width="120" VerticalAlignment="Center"/>
+                                            <Slider x:Name="NvidiaFpsCapSlider" Minimum="15" Maximum="300" Width="260"/>
+                                            <TextBlock x:Name="NvidiaFpsCapValueText" Width="50" TextAlignment="Right" Margin="8,0,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <Button x:Name="NvidiaFpsCapApplyButton" Content="Apply FPS Cap" Width="130" Margin="0,0,8,0"/>
+                                            <Button x:Name="NvidiaFpsCapClearButton" Content="Clear FPS Cap" Width="130" Margin="0,0,8,0"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="NvidiaFpsCapStatusText" Text="" Opacity="0.8" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                        <TextBlock Text="Note: Applies only to the target process set in Display Settings > Target Process. Set a target process before applying." Opacity="0.6" FontStyle="Italic" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Frame Cap Assistant (moved from FPS &amp; Performance) -->
+                                <Border Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,0">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="Frame Cap Assistant" FontWeight="Bold" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="[?]" Foreground="#888" ToolTip="Provides FPS target recommendations based on your display refresh rate. Does not enforce or apply a cap â€” use NVIDIA Driver FPS Cap above to apply." VerticalAlignment="Center" Cursor="Help" Margin="0,0,0,6"/>
+                                        </StackPanel>
+                                        <TextBlock Text="Assistant only. No active limiter backend." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <TextBlock Text="Refresh Rate:" Width="120" VerticalAlignment="Center"/>
+                                            <Slider x:Name="FrameCapRefreshRateSlider" Minimum="30" Maximum="500" Width="260"/>
+                                            <TextBlock x:Name="FrameCapRefreshRateText" Width="70" TextAlignment="Right" Margin="8,0,0,0"/>
+                                            <Button x:Name="FrameCapUseRecommendationBtn" Content="Use Recommendation" Width="150" Margin="12,0,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <TextBlock Text="Target FPS:" Width="120" VerticalAlignment="Center"/>
+                                            <Slider x:Name="FrameCapTargetFpsSlider" Minimum="15" Maximum="1000" Width="260"/>
+                                            <TextBlock x:Name="FrameCapTargetFpsText" Width="70" TextAlignment="Right" Margin="8,0,0,0"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="FrameCapAssistantStatusText" Text="Assistant only: No active limiter backend." Opacity="0.8" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Profiles Tab -->
             <TabItem x:Name="ProfilesTab" Header="Profiles">
                 <Grid Margin="12">
                     <Grid.RowDefinitions>
@@ -448,4 +569,3 @@
         </TabControl>
     </Grid>
 </Window>
-
