@@ -1592,14 +1592,9 @@ namespace LightCrosshair
                 GpuDriverApiText.Text = _gpuDetectionResult.IsDriverApiAvailable ? "Available" : "Not available";
                 GpuDriverStatusText.Text = _gpuDetectionResult.DriverApiStatusMessage;
 
-                // Update capability matrix
+                // Update display settings status rows (color management + sync)
                 var caps = _gpuDetectionResult.Capabilities;
-                GpuCapNvidiaFpsCap.Text = CapabilityStatusText(caps.NvidiaFpsCap);
-                GpuCapNvidiaColorVibrance.Text = CapabilityStatusText(caps.NvidiaColorVibrance);
-                GpuCapAmdColorManagement.Text = CapabilityStatusText(caps.AmdColorManagement);
-                GpuCapAmdChill.Text = CapabilityStatusText(caps.AmdChill);
-                GpuCapNvidiaGSync.Text = CapabilityStatusText(caps.NvidiaGSync);
-                GpuCapAmdFreeSync.Text = CapabilityStatusText(caps.AmdFreeSync);
+                UpdateDisplaySettingsStatus(caps);
 
                 // Enable/disable NVIDIA FPS cap controls
                 bool fpsCapSupported = caps.NvidiaFpsCap == GpuCapabilityStatus.Supported;
@@ -1644,6 +1639,28 @@ namespace LightCrosshair
             catch (Exception ex)
             {
                 Program.LogError(ex, "SettingsWindow.RefreshGpuDriverUI");
+            }
+        }
+
+        /// <summary>
+        /// Updates the Display Settings tab status rows for color management and sync technologies.
+        /// </summary>
+        private void UpdateDisplaySettingsStatus(GpuCapabilities caps)
+        {
+            try
+            {
+                if (DispAmdColorManagement != null)
+                    DispAmdColorManagement.Text = CapabilityStatusText(caps.AmdColorManagement);
+                if (DispNvidiaColorVibrance != null)
+                    DispNvidiaColorVibrance.Text = CapabilityStatusText(caps.NvidiaColorVibrance);
+                if (DispNvidiaGSync != null)
+                    DispNvidiaGSync.Text = CapabilityStatusText(caps.NvidiaGSync);
+                if (DispAmdFreeSync != null)
+                    DispAmdFreeSync.Text = CapabilityStatusText(caps.AmdFreeSync);
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "SettingsWindow.UpdateDisplaySettingsStatus");
             }
         }
 
