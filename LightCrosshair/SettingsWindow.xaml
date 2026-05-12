@@ -153,7 +153,7 @@
         <!-- Top bar: theme toggle fixed at top-left -->
         <StackPanel Orientation="Horizontal" Margin="8" Grid.Row="0">
             <Button x:Name="ThemeToggle" Width="40" Height="28" ToolTip="Toggle Theme" Foreground="{DynamicResource AccentBrush}">
-                <TextBlock x:Name="ThemeGlyph" Text="ðŸŒ™" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="ThemeGlyph" Text="&#x1F319;" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Center"/>
             </Button>
         </StackPanel>
 
@@ -214,10 +214,10 @@
                         
                         <TextBlock Text="Position &amp; Tweaks" FontWeight="Bold" Margin="0,12,0,6"/>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
-                            <Button x:Name="NudgeLeft" Content="â†" Width="40" ToolTip="Move left 1px"/>
-                            <Button x:Name="NudgeUp" Content="â†‘" Width="40" ToolTip="Move up 1px"/>
-                            <Button x:Name="NudgeDown" Content="â†“" Width="40" ToolTip="Move down 1px"/>
-                            <Button x:Name="NudgeRight" Content="â†’" Width="40" ToolTip="Move right 1px"/>
+                            <Button x:Name="NudgeLeft" Content="&#x2190;" Width="40" ToolTip="Move left 1px"/>
+                            <Button x:Name="NudgeUp" Content="&#x2191;" Width="40" ToolTip="Move up 1px"/>
+                            <Button x:Name="NudgeDown" Content="&#x2193;" Width="40" ToolTip="Move down 1px"/>
+                            <Button x:Name="NudgeRight" Content="&#x2192;" Width="40" ToolTip="Move right 1px"/>
                             <Button x:Name="ResetCenterBtn" Content="Reset Center" Width="100" Margin="12,0,0,0"/>
                         </StackPanel>
                         <TextBlock x:Name="CurrentPositionText" Text="Current Position: X=0, Y=0" Opacity="0.7"/>
@@ -296,28 +296,28 @@
                             <TextBlock Text="[?]" Foreground="#888" ToolTip="Gamma adjustments rely on legacy Win32 APIs. This slider may have no effect if you have Windows HDR enabled, use a laptop with hybrid graphics (Optimus/MUX), or have active color profiles/Night Light blocking the display LUT" Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
                             <Slider x:Name="GammaSlider" Minimum="50" Maximum="150" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <TextBlock x:Name="GammaValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
-                            <Button x:Name="ResetGammaBtn" Content="â†»" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetGammaBtn" Content="&#x21BB;" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="Contrast:" Width="130" VerticalAlignment="Center"/>
                             <TextBlock Text=" " Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
                             <Slider x:Name="ContrastSlider" Minimum="50" Maximum="150" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <TextBlock x:Name="ContrastValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
-                            <Button x:Name="ResetContrastBtn" Content="â†»" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetContrastBtn" Content="&#x21BB;" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="Brightness:" Width="130" VerticalAlignment="Center"/>
                             <TextBlock Text=" " Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
                             <Slider x:Name="BrightnessSlider" Minimum="50" Maximum="150" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <TextBlock x:Name="BrightnessValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
-                            <Button x:Name="ResetBrightnessBtn" Content="â†»" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetBrightnessBtn" Content="&#x21BB;" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="Vibrance:" Width="130" VerticalAlignment="Center"/>
                             <TextBlock Text=" " Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
                             <Slider x:Name="VibranceSlider" Minimum="0" Maximum="100" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <TextBlock x:Name="VibranceValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
-                            <Button x:Name="ResetVibranceBtn" Content="â†»" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
+                            <Button x:Name="ResetVibranceBtn" Content="&#x21BB;" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <TextBlock Text="Note: Hardware path is preferred. If disabled, software fallback will not be used when hardware apply fails." Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
