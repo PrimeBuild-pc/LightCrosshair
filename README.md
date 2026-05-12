@@ -14,7 +14,7 @@ LightCrosshair is a lightweight, gamer-focused crosshair overlay for Windows 10/
 
 **⬆️ Watch demo video on YouTube**
 
-**v1.5.0 status:** GitHub Release downloads are live. WinGet is pending maintainer review. Chocolatey package metadata is locally validated, but publication is currently blocked by a Chocolatey account/API permission issue.
+**v1.6.0 status:** Settings UI reorganization with improved GPU driver section layout. NVIDIA Digital Vibrance controls moved to Display Settings tab for unified colour management. Frame Cap Assistant relocated to GPU Driver tab. Read-only GPU sync technology status (G-Sync, FreeSync) and colour management status (AMD Color Management, NVIDIA Color Vibrance) added to Display Settings tab. Help "[?]" tooltip indicators added for unsupported/obscure features.
 
 ## Documentation
 
@@ -27,8 +27,8 @@ LightCrosshair is a lightweight, gamer-focused crosshair overlay for Windows 10/
 - **Crosshair-first overlay:** customizable shape, size, thickness, gap, colors, opacity, outline, and profile workflow.
 - **Visibility presets:** quick high-contrast crosshair presets for better visibility without changing game rendering.
 - **Performance overlay modes:** Off, Minimal, and Detailed modes, plus ultra-lightweight behavior for lower-overhead sessions.
-- **GPU Driver Integration:** Direct NVIDIA driver integration for FPS cap (via DRS) and digital vibrance. AMD color management via ADL2. Capability matrix shown in settings.
-- **Frame Cap Assistant:** target-FPS guidance only. It does not enforce a real frame limit and has no active limiter backend.
+- **GPU Driver Integration:** Direct NVIDIA driver integration for FPS cap (via DRS) and digital vibrance. AMD color management via ADL2. Read-only GPU sync technology and colour management status in Display Settings tab.
+- **Frame Cap Assistant:** target-FPS guidance only. It does not enforce a real frame limit and has no active limiter backend. Located in the GPU Driver tab alongside NVIDIA FPS cap controls.
 - **Non-injected FPS telemetry:** optional ETW-style present telemetry with optional RTSS fallback caveats when detailed metrics are unavailable.
 - **Borderless/windowed oriented:** normal overlays are expected to work best in borderless windowed or windowed games.
 - **Anti-cheat-conscious design:** LightCrosshair avoids game hooks, injection, and native runtime backends.
@@ -39,13 +39,13 @@ LightCrosshair is a lightweight, gamer-focused crosshair overlay for Windows 10/
 
 ### GitHub Release Downloads
 
-Download v1.5.0 from the [GitHub Releases page](../../releases/tag/v1.5.0).
+Download v1.6.0 from the [GitHub Releases page](../../releases/tag/v1.6.0).
 
 Available assets:
 
-- **Installer:** `LightCrosshair-Setup-1.5.0.exe`
-- **Portable ZIP x64:** `LightCrosshair-v1.5.0-x64.zip`
-- **Portable ZIP ARM64:** `LightCrosshair-v1.5.0-ARM64.zip`
+- **Installer:** `LightCrosshair-Setup-1.6.0.exe`
+- **Portable ZIP x64:** `LightCrosshair-v1.6.0-x64.zip`
+- **Portable ZIP ARM64:** `LightCrosshair-v1.6.0-ARM64.zip`
 
 Recommended path for most users: download the installer, run it, then launch LightCrosshair from the Start Menu.
 
@@ -60,7 +60,7 @@ Portable ZIP flow:
 
 - **WinGet:** manifest PR is open and checks pass, but maintainer review is still required. Do not use a `winget install` command until the manifest is merged and available from the public WinGet source.
 - **Chocolatey:** package files are prepared and locally validated. Public publication is blocked by a Chocolatey `403` account/API/permission issue, so no live Chocolatey install command is advertised yet.
-- **PowerShell install script:** planned only. A live `irm`/`iwr` command is not advertised until the hosted script is public, versioned for v1.5.0, downloads the correct artifact, and verifies the final SHA256.
+- **PowerShell install script:** planned only. A live `irm`/`iwr` command is not advertised until the hosted script is public, versioned for v1.6.0, downloads the correct artifact, and verifies the final SHA256.
 
 ---
 
@@ -95,7 +95,7 @@ Default hotkeys:
 - Exclusive fullscreen can hide normal overlays. Use borderless windowed or windowed mode when possible.
 - Frame Cap Assistant is assistant-only; it does not apply or enforce a real FPS cap.
 - Frame-generation information is conservative. Timing/FPS differences are treated as estimates or suspicion unless explicit provider evidence is available.
-- PresentMon is not a LightCrosshair runtime provider in v1.5.0.
+- PresentMon is not a LightCrosshair runtime provider in v1.6.0.
 - Some games and anti-cheat systems may block overlays or behave differently. No overlay can guarantee universal compatibility.
 
 ---
