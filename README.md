@@ -38,7 +38,13 @@ It focuses on the essentials: a visible crosshair, profile-based configuration, 
 
 ## Screenshots
 
-> Screenshots will be added here.
+<img width="1279" height="862" alt="image" src="https://github.com/user-attachments/assets/e658c09a-0768-48d9-89c6-c27e46c3d427" />
+
+<img width="1280" height="1052" alt="image" src="https://github.com/user-attachments/assets/7b8463e6-8088-422d-bb97-532bf9edab6f" />
+
+<img width="1259" height="1083" alt="image" src="https://github.com/user-attachments/assets/b7c6a235-d757-4175-8b29-588a470eebc5" />
+
+<img width="1398" height="838" alt="image" src="https://github.com/user-attachments/assets/dca6b81a-c945-4ba8-811f-dfedadd3abbe" />
 
 | Crosshair overlay | Settings window | Profiles |
 | --- | --- | --- |
