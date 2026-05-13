@@ -1,102 +1,151 @@
+<div align="center">
+
 # 🎯 LightCrosshair
 
-> **A lightweight crosshair overlay for competitive gaming on Windows**
+**A lightweight, customizable crosshair overlay for competitive gaming on Windows.**
 
-[![Windows](https://img.shields.io/badge/Windows-10%2F11-blue?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
-[![.NET](https://img.shields.io/badge/.NET-8.0-purple?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
+[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Latest Release](https://img.shields.io/github/v/release/PrimeBuild-pc/LightCrosshair?label=release&logo=github)](../../releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/PrimeBuild-pc/LightCrosshair/total?label=downloads&logo=github)](../../releases)
+[![Issues](https://img.shields.io/github/issues/PrimeBuild-pc/LightCrosshair?label=issues&logo=github)](../../issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/PrimeBuild-pc/LightCrosshair?label=pull%20requests&logo=github)](../../pulls)
+[![Stars](https://img.shields.io/github/stars/PrimeBuild-pc/LightCrosshair?style=flat&label=stars&logo=github)](../../stargazers)
+[![License](https://img.shields.io/github/license/PrimeBuild-pc/LightCrosshair?label=license)](LICENSE)
 [![Codecov](https://codecov.io/gh/PrimeBuild-pc/LightCrosshair/branch/main/graph/badge.svg)](https://codecov.io/gh/PrimeBuild-pc/LightCrosshair)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-Latest-brightgreen)](../../releases)
 
-LightCrosshair is a lightweight, gamer-focused crosshair overlay for Windows 10/11. It keeps the core experience simple: a visible, customizable crosshair, profile-based settings, and optional low-overhead performance information for borderless/windowed games.
+[Download](../../releases/latest) • [Documentation](docs/SETTINGS.md) • [Report a bug](../../issues) • [Request a feature](../../issues) • [Support](#support-the-project)
+
+</div>
+
+---
+
+## Overview
+
+**LightCrosshair** is a lightweight crosshair overlay for Windows 10/11, designed for players who want a simple, customizable, and non-invasive overlay for borderless or windowed games.
+
+It focuses on the essentials: a visible crosshair, profile-based configuration, quick hotkeys, optional performance information, and a design that avoids game injection or hook-based backends.
+
+<div align="center">
 
 [![Watch the demo video](https://img.youtube.com/vi/CKbj2eObQ1E/maxresdefault.jpg)](https://www.youtube.com/watch?v=CKbj2eObQ1E)
 
-**⬆️ Watch demo video on YouTube**
+**Watch the demo on YouTube**
 
-**v1.6.0 status:** Settings UI reorganization with improved GPU driver section layout. NVIDIA Digital Vibrance controls moved to Display Settings tab for unified colour management. Frame Cap Assistant relocated to GPU Driver tab. Read-only GPU sync technology status (G-Sync, FreeSync) and colour management status (AMD Color Management, NVIDIA Color Vibrance) added to Display Settings tab. Help "[?]" tooltip indicators added for unsupported/obscure features.
-
-## Documentation
-
-- [Settings & Options Guide](docs/SETTINGS.md) — Complete documentation for every setting, hotkey, profile, and performance overlay option.
+</div>
 
 ---
 
-## Highlights
+## Screenshots
 
-- **Crosshair-first overlay:** customizable shape, size, thickness, gap, colors, opacity, outline, and profile workflow.
-- **Visibility presets:** quick high-contrast crosshair presets for better visibility without changing game rendering.
-- **Performance overlay modes:** Off, Minimal, and Detailed modes, plus ultra-lightweight behavior for lower-overhead sessions.
-- **GPU Driver Integration:** Direct NVIDIA driver integration for FPS cap (via DRS) and digital vibrance. AMD color management via ADL2. Read-only GPU sync technology and colour management status in Display Settings tab.
-- **Frame Cap Assistant:** target-FPS guidance only. It does not enforce a real frame limit and has no active limiter backend. Located in the GPU Driver tab alongside NVIDIA FPS cap controls.
-- **Non-injected FPS telemetry:** optional ETW-style present telemetry with optional RTSS fallback caveats when detailed metrics are unavailable.
-- **Borderless/windowed oriented:** normal overlays are expected to work best in borderless windowed or windowed games.
-- **Anti-cheat-conscious design:** LightCrosshair avoids game hooks, injection, and native runtime backends.
+> Screenshots will be added here.
+
+| Crosshair overlay | Settings window | Profiles |
+| --- | --- | --- |
+| `assets/screenshots/overlay.png` | `assets/screenshots/settings.png` | `assets/screenshots/profiles.png` |
+
+Suggested folder structure:
+
+```text
+assets/
+└── screenshots/
+    ├── overlay.png
+    ├── settings.png
+    └── profiles.png
+```
 
 ---
 
-## Installation
+## Features
 
-### GitHub Release Downloads
+- **Custom crosshair overlay** with configurable shape, size, thickness, gap, color, opacity, and outline.
+- **Profile workflow** for switching quickly between different games or visibility needs.
+- **Visibility presets** for high-contrast setups without changing in-game rendering.
+- **Optional performance overlay** with Off, Minimal, and Detailed display modes.
+- **GPU driver integration** for supported NVIDIA and AMD-related display/color features.
+- **Frame Cap Assistant** for target-FPS guidance.
+- **Non-injected design**: no game hooks, no injection, and no native runtime backend.
+- **Borderless/windowed friendly** for better overlay visibility.
 
-Download v1.6.0 from the [GitHub Releases page](../../releases/tag/v1.6.0).
+---
 
-Available assets:
+## What's New in v1.6.0
+
+- Reorganized Settings UI.
+- Improved GPU Driver and Display Settings layout.
+- Moved NVIDIA Digital Vibrance controls into Display Settings.
+- Moved Frame Cap Assistant into the GPU Driver tab.
+- Added read-only GPU sync and color-management status indicators.
+- Added help tooltip indicators for unsupported or advanced features.
+
+---
+
+## Download & Installation
+
+Download the latest version from the **[GitHub Releases page](../../releases/latest)**.
+
+### Available release assets
 
 - **Installer:** `LightCrosshair-Setup-1.6.0.exe`
 - **Portable ZIP x64:** `LightCrosshair-v1.6.0-x64.zip`
 - **Portable ZIP ARM64:** `LightCrosshair-v1.6.0-ARM64.zip`
 
-Recommended path for most users: download the installer, run it, then launch LightCrosshair from the Start Menu.
+### Recommended installation
 
-Portable ZIP flow:
+1. Download the installer from the latest release.
+2. Run the installer.
+3. Launch **LightCrosshair** from the Start Menu.
 
-1. Download the ZIP matching your CPU architecture.
+### Portable version
+
+1. Download the ZIP that matches your CPU architecture.
 2. Extract it to a folder you control.
 3. Run `LightCrosshair.exe`.
-4. Open Settings with `Alt + L` or by left-clicking the tray icon.
-
-### Package Managers
-
-- **WinGet:** manifest PR is open and checks pass, but maintainer review is still required. Do not use a `winget install` command until the manifest is merged and available from the public WinGet source.
-- **Chocolatey:** package files are prepared and locally validated. Public publication is blocked by a Chocolatey `403` account/API/permission issue, so no live Chocolatey install command is advertised yet.
-- **PowerShell install script:** planned only. A live `irm`/`iwr` command is not advertised until the hosted script is public, versioned for v1.6.0, downloads the correct artifact, and verifies the final SHA256.
+4. Open Settings with `Alt + L` or by clicking the tray icon.
 
 ---
 
 ## Requirements
 
 - Windows 10 or Windows 11.
-- .NET 8 Windows Desktop Runtime for the current framework-dependent packages.
+- .NET 8 Windows Desktop Runtime for framework-dependent builds.
 - Borderless windowed or windowed game mode is recommended for overlay visibility.
 
 ---
 
 ## Usage
 
-1. Launch LightCrosshair.
-2. Open Settings with `Alt + L` or the tray icon.
-3. Customize the crosshair shape, size, colors, opacity, outline, and visibility preset.
-4. Save profiles for different games or visibility needs.
-5. Enable the performance overlay only if you want FPS/frametime information.
+1. Launch **LightCrosshair**.
+2. Open Settings with `Alt + L` or from the tray icon.
+3. Customize your crosshair.
+4. Save profiles for different games or preferences.
+5. Enable the performance overlay only when needed.
 
-Default hotkeys:
+### Default hotkeys
 
-- `Alt + X` toggles crosshair visibility.
-- `Alt + C` cycles to the next profile.
-- `Alt + V` cycles to the previous profile.
-- `Alt + L` toggles the Settings window.
+| Hotkey | Action |
+| --- | --- |
+| `Alt + X` | Toggle crosshair visibility |
+| `Alt + C` | Next profile |
+| `Alt + V` | Previous profile |
+| `Alt + L` | Toggle Settings window |
 
 ---
 
-## Limitations And Safety
+## Limitations & Safety
 
-- LightCrosshair does not inject into games and does not install hook/native backends.
-- Exclusive fullscreen can hide normal overlays. Use borderless windowed or windowed mode when possible.
-- Frame Cap Assistant is assistant-only; it does not apply or enforce a real FPS cap.
-- Frame-generation information is conservative. Timing/FPS differences are treated as estimates or suspicion unless explicit provider evidence is available.
-- PresentMon is not a LightCrosshair runtime provider in v1.6.0.
-- Some games and anti-cheat systems may block overlays or behave differently. No overlay can guarantee universal compatibility.
+- LightCrosshair does **not** inject into games.
+- Exclusive fullscreen can hide normal overlays; use borderless windowed or windowed mode when possible.
+- Frame Cap Assistant provides guidance only and does not enforce a real FPS cap.
+- Some games or anti-cheat systems may block overlays or behave differently.
+- No overlay can guarantee universal compatibility with every game.
+
+---
+
+## Documentation
+
+- [Settings & Options Guide](docs/SETTINGS.md)
+- [Third-Party Notices](docs/THIRD_PARTY_NOTICES.md)
 
 ---
 
@@ -118,11 +167,11 @@ dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --ru
 
 ---
 
-## Architecture
+## Tech Stack
 
-- **Framework:** .NET 8.0 Windows desktop app.
+- **Framework:** .NET 8 Windows desktop app.
 - **Graphics:** SkiaSharp primary renderer with automatic GDI fallback.
-- **Settings:** profile-based configuration saved under the user profile.
+- **Settings:** profile-based configuration stored under the user profile.
 - **Performance:** cached rendering and config-driven redraws to keep idle overhead low.
 
 ---
@@ -131,26 +180,18 @@ dotnet publish LightCrosshair/LightCrosshair.csproj --configuration Release --ru
 
 Bug reports, focused feature requests, documentation improvements, and tested pull requests are welcome.
 
-Development prerequisites:
-
-- Visual Studio 2022 or VS Code.
-- .NET 8 SDK.
-- Windows 10/11 for desktop app testing.
-
-Before opening a pull request, run:
+Before opening a pull request, please run:
 
 ```bash
 dotnet build LightCrosshair.sln
 dotnet test LightCrosshair.sln
 ```
 
----
+Recommended development setup:
 
-## Third-Party Notices
-
-This application uses the following third-party libraries:
-- **NvAPIWrapper.Net** (LGPL-3.0) — NVIDIA GPU driver integration. See [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) for details.
-- **AMD ADLX SDK** (Proprietary AMD License) — AMD GPU detection. See [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) for details.
+- Visual Studio 2022 or VS Code.
+- .NET 8 SDK.
+- Windows 10/11 for desktop app testing.
 
 ---
 
@@ -160,20 +201,20 @@ This project is licensed under the **MIT License**. See [LICENSE](LICENSE).
 
 ---
 
-## Support
-
-- **Issues:** [GitHub Issues](../../issues)
-- **Discussions:** [GitHub Discussions](../../discussions)
-- **Releases:** [GitHub Releases](../../releases)
-
----
+## Support the Project
 
 <div align="center">
 
-**Made with ❤️ for the gaming community**
+If LightCrosshair is useful to you, consider supporting the project.
 
-[![PayPal](https://img.shields.io/badge/Supporta%20su-PayPal-blue?logo=paypal)](https://paypal.me/PrimeBuildOfficial?country.x=IT&locale.x=it_IT)
+[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white)](https://paypal.me/PrimeBuildOfficial?country.x=IT&locale.x=it_IT)
+[![Star on GitHub](https://img.shields.io/github/stars/PrimeBuild-pc/LightCrosshair?style=social)](../../stargazers)
+[![Report Bug](https://img.shields.io/badge/Report-Bug-red?logo=github)](../../issues)
+[![Request Feature](https://img.shields.io/badge/Request-Feature-blue?logo=github)](../../issues)
+[![Open Discussions](https://img.shields.io/badge/Open-Discussions-purple?logo=github)](../../discussions)
 
-[⭐ Star this repo](../../stargazers) • [🐛 Report Bug](../../issues) • [💡 Request Feature](../../issues) • [🤝 Contribute](../../pulls)
+**Every star, issue report, feature request, and donation helps keep the project alive.**
+
+Made with ❤️ for the gaming community.
 
 </div>
