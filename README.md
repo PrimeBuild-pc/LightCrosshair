@@ -143,6 +143,7 @@ Download the latest version from the **[GitHub Releases page](../../releases/lat
 - LightCrosshair does **not** inject into games.
 - Exclusive fullscreen can hide normal overlays; use borderless windowed or windowed mode when possible.
 - Frame Cap Assistant provides guidance only and does not enforce a real FPS cap.
+- Frame-generation and pacing diagnostics currently use conservative heuristics, ETW-style present telemetry analysis, and optional RTSS fallback paths where available. Full PresentMon integration remains a future target and is not advertised as an implemented live runtime backend yet.
 - Some games or anti-cheat systems may block overlays or behave differently.
 - No overlay can guarantee universal compatibility with every game.
 
