@@ -90,6 +90,21 @@ assets/
 
 Download the latest version from the **[GitHub Releases page](../../releases/latest)**.
 
+### Install with WinGet
+
+You can install LightCrosshair from the Windows Package Manager with:
+
+```powershell
+winget install --id PrimeBuild.LightCrosshair --exact
+```
+
+If the package is not found immediately after a new release, update your WinGet sources and try again:
+
+```powershell
+winget source update
+winget install --id PrimeBuild.LightCrosshair --exact
+```
+
 ### Available release assets
 
 - **Installer:** `LightCrosshair-Setup-1.6.0.exe`
