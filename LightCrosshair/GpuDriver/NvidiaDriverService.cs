@@ -123,7 +123,28 @@ namespace LightCrosshair.GpuDriver
                 return false;
             }
 
-            return TrySetNvidiaFpsCap(0, applicationExePath, out errorMessage);
+            try
+            {
+                using var session = DriverSettingsSession.CreateAndLoad();
+
+                var profile = ResolveExistingProfile(session, applicationExePath, out string? profileNote);
+                if (profile == null)
+                {
+                    errorMessage = profileNote ?? "No application profile found to clear.";
+                    return false;
+                }
+
+                profile.SetSetting(KnownSettingId.PerformanceStateFrameRateLimiter, 0u);
+                session.Save();
+
+                errorMessage = string.Empty;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                return false;
+            }
         }
 
         /// <inheritdoc />
@@ -147,13 +168,13 @@ namespace LightCrosshair.GpuDriver
             {
                 using var session = DriverSettingsSession.CreateAndLoad();
 
-                // Read-only: find existing profile, do NOT create one
-                string exeName = Path.GetFileName(applicationExePath);
-                var profile = session.FindApplicationProfile(exeName);
+                // Read-only: find existing profile, do NOT create one.
+                var profile = ResolveExistingProfile(session, applicationExePath, out _);
 
                 if (profile == null)
                 {
                     currentFps = 0;
+                    string exeName = Path.GetFileName(applicationExePath);
                     statusMessage = $"No FPS cap (no profile found for '{exeName}')";
                     return true;
                 }
@@ -340,26 +361,51 @@ namespace LightCrosshair.GpuDriver
             string applicationExePath,
             out string? errorMessage)
         {
-            errorMessage = null;
-
-            string exeName = Path.GetFileName(applicationExePath);
-
-            // Try to find an existing profile first
-            var profile = session.FindApplicationProfile(exeName);
+            var profile = ResolveExistingProfile(session, applicationExePath, out errorMessage);
             if (profile != null)
                 return profile;
+
+            if (errorMessage != null)
+                return null;
+
+            string exeName = Path.GetFileName(applicationExePath);
 
             // Create a new profile for this application
             try
             {
                 profile = DriverSettingsProfile.CreateProfile(session, "LightCrosshair_" + exeName, null);
+                ProfileApplication.CreateApplication(profile, exeName, exeName, null, null, false, null);
                 return profile;
             }
             catch (Exception ex)
             {
-                errorMessage = $"Could not create application profile for '{exeName}': {ex.Message}";
+                errorMessage = $"Could not create and bind application profile for '{exeName}': {ex.Message}";
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Resolves an existing DRS profile without creating or modifying driver state.
+        /// </summary>
+        private static DriverSettingsProfile? ResolveExistingProfile(
+            DriverSettingsSession session,
+            string applicationExePath,
+            out string? errorMessage)
+        {
+            errorMessage = null;
+
+            string exeName = Path.GetFileName(applicationExePath);
+            if (string.IsNullOrWhiteSpace(exeName))
+            {
+                errorMessage = "Target application path does not contain an executable name.";
+                return null;
+            }
+
+            var profile = session.FindApplicationProfile(applicationExePath);
+            if (profile != null)
+                return profile;
+
+            return session.FindApplicationProfile(exeName);
         }
     }
 }
