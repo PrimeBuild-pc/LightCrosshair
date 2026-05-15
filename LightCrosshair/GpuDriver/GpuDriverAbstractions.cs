@@ -146,6 +146,13 @@ namespace LightCrosshair.GpuDriver
         bool TryGetNvidiaFpsCap(string? applicationExePath, out int currentFps, out string statusMessage);
 
         /// <summary>
+        /// Reads allowlisted NVIDIA profile settings for a target application without creating or modifying profiles.
+        /// </summary>
+        /// <param name="applicationExePath">Full path to the target application executable.</param>
+        /// <returns>Read-only audit result for allowlisted NVIDIA profile settings.</returns>
+        NvidiaProfileAuditResult AuditNvidiaProfileSettings(string? applicationExePath);
+
+        /// <summary>
         /// Attempts to set NVIDIA digital vibrance (0-100).
         /// </summary>
         /// <param name="vibrance">Vibrance value (0-100).</param>
@@ -224,6 +231,10 @@ namespace LightCrosshair.GpuDriver
             statusMessage = "NVIDIA driver API not available (NullGpuDriverService).";
             return false;
         }
+
+        /// <inheritdoc />
+        public NvidiaProfileAuditResult AuditNvidiaProfileSettings(string? applicationExePath) =>
+            NvidiaProfileAuditResult.Unsupported("NVIDIA driver API not available (NullGpuDriverService).");
 
         /// <inheritdoc />
         public bool TrySetNvidiaVibrance(int vibrance, out string errorMessage)

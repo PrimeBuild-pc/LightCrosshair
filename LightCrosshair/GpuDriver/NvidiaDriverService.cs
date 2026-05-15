@@ -194,6 +194,54 @@ namespace LightCrosshair.GpuDriver
         }
 
         /// <inheritdoc />
+        public NvidiaProfileAuditResult AuditNvidiaProfileSettings(string? applicationExePath)
+        {
+            if (!_initialized)
+            {
+                return NvidiaProfileAuditResult.Unsupported("NVIDIA driver API not available");
+            }
+
+            if (string.IsNullOrWhiteSpace(applicationExePath))
+            {
+                return NvidiaProfileAuditResult.InvalidTarget("Select a target application before auditing NVIDIA profile settings.");
+            }
+
+            try
+            {
+                using var session = DriverSettingsSession.CreateAndLoad();
+                var profile = ResolveExistingProfile(session, applicationExePath, out string? profileNote);
+
+                if (profile == null)
+                {
+                    return NvidiaProfileAuditResult.FromStatus(
+                        NvidiaProfileAuditStatus.NoProfile,
+                        applicationExePath,
+                        null,
+                        profileNote ?? "No NVIDIA application profile found for the target application.");
+                }
+
+                var items = NvidiaProfileSettingCatalog.All
+                    .Select(definition => ReadProfileSetting(profile, definition))
+                    .ToArray();
+
+                return new NvidiaProfileAuditResult(
+                    NvidiaProfileAuditStatus.Present,
+                    applicationExePath,
+                    profile.Name,
+                    items,
+                    $"NVIDIA profile '{profile.Name}' audited.");
+            }
+            catch (Exception ex)
+            {
+                return NvidiaProfileAuditResult.FromStatus(
+                    NvidiaProfileAuditStatus.Error,
+                    applicationExePath,
+                    null,
+                    ex.Message);
+            }
+        }
+
+        /// <inheritdoc />
         public bool TrySetNvidiaVibrance(int vibrance, out string errorMessage)
         {
             if (!_initialized)
@@ -406,6 +454,33 @@ namespace LightCrosshair.GpuDriver
                 return profile;
 
             return session.FindApplicationProfile(exeName);
+        }
+
+        private static NvidiaProfileSettingAuditItem ReadProfileSetting(
+            DriverSettingsProfile profile,
+            NvidiaProfileSettingDefinition definition)
+        {
+            try
+            {
+                var setting = profile.GetSetting(definition.SettingId);
+                uint rawValue = (uint)setting.CurrentValue;
+
+                return new NvidiaProfileSettingAuditItem(
+                    definition,
+                    NvidiaProfileAuditStatus.Present,
+                    rawValue,
+                    definition.FormatFriendlyValue(rawValue),
+                    "Present in resolved application profile.");
+            }
+            catch
+            {
+                return new NvidiaProfileSettingAuditItem(
+                    definition,
+                    NvidiaProfileAuditStatus.NotPresent,
+                    null,
+                    string.Empty,
+                    "Setting is not present in the resolved application profile.");
+            }
         }
     }
 }
