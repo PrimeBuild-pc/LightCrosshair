@@ -75,14 +75,14 @@ assets/
 
 ---
 
-## What's New in v1.6.0
+## What's New in v1.7.0
 
-- Reorganized Settings UI.
-- Improved GPU Driver and Display Settings layout.
-- Moved NVIDIA Digital Vibrance controls into Display Settings.
-- Moved Frame Cap Assistant into the GPU Driver tab.
-- Added read-only GPU sync and color-management status indicators.
-- Added help tooltip indicators for unsupported or advanced features.
+- Fixed NVIDIA FPS cap profile binding so per-app cap controls target the selected application profile.
+- Added NVIDIA profile audit information for safer inspection before applying supported per-app settings.
+- Added NVIDIA Low Latency Off/On per-app controls.
+- Added NVIDIA VSync per-app controls.
+- Added read-only NVIDIA G-SYNC and Low Latency CPL State display.
+- Kept NVIDIA safety boundaries: no global profile writes, no raw setting editor, no DLSS writes, no G-SYNC writes, and the app remains `asInvoker`.
 
 ---
 
@@ -107,9 +107,9 @@ winget install --id PrimeBuild.LightCrosshair --exact
 
 ### Available release assets
 
-- **Installer:** `LightCrosshair-Setup-1.6.0.exe`
-- **Portable ZIP x64:** `LightCrosshair-v1.6.0-x64.zip`
-- **Portable ZIP ARM64:** `LightCrosshair-v1.6.0-ARM64.zip`
+- **Installer:** `LightCrosshair-Setup-1.7.0.exe`
+- **Portable ZIP x64:** `LightCrosshair-v1.7.0-x64.zip`
+- **Portable ZIP ARM64:** `LightCrosshair-v1.7.0-ARM64.zip`
 
 ### Recommended installation
 
