@@ -57,6 +57,16 @@ public class GpuDriverTests
     }
 
     [Fact]
+    public void NullGpuDriverService_AuditNvidiaProfile_ReturnsUnsupported()
+    {
+        var service = new NullGpuDriverService();
+        var result = service.AuditNvidiaProfileSettings(@"C:\Games\sample.exe");
+
+        Assert.Equal(NvidiaProfileAuditStatus.Unsupported, result.Status);
+        Assert.All(result.Settings, item => Assert.Equal(NvidiaProfileAuditStatus.Unsupported, item.Status));
+    }
+
+    [Fact]
     public void NullGpuDriverService_TrySetNvidiaVibrance_ReturnsFalse()
     {
         var service = new NullGpuDriverService();
@@ -159,6 +169,17 @@ public class GpuDriverTests
         var result = service.TrySetNvidiaFpsCap(60, null, out string error);
         Assert.False(result);
         Assert.NotEmpty(error);
+    }
+
+    [Fact]
+    public void AmdDriverService_AuditNvidiaProfile_ReturnsUnsupported()
+    {
+        var service = new AmdDriverService();
+        service.Detect();
+        var result = service.AuditNvidiaProfileSettings(@"C:\Games\sample.exe");
+
+        Assert.Equal(NvidiaProfileAuditStatus.Unsupported, result.Status);
+        Assert.All(result.Settings, item => Assert.Equal(NvidiaProfileAuditStatus.Unsupported, item.Status));
     }
 
     [Fact]
