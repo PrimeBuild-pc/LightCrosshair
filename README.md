@@ -38,13 +38,37 @@
 
 ## Screenshots
 
-<img width="1279" height="862" alt="image" src="https://github.com/user-attachments/assets/e658c09a-0768-48d9-89c6-c27e46c3d427" />
-
-<img width="1280" height="1052" alt="image" src="https://github.com/user-attachments/assets/7b8463e6-8088-422d-bb97-532bf9edab6f" />
-
-<img width="1259" height="1083" alt="image" src="https://github.com/user-attachments/assets/b7c6a235-d757-4175-8b29-588a470eebc5" />
-
-<img width="1398" height="838" alt="image" src="https://github.com/user-attachments/assets/dca6b81a-c945-4ba8-811f-dfedadd3abbe" />
+<table>
+  <tr>
+    <td width="33%">
+      <img alt="LightCrosshair overlay and settings" src="https://github.com/user-attachments/assets/06fbdd78-4c0d-4a23-a63a-d9cb3943fd9f" />
+    </td>
+    <td width="33%">
+      <img alt="Crosshair customization settings" src="https://github.com/user-attachments/assets/ded3a5c3-d734-49ab-8b50-1954d1250a3f" />
+    </td>
+    <td width="33%">
+      <img alt="Profile management settings" src="https://github.com/user-attachments/assets/c7aa1464-5eb4-47ec-a67f-9e615f16a94e" />
+    </td>
+  </tr>
+  <tr>
+    <td width="33%">
+      <img alt="Performance overlay settings" src="https://github.com/user-attachments/assets/32b0bcbd-d940-47da-8eda-20a90dddfb62" />
+    </td>
+    <td width="33%">
+      <img alt="GPU driver settings" src="https://github.com/user-attachments/assets/c0743ae5-fb07-4ce7-b42f-e3a6b676c969" />
+    </td>
+    <td width="33%">
+      <img alt="NVIDIA profile controls" src="https://github.com/user-attachments/assets/89edc82b-580a-4869-a647-8700b69fec1e" />
+    </td>
+  </tr>
+  <tr>
+    <td width="33%">
+      <img alt="LightCrosshair advanced settings" src="https://github.com/user-attachments/assets/34b426b5-41dc-4e13-a0ee-0f42cc47238d" />
+    </td>
+    <td width="33%"></td>
+    <td width="33%"></td>
+  </tr>
+</table>
 
 ---
 
