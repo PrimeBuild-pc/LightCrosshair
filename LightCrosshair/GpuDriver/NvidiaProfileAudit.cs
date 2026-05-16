@@ -252,6 +252,14 @@ namespace LightCrosshair.GpuDriver
             new(status, statusText, targetApplicationPath, profileName, backup);
     }
 
+    public sealed record NvidiaProfileSettingWriteValidation(
+        NvidiaProfileWriteStatus Status,
+        string StatusText,
+        NvidiaProfileSettingWriteDefinition? Definition)
+    {
+        public bool IsValid => Status == NvidiaProfileWriteStatus.Success;
+    }
+
     public static class NvidiaProfileSettingWriteCatalog
     {
         private static readonly ReadOnlyCollection<NvidiaProfileSettingWriteDefinition> Definitions =
@@ -287,5 +295,39 @@ namespace LightCrosshair.GpuDriver
 
         public static bool CanWrite(uint settingId, uint rawValue) =>
             TryGet(settingId, out var definition) && definition.AllowsValue(rawValue);
+
+        public static NvidiaProfileSettingWriteValidation ValidateRequest(
+            string? applicationExePath,
+            NvidiaProfileSettingWriteRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(applicationExePath))
+            {
+                return new NvidiaProfileSettingWriteValidation(
+                    NvidiaProfileWriteStatus.InvalidTarget,
+                    "Select a target application before applying NVIDIA profile controls.",
+                    null);
+            }
+
+            if (!TryGet(request.SettingId, out var definition))
+            {
+                return new NvidiaProfileSettingWriteValidation(
+                    NvidiaProfileWriteStatus.NotAllowed,
+                    "This NVIDIA profile setting is not writable from LightCrosshair.",
+                    null);
+            }
+
+            if (!definition.AllowsValue(request.RawValue))
+            {
+                return new NvidiaProfileSettingWriteValidation(
+                    NvidiaProfileWriteStatus.NotAllowed,
+                    $"'{definition.DisplayName}' does not allow value 0x{request.RawValue:X8}.",
+                    definition);
+            }
+
+            return new NvidiaProfileSettingWriteValidation(
+                NvidiaProfileWriteStatus.Success,
+                string.Empty,
+                definition);
+        }
     }
 }
