@@ -84,6 +84,23 @@ namespace LightCrosshair.GpuDriver
             NvidiaProfileAuditResult.Unsupported("NVIDIA profile audit is not supported on AMD hardware.");
 
         /// <inheritdoc />
+        public NvidiaProfileSettingWriteResult ApplyNvidiaProfileSetting(
+            string? applicationExePath,
+            NvidiaProfileSettingWriteRequest request,
+            string lightCrosshairVersion) =>
+            NvidiaProfileSettingWriteResult.FromStatus(
+                NvidiaProfileWriteStatus.Unsupported,
+                "NVIDIA profile controls are not supported on AMD hardware.",
+                applicationExePath ?? string.Empty);
+
+        /// <inheritdoc />
+        public NvidiaProfileSettingWriteResult RestoreNvidiaProfileSetting(string? applicationExePath, uint settingId) =>
+            NvidiaProfileSettingWriteResult.FromStatus(
+                NvidiaProfileWriteStatus.Unsupported,
+                "NVIDIA profile controls are not supported on AMD hardware.",
+                applicationExePath ?? string.Empty);
+
+        /// <inheritdoc />
         public bool TrySetNvidiaVibrance(int vibrance, out string errorMessage)
         {
             errorMessage = "Not supported on AMD hardware";

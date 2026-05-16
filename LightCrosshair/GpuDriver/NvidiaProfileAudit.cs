@@ -13,6 +13,7 @@ namespace LightCrosshair.GpuDriver
         Present,
         NotPresent,
         NoProfile,
+        InvalidTarget,
         Unsupported,
         Error
     }
@@ -66,7 +67,7 @@ namespace LightCrosshair.GpuDriver
             FromStatus(NvidiaProfileAuditStatus.Unsupported, string.Empty, null, statusText);
 
         public static NvidiaProfileAuditResult InvalidTarget(string statusText) =>
-            FromStatus(NvidiaProfileAuditStatus.Error, string.Empty, null, statusText);
+            FromStatus(NvidiaProfileAuditStatus.InvalidTarget, string.Empty, null, statusText);
 
         public static NvidiaProfileAuditResult FromStatus(
             NvidiaProfileAuditStatus status,
@@ -92,6 +93,13 @@ namespace LightCrosshair.GpuDriver
         public static readonly uint DriverFpsCapSettingId =
             (uint)KnownSettingId.PerformanceStateFrameRateLimiter;
 
+        public const uint LowLatencyModeSettingId = 0x10835000u;
+        public const uint LowLatencyCplStateSettingId = 0x0005F543u;
+        public const uint VerticalSyncSettingId = 0x00A879CFu;
+        public const uint GSyncApplicationModeSettingId = 0x1194F158u;
+        public const uint GSyncApplicationStateSettingId = 0x10A879CFu;
+        public const uint GSyncApplicationRequestedStateSettingId = 0x10A879ACu;
+
         private static readonly ReadOnlyCollection<NvidiaProfileSettingDefinition> Definitions =
             new[]
             {
@@ -107,19 +115,19 @@ namespace LightCrosshair.GpuDriver
                         [0u] = "Off"
                     }),
                 new NvidiaProfileSettingDefinition(
-                    0x10835000u,
+                    LowLatencyModeSettingId,
                     "Low Latency Mode Enabled",
                     NvidiaProfileSettingUiHint.Toggle,
-                    IsReadOnly: true,
+                    IsReadOnly: false,
                     IsReferenceOnly: false,
-                    "Read-only audit of the driver low-latency enabled flag. LightCrosshair does not write this setting yet.",
+                    "Per-application low latency mode flag. LightCrosshair only exposes Off and On.",
                     new Dictionary<uint, string>
                     {
                         [0u] = "Off",
                         [1u] = "On"
                     }),
                 new NvidiaProfileSettingDefinition(
-                    0x0005F543u,
+                    LowLatencyCplStateSettingId,
                     "Low Latency CPL State",
                     NvidiaProfileSettingUiHint.ReadOnlyBadge,
                     IsReadOnly: true,
@@ -132,12 +140,12 @@ namespace LightCrosshair.GpuDriver
                         [2u] = "Ultra"
                     }),
                 new NvidiaProfileSettingDefinition(
-                    0x00A879CFu,
+                    VerticalSyncSettingId,
                     "Vertical Sync",
                     NvidiaProfileSettingUiHint.Dropdown,
-                    IsReadOnly: true,
+                    IsReadOnly: false,
                     IsReferenceOnly: false,
-                    "Read-only audit of the per-application NVIDIA vertical sync profile value.",
+                    "Per-application vertical sync profile value. LightCrosshair only exposes known safe values.",
                     new Dictionary<uint, string>
                     {
                         [0x60925292u] = "Application controlled",
@@ -146,7 +154,7 @@ namespace LightCrosshair.GpuDriver
                         [0x18888888u] = "Fast Sync"
                     }),
                 new NvidiaProfileSettingDefinition(
-                    0x1194F158u,
+                    GSyncApplicationModeSettingId,
                     "G-SYNC Application Mode",
                     NvidiaProfileSettingUiHint.Dropdown,
                     IsReadOnly: true,
@@ -159,7 +167,7 @@ namespace LightCrosshair.GpuDriver
                         [2u] = "Fullscreen and Windowed"
                     }),
                 new NvidiaProfileSettingDefinition(
-                    0x10A879CFu,
+                    GSyncApplicationStateSettingId,
                     "G-SYNC Application State",
                     NvidiaProfileSettingUiHint.ReadOnlyBadge,
                     IsReadOnly: true,
@@ -172,7 +180,7 @@ namespace LightCrosshair.GpuDriver
                         [2u] = "Disallow"
                     }),
                 new NvidiaProfileSettingDefinition(
-                    0x10A879ACu,
+                    GSyncApplicationRequestedStateSettingId,
                     "G-SYNC Application Requested State",
                     NvidiaProfileSettingUiHint.ReadOnlyBadge,
                     IsReadOnly: true,
@@ -187,5 +195,97 @@ namespace LightCrosshair.GpuDriver
             }.AsReadOnly();
 
         public static IReadOnlyList<NvidiaProfileSettingDefinition> All => Definitions;
+    }
+
+    public enum NvidiaProfileWriteStatus
+    {
+        Success,
+        Unsupported,
+        InvalidTarget,
+        NotAllowed,
+        NoProfile,
+        Conflict,
+        RestoreUnavailable,
+        Error
+    }
+
+    public sealed record NvidiaProfileSettingValueOption(uint RawValue, string DisplayName);
+
+    public sealed record NvidiaProfileSettingWriteDefinition(
+        uint SettingId,
+        string DisplayName,
+        IReadOnlyList<NvidiaProfileSettingValueOption> AllowedValues)
+    {
+        public bool AllowsValue(uint rawValue) => AllowedValues.Any(value => value.RawValue == rawValue);
+
+        public string FormatFriendlyValue(uint rawValue) =>
+            AllowedValues.FirstOrDefault(value => value.RawValue == rawValue)?.DisplayName ?? $"0x{rawValue:X8}";
+    }
+
+    public sealed record NvidiaProfileSettingWriteRequest(uint SettingId, uint RawValue);
+
+    public sealed record NvidiaProfileSettingBackup(
+        string TargetApplicationPath,
+        string? ProfileName,
+        uint SettingId,
+        bool WasPresent,
+        uint? PreviousRawValue,
+        uint WrittenRawValue,
+        DateTimeOffset Timestamp,
+        string LightCrosshairVersion);
+
+    public sealed record NvidiaProfileSettingWriteResult(
+        NvidiaProfileWriteStatus Status,
+        string StatusText,
+        string TargetApplicationPath,
+        string? ProfileName,
+        NvidiaProfileSettingBackup? Backup = null)
+    {
+        public bool Succeeded => Status == NvidiaProfileWriteStatus.Success;
+
+        public static NvidiaProfileSettingWriteResult FromStatus(
+            NvidiaProfileWriteStatus status,
+            string statusText,
+            string targetApplicationPath = "",
+            string? profileName = null,
+            NvidiaProfileSettingBackup? backup = null) =>
+            new(status, statusText, targetApplicationPath, profileName, backup);
+    }
+
+    public static class NvidiaProfileSettingWriteCatalog
+    {
+        private static readonly ReadOnlyCollection<NvidiaProfileSettingWriteDefinition> Definitions =
+            new[]
+            {
+                new NvidiaProfileSettingWriteDefinition(
+                    NvidiaProfileSettingCatalog.LowLatencyModeSettingId,
+                    "Low Latency Mode",
+                    new[]
+                    {
+                        new NvidiaProfileSettingValueOption(0u, "Off"),
+                        new NvidiaProfileSettingValueOption(1u, "On")
+                    }),
+                new NvidiaProfileSettingWriteDefinition(
+                    NvidiaProfileSettingCatalog.VerticalSyncSettingId,
+                    "Vertical Sync",
+                    new[]
+                    {
+                        new NvidiaProfileSettingValueOption(0x60925292u, "Application controlled"),
+                        new NvidiaProfileSettingValueOption(0x08416747u, "Force off"),
+                        new NvidiaProfileSettingValueOption(0x47814940u, "Force on"),
+                        new NvidiaProfileSettingValueOption(0x18888888u, "Fast Sync")
+                    })
+            }.AsReadOnly();
+
+        public static IReadOnlyList<NvidiaProfileSettingWriteDefinition> All => Definitions;
+
+        public static bool TryGet(uint settingId, out NvidiaProfileSettingWriteDefinition definition)
+        {
+            definition = Definitions.FirstOrDefault(item => item.SettingId == settingId)!;
+            return definition != null;
+        }
+
+        public static bool CanWrite(uint settingId, uint rawValue) =>
+            TryGet(settingId, out var definition) && definition.AllowsValue(rawValue);
     }
 }

@@ -158,7 +158,7 @@
         </StackPanel>
 
         <!-- Main content with left tabs -->
-        <TabControl TabStripPlacement="Left" Margin="8" Grid.Row="1">
+        <TabControl x:Name="SettingsTabControl" TabStripPlacement="Left" Margin="8" Grid.Row="1">
             <!-- Crosshair Builder Tab -->
             <TabItem x:Name="BuilderTab" Header="Crosshair Builder">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -494,6 +494,92 @@
                                         </StackPanel>
                                         <TextBlock x:Name="NvidiaFpsCapStatusText" Text="" Opacity="0.8" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                         <TextBlock Text="Note: Applies only to the target process set in Display Settings > Target Process. Set a target process before applying." Opacity="0.6" FontStyle="Italic" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border x:Name="NvidiaProfileControlsGroup" Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,12" IsEnabled="False">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <TextBlock Text="NVIDIA Driver Profile" FontWeight="Bold" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="[?]" Foreground="#888" ToolTip="Small per-application NVIDIA profile controls for FPS, latency, and display-profile behavior. This does not expose global profiles or raw setting IDs." VerticalAlignment="Center" Cursor="Help"/>
+                                        </StackPanel>
+                                        <TextBlock Text="Writes apply only to the target process set in Display Settings &gt; Target Process. Some systems may require elevation for NVIDIA profile writes." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <Button x:Name="NvidiaProfileRefreshButton" Content="Refresh Profile" Width="130" Margin="0,0,8,0"/>
+                                            <TextBlock x:Name="NvidiaProfileStatusText" Text="Open this tab or refresh to audit the selected application profile." VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                            <TextBlock Text="Profile:" Width="120" VerticalAlignment="Center"/>
+                                            <TextBlock x:Name="NvidiaProfileNameText" Text="-" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        </StackPanel>
+
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="220"/>
+                                                <ColumnDefinition Width="190"/>
+                                                <ColumnDefinition Width="170"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Setting" FontWeight="SemiBold" Margin="0,0,8,4"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="Current" FontWeight="SemiBold" Margin="0,0,8,4"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="2" Text="Control" FontWeight="SemiBold" Margin="0,0,8,4"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="3" Text="Status" FontWeight="SemiBold" Margin="0,0,0,4"/>
+
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Driver FPS Cap" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileFpsCapValueText" Grid.Row="1" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="2" Text="Use FPS cap controls above" Opacity="0.75" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileFpsCapStatusText" Grid.Row="1" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
+
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Low Latency Mode" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileLowLatencyValueText" Grid.Row="2" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
+                                            <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Margin="0,0,8,4">
+                                                <ComboBox x:Name="NvidiaLowLatencyComboBox" Width="84">
+                                                    <ComboBoxItem Content="Off" Tag="0"/>
+                                                    <ComboBoxItem Content="On" Tag="1"/>
+                                                </ComboBox>
+                                                <Button x:Name="NvidiaLowLatencyApplyButton" Content="Apply" Width="62" Margin="6,0,0,0"/>
+                                                <Button x:Name="NvidiaLowLatencyRestoreButton" Content="Restore" Width="72" Margin="6,0,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock x:Name="NvidiaProfileLowLatencyStatusText" Grid.Row="2" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
+
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Low Latency CPL State" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileLowLatencyCplValueText" Grid.Row="3" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
+                                            <TextBlock Grid.Row="3" Grid.Column="2" Text="Read-only reference" Opacity="0.75" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileLowLatencyCplStatusText" Grid.Row="3" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
+
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Vertical Sync" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileVSyncValueText" Grid.Row="4" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
+                                            <StackPanel Grid.Row="4" Grid.Column="2" Orientation="Horizontal" Margin="0,0,8,4">
+                                                <ComboBox x:Name="NvidiaVSyncComboBox" Width="168">
+                                                    <ComboBoxItem Content="Application controlled" Tag="0x60925292"/>
+                                                    <ComboBoxItem Content="Force off" Tag="0x08416747"/>
+                                                    <ComboBoxItem Content="Force on" Tag="0x47814940"/>
+                                                    <ComboBoxItem Content="Fast Sync" Tag="0x18888888"/>
+                                                </ComboBox>
+                                                <Button x:Name="NvidiaVSyncApplyButton" Content="Apply" Width="62" Margin="6,0,0,0"/>
+                                                <Button x:Name="NvidiaVSyncRestoreButton" Content="Restore" Width="72" Margin="6,0,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock x:Name="NvidiaProfileVSyncStatusText" Grid.Row="4" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
+
+                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="G-SYNC Profile State/Mode" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileGSyncValueText" Grid.Row="5" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
+                                            <TextBlock Grid.Row="5" Grid.Column="2" Text="Read-only" Opacity="0.75" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileGSyncStatusText" Grid.Row="5" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
+
+                                            <TextBlock Grid.Row="6" Grid.Column="0" Text="DLSS / Frame Generation" Margin="0,0,8,0"/>
+                                            <TextBlock x:Name="NvidiaProfileDlssValueText" Grid.Row="6" Grid.Column="1" Text="Not exposed" Margin="0,0,8,0"/>
+                                            <TextBlock Grid.Row="6" Grid.Column="2" Text="Read-only metadata TODO" Opacity="0.75" Margin="0,0,8,0"/>
+                                            <TextBlock x:Name="NvidiaProfileDlssStatusText" Grid.Row="6" Grid.Column="3" Text="Write mapping not validated from local NPI reference." TextWrapping="Wrap"/>
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
 

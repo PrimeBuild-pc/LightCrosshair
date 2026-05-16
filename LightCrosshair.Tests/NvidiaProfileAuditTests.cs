@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using LightCrosshair.GpuDriver;
 using Xunit;
@@ -7,7 +8,7 @@ namespace LightCrosshair.Tests;
 public class NvidiaProfileAuditTests
 {
     [Fact]
-    public void Catalog_ContainsExpectedReadOnlySettings()
+    public void Catalog_ContainsExpectedSettings()
     {
         var definitions = NvidiaProfileSettingCatalog.All.ToArray();
 
@@ -21,7 +22,7 @@ public class NvidiaProfileAuditTests
             setting.SettingId == 0x10835000u &&
             setting.DisplayName == "Low Latency Mode Enabled" &&
             setting.UiHint == NvidiaProfileSettingUiHint.Toggle &&
-            setting.IsReadOnly);
+            !setting.IsReadOnly);
 
         Assert.Contains(definitions, setting =>
             setting.SettingId == 0x0005F543u &&
@@ -32,7 +33,7 @@ public class NvidiaProfileAuditTests
             setting.SettingId == 0x00A879CFu &&
             setting.DisplayName == "Vertical Sync" &&
             setting.UiHint == NvidiaProfileSettingUiHint.Dropdown &&
-            setting.IsReadOnly);
+            !setting.IsReadOnly);
 
         Assert.Contains(definitions, setting =>
             setting.SettingId == 0x1194F158u &&
@@ -80,9 +81,104 @@ public class NvidiaProfileAuditTests
     }
 
     [Fact]
-    public void Catalog_DoesNotExposeWriteOrRawEditorHints()
+    public void Catalog_DoesNotExposeRawEditorHints()
     {
-        Assert.DoesNotContain(NvidiaProfileSettingCatalog.All, setting => !setting.IsReadOnly);
         Assert.DoesNotContain(NvidiaProfileSettingCatalog.All, setting => setting.UiHint == NvidiaProfileSettingUiHint.RawEditor);
+    }
+
+    [Fact]
+    public void WriteCatalog_ContainsOnlyLowLatencyAndVSync()
+    {
+        var writableIds = NvidiaProfileSettingWriteCatalog.All.Select(setting => setting.SettingId).ToArray();
+
+        Assert.Equal(
+            new[]
+            {
+                NvidiaProfileSettingCatalog.LowLatencyModeSettingId,
+                NvidiaProfileSettingCatalog.VerticalSyncSettingId
+            },
+            writableIds);
+    }
+
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(1u)]
+    public void WriteCatalog_AllowsOnlyLowLatencyOffOn(uint rawValue)
+    {
+        Assert.True(NvidiaProfileSettingWriteCatalog.CanWrite(
+            NvidiaProfileSettingCatalog.LowLatencyModeSettingId,
+            rawValue));
+    }
+
+    [Theory]
+    [InlineData(2u)]
+    [InlineData(0x0005F543u)]
+    public void WriteCatalog_RejectsUnsupportedLowLatencyValues(uint rawValue)
+    {
+        Assert.False(NvidiaProfileSettingWriteCatalog.CanWrite(
+            NvidiaProfileSettingCatalog.LowLatencyModeSettingId,
+            rawValue));
+    }
+
+    [Theory]
+    [InlineData(0x60925292u)]
+    [InlineData(0x08416747u)]
+    [InlineData(0x47814940u)]
+    [InlineData(0x18888888u)]
+    public void WriteCatalog_AllowsOnlySafeVSyncValues(uint rawValue)
+    {
+        Assert.True(NvidiaProfileSettingWriteCatalog.CanWrite(
+            NvidiaProfileSettingCatalog.VerticalSyncSettingId,
+            rawValue));
+    }
+
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(1u)]
+    [InlineData(0xDEADBEEFu)]
+    public void WriteCatalog_RejectsUnsupportedVSyncValues(uint rawValue)
+    {
+        Assert.False(NvidiaProfileSettingWriteCatalog.CanWrite(
+            NvidiaProfileSettingCatalog.VerticalSyncSettingId,
+            rawValue));
+    }
+
+    [Theory]
+    [InlineData(0x0005F543u)]
+    [InlineData(0x1194F158u)]
+    [InlineData(0x10A879CFu)]
+    [InlineData(0x10A879ACu)]
+    [InlineData(0xDEADBEEFu)]
+    public void WriteCatalog_RejectsReferenceOnlyAndUnknownSettings(uint settingId)
+    {
+        Assert.False(NvidiaProfileSettingWriteCatalog.TryGet(settingId, out _));
+        Assert.False(NvidiaProfileSettingWriteCatalog.CanWrite(settingId, 0u));
+    }
+
+    [Fact]
+    public void AuditInvalidTarget_UsesInvalidTargetStatus()
+    {
+        var result = NvidiaProfileAuditResult.InvalidTarget("missing target");
+
+        Assert.Equal(NvidiaProfileAuditStatus.InvalidTarget, result.Status);
+        Assert.All(result.Settings, item => Assert.Equal(NvidiaProfileAuditStatus.InvalidTarget, item.Status));
+    }
+
+    [Fact]
+    public void BackupModel_CapturesAbsentPreviousState()
+    {
+        var backup = new NvidiaProfileSettingBackup(
+            @"C:\Games\sample.exe",
+            "LightCrosshair_sample.exe",
+            NvidiaProfileSettingCatalog.VerticalSyncSettingId,
+            WasPresent: false,
+            PreviousRawValue: null,
+            WrittenRawValue: 0x08416747u,
+            Timestamp: DateTimeOffset.UnixEpoch,
+            LightCrosshairVersion: "1.4.0");
+
+        Assert.False(backup.WasPresent);
+        Assert.Null(backup.PreviousRawValue);
+        Assert.Equal(0x08416747u, backup.WrittenRawValue);
     }
 }
