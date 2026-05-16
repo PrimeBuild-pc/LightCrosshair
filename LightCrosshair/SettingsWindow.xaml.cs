@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -38,10 +40,9 @@ namespace LightCrosshair
         private bool _settingsSavePending;
         private CrosshairConfig? _pendingSettingsConfig;
         private const int SettingsSaveDebounceMs = 400;
-        private IGpuDriverService? _gpuDriverService;
+        private readonly INvidiaHelperClient _nvidiaHelperClient = new NvidiaHelperProcessClient();
+        private readonly Dictionary<(string Target, uint SettingId), NvidiaProfileSettingBackup> _nvidiaProfileBackups = new();
         private GpuDetResult _gpuDetectionResult;
-        private bool _hasLoadedNvidiaProfileAudit;
-        private string _lastNvidiaProfileAuditTarget = string.Empty;
 
         public SettingsWindow(IProfileService profiles)
         {
@@ -176,8 +177,8 @@ namespace LightCrosshair
             // Initial status
             UpdatePositionStatus();
 
-            // GPU Driver service initialization
-            InitializeGpuDriverService();
+            // GPU Driver UI starts passive. Driver/NvAPI calls are only made from explicit user actions.
+            InitializeGpuDriverUiPassive();
 
             // GPU Driver event wiring
             GpuRefreshButton.Click += (_, __) => GpuRefreshButton_Click();
@@ -188,24 +189,24 @@ namespace LightCrosshair
                     return;
                 }
 
-                if (GpuDriverTab.IsSelected && ShouldRefreshNvidiaProfileAudit())
+                if (GpuDriverTab.IsSelected)
                 {
-                    RefreshNvidiaProfileAudit();
+                    Program.LogLifecycle("GPU Driver tab selected; NVIDIA profile audit remains passive.", nameof(SettingsWindow));
                 }
             };
-            NvidiaProfileRefreshButton.Click += (_, __) => RefreshNvidiaProfileAudit();
-            NvidiaLowLatencyApplyButton.Click += (_, __) => ApplyNvidiaProfileSettingFromUi(
+            NvidiaProfileRefreshButton.Click += async (_, __) => await RefreshNvidiaProfileAudit();
+            NvidiaLowLatencyApplyButton.Click += async (_, __) => await ApplyNvidiaProfileSettingFromUi(
                 NvidiaProfileSettingCatalog.LowLatencyModeSettingId,
                 NvidiaLowLatencyComboBox,
                 NvidiaProfileLowLatencyStatusText);
-            NvidiaLowLatencyRestoreButton.Click += (_, __) => RestoreNvidiaProfileSettingFromUi(
+            NvidiaLowLatencyRestoreButton.Click += async (_, __) => await RestoreNvidiaProfileSettingFromUi(
                 NvidiaProfileSettingCatalog.LowLatencyModeSettingId,
                 NvidiaProfileLowLatencyStatusText);
-            NvidiaVSyncApplyButton.Click += (_, __) => ApplyNvidiaProfileSettingFromUi(
+            NvidiaVSyncApplyButton.Click += async (_, __) => await ApplyNvidiaProfileSettingFromUi(
                 NvidiaProfileSettingCatalog.VerticalSyncSettingId,
                 NvidiaVSyncComboBox,
                 NvidiaProfileVSyncStatusText);
-            NvidiaVSyncRestoreButton.Click += (_, __) => RestoreNvidiaProfileSettingFromUi(
+            NvidiaVSyncRestoreButton.Click += async (_, __) => await RestoreNvidiaProfileSettingFromUi(
                 NvidiaProfileSettingCatalog.VerticalSyncSettingId,
                 NvidiaProfileVSyncStatusText);
             NvidiaLowLatencyComboBox.SelectedIndex = 0;
@@ -215,15 +216,15 @@ namespace LightCrosshair
                 if (NvidiaFpsCapValueText != null)
                     NvidiaFpsCapValueText.Text = ((int)NvidiaFpsCapSlider.Value).ToString();
             };
-            NvidiaFpsCapApplyButton.Click += (_, __) => NvidiaFpsCapApplyButton_Click();
-            NvidiaFpsCapClearButton.Click += (_, __) => NvidiaFpsCapClearButton_Click();
+            NvidiaFpsCapApplyButton.Click += async (_, __) => await NvidiaFpsCapApplyButton_Click();
+            NvidiaFpsCapClearButton.Click += async (_, __) => await NvidiaFpsCapClearButton_Click();
             NvidiaVibranceSlider.ValueChanged += (_, __) =>
             {
                 if (NvidiaVibranceValueText != null)
                     NvidiaVibranceValueText.Text = ((int)NvidiaVibranceSlider.Value).ToString();
             };
-            NvidiaVibranceApplyButton.Click += (_, __) => NvidiaVibranceApplyButton_Click();
-            NvidiaVibranceResetButton.Click += (_, __) => NvidiaVibranceResetButton_Click();
+            NvidiaVibranceApplyButton.Click += async (_, __) => await NvidiaVibranceApplyButton_Click();
+            NvidiaVibranceResetButton.Click += async (_, __) => await NvidiaVibranceResetButton_Click();
         }
 
         private void PickColor(Action<System.Windows.Media.Color> onPick)
@@ -1580,23 +1581,67 @@ namespace LightCrosshair
 
         // ----- GPU Driver Integration -----
 
-        private void InitializeGpuDriverService()
+        private void InitializeGpuDriverUiPassive()
+        {
+            Program.LogLifecycle("Initializing passive GPU Driver UI.", nameof(SettingsWindow));
+            _gpuDetectionResult = GpuDetResult.Unknown();
+            RefreshGpuDriverUI();
+            SetNvidiaProfileAuditInitialPrompt();
+        }
+
+        private void RefreshGpuDriverDetectionSafely()
         {
             try
             {
-                _gpuDriverService = GpuDriverServiceFactory.Create();
-                _gpuDetectionResult = _gpuDriverService.Detect();
+                Program.LogLifecycle(
+                    "Generic GPU Refresh clicked; safe Win32 vendor detection only. NvAPI/DRS are not loaded in the main process.",
+                    nameof(SettingsWindow));
+                GpuVendorKind vendor = GpuDetectionService.DetectVendor(out string adapterDescription);
+                _gpuDetectionResult = BuildSafeGpuDetectionResult(vendor, adapterDescription);
                 RefreshGpuDriverUI();
+                SetNvidiaProfileAuditInitialPrompt();
             }
             catch (Exception ex)
             {
-                Program.LogError(ex, "SettingsWindow.InitializeGpuDriverService");
+                Program.LogError(ex, "SettingsWindow.RefreshGpuDriverDetectionSafely");
                 _gpuDetectionResult = GpuDetResult.Unknown();
-                _gpuDriverService = null;
                 GpuVendorText.Text = "Detection failed";
                 GpuDriverApiText.Text = "Error";
-                GpuDriverStatusText.Text = $"Initialization error: {ex.Message}";
+                GpuDriverStatusText.Text = $"Safe detection error: {ex.Message}";
             }
+        }
+
+        private static GpuDetResult BuildSafeGpuDetectionResult(GpuVendorKind vendor, string adapterDescription)
+        {
+            var caps = vendor == GpuVendorKind.Nvidia
+                ? new GpuCapabilities
+                {
+                    NvidiaFpsCap = GpuCapabilityStatus.Supported,
+                    NvidiaColorVibrance = GpuCapabilityStatus.Supported,
+                    NvidiaGSync = GpuCapabilityStatus.ReadOnly,
+                    AmdColorManagement = GpuCapabilityStatus.Unsupported,
+                    AmdChill = GpuCapabilityStatus.Unsupported,
+                    AmdFreeSync = GpuCapabilityStatus.Unsupported
+                }
+                : GpuCapabilities.None();
+
+            return new GpuDetResult
+            {
+                Vendor = vendor,
+                AdapterDescription = adapterDescription,
+                IsDriverApiAvailable = false,
+                DriverApiStatusMessage = vendor switch
+                {
+                    GpuVendorKind.Nvidia =>
+                        "NVIDIA detected. Main UI did not load NvAPI/DRS; explicit NVIDIA actions use an isolated helper.",
+                    GpuVendorKind.Amd =>
+                        "AMD detected. NVIDIA profile controls remain passive/no-op.",
+                    GpuVendorKind.Intel =>
+                        "Intel detected. NVIDIA profile controls remain passive/no-op.",
+                    _ => "Safe GPU vendor detection completed; vendor-specific driver APIs were not loaded."
+                },
+                Capabilities = caps
+            };
         }
 
         private void RefreshGpuDriverUI()
@@ -1631,11 +1676,11 @@ namespace LightCrosshair
                 // Enable/disable NVIDIA FPS cap controls
                 bool fpsCapSupported = caps.NvidiaFpsCap == GpuCapabilityStatus.Supported;
                 NvidiaFpsCapGroup.IsEnabled = fpsCapSupported;
-                NvidiaProfileControlsGroup.IsEnabled = fpsCapSupported;
+                NvidiaProfileControlsGroup.IsEnabled = true;
                 if (!fpsCapSupported)
                 {
                     NvidiaFpsCapGroup.Opacity = 0.55;
-                    NvidiaProfileControlsGroup.Opacity = 0.55;
+                    NvidiaProfileControlsGroup.Opacity = 1.0;
                     NvidiaFpsCapGroup.ToolTip = caps.NvidiaFpsCap switch
                     {
                         GpuCapabilityStatus.Unavailable => "NVIDIA driver API not available. Ensure NVIDIA drivers are installed.",
@@ -1643,8 +1688,8 @@ namespace LightCrosshair
                         GpuCapabilityStatus.Unsupported => "NVIDIA FPS cap not supported on this hardware/driver.",
                         _ => "NVIDIA FPS cap not available."
                     };
-                    NvidiaProfileControlsGroup.ToolTip = NvidiaFpsCapGroup.ToolTip;
-                    NvidiaProfileStatusText.Text = CapabilityStatusText(caps.NvidiaFpsCap);
+                    NvidiaProfileControlsGroup.ToolTip = null;
+                    NvidiaProfileStatusText.Text = NvidiaProfileUiState.PassiveStatusText;
                 }
                 else
                 {
@@ -1721,10 +1766,9 @@ namespace LightCrosshair
                 GpuRefreshButton.IsEnabled = false;
                 GpuVendorText.Text = "Detecting...";
                 GpuDriverApiText.Text = "-";
-                GpuDriverStatusText.Text = "Refreshing...";
-                InitializeGpuDriverService();
-                _hasLoadedNvidiaProfileAudit = false;
-                RefreshNvidiaProfileAudit();
+                GpuDriverStatusText.Text = "Refreshing with safe vendor detection...";
+                RefreshGpuDriverDetectionSafely();
+                SetNvidiaProfileAuditInitialPrompt();
             }
             catch (Exception ex)
             {
@@ -1736,20 +1780,11 @@ namespace LightCrosshair
             }
         }
 
-        private void NvidiaFpsCapApplyButton_Click()
+        private async Task NvidiaFpsCapApplyButton_Click()
         {
             try
             {
-                if (_gpuDriverService == null)
-                {
-                    NvidiaFpsCapStatusText.Text = "GPU driver service not initialized.";
-                    return;
-                }
-
                 int targetFps = (int)NvidiaFpsCapSlider.Value;
-
-                // Application-specific profile only (global profile fallback removed).
-                // Validate that a target process is configured before proceeding.
                 string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
                 if (string.IsNullOrWhiteSpace(targetProcess))
                 {
@@ -1759,14 +1794,10 @@ namespace LightCrosshair
                     return;
                 }
 
-                if (_gpuDriverService.TrySetNvidiaFpsCap(targetFps, targetProcess, out string error))
-                {
-                    NvidiaFpsCapStatusText.Text = $"FPS cap of {targetFps} applied successfully to '{targetProcess}'.";
-                }
-                else
-                {
-                    NvidiaFpsCapStatusText.Text = $"Failed to apply FPS cap: {error}";
-                }
+                Program.LogLifecycle("Explicit NVIDIA FPS cap apply requested.", nameof(SettingsWindow));
+                NvidiaFpsCapStatusText.Text = "Applying FPS cap through isolated NVIDIA helper...";
+                var response = await RunNvidiaHelperAsync(NvidiaHelperRequest.SetFpsCap(targetProcess, targetFps));
+                NvidiaFpsCapStatusText.Text = response.StatusText;
             }
             catch (Exception ex)
             {
@@ -1775,18 +1806,10 @@ namespace LightCrosshair
             }
         }
 
-        private void NvidiaFpsCapClearButton_Click()
+        private async Task NvidiaFpsCapClearButton_Click()
         {
             try
             {
-                if (_gpuDriverService == null)
-                {
-                    NvidiaFpsCapStatusText.Text = "GPU driver service not initialized.";
-                    return;
-                }
-
-                // Application-specific profile only (global profile fallback removed).
-                // Validate that a target process is configured before proceeding.
                 string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
                 if (string.IsNullOrWhiteSpace(targetProcess))
                 {
@@ -1796,14 +1819,10 @@ namespace LightCrosshair
                     return;
                 }
 
-                if (_gpuDriverService.TryClearNvidiaFpsCap(targetProcess, out string error))
-                {
-                    NvidiaFpsCapStatusText.Text = $"FPS cap cleared for '{targetProcess}'.";
-                }
-                else
-                {
-                    NvidiaFpsCapStatusText.Text = $"Failed to clear FPS cap: {error}";
-                }
+                Program.LogLifecycle("Explicit NVIDIA FPS cap clear requested.", nameof(SettingsWindow));
+                NvidiaFpsCapStatusText.Text = "Clearing FPS cap through isolated NVIDIA helper...";
+                var response = await RunNvidiaHelperAsync(NvidiaHelperRequest.ClearFpsCap(targetProcess));
+                NvidiaFpsCapStatusText.Text = response.StatusText;
             }
             catch (Exception ex)
             {
@@ -1812,23 +1831,28 @@ namespace LightCrosshair
             }
         }
 
-        private void RefreshNvidiaProfileAudit()
+        private async Task RefreshNvidiaProfileAudit()
         {
             try
             {
-                _hasLoadedNvidiaProfileAudit = true;
-
-                if (_gpuDriverService == null)
+                Program.LogLifecycle("Explicit NVIDIA profile audit requested.", nameof(SettingsWindow));
+                string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
+                if (string.IsNullOrWhiteSpace(targetProcess))
                 {
-                    SetNvidiaProfileAuditUnavailable("GPU driver service not initialized.");
+                    SetNvidiaProfileAuditUnavailable("Select a target application before auditing NVIDIA profile settings.");
                     return;
                 }
 
-                string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
                 NvidiaProfileStatusText.Text = "Auditing selected application profile...";
-                var result = _gpuDriverService.AuditNvidiaProfileSettings(targetProcess);
-                _lastNvidiaProfileAuditTarget = targetProcess;
-                NvidiaProfileStatusText.Text = FormatNvidiaProfileAuditStatus(result);
+                var response = await RunNvidiaHelperAsync(NvidiaHelperRequest.AuditProfile(targetProcess));
+                if (response.AuditResult == null)
+                {
+                    SetNvidiaProfileAuditUnavailable(response.StatusText);
+                    return;
+                }
+
+                var result = response.AuditResult;
+                NvidiaProfileStatusText.Text = NvidiaProfileUiState.FromAuditResult(result).StatusText;
                 NvidiaProfileNameText.Text = string.IsNullOrWhiteSpace(result.ProfileName) ? "-" : result.ProfileName;
 
                 SetNvidiaProfileAuditRow(
@@ -1869,16 +1893,10 @@ namespace LightCrosshair
             }
         }
 
-        private void ApplyNvidiaProfileSettingFromUi(uint settingId, System.Windows.Controls.ComboBox comboBox, TextBlock statusText)
+        private async Task ApplyNvidiaProfileSettingFromUi(uint settingId, System.Windows.Controls.ComboBox comboBox, TextBlock statusText)
         {
             try
             {
-                if (_gpuDriverService == null)
-                {
-                    statusText.Text = "GPU driver service not initialized.";
-                    return;
-                }
-
                 string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
                 if (string.IsNullOrWhiteSpace(targetProcess))
                 {
@@ -1892,15 +1910,35 @@ namespace LightCrosshair
                     return;
                 }
 
-                var result = _gpuDriverService.ApplyNvidiaProfileSetting(
+                var request = new NvidiaProfileSettingWriteRequest(settingId, rawValue);
+                var validation = NvidiaProfileSettingWriteCatalog.ValidateRequest(targetProcess, request);
+                if (!validation.IsValid)
+                {
+                    statusText.Text = validation.StatusText;
+                    return;
+                }
+
+                Program.LogLifecycle($"Explicit NVIDIA profile apply requested for setting 0x{settingId:X8}.", nameof(SettingsWindow));
+                statusText.Text = "Applying NVIDIA profile setting through isolated helper...";
+                var response = await RunNvidiaHelperAsync(NvidiaHelperRequest.ApplyProfileSetting(
                     targetProcess,
-                    new NvidiaProfileSettingWriteRequest(settingId, rawValue),
-                    _currentVersion);
+                    request,
+                    _currentVersion));
+                var result = response.WriteResult ?? NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Error,
+                    response.StatusText,
+                    targetProcess);
                 statusText.Text = result.StatusText;
 
                 if (result.Succeeded)
                 {
-                    RefreshNvidiaProfileAudit();
+                    if (result.Backup != null)
+                    {
+                        _nvidiaProfileBackups[(NormalizeBackupTarget(targetProcess), settingId)] = result.Backup;
+                    }
+
+                    MarkNvidiaProfileAuditStale();
+                    statusText.Text = $"{result.StatusText} Click Refresh to read back NVIDIA profile settings.";
                 }
             }
             catch (Exception ex)
@@ -1910,16 +1948,10 @@ namespace LightCrosshair
             }
         }
 
-        private void RestoreNvidiaProfileSettingFromUi(uint settingId, TextBlock statusText)
+        private async Task RestoreNvidiaProfileSettingFromUi(uint settingId, TextBlock statusText)
         {
             try
             {
-                if (_gpuDriverService == null)
-                {
-                    statusText.Text = "GPU driver service not initialized.";
-                    return;
-                }
-
                 string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
                 if (string.IsNullOrWhiteSpace(targetProcess))
                 {
@@ -1927,12 +1959,21 @@ namespace LightCrosshair
                     return;
                 }
 
-                var result = _gpuDriverService.RestoreNvidiaProfileSetting(targetProcess, settingId);
+                _nvidiaProfileBackups.TryGetValue((NormalizeBackupTarget(targetProcess), settingId), out var backup);
+                Program.LogLifecycle($"Explicit NVIDIA profile restore requested for setting 0x{settingId:X8}.", nameof(SettingsWindow));
+                statusText.Text = "Restoring NVIDIA profile setting through isolated helper...";
+                var response = await RunNvidiaHelperAsync(NvidiaHelperRequest.RestoreProfileSetting(targetProcess, settingId, backup));
+                var result = response.WriteResult ?? NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Error,
+                    response.StatusText,
+                    targetProcess);
                 statusText.Text = result.StatusText;
 
                 if (result.Succeeded)
                 {
-                    RefreshNvidiaProfileAudit();
+                    _nvidiaProfileBackups.Remove((NormalizeBackupTarget(targetProcess), settingId));
+                    MarkNvidiaProfileAuditStale();
+                    statusText.Text = $"{result.StatusText} Click Refresh to read back NVIDIA profile settings.";
                 }
             }
             catch (Exception ex)
@@ -1942,23 +1983,38 @@ namespace LightCrosshair
             }
         }
 
+        private void SetNvidiaProfileAuditInitialPrompt()
+        {
+            var state = NvidiaProfileUiState.Initial();
+            NvidiaProfileStatusText.Text = state.StatusText;
+            NvidiaProfileNameText.Text = "-";
+            NvidiaProfileFpsCapValueText.Text = "-";
+            NvidiaProfileLowLatencyValueText.Text = "-";
+            NvidiaProfileLowLatencyCplValueText.Text = "-";
+            NvidiaProfileVSyncValueText.Text = "-";
+            NvidiaProfileGSyncValueText.Text = "-";
+            NvidiaProfileFpsCapStatusText.Text = state.StatusText;
+            NvidiaProfileLowLatencyStatusText.Text = state.StatusText;
+            NvidiaProfileLowLatencyCplStatusText.Text = state.StatusText;
+            NvidiaProfileVSyncStatusText.Text = state.StatusText;
+            NvidiaProfileGSyncStatusText.Text = state.StatusText;
+            SetNvidiaProfileApplyControlsEnabled(state.CanApplyProfileSettings);
+        }
+
+        private Task<NvidiaHelperResponse> RunNvidiaHelperAsync(NvidiaHelperRequest request) =>
+            Task.Run(() => _nvidiaHelperClient.Run(request));
+
+        private static string NormalizeBackupTarget(string applicationExePath) =>
+            applicationExePath.Trim().ToLowerInvariant();
+
         private void MarkNvidiaProfileAuditStale()
         {
-            _hasLoadedNvidiaProfileAudit = false;
-            _lastNvidiaProfileAuditTarget = string.Empty;
             if (NvidiaProfileStatusText != null)
             {
                 NvidiaProfileStatusText.Text = "Target changed. Refresh to audit the selected application profile.";
             }
 
             SetNvidiaProfileApplyControlsEnabled(!string.IsNullOrWhiteSpace(NormalizeTargetProcessInput(TargetProcessTextBox.Text)));
-        }
-
-        private bool ShouldRefreshNvidiaProfileAudit()
-        {
-            string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
-            return !_hasLoadedNvidiaProfileAudit ||
-                   !string.Equals(targetProcess, _lastNvidiaProfileAuditTarget, StringComparison.OrdinalIgnoreCase);
         }
 
         private void SetNvidiaProfileAuditUnavailable(string message)
@@ -1976,21 +2032,6 @@ namespace LightCrosshair
             NvidiaProfileVSyncStatusText.Text = message;
             NvidiaProfileGSyncStatusText.Text = message;
             SetNvidiaProfileApplyControlsEnabled(false);
-        }
-
-        private static string FormatNvidiaProfileAuditStatus(NvidiaProfileAuditResult result)
-        {
-            string status = result.Status switch
-            {
-                NvidiaProfileAuditStatus.Present => "Present",
-                NvidiaProfileAuditStatus.NoProfile => "No profile",
-                NvidiaProfileAuditStatus.InvalidTarget => "Invalid target",
-                NvidiaProfileAuditStatus.Unsupported => "Unsupported",
-                NvidiaProfileAuditStatus.Error => "Error",
-                _ => result.Status.ToString()
-            };
-
-            return $"{status}: {result.StatusText}";
         }
 
         private static void SetNvidiaProfileAuditRow(
@@ -2094,25 +2135,15 @@ namespace LightCrosshair
                 : uint.TryParse(value, out rawValue);
         }
 
-        private void NvidiaVibranceApplyButton_Click()
+        private async Task NvidiaVibranceApplyButton_Click()
         {
             try
             {
-                if (_gpuDriverService == null)
-                {
-                    NvidiaVibranceStatusText.Text = "GPU driver service not initialized.";
-                    return;
-                }
-
                 int vibrance = (int)NvidiaVibranceSlider.Value;
-                if (_gpuDriverService.TrySetNvidiaVibrance(vibrance, out string error))
-                {
-                    NvidiaVibranceStatusText.Text = $"Digital vibrance set to {vibrance}.";
-                }
-                else
-                {
-                    NvidiaVibranceStatusText.Text = $"Failed to set vibrance: {error}";
-                }
+                Program.LogLifecycle("Explicit NVIDIA vibrance apply requested.", nameof(SettingsWindow));
+                NvidiaVibranceStatusText.Text = "Applying vibrance through isolated NVIDIA helper...";
+                var response = await RunNvidiaHelperAsync(NvidiaHelperRequest.SetVibrance(vibrance));
+                NvidiaVibranceStatusText.Text = response.StatusText;
             }
             catch (Exception ex)
             {
@@ -2121,25 +2152,21 @@ namespace LightCrosshair
             }
         }
 
-        private void NvidiaVibranceResetButton_Click()
+        private async Task NvidiaVibranceResetButton_Click()
         {
             try
             {
-                if (_gpuDriverService == null)
-                {
-                    NvidiaVibranceStatusText.Text = "GPU driver service not initialized.";
-                    return;
-                }
-
-                if (_gpuDriverService.TrySetNvidiaVibrance(50, out string error))
+                Program.LogLifecycle("Explicit NVIDIA vibrance reset requested.", nameof(SettingsWindow));
+                NvidiaVibranceStatusText.Text = "Resetting vibrance through isolated NVIDIA helper...";
+                var response = await RunNvidiaHelperAsync(NvidiaHelperRequest.SetVibrance(50));
+                if (response.Success)
                 {
                     NvidiaVibranceSlider.Value = 50;
-                    NvidiaVibranceStatusText.Text = "Digital vibrance reset to default (50).";
                 }
-                else
-                {
-                    NvidiaVibranceStatusText.Text = $"Failed to reset vibrance: {error}";
-                }
+
+                NvidiaVibranceStatusText.Text = response.Success
+                    ? "Digital vibrance reset to default (50)."
+                    : response.StatusText;
             }
             catch (Exception ex)
             {

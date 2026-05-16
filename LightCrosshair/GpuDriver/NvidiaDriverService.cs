@@ -23,6 +23,29 @@ namespace LightCrosshair.GpuDriver
         private bool _initialized;
         private readonly Dictionary<(string Target, uint SettingId), NvidiaProfileSettingBackup> _lastBackups = new();
 
+        public bool TryInitializeForIsolatedOperation(out string errorMessage)
+        {
+            try
+            {
+                NVIDIA.Initialize();
+                _initialized = true;
+                errorMessage = string.Empty;
+                return true;
+            }
+            catch (AccessViolationException ex)
+            {
+                _initialized = false;
+                errorMessage = $"NVIDIA driver call failed: {ex.Message}";
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _initialized = false;
+                errorMessage = ex.Message;
+                return false;
+            }
+        }
+
         /// <inheritdoc />
         public GpuDetectionResult Detect()
         {
@@ -101,6 +124,11 @@ namespace LightCrosshair.GpuDriver
 
                 return true;
             }
+            catch (AccessViolationException ex)
+            {
+                errorMessage = $"NVIDIA driver call failed: {ex.Message}";
+                return false;
+            }
             catch (Exception ex)
             {
                 errorMessage = ex.Message;
@@ -141,6 +169,11 @@ namespace LightCrosshair.GpuDriver
 
                 errorMessage = string.Empty;
                 return true;
+            }
+            catch (AccessViolationException ex)
+            {
+                errorMessage = $"NVIDIA driver call failed: {ex.Message}";
+                return false;
             }
             catch (Exception ex)
             {
@@ -187,6 +220,12 @@ namespace LightCrosshair.GpuDriver
 
                 return true;
             }
+            catch (AccessViolationException ex)
+            {
+                currentFps = 0;
+                statusMessage = $"NVIDIA driver call failed: {ex.Message}";
+                return false;
+            }
             catch (Exception ex)
             {
                 currentFps = 0;
@@ -232,6 +271,14 @@ namespace LightCrosshair.GpuDriver
                     profile.Name,
                     items,
                     $"NVIDIA profile '{profile.Name}' audited.");
+            }
+            catch (AccessViolationException ex)
+            {
+                return NvidiaProfileAuditResult.FromStatus(
+                    NvidiaProfileAuditStatus.Error,
+                    applicationExePath,
+                    null,
+                    $"NVIDIA driver call failed: {ex.Message}");
             }
             catch (Exception ex)
             {
@@ -303,6 +350,13 @@ namespace LightCrosshair.GpuDriver
                     targetApplicationPath,
                     profile.Name,
                     backup);
+            }
+            catch (AccessViolationException ex)
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Error,
+                    $"NVIDIA driver call failed: {ex.Message}",
+                    targetApplicationPath);
             }
             catch (Exception ex)
             {
@@ -393,12 +447,108 @@ namespace LightCrosshair.GpuDriver
                     profile.Name,
                     backup);
             }
+            catch (AccessViolationException ex)
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Error,
+                    $"NVIDIA driver call failed: {ex.Message}",
+                    applicationExePath,
+                    backup.ProfileName,
+                    backup);
+            }
             catch (Exception ex)
             {
                 return NvidiaProfileSettingWriteResult.FromStatus(
                     NvidiaProfileWriteStatus.Error,
                     ex.Message,
                     applicationExePath,
+                    backup.ProfileName,
+                    backup);
+            }
+        }
+
+        public NvidiaProfileSettingWriteResult RestoreNvidiaProfileSettingFromBackup(NvidiaProfileSettingBackup backup)
+        {
+            if (!_initialized)
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Unsupported,
+                    "NVIDIA driver API not available",
+                    backup.TargetApplicationPath,
+                    backup.ProfileName,
+                    backup);
+            }
+
+            if (!NvidiaProfileSettingWriteCatalog.TryGet(backup.SettingId, out var writeDefinition))
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.NotAllowed,
+                    "This NVIDIA profile setting is not restorable from LightCrosshair.",
+                    backup.TargetApplicationPath,
+                    backup.ProfileName,
+                    backup);
+            }
+
+            try
+            {
+                using var session = DriverSettingsSession.CreateAndLoad();
+                var profile = ResolveExistingProfile(session, backup.TargetApplicationPath, out string? profileNote);
+                if (profile == null)
+                {
+                    return NvidiaProfileSettingWriteResult.FromStatus(
+                        NvidiaProfileWriteStatus.NoProfile,
+                        profileNote ?? "No application profile found to restore.",
+                        backup.TargetApplicationPath,
+                        backup.ProfileName,
+                        backup);
+                }
+
+                bool currentPresent = TryReadProfileSetting(profile, backup.SettingId, out uint currentValue);
+                if (!currentPresent || currentValue != backup.WrittenRawValue)
+                {
+                    return NvidiaProfileSettingWriteResult.FromStatus(
+                        NvidiaProfileWriteStatus.Conflict,
+                        "Current driver value changed since LightCrosshair wrote it. Restore was not applied.",
+                        backup.TargetApplicationPath,
+                        profile.Name,
+                        backup);
+                }
+
+                if (!backup.WasPresent)
+                {
+                    return NvidiaProfileSettingWriteResult.FromStatus(
+                        NvidiaProfileWriteStatus.RestoreUnavailable,
+                        "Previous state was absent, but NvAPIWrapper does not expose a setting delete/remove API here. Restore was not applied.",
+                        backup.TargetApplicationPath,
+                        profile.Name,
+                        backup);
+                }
+
+                profile.SetSetting(backup.SettingId, backup.PreviousRawValue!.Value);
+                session.Save();
+
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Success,
+                    $"{writeDefinition.DisplayName} restored to {writeDefinition.FormatFriendlyValue(backup.PreviousRawValue.Value)}.",
+                    backup.TargetApplicationPath,
+                    profile.Name,
+                    backup);
+            }
+            catch (AccessViolationException ex)
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Error,
+                    $"NVIDIA driver call failed: {ex.Message}",
+                    backup.TargetApplicationPath,
+                    backup.ProfileName,
+                    backup);
+            }
+            catch (Exception ex)
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Error,
+                    ex.Message,
+                    backup.TargetApplicationPath,
                     backup.ProfileName,
                     backup);
             }
@@ -470,6 +620,12 @@ namespace LightCrosshair.GpuDriver
                 statusMessage = $"Vibrance: {vibrance}% (driver level: {dvcInfo.CurrentLevel})";
 
                 return true;
+            }
+            catch (AccessViolationException ex)
+            {
+                vibrance = 0;
+                statusMessage = $"NVIDIA driver call failed: {ex.Message}";
+                return false;
             }
             catch (Exception ex)
             {
