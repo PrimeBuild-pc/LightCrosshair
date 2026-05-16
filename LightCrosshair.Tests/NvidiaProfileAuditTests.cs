@@ -122,6 +122,34 @@ public class NvidiaProfileAuditTests
             setting => !setting.IsReadOnly && setting.UiHint == NvidiaProfileSettingUiHint.RawEditor);
     }
 
+    [Theory]
+    [InlineData(NvidiaProfileSettingCatalog.GSyncApplicationModeSettingId)]
+    [InlineData(NvidiaProfileSettingCatalog.GSyncApplicationStateSettingId)]
+    [InlineData(NvidiaProfileSettingCatalog.GSyncApplicationRequestedStateSettingId)]
+    public void GSyncCatalogEntries_AreReadOnlyReferenceOnly(uint settingId)
+    {
+        var definition = NvidiaProfileSettingCatalog.All.Single(setting => setting.SettingId == settingId);
+
+        Assert.True(definition.IsReadOnly);
+        Assert.True(definition.IsReferenceOnly);
+    }
+
+    [Theory]
+    [InlineData(NvidiaProfileSettingCatalog.GSyncApplicationModeSettingId)]
+    [InlineData(NvidiaProfileSettingCatalog.GSyncApplicationStateSettingId)]
+    [InlineData(NvidiaProfileSettingCatalog.GSyncApplicationRequestedStateSettingId)]
+    public void WriteCatalog_RejectsGSyncUntilMappingIsValidated(uint settingId)
+    {
+        Assert.False(NvidiaProfileSettingWriteCatalog.TryGet(settingId, out _));
+
+        var result = NvidiaProfileSettingWriteCatalog.ValidateRequest(
+            @"C:\Games\sample.exe",
+            new NvidiaProfileSettingWriteRequest(settingId, 1u));
+
+        Assert.False(result.IsValid);
+        Assert.Equal(NvidiaProfileWriteStatus.NotAllowed, result.Status);
+    }
+
     [Fact]
     public void WriteCatalog_ValidateRequest_RejectsBlankTarget()
     {
@@ -188,6 +216,32 @@ public class NvidiaProfileAuditTests
         Assert.False(NvidiaProfileSettingWriteCatalog.CanWrite(
             NvidiaProfileSettingCatalog.LowLatencyModeSettingId,
             rawValue));
+    }
+
+    [Fact]
+    public void WriteCatalog_RejectsLowLatencyUltraUntilDrsMappingIsValidated()
+    {
+        var result = NvidiaProfileSettingWriteCatalog.ValidateRequest(
+            @"C:\Games\sample.exe",
+            new NvidiaProfileSettingWriteRequest(NvidiaProfileSettingCatalog.LowLatencyModeSettingId, 2u));
+
+        Assert.False(result.IsValid);
+        Assert.Equal(NvidiaProfileWriteStatus.NotAllowed, result.Status);
+    }
+
+    [Fact]
+    public void LowLatencyCplState_ExposesUltraAsReadOnlyReference()
+    {
+        var setting = NvidiaProfileSettingCatalog.All.First(setting =>
+            setting.SettingId == NvidiaProfileSettingCatalog.LowLatencyCplStateSettingId);
+
+        Assert.True(setting.IsReadOnly);
+        Assert.True(setting.IsReferenceOnly);
+        Assert.Equal("Ultra", setting.KnownValues[2u]);
+        Assert.Contains(
+            "Ultra is visible from CPL State when present, but not writable until NVIDIA hardware validation confirms the required DRS write mapping.",
+            setting.HelpText,
+            StringComparison.Ordinal);
     }
 
     [Theory]

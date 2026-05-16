@@ -553,7 +553,7 @@
 
                                             <TextBlock Grid.Row="3" Grid.Column="0" Text="Low Latency CPL State" Margin="0,0,8,4"/>
                                             <TextBlock x:Name="NvidiaProfileLowLatencyCplValueText" Grid.Row="3" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
-                                            <TextBlock Grid.Row="3" Grid.Column="2" Text="Read-only reference" Opacity="0.75" Margin="0,0,8,4"/>
+                                            <TextBlock Grid.Row="3" Grid.Column="2" Text="Ultra read-only" Opacity="0.75" Margin="0,0,8,4"/>
                                             <TextBlock x:Name="NvidiaProfileLowLatencyCplStatusText" Grid.Row="3" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
 
                                             <TextBlock Grid.Row="4" Grid.Column="0" Text="Vertical Sync" Margin="0,0,8,4"/>

@@ -100,6 +100,8 @@ namespace LightCrosshair.GpuDriver
         public const uint GSyncApplicationStateSettingId = 0x10A879CFu;
         public const uint GSyncApplicationRequestedStateSettingId = 0x10A879ACu;
 
+        // G-SYNC stays read-only until NVIDIA hardware validation identifies a single safe
+        // per-app write target for Application/default, Enabled, and Disabled semantics.
         private static readonly ReadOnlyCollection<NvidiaProfileSettingDefinition> Definitions =
             new[]
             {
@@ -132,7 +134,7 @@ namespace LightCrosshair.GpuDriver
                     NvidiaProfileSettingUiHint.ReadOnlyBadge,
                     IsReadOnly: true,
                     IsReferenceOnly: true,
-                    "Reference-only Control Panel state related to low latency mode; it is not treated as a writable LightCrosshair setting.",
+                    "Ultra is visible from CPL State when present, but not writable until NVIDIA hardware validation confirms the required DRS write mapping.",
                     new Dictionary<uint, string>
                     {
                         [0u] = "Off",
@@ -159,7 +161,7 @@ namespace LightCrosshair.GpuDriver
                     NvidiaProfileSettingUiHint.Dropdown,
                     IsReadOnly: true,
                     IsReferenceOnly: true,
-                    "Read-only audit of the per-application G-SYNC mode; display and driver state can affect behavior.",
+                    "Read-only audit of the per-application G-SYNC mode. LightCrosshair does not write it until the exact profile mapping is validated.",
                     new Dictionary<uint, string>
                     {
                         [0u] = "Off",
@@ -172,7 +174,7 @@ namespace LightCrosshair.GpuDriver
                     NvidiaProfileSettingUiHint.ReadOnlyBadge,
                     IsReadOnly: true,
                     IsReferenceOnly: true,
-                    "Reference-only G-SYNC application state until apply behavior is validated.",
+                    "Reference-only G-SYNC application state. This is not treated as a writable LightCrosshair setting until apply behavior is validated.",
                     new Dictionary<uint, string>
                     {
                         [0u] = "Allow",
@@ -185,7 +187,7 @@ namespace LightCrosshair.GpuDriver
                     NvidiaProfileSettingUiHint.ReadOnlyBadge,
                     IsReadOnly: true,
                     IsReferenceOnly: true,
-                    "Reference-only requested G-SYNC application state until apply behavior is validated.",
+                    "Reference-only requested G-SYNC application state. This is not treated as a writable LightCrosshair setting until apply behavior is validated.",
                     new Dictionary<uint, string>
                     {
                         [0u] = "Allow",
