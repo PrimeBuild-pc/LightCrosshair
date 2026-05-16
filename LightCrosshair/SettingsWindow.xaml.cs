@@ -41,6 +41,7 @@ namespace LightCrosshair
         private IGpuDriverService? _gpuDriverService;
         private GpuDetResult _gpuDetectionResult;
         private bool _hasLoadedNvidiaProfileAudit;
+        private string _lastNvidiaProfileAuditTarget = string.Empty;
 
         public SettingsWindow(IProfileService profiles)
         {
@@ -180,9 +181,14 @@ namespace LightCrosshair
 
             // GPU Driver event wiring
             GpuRefreshButton.Click += (_, __) => GpuRefreshButton_Click();
-            SettingsTabControl.SelectionChanged += (_, __) =>
+            SettingsTabControl.SelectionChanged += (_, e) =>
             {
-                if (GpuDriverTab.IsSelected && !_hasLoadedNvidiaProfileAudit)
+                if (!ReferenceEquals(e.OriginalSource, SettingsTabControl))
+                {
+                    return;
+                }
+
+                if (GpuDriverTab.IsSelected && ShouldRefreshNvidiaProfileAudit())
                 {
                     RefreshNvidiaProfileAudit();
                 }
@@ -1821,6 +1827,7 @@ namespace LightCrosshair
                 string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
                 NvidiaProfileStatusText.Text = "Auditing selected application profile...";
                 var result = _gpuDriverService.AuditNvidiaProfileSettings(targetProcess);
+                _lastNvidiaProfileAuditTarget = targetProcess;
                 NvidiaProfileStatusText.Text = FormatNvidiaProfileAuditStatus(result);
                 NvidiaProfileNameText.Text = string.IsNullOrWhiteSpace(result.ProfileName) ? "-" : result.ProfileName;
 
@@ -1834,7 +1841,9 @@ namespace LightCrosshair
                     NvidiaProfileSettingCatalog.LowLatencyModeSettingId,
                     NvidiaProfileLowLatencyValueText,
                     NvidiaProfileLowLatencyStatusText);
-                SelectComboValue(NvidiaLowLatencyComboBox, FindAuditRawValue(result, NvidiaProfileSettingCatalog.LowLatencyModeSettingId));
+                SyncWritableComboFromAudit(
+                    NvidiaLowLatencyComboBox,
+                    FindAuditRawValue(result, NvidiaProfileSettingCatalog.LowLatencyModeSettingId));
                 SetNvidiaProfileAuditRow(
                     result,
                     NvidiaProfileSettingCatalog.LowLatencyCplStateSettingId,
@@ -1845,7 +1854,9 @@ namespace LightCrosshair
                     NvidiaProfileSettingCatalog.VerticalSyncSettingId,
                     NvidiaProfileVSyncValueText,
                     NvidiaProfileVSyncStatusText);
-                SelectComboValue(NvidiaVSyncComboBox, FindAuditRawValue(result, NvidiaProfileSettingCatalog.VerticalSyncSettingId));
+                SyncWritableComboFromAudit(
+                    NvidiaVSyncComboBox,
+                    FindAuditRawValue(result, NvidiaProfileSettingCatalog.VerticalSyncSettingId));
                 SetGSyncAuditRow(result);
 
                 bool canApply = result.Status is NvidiaProfileAuditStatus.Present or NvidiaProfileAuditStatus.NoProfile;
@@ -1934,12 +1945,20 @@ namespace LightCrosshair
         private void MarkNvidiaProfileAuditStale()
         {
             _hasLoadedNvidiaProfileAudit = false;
+            _lastNvidiaProfileAuditTarget = string.Empty;
             if (NvidiaProfileStatusText != null)
             {
                 NvidiaProfileStatusText.Text = "Target changed. Refresh to audit the selected application profile.";
             }
 
             SetNvidiaProfileApplyControlsEnabled(!string.IsNullOrWhiteSpace(NormalizeTargetProcessInput(TargetProcessTextBox.Text)));
+        }
+
+        private bool ShouldRefreshNvidiaProfileAudit()
+        {
+            string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
+            return !_hasLoadedNvidiaProfileAudit ||
+                   !string.Equals(targetProcess, _lastNvidiaProfileAuditTarget, StringComparison.OrdinalIgnoreCase);
         }
 
         private void SetNvidiaProfileAuditUnavailable(string message)
@@ -2027,10 +2046,11 @@ namespace LightCrosshair
             NvidiaVSyncRestoreButton.IsEnabled = isEnabled;
         }
 
-        private static void SelectComboValue(System.Windows.Controls.ComboBox comboBox, uint? rawValue)
+        private static void SyncWritableComboFromAudit(System.Windows.Controls.ComboBox comboBox, uint? rawValue)
         {
             if (rawValue == null)
             {
+                comboBox.SelectedIndex = -1;
                 return;
             }
 
@@ -2042,6 +2062,8 @@ namespace LightCrosshair
                     return;
                 }
             }
+
+            comboBox.SelectedIndex = -1;
         }
 
         private static bool TryGetSelectedComboRawValue(System.Windows.Controls.ComboBox comboBox, out uint rawValue)

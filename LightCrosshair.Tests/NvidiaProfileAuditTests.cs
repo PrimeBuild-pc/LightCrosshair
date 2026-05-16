@@ -87,6 +87,15 @@ public class NvidiaProfileAuditTests
     }
 
     [Fact]
+    public void Catalog_DoesNotExposeDlssProfileSettings()
+    {
+        Assert.DoesNotContain(
+            NvidiaProfileSettingCatalog.All,
+            setting => setting.DisplayName.Contains("DLSS", StringComparison.OrdinalIgnoreCase) ||
+                       setting.DisplayName.Contains("Frame Generation", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void WriteCatalog_ContainsOnlyLowLatencyAndVSync()
     {
         var writableIds = NvidiaProfileSettingWriteCatalog.All.Select(setting => setting.SettingId).ToArray();
@@ -98,6 +107,67 @@ public class NvidiaProfileAuditTests
                 NvidiaProfileSettingCatalog.VerticalSyncSettingId
             },
             writableIds);
+    }
+
+    [Fact]
+    public void WriteCatalog_DoesNotExposeDlssOrRawWrites()
+    {
+        Assert.DoesNotContain(
+            NvidiaProfileSettingWriteCatalog.All,
+            setting => setting.DisplayName.Contains("DLSS", StringComparison.OrdinalIgnoreCase) ||
+                       setting.DisplayName.Contains("Frame Generation", StringComparison.OrdinalIgnoreCase));
+
+        Assert.DoesNotContain(
+            NvidiaProfileSettingCatalog.All,
+            setting => !setting.IsReadOnly && setting.UiHint == NvidiaProfileSettingUiHint.RawEditor);
+    }
+
+    [Fact]
+    public void WriteCatalog_ValidateRequest_RejectsBlankTarget()
+    {
+        var result = NvidiaProfileSettingWriteCatalog.ValidateRequest(
+            "",
+            new NvidiaProfileSettingWriteRequest(NvidiaProfileSettingCatalog.LowLatencyModeSettingId, 1u));
+
+        Assert.False(result.IsValid);
+        Assert.Equal(NvidiaProfileWriteStatus.InvalidTarget, result.Status);
+        Assert.Null(result.Definition);
+    }
+
+    [Fact]
+    public void WriteCatalog_ValidateRequest_RejectsUnknownSetting()
+    {
+        var result = NvidiaProfileSettingWriteCatalog.ValidateRequest(
+            @"C:\Games\sample.exe",
+            new NvidiaProfileSettingWriteRequest(0xDEADBEEFu, 1u));
+
+        Assert.False(result.IsValid);
+        Assert.Equal(NvidiaProfileWriteStatus.NotAllowed, result.Status);
+        Assert.Null(result.Definition);
+    }
+
+    [Fact]
+    public void WriteCatalog_ValidateRequest_RejectsUnknownValue()
+    {
+        var result = NvidiaProfileSettingWriteCatalog.ValidateRequest(
+            @"C:\Games\sample.exe",
+            new NvidiaProfileSettingWriteRequest(NvidiaProfileSettingCatalog.VerticalSyncSettingId, 0xDEADBEEFu));
+
+        Assert.False(result.IsValid);
+        Assert.Equal(NvidiaProfileWriteStatus.NotAllowed, result.Status);
+        Assert.NotNull(result.Definition);
+    }
+
+    [Fact]
+    public void WriteCatalog_ValidateRequest_AcceptsKnownTargetSettingAndValue()
+    {
+        var result = NvidiaProfileSettingWriteCatalog.ValidateRequest(
+            @"C:\Games\sample.exe",
+            new NvidiaProfileSettingWriteRequest(NvidiaProfileSettingCatalog.VerticalSyncSettingId, 0x60925292u));
+
+        Assert.True(result.IsValid);
+        Assert.Equal(NvidiaProfileWriteStatus.Success, result.Status);
+        Assert.NotNull(result.Definition);
     }
 
     [Theory]
@@ -180,5 +250,17 @@ public class NvidiaProfileAuditTests
         Assert.False(backup.WasPresent);
         Assert.Null(backup.PreviousRawValue);
         Assert.Equal(0x08416747u, backup.WrittenRawValue);
+    }
+
+    [Fact]
+    public void WriteResult_CanRepresentRestoreUnavailableWithoutNvapi()
+    {
+        var result = NvidiaProfileSettingWriteResult.FromStatus(
+            NvidiaProfileWriteStatus.RestoreUnavailable,
+            "No backup",
+            @"C:\Games\sample.exe");
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(NvidiaProfileWriteStatus.RestoreUnavailable, result.Status);
     }
 }

@@ -219,6 +219,18 @@ public class GpuDriverTests
     }
 
     [Fact]
+    public void AmdDriverService_NvidiaProfileRestore_ReturnsUnsupported()
+    {
+        var service = new AmdDriverService();
+        service.Detect();
+        var result = service.RestoreNvidiaProfileSetting(
+            @"C:\Games\sample.exe",
+            NvidiaProfileSettingCatalog.VerticalSyncSettingId);
+
+        Assert.Equal(NvidiaProfileWriteStatus.Unsupported, result.Status);
+    }
+
+    [Fact]
     public void AmdDriverService_AmdChill_ReturnsUnsupported()
     {
         var service = new AmdDriverService();

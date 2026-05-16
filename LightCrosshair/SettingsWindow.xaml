@@ -515,9 +515,9 @@
 
                                         <Grid Margin="0,0,0,8">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="220"/>
-                                                <ColumnDefinition Width="190"/>
-                                                <ColumnDefinition Width="170"/>
+                                                <ColumnDefinition Width="180"/>
+                                                <ColumnDefinition Width="150"/>
+                                                <ColumnDefinition Width="330"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <Grid.RowDefinitions>
@@ -541,13 +541,13 @@
 
                                             <TextBlock Grid.Row="2" Grid.Column="0" Text="Low Latency Mode" Margin="0,0,8,4"/>
                                             <TextBlock x:Name="NvidiaProfileLowLatencyValueText" Grid.Row="2" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
-                                            <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Margin="0,0,8,4">
-                                                <ComboBox x:Name="NvidiaLowLatencyComboBox" Width="84">
+                                            <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Margin="0,0,12,6">
+                                                <ComboBox x:Name="NvidiaLowLatencyComboBox" Width="110">
                                                     <ComboBoxItem Content="Off" Tag="0"/>
                                                     <ComboBoxItem Content="On" Tag="1"/>
                                                 </ComboBox>
-                                                <Button x:Name="NvidiaLowLatencyApplyButton" Content="Apply" Width="62" Margin="6,0,0,0"/>
-                                                <Button x:Name="NvidiaLowLatencyRestoreButton" Content="Restore" Width="72" Margin="6,0,0,0"/>
+                                                <Button x:Name="NvidiaLowLatencyApplyButton" Content="Apply" Width="76" Margin="8,0,0,0"/>
+                                                <Button x:Name="NvidiaLowLatencyRestoreButton" Content="Restore" Width="82" Margin="8,0,0,0"/>
                                             </StackPanel>
                                             <TextBlock x:Name="NvidiaProfileLowLatencyStatusText" Grid.Row="2" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
 
@@ -558,15 +558,15 @@
 
                                             <TextBlock Grid.Row="4" Grid.Column="0" Text="Vertical Sync" Margin="0,0,8,4"/>
                                             <TextBlock x:Name="NvidiaProfileVSyncValueText" Grid.Row="4" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
-                                            <StackPanel Grid.Row="4" Grid.Column="2" Orientation="Horizontal" Margin="0,0,8,4">
-                                                <ComboBox x:Name="NvidiaVSyncComboBox" Width="168">
+                                            <StackPanel Grid.Row="4" Grid.Column="2" Orientation="Horizontal" Margin="0,0,12,6">
+                                                <ComboBox x:Name="NvidiaVSyncComboBox" Width="180">
                                                     <ComboBoxItem Content="Application controlled" Tag="0x60925292"/>
                                                     <ComboBoxItem Content="Force off" Tag="0x08416747"/>
                                                     <ComboBoxItem Content="Force on" Tag="0x47814940"/>
                                                     <ComboBoxItem Content="Fast Sync" Tag="0x18888888"/>
                                                 </ComboBox>
-                                                <Button x:Name="NvidiaVSyncApplyButton" Content="Apply" Width="62" Margin="6,0,0,0"/>
-                                                <Button x:Name="NvidiaVSyncRestoreButton" Content="Restore" Width="72" Margin="6,0,0,0"/>
+                                                <Button x:Name="NvidiaVSyncApplyButton" Content="Apply" Width="76" Margin="8,0,0,0"/>
+                                                <Button x:Name="NvidiaVSyncRestoreButton" Content="Restore" Width="82" Margin="8,0,0,0"/>
                                             </StackPanel>
                                             <TextBlock x:Name="NvidiaProfileVSyncStatusText" Grid.Row="4" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
 
