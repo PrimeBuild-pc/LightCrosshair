@@ -44,7 +44,8 @@ namespace LightCrosshair.Tests
             string buildScript = ReadRepoFile("scripts", "build-release.ps1");
             string packagingDocs = CombineFiles(
                 "README.md",
-                Path.Combine("setup", "RELEASE_PREP_1.5.0.md"),
+                Path.Combine("setup", "RELEASE_PREP_1.7.0.md"),
+                Path.Combine("setup", "PACKAGE_MANAGER_RELEASE_CHECKLIST_1.7.0.md"),
                 Path.Combine("setup", "LightCrosshair.iss"));
             string nuspec = ReadRepoFile("setup", "chocolatey", "LightCrosshair.nuspec");
 
@@ -74,7 +75,8 @@ namespace LightCrosshair.Tests
             new[]
             {
                 ("README.md", ReadRepoFile("README.md")),
-                ("setup/RELEASE_PREP_1.5.0.md", ReadRepoFile("setup", "RELEASE_PREP_1.5.0.md")),
+                ("setup/RELEASE_PREP_1.7.0.md", ReadRepoFile("setup", "RELEASE_PREP_1.7.0.md")),
+                ("setup/PACKAGE_MANAGER_RELEASE_CHECKLIST_1.7.0.md", ReadRepoFile("setup", "PACKAGE_MANAGER_RELEASE_CHECKLIST_1.7.0.md")),
                 ("setup/chocolatey/LightCrosshair.nuspec", ReadRepoFile("setup", "chocolatey", "LightCrosshair.nuspec")),
             };
 

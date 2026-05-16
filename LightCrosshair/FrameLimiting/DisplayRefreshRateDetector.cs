@@ -22,6 +22,8 @@ namespace LightCrosshair.FrameLimiting
 
                 var mode = new DevMode
                 {
+                    dmDeviceName = string.Empty,
+                    dmFormName = string.Empty,
                     dmSize = (short)Marshal.SizeOf<DevMode>()
                 };
 
