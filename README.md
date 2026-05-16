@@ -61,13 +61,6 @@
       <img alt="NVIDIA profile controls" src="https://github.com/user-attachments/assets/89edc82b-580a-4869-a647-8700b69fec1e" />
     </td>
   </tr>
-  <tr>
-    <td width="33%">
-      <img alt="LightCrosshair advanced settings" src="https://github.com/user-attachments/assets/34b426b5-41dc-4e13-a0ee-0f42cc47238d" />
-    </td>
-    <td width="33%"></td>
-    <td width="33%"></td>
-  </tr>
 </table>
 
 ---
