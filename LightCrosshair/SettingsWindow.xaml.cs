@@ -902,10 +902,7 @@ namespace LightCrosshair
             ShowGenFramesCheckbox.IsChecked = cfg.ShowGenFrames;
             UpdateGraphRefreshUiState();
 
-            FrameCapRefreshRateSlider.Value = cfg.FrameCapAssistantRefreshRateHz;
-            FrameCapRefreshRateText.Text = $"{cfg.FrameCapAssistantRefreshRateHz:0} Hz";
-            FrameCapTargetFpsSlider.Value = cfg.FrameCapAssistantTargetFps;
-            FrameCapTargetFpsText.Text = cfg.FrameCapAssistantTargetFps.ToString();
+            InitializeFrameCapAssistantFromDisplay(cfg);
             RefreshFrameCapAssistantStatus(cfg);
             _suppressUiEvents = false;
             RefreshDisplayBackendInfo();
@@ -1561,6 +1558,28 @@ namespace LightCrosshair
                 $"{status.StatusText} Suggested target: {status.TargetFps} FPS. {status.HelpText}";
         }
 
+        private void InitializeFrameCapAssistantFromDisplay(CrosshairConfig cfg)
+        {
+            double? primaryRefreshRateHz = DisplayRefreshRateDetector.TryGetPrimaryDisplayRefreshRateHz();
+            var settings = FrameCapAssistant.InitializeFromDetectedRefreshRate(
+                cfg.FrameCapAssistantRefreshRateHz,
+                cfg.FrameCapAssistantTargetFps,
+                primaryRefreshRateHz);
+
+            cfg.FrameCapAssistantRefreshRateHz = settings.RefreshRateHz;
+            cfg.FrameCapAssistantTargetFps = settings.TargetFps;
+
+            FrameCapRefreshRateSlider.Value = cfg.FrameCapAssistantRefreshRateHz;
+            FrameCapRefreshRateText.Text = $"{cfg.FrameCapAssistantRefreshRateHz:0} Hz";
+            FrameCapTargetFpsSlider.Value = cfg.FrameCapAssistantTargetFps;
+            FrameCapTargetFpsText.Text = cfg.FrameCapAssistantTargetFps.ToString();
+
+            if (settings.UsedDetectedRefreshRate)
+            {
+                QueueSettingsSave(cfg);
+            }
+        }
+
         private void SelectGraphTimeWindowPreset(int timeWindowMs)
         {
             if (GraphTimeWindowCombo == null)
@@ -1852,7 +1871,7 @@ namespace LightCrosshair
                 }
 
                 var result = response.AuditResult;
-                NvidiaProfileStatusText.Text = NvidiaProfileUiState.FromAuditResult(result).StatusText;
+                SetStatusText(NvidiaProfileStatusText, NvidiaProfileUiState.FromAuditResult(result).StatusText);
                 NvidiaProfileNameText.Text = string.IsNullOrWhiteSpace(result.ProfileName) ? "-" : result.ProfileName;
 
                 SetNvidiaProfileAuditRow(
@@ -1900,13 +1919,13 @@ namespace LightCrosshair
                 string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
                 if (string.IsNullOrWhiteSpace(targetProcess))
                 {
-                    statusText.Text = "Select a target application before applying NVIDIA profile controls.";
+                    SetStatusText(statusText, "Select a target application before applying NVIDIA profile controls.");
                     return;
                 }
 
                 if (!TryGetSelectedComboRawValue(comboBox, out uint rawValue))
                 {
-                    statusText.Text = "Select a supported value first.";
+                    SetStatusText(statusText, "Select a supported value first.");
                     return;
                 }
 
@@ -1914,12 +1933,12 @@ namespace LightCrosshair
                 var validation = NvidiaProfileSettingWriteCatalog.ValidateRequest(targetProcess, request);
                 if (!validation.IsValid)
                 {
-                    statusText.Text = validation.StatusText;
+                    SetStatusText(statusText, validation.StatusText);
                     return;
                 }
 
                 Program.LogLifecycle($"Explicit NVIDIA profile apply requested for setting 0x{settingId:X8}.", nameof(SettingsWindow));
-                statusText.Text = "Applying NVIDIA profile setting through isolated helper...";
+                SetStatusText(statusText, "Applying NVIDIA profile setting through isolated helper...");
                 var response = await RunNvidiaHelperAsync(NvidiaHelperRequest.ApplyProfileSetting(
                     targetProcess,
                     request,
@@ -1928,7 +1947,7 @@ namespace LightCrosshair
                     NvidiaProfileWriteStatus.Error,
                     response.StatusText,
                     targetProcess);
-                statusText.Text = result.StatusText;
+                SetStatusText(statusText, result.StatusText);
 
                 if (result.Succeeded)
                 {
@@ -1938,13 +1957,13 @@ namespace LightCrosshair
                     }
 
                     MarkNvidiaProfileAuditStale();
-                    statusText.Text = $"{result.StatusText} Click Refresh to read back NVIDIA profile settings.";
+                    SetStatusText(statusText, $"{result.StatusText} Click Refresh to read back NVIDIA profile settings.");
                 }
             }
             catch (Exception ex)
             {
                 Program.LogError(ex, "SettingsWindow.ApplyNvidiaProfileSettingFromUi");
-                statusText.Text = $"Error: {ex.Message}";
+                SetStatusText(statusText, $"Error: {ex.Message}");
             }
         }
 
@@ -1955,49 +1974,49 @@ namespace LightCrosshair
                 string targetProcess = NormalizeTargetProcessInput(TargetProcessTextBox.Text);
                 if (string.IsNullOrWhiteSpace(targetProcess))
                 {
-                    statusText.Text = "Select a target application before restoring NVIDIA profile controls.";
+                    SetStatusText(statusText, "Select a target application before restoring NVIDIA profile controls.");
                     return;
                 }
 
                 _nvidiaProfileBackups.TryGetValue((NormalizeBackupTarget(targetProcess), settingId), out var backup);
                 Program.LogLifecycle($"Explicit NVIDIA profile restore requested for setting 0x{settingId:X8}.", nameof(SettingsWindow));
-                statusText.Text = "Restoring NVIDIA profile setting through isolated helper...";
+                SetStatusText(statusText, "Restoring NVIDIA profile setting through isolated helper...");
                 var response = await RunNvidiaHelperAsync(NvidiaHelperRequest.RestoreProfileSetting(targetProcess, settingId, backup));
                 var result = response.WriteResult ?? NvidiaProfileSettingWriteResult.FromStatus(
                     NvidiaProfileWriteStatus.Error,
                     response.StatusText,
                     targetProcess);
-                statusText.Text = result.StatusText;
+                SetStatusText(statusText, result.StatusText);
 
                 if (result.Succeeded)
                 {
                     _nvidiaProfileBackups.Remove((NormalizeBackupTarget(targetProcess), settingId));
                     MarkNvidiaProfileAuditStale();
-                    statusText.Text = $"{result.StatusText} Click Refresh to read back NVIDIA profile settings.";
+                    SetStatusText(statusText, $"{result.StatusText} Click Refresh to read back NVIDIA profile settings.");
                 }
             }
             catch (Exception ex)
             {
                 Program.LogError(ex, "SettingsWindow.RestoreNvidiaProfileSettingFromUi");
-                statusText.Text = $"Error: {ex.Message}";
+                SetStatusText(statusText, $"Error: {ex.Message}");
             }
         }
 
         private void SetNvidiaProfileAuditInitialPrompt()
         {
             var state = NvidiaProfileUiState.Initial();
-            NvidiaProfileStatusText.Text = state.StatusText;
+            SetStatusText(NvidiaProfileStatusText, state.StatusText);
             NvidiaProfileNameText.Text = "-";
             NvidiaProfileFpsCapValueText.Text = "-";
             NvidiaProfileLowLatencyValueText.Text = "-";
             NvidiaProfileLowLatencyCplValueText.Text = "-";
             NvidiaProfileVSyncValueText.Text = "-";
             NvidiaProfileGSyncValueText.Text = "-";
-            NvidiaProfileFpsCapStatusText.Text = state.StatusText;
-            NvidiaProfileLowLatencyStatusText.Text = state.StatusText;
-            NvidiaProfileLowLatencyCplStatusText.Text = state.StatusText;
-            NvidiaProfileVSyncStatusText.Text = state.StatusText;
-            NvidiaProfileGSyncStatusText.Text = state.StatusText;
+            SetStatusText(NvidiaProfileFpsCapStatusText, state.StatusText);
+            SetStatusText(NvidiaProfileLowLatencyStatusText, state.StatusText);
+            SetStatusText(NvidiaProfileLowLatencyCplStatusText, state.StatusText);
+            SetStatusText(NvidiaProfileVSyncStatusText, state.StatusText);
+            SetStatusText(NvidiaProfileGSyncStatusText, state.StatusText);
             SetNvidiaProfileApplyControlsEnabled(state.CanApplyProfileSettings);
         }
 
@@ -2011,7 +2030,7 @@ namespace LightCrosshair
         {
             if (NvidiaProfileStatusText != null)
             {
-                NvidiaProfileStatusText.Text = "Target changed. Refresh to audit the selected application profile.";
+                SetStatusText(NvidiaProfileStatusText, "Target changed. Refresh to audit the selected application profile.");
             }
 
             SetNvidiaProfileApplyControlsEnabled(!string.IsNullOrWhiteSpace(NormalizeTargetProcessInput(TargetProcessTextBox.Text)));
@@ -2019,18 +2038,18 @@ namespace LightCrosshair
 
         private void SetNvidiaProfileAuditUnavailable(string message)
         {
-            NvidiaProfileStatusText.Text = message;
+            SetStatusText(NvidiaProfileStatusText, message);
             NvidiaProfileNameText.Text = "-";
             NvidiaProfileFpsCapValueText.Text = "-";
             NvidiaProfileLowLatencyValueText.Text = "-";
             NvidiaProfileLowLatencyCplValueText.Text = "-";
             NvidiaProfileVSyncValueText.Text = "-";
             NvidiaProfileGSyncValueText.Text = "-";
-            NvidiaProfileFpsCapStatusText.Text = message;
-            NvidiaProfileLowLatencyStatusText.Text = message;
-            NvidiaProfileLowLatencyCplStatusText.Text = message;
-            NvidiaProfileVSyncStatusText.Text = message;
-            NvidiaProfileGSyncStatusText.Text = message;
+            SetStatusText(NvidiaProfileFpsCapStatusText, message);
+            SetStatusText(NvidiaProfileLowLatencyStatusText, message);
+            SetStatusText(NvidiaProfileLowLatencyCplStatusText, message);
+            SetStatusText(NvidiaProfileVSyncStatusText, message);
+            SetStatusText(NvidiaProfileGSyncStatusText, message);
             SetNvidiaProfileApplyControlsEnabled(false);
         }
 
@@ -2044,7 +2063,7 @@ namespace LightCrosshair
             if (item == null)
             {
                 valueText.Text = "-";
-                statusText.Text = "Setting is not part of the LightCrosshair catalog.";
+                SetStatusText(statusText, "Setting is not part of the LightCrosshair catalog.");
                 return;
             }
 
@@ -2053,13 +2072,13 @@ namespace LightCrosshair
                 : "Not present";
             if (item.Definition.IsReferenceOnly)
             {
-                statusText.Text = settingId == NvidiaProfileSettingCatalog.LowLatencyCplStateSettingId
+                SetStatusText(statusText, settingId == NvidiaProfileSettingCatalog.LowLatencyCplStateSettingId
                     ? $"{item.Definition.HelpText} {item.StatusText}"
-                    : $"Read-only reference. {item.StatusText}";
+                    : $"Read-only reference. {item.StatusText}");
                 return;
             }
 
-            statusText.Text = item.StatusText;
+            SetStatusText(statusText, item.StatusText);
         }
 
         private static uint? FindAuditRawValue(NvidiaProfileAuditResult result, uint settingId) =>
@@ -2080,8 +2099,15 @@ namespace LightCrosshair
                     .Where(item => item?.Status == NvidiaProfileAuditStatus.Present)
                     .Select(item => item!.FriendlyValue)
                     .DefaultIfEmpty("Not present"));
-            NvidiaProfileGSyncStatusText.Text =
-                "Read-only: local metadata does not identify a single safe per-app write target for Application/default, Enabled, and Disabled.";
+            SetStatusText(
+                NvidiaProfileGSyncStatusText,
+                "Read-only: local metadata does not identify a single safe per-app write target for Application/default, Enabled, and Disabled.");
+        }
+
+        private static void SetStatusText(TextBlock statusText, string text)
+        {
+            statusText.Text = text;
+            statusText.ToolTip = text.Length > 90 ? text : null;
         }
 
         private void SetNvidiaProfileApplyControlsEnabled(bool isEnabled)

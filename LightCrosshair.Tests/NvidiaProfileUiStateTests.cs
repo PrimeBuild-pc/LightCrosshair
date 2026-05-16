@@ -102,6 +102,19 @@ public class NvidiaProfileUiStateTests
         Assert.DoesNotContain("NvAPIWrapper", nvidiaActions, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void NvidiaProfileLayout_PutsStatusOnSecondaryRows()
+    {
+        string xaml = ReadRepoFile("LightCrosshair", "SettingsWindow.xaml");
+        string profileGrid = Slice(xaml, "<Grid Margin=\"0,0,0,8\">", "</Grid>");
+
+        Assert.DoesNotContain("Text=\"Status\" FontWeight=\"SemiBold\"", profileGrid, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"NvidiaProfileLowLatencyStatusText\" Grid.Row=\"4\"", profileGrid, StringComparison.Ordinal);
+        Assert.Contains("x:Name=\"NvidiaProfileVSyncStatusText\" Grid.Row=\"8\"", profileGrid, StringComparison.Ordinal);
+        Assert.Contains("TextTrimming=\"CharacterEllipsis\"", profileGrid, StringComparison.Ordinal);
+        Assert.Contains("<ColumnDefinition Width=\"*\"/>", profileGrid, StringComparison.Ordinal);
+    }
+
     private static string Slice(string source, string startMarker, string endMarker)
     {
         int start = source.IndexOf(startMarker, StringComparison.Ordinal);
