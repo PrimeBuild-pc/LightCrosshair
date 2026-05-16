@@ -16,7 +16,7 @@ Excluded from this release-prep pass:
 - Pushes to any remote.
 - MSIX packaging.
 - New services, updaters, installers, or background tasks.
-- Package-manager submission updates until final public artifact URLs and checksums exist.
+- Package-manager publication/submission without explicit approval.
 
 ## Version Baseline
 
@@ -75,9 +75,9 @@ Do not publish the installer until the release step is explicitly approved.
 
 ## Package Manager Prep
 
-Do not create or submit 1.7.0 Chocolatey or WinGet package metadata with guessed public URLs or hashes. The repository keeps the existing submitted/historical package-manager metadata until final public GitHub release assets exist.
+Do not submit 1.7.0 Chocolatey or WinGet package metadata with guessed public URLs or hashes. Final public GitHub release assets now exist, so the repository has prepared package-manager metadata using the verified installer URL and SHA256.
 
-Use `setup/PACKAGE_MANAGER_RELEASE_CHECKLIST_1.7.0.md` after the final artifacts are uploaded. That checklist names the exact Chocolatey and WinGet fields that must be updated with the final public installer URL and SHA256.
+Use `setup/PACKAGE_MANAGER_RELEASE_CHECKLIST_1.7.0.md` for the final Chocolatey and WinGet fields, validation commands, and explicit submit/publish gates.
 
 ## Manual NVIDIA Validation
 

@@ -2,7 +2,15 @@
 
 This document describes how to prepare and submit WinGet manifests for LightCrosshair 1.7.0.
 
-Do not submit a PR to `microsoft/winget-pkgs`, push a branch, or publish any artifact until the final 1.7.0 public installer URL and SHA256 are available and explicit release approval has been given.
+The final 1.7.0 public installer URL and SHA256 are now available and local manifests have been prepared in this repository. Do not submit a PR to `microsoft/winget-pkgs`, push a branch, or publish any artifact until explicit release approval has been given.
+
+## Final 1.7.0 Values
+
+- Release page: https://github.com/PrimeBuild-pc/LightCrosshair/releases/tag/v1.7.0
+- Release date: 2026-05-16
+- Installer URL: https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.0/LightCrosshair-Setup-1.7.0.exe
+- Installer SHA256: `82E4D878DF7881F5DE88C4A9444C200F18CE1BD14E0C88AFEF9C05099808090E`
+- SHA256 source: `(Get-FileHash -Path .\setup\Output\LightCrosshair-Setup-1.7.0.exe -Algorithm SHA256).Hash`
 
 ## Prerequisites
 
@@ -11,7 +19,7 @@ Do not submit a PR to `microsoft/winget-pkgs`, push a branch, or publish any art
 - Git CLI.
 - WinGet CLI for local validation, or access to a manifest validator.
 - Final public 1.7.0 installer asset URL from the GitHub Release.
-- Final 1.7.0 installer SHA256 calculated from that public asset.
+- Final 1.7.0 installer SHA256 calculated from the final local release artifact.
 
 Do not store GitHub tokens or other credentials in this repository.
 
@@ -25,7 +33,7 @@ setup/winget/manifests/p/PrimeBuild/LightCrosshair/1.5.0/
 setup/winget/manifests/p/PrimeBuild/LightCrosshair/1.6.0/
 ```
 
-For 1.7.0, do not create a manifest directory with placeholder values. After the final public installer URL and SHA256 exist, copy the most recent manifest directory:
+For 1.7.0, do not create a manifest directory with placeholder values. The final public installer URL and SHA256 now exist, and the local manifest directory has been prepared from the most recent historical manifest:
 
 ```powershell
 Copy-Item `
@@ -34,13 +42,13 @@ Copy-Item `
   setup/winget/manifests/p/PrimeBuild/LightCrosshair/1.7.0
 ```
 
-Then update the copied manifests:
+The prepared manifests use these final values:
 
 - `PackageVersion: 1.7.0`
-- `InstallerUrl` to the final public `LightCrosshair-Setup-1.7.0.exe` release asset URL.
-- `InstallerSha256` to the final installer SHA256.
-- `ReleaseNotesUrl` to the final `v1.7.0` release page.
-- `ReleaseDate`, if present, to the actual release date.
+- `InstallerUrl: https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.0/LightCrosshair-Setup-1.7.0.exe`
+- `InstallerSha256: 82E4D878DF7881F5DE88C4A9444C200F18CE1BD14E0C88AFEF9C05099808090E`
+- `ReleaseNotesUrl: https://github.com/PrimeBuild-pc/LightCrosshair/releases/tag/v1.7.0`
+- `ReleaseDate: 2026-05-16`
 
 ## Validate Locally
 

@@ -90,26 +90,20 @@ assets/
 
 Download the latest version from the **[GitHub Releases page](../../releases/latest)**.
 
-### Install with WinGet
+### Package managers
 
-You can install LightCrosshair from the Windows Package Manager with:
-
-```powershell
-winget install --id PrimeBuild.LightCrosshair --exact
-```
-
-If the package is not found immediately after a new release, update your WinGet sources and try again:
-
-```powershell
-winget source update
-winget install --id PrimeBuild.LightCrosshair --exact
-```
+Chocolatey and WinGet submission updates for v1.7.0 are being prepared. Use the
+GitHub Release assets below until those package-manager updates are accepted and
+published.
 
 ### Available release assets
 
-- **Installer:** `LightCrosshair-Setup-1.7.0.exe`
-- **Portable ZIP x64:** `LightCrosshair-v1.7.0-x64.zip`
-- **Portable ZIP ARM64:** `LightCrosshair-v1.7.0-ARM64.zip`
+- **Installer:** [`LightCrosshair-Setup-1.7.0.exe`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.0/LightCrosshair-Setup-1.7.0.exe)
+  SHA256: `82E4D878DF7881F5DE88C4A9444C200F18CE1BD14E0C88AFEF9C05099808090E`
+- **Portable ZIP x64:** [`LightCrosshair-v1.7.0-x64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.0/LightCrosshair-v1.7.0-x64.zip)
+  SHA256: `672BC0E0C6DA33761969ACD3DD1D9BBC0A027B73140DCF64FD6C0C8B82765FD3`
+- **Portable ZIP ARM64:** [`LightCrosshair-v1.7.0-ARM64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.0/LightCrosshair-v1.7.0-ARM64.zip)
+  SHA256: `4AC93A4B3AC6DE15C08ECBA3CA151E387D701B1624689EA673FF4478ADDC0FBE`
 
 ### Recommended installation
 
