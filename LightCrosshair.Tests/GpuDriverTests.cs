@@ -67,6 +67,29 @@ public class GpuDriverTests
     }
 
     [Fact]
+    public void NullGpuDriverService_NvidiaProfileWrite_ReturnsUnsupported()
+    {
+        var service = new NullGpuDriverService();
+        var result = service.ApplyNvidiaProfileSetting(
+            @"C:\Games\sample.exe",
+            new NvidiaProfileSettingWriteRequest(NvidiaProfileSettingCatalog.LowLatencyModeSettingId, 1u),
+            "1.4.0");
+
+        Assert.Equal(NvidiaProfileWriteStatus.Unsupported, result.Status);
+    }
+
+    [Fact]
+    public void NullGpuDriverService_NvidiaProfileRestore_ReturnsUnsupported()
+    {
+        var service = new NullGpuDriverService();
+        var result = service.RestoreNvidiaProfileSetting(
+            @"C:\Games\sample.exe",
+            NvidiaProfileSettingCatalog.LowLatencyModeSettingId);
+
+        Assert.Equal(NvidiaProfileWriteStatus.Unsupported, result.Status);
+    }
+
+    [Fact]
     public void NullGpuDriverService_TrySetNvidiaVibrance_ReturnsFalse()
     {
         var service = new NullGpuDriverService();
@@ -180,6 +203,19 @@ public class GpuDriverTests
 
         Assert.Equal(NvidiaProfileAuditStatus.Unsupported, result.Status);
         Assert.All(result.Settings, item => Assert.Equal(NvidiaProfileAuditStatus.Unsupported, item.Status));
+    }
+
+    [Fact]
+    public void AmdDriverService_NvidiaProfileWrite_ReturnsUnsupported()
+    {
+        var service = new AmdDriverService();
+        service.Detect();
+        var result = service.ApplyNvidiaProfileSetting(
+            @"C:\Games\sample.exe",
+            new NvidiaProfileSettingWriteRequest(NvidiaProfileSettingCatalog.VerticalSyncSettingId, 0x60925292u),
+            "1.4.0");
+
+        Assert.Equal(NvidiaProfileWriteStatus.Unsupported, result.Status);
     }
 
     [Fact]

@@ -153,6 +153,19 @@ namespace LightCrosshair.GpuDriver
         NvidiaProfileAuditResult AuditNvidiaProfileSettings(string? applicationExePath);
 
         /// <summary>
+        /// Applies a single allowlisted NVIDIA profile setting to a per-application profile.
+        /// </summary>
+        NvidiaProfileSettingWriteResult ApplyNvidiaProfileSetting(
+            string? applicationExePath,
+            NvidiaProfileSettingWriteRequest request,
+            string lightCrosshairVersion);
+
+        /// <summary>
+        /// Restores the last LightCrosshair backup for a single allowlisted NVIDIA profile setting.
+        /// </summary>
+        NvidiaProfileSettingWriteResult RestoreNvidiaProfileSetting(string? applicationExePath, uint settingId);
+
+        /// <summary>
         /// Attempts to set NVIDIA digital vibrance (0-100).
         /// </summary>
         /// <param name="vibrance">Vibrance value (0-100).</param>
@@ -235,6 +248,23 @@ namespace LightCrosshair.GpuDriver
         /// <inheritdoc />
         public NvidiaProfileAuditResult AuditNvidiaProfileSettings(string? applicationExePath) =>
             NvidiaProfileAuditResult.Unsupported("NVIDIA driver API not available (NullGpuDriverService).");
+
+        /// <inheritdoc />
+        public NvidiaProfileSettingWriteResult ApplyNvidiaProfileSetting(
+            string? applicationExePath,
+            NvidiaProfileSettingWriteRequest request,
+            string lightCrosshairVersion) =>
+            NvidiaProfileSettingWriteResult.FromStatus(
+                NvidiaProfileWriteStatus.Unsupported,
+                "NVIDIA driver API not available (NullGpuDriverService).",
+                applicationExePath ?? string.Empty);
+
+        /// <inheritdoc />
+        public NvidiaProfileSettingWriteResult RestoreNvidiaProfileSetting(string? applicationExePath, uint settingId) =>
+            NvidiaProfileSettingWriteResult.FromStatus(
+                NvidiaProfileWriteStatus.Unsupported,
+                "NVIDIA driver API not available (NullGpuDriverService).",
+                applicationExePath ?? string.Empty);
 
         /// <inheritdoc />
         public bool TrySetNvidiaVibrance(int vibrance, out string errorMessage)

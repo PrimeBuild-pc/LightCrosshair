@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using LightCrosshair.GpuDriver;
@@ -20,6 +21,7 @@ namespace LightCrosshair.GpuDriver
     {
         private GpuDetectionResult _detectionResult = GpuDetectionResult.Unknown();
         private bool _initialized;
+        private readonly Dictionary<(string Target, uint SettingId), NvidiaProfileSettingBackup> _lastBackups = new();
 
         /// <inheritdoc />
         public GpuDetectionResult Detect()
@@ -238,6 +240,179 @@ namespace LightCrosshair.GpuDriver
                     applicationExePath,
                     null,
                     ex.Message);
+            }
+        }
+
+        /// <inheritdoc />
+        public NvidiaProfileSettingWriteResult ApplyNvidiaProfileSetting(
+            string? applicationExePath,
+            NvidiaProfileSettingWriteRequest request,
+            string lightCrosshairVersion)
+        {
+            if (!_initialized)
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Unsupported,
+                    "NVIDIA driver API not available",
+                    applicationExePath ?? string.Empty);
+            }
+
+            if (string.IsNullOrWhiteSpace(applicationExePath))
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.InvalidTarget,
+                    "Select a target application before applying NVIDIA profile controls.",
+                    string.Empty);
+            }
+
+            if (!NvidiaProfileSettingWriteCatalog.TryGet(request.SettingId, out var writeDefinition))
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.NotAllowed,
+                    "This NVIDIA profile setting is not writable from LightCrosshair.",
+                    applicationExePath);
+            }
+
+            if (!writeDefinition.AllowsValue(request.RawValue))
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.NotAllowed,
+                    $"'{writeDefinition.DisplayName}' does not allow value 0x{request.RawValue:X8}.",
+                    applicationExePath);
+            }
+
+            try
+            {
+                using var session = DriverSettingsSession.CreateAndLoad();
+                var profile = ResolveOrCreateProfile(session, applicationExePath, out string? profileNote);
+                if (profile == null)
+                {
+                    return NvidiaProfileSettingWriteResult.FromStatus(
+                        NvidiaProfileWriteStatus.NoProfile,
+                        profileNote ?? "Could not resolve or create an application profile.",
+                        applicationExePath);
+                }
+
+                bool wasPresent = TryReadProfileSetting(profile, request.SettingId, out uint previousRawValue);
+                var backup = new NvidiaProfileSettingBackup(
+                    applicationExePath,
+                    profile.Name,
+                    request.SettingId,
+                    wasPresent,
+                    wasPresent ? previousRawValue : null,
+                    request.RawValue,
+                    DateTimeOffset.Now,
+                    lightCrosshairVersion);
+
+                profile.SetSetting(request.SettingId, request.RawValue);
+                session.Save();
+
+                _lastBackups[(NormalizeBackupTarget(applicationExePath), request.SettingId)] = backup;
+
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Success,
+                    $"{writeDefinition.DisplayName} set to {writeDefinition.FormatFriendlyValue(request.RawValue)} for the selected application profile.",
+                    applicationExePath,
+                    profile.Name,
+                    backup);
+            }
+            catch (Exception ex)
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Error,
+                    ex.Message,
+                    applicationExePath);
+            }
+        }
+
+        /// <inheritdoc />
+        public NvidiaProfileSettingWriteResult RestoreNvidiaProfileSetting(string? applicationExePath, uint settingId)
+        {
+            if (!_initialized)
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Unsupported,
+                    "NVIDIA driver API not available",
+                    applicationExePath ?? string.Empty);
+            }
+
+            if (string.IsNullOrWhiteSpace(applicationExePath))
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.InvalidTarget,
+                    "Select a target application before restoring NVIDIA profile controls.",
+                    string.Empty);
+            }
+
+            if (!NvidiaProfileSettingWriteCatalog.TryGet(settingId, out var writeDefinition))
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.NotAllowed,
+                    "This NVIDIA profile setting is not restorable from LightCrosshair.",
+                    applicationExePath);
+            }
+
+            if (!_lastBackups.TryGetValue((NormalizeBackupTarget(applicationExePath), settingId), out var backup))
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.RestoreUnavailable,
+                    "No LightCrosshair backup is available for this setting in the current session.",
+                    applicationExePath);
+            }
+
+            try
+            {
+                using var session = DriverSettingsSession.CreateAndLoad();
+                var profile = ResolveExistingProfile(session, applicationExePath, out string? profileNote);
+                if (profile == null)
+                {
+                    return NvidiaProfileSettingWriteResult.FromStatus(
+                        NvidiaProfileWriteStatus.NoProfile,
+                        profileNote ?? "No application profile found to restore.",
+                        applicationExePath);
+                }
+
+                bool currentPresent = TryReadProfileSetting(profile, settingId, out uint currentValue);
+                if (!currentPresent || currentValue != backup.WrittenRawValue)
+                {
+                    return NvidiaProfileSettingWriteResult.FromStatus(
+                        NvidiaProfileWriteStatus.Conflict,
+                        "Current driver value changed since LightCrosshair wrote it. Restore was not applied.",
+                        applicationExePath,
+                        profile.Name,
+                        backup);
+                }
+
+                if (!backup.WasPresent)
+                {
+                    return NvidiaProfileSettingWriteResult.FromStatus(
+                        NvidiaProfileWriteStatus.RestoreUnavailable,
+                        "Previous state was absent, but NvAPIWrapper does not expose a setting delete/remove API here. Restore was not applied.",
+                        applicationExePath,
+                        profile.Name,
+                        backup);
+                }
+
+                profile.SetSetting(settingId, backup.PreviousRawValue!.Value);
+                session.Save();
+
+                _lastBackups.Remove((NormalizeBackupTarget(applicationExePath), settingId));
+
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Success,
+                    $"{writeDefinition.DisplayName} restored to {writeDefinition.FormatFriendlyValue(backup.PreviousRawValue.Value)}.",
+                    applicationExePath,
+                    profile.Name,
+                    backup);
+            }
+            catch (Exception ex)
+            {
+                return NvidiaProfileSettingWriteResult.FromStatus(
+                    NvidiaProfileWriteStatus.Error,
+                    ex.Message,
+                    applicationExePath,
+                    backup.ProfileName,
+                    backup);
             }
         }
 
@@ -482,5 +657,23 @@ namespace LightCrosshair.GpuDriver
                     "Setting is not present in the resolved application profile.");
             }
         }
+
+        private static bool TryReadProfileSetting(DriverSettingsProfile profile, uint settingId, out uint rawValue)
+        {
+            try
+            {
+                var setting = profile.GetSetting(settingId);
+                rawValue = (uint)setting.CurrentValue;
+                return true;
+            }
+            catch
+            {
+                rawValue = 0;
+                return false;
+            }
+        }
+
+        private static string NormalizeBackupTarget(string applicationExePath) =>
+            applicationExePath.Trim().ToLowerInvariant();
     }
 }
