@@ -573,10 +573,22 @@ dist/
 # Build/installer outputs (local artifacts)
 Output/
 releases/
+setup/Output/
+setup/publish/
 
 # Local release packages/checksums
 /LightCrosshair-v*.zip
 /LightCrosshair-v*.zip.sha256
+
+# Local crash diagnostics and ad-hoc driver validation output
+*.dmp
+*.mdmp
+*.wer
+*.etl
+*.evtx
+*.binlog
+LightCrosshair/logs/
+logs/
 
 # Ignora file di test provvisori
 *.exe

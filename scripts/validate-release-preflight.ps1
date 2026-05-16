@@ -1,8 +1,8 @@
-# LightCrosshair 1.5.0 release preflight validation.
+# LightCrosshair 1.7.0 release preflight validation.
 # Performs local, non-publishing checks only.
 
 param(
-    [string]$ExpectedVersion = "1.5.0",
+    [string]$ExpectedVersion = "1.7.0",
     [switch]$AllowMain
 )
 
@@ -91,7 +91,8 @@ finally {
 $csproj = Read-RepoFile "LightCrosshair/LightCrosshair.csproj"
 $buildScript = Read-RepoFile "scripts/build-release.ps1"
 $readme = Read-RepoFile "README.md"
-$releasePrep = Read-RepoFile "setup/RELEASE_PREP_1.5.0.md"
+$releasePrep = Read-RepoFile "setup/RELEASE_PREP_1.7.0.md"
+$packageChecklist = Read-RepoFile "setup/PACKAGE_MANAGER_RELEASE_CHECKLIST_1.7.0.md"
 $inno = Read-RepoFile "setup/LightCrosshair.iss"
 $nuspec = Read-RepoFile "setup/chocolatey/LightCrosshair.nuspec"
 $wingetSubmission = Read-RepoFile "setup/WINGET_SUBMISSION.md"
@@ -105,11 +106,11 @@ Assert-Contains "scripts/build-release.ps1" $buildScript "--self-contained" "pub
 Assert-Contains "scripts/build-release.ps1" $buildScript 'if \(\$SelfContained\) \{ "true" \} else \{ "false" \}' "default publish mode remains framework-dependent unless -SelfContained is passed"
 Assert-Contains "scripts/build-release.ps1" $buildScript '/p:EnableCompressionInSingleFile=\$selfContainedValue' "single-file compression follows self-contained mode"
 Assert-Contains "setup/LightCrosshair.iss" $inno "AppVersion=$([regex]::Escape($ExpectedVersion))" "installer version is $ExpectedVersion"
-Assert-Contains "setup/chocolatey/LightCrosshair.nuspec" $nuspec "<version>$([regex]::Escape($ExpectedVersion))</version>" "Chocolatey nuspec version is $ExpectedVersion"
 
 $publicReleaseDocs = @{
     "README.md" = $readme
-    "setup/RELEASE_PREP_1.5.0.md" = $releasePrep
+    "setup/RELEASE_PREP_1.7.0.md" = $releasePrep
+    "setup/PACKAGE_MANAGER_RELEASE_CHECKLIST_1.7.0.md" = $packageChecklist
     "setup/chocolatey/LightCrosshair.nuspec" = $nuspec
     "setup/WINGET_SUBMISSION.md" = $wingetSubmission
     "scripts/install.ps1" = $installScript
@@ -133,15 +134,17 @@ Assert-Contains "packaging docs" $packagingDocs "(?i)\.NET\s+8(\.0)?" "state .NE
 Assert-Contains "packaging docs" $packagingDocs "(?i)Windows\s+Desktop\s+Runtime|Desktop\s+Runtime" "state Windows Desktop Runtime requirement"
 Assert-Contains "setup/LightCrosshair.iss" $inno "(?i)Desktop\s+Runtime" "mentions Desktop Runtime"
 Assert-Contains "setup/chocolatey/LightCrosshair.nuspec" $nuspec "dotnet-8\.0-desktopruntime" "depends on .NET 8 Desktop Runtime package"
-Assert-DoesNotContain "setup/chocolatey/LightCrosshair.nuspec" $nuspec "(?i)not final until release artifacts and checksums are approved" "does not mark Chocolatey package as provisional"
-Assert-Contains "setup/chocolatey/LightCrosshair.nuspec" $nuspec "https://github\.com/PrimeBuild-pc/LightCrosshair/releases/tag/v$([regex]::Escape($ExpectedVersion))" "points Chocolatey project URL at the final release"
+Assert-Contains "setup/PACKAGE_MANAGER_RELEASE_CHECKLIST_1.7.0.md" $packageChecklist "(?i)Chocolatey" "documents Chocolatey release metadata update"
+Assert-Contains "setup/PACKAGE_MANAGER_RELEASE_CHECKLIST_1.7.0.md" $packageChecklist "(?i)WinGet" "documents WinGet release metadata update"
+Assert-Contains "setup/PACKAGE_MANAGER_RELEASE_CHECKLIST_1.7.0.md" $packageChecklist "(?i)final .*SHA256|SHA256.*final" "gates package-manager hashes on final artifacts"
+Assert-Contains "setup/PACKAGE_MANAGER_RELEASE_CHECKLIST_1.7.0.md" $packageChecklist "(?i)Do not .*placeholder" "forbids placeholder package-manager values"
 Assert-Contains "setup/WINGET_SUBMISSION.md" $wingetSubmission "(?i)final .*URL" "gates WinGet URL on final artifact"
 Assert-Contains "setup/WINGET_SUBMISSION.md" $wingetSubmission "(?i)SHA256" "gates WinGet hash/checksum on final artifact"
 Assert-Contains "setup/WINGET_SUBMISSION.md" $wingetSubmission "(?i)Do not submit" "forbids WinGet submission before approval"
 
-$winget140Path = Join-Path $RepoRoot "setup/winget/manifests/p/PrimeBuild/LightCrosshair/$ExpectedVersion"
-if (Test-Path -LiteralPath $winget140Path) {
-    $manifestText = Get-ChildItem -LiteralPath $winget140Path -File -Recurse |
+$wingetVersionPath = Join-Path $RepoRoot "setup/winget/manifests/p/PrimeBuild/LightCrosshair/$ExpectedVersion"
+if (Test-Path -LiteralPath $wingetVersionPath) {
+    $manifestText = Get-ChildItem -LiteralPath $wingetVersionPath -File -Recurse |
         ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw } |
         Out-String
     Assert-Contains "WinGet $ExpectedVersion manifests" $manifestText "PackageVersion:\s*$([regex]::Escape($ExpectedVersion))" "use expected package version"

@@ -31,6 +31,36 @@ namespace LightCrosshair.Tests
         }
 
         [Fact]
+        public void InitializeFromDetectedRefreshRate_ReplacesDefaultAssistantValues()
+        {
+            var settings = FrameCapAssistant.InitializeFromDetectedRefreshRate(144, 141, 360);
+
+            Assert.True(settings.UsedDetectedRefreshRate);
+            Assert.Equal(360, settings.RefreshRateHz);
+            Assert.Equal(357, settings.TargetFps);
+        }
+
+        [Fact]
+        public void InitializeFromDetectedRefreshRate_PreservesUserCustomizedValues()
+        {
+            var settings = FrameCapAssistant.InitializeFromDetectedRefreshRate(240, 200, 360);
+
+            Assert.False(settings.UsedDetectedRefreshRate);
+            Assert.Equal(240, settings.RefreshRateHz);
+            Assert.Equal(200, settings.TargetFps);
+        }
+
+        [Fact]
+        public void InitializeFromDetectedRefreshRate_PreservesDefaultsWhenDetectionUnavailable()
+        {
+            var settings = FrameCapAssistant.InitializeFromDetectedRefreshRate(144, 141, null);
+
+            Assert.False(settings.UsedDetectedRefreshRate);
+            Assert.Equal(144, settings.RefreshRateHz);
+            Assert.Equal(141, settings.TargetFps);
+        }
+
+        [Fact]
         public void BuildStatus_NoOpBackend_Is_AssistantOnly_And_Does_Not_Claim_ActiveLimiter()
         {
             var capability = FrameLimiterCapability.Unavailable(

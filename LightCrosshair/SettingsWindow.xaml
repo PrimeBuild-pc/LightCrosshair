@@ -277,7 +277,7 @@
                             </StackPanel>
                         </Border>
 
-                        <CheckBox x:Name="EnableGammaCheckbox" Content="Enable Gamma/Contrast/Brightness/Vibrance Override" Margin="0,0,0,12"/>
+                        <CheckBox x:Name="EnableGammaCheckbox" Content="Enable Display Gamma/Contrast/Brightness/Saturation Override" Margin="0,0,0,12"/>
 
                         <TextBlock Text="Apply Settings To" FontWeight="Bold" Margin="0,0,0,6"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12" VerticalAlignment="Center">
@@ -313,13 +313,13 @@
                             <Button x:Name="ResetBrightnessBtn" Content="&#x21BB;" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <TextBlock Text="Vibrance:" Width="130" VerticalAlignment="Center"/>
-                            <TextBlock Text=" " Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
+                            <TextBlock Text="Saturation:" Width="130" VerticalAlignment="Center"/>
+                            <TextBlock Text="[?]" Foreground="#888" ToolTip="Display-management saturation adjustment through the selected display backend. This is separate from NVIDIA Digital Vibrance." Margin="0,0,10,0" VerticalAlignment="Center" Width="15"/>
                             <Slider x:Name="VibranceSlider" Minimum="0" Maximum="100" Width="230" IsEnabled="{Binding IsChecked, ElementName=EnableGammaCheckbox}"/>
                             <TextBlock x:Name="VibranceValueText" Width="35" TextAlignment="Right" Margin="8,0,10,0" VerticalAlignment="Center"/>
                             <Button x:Name="ResetVibranceBtn" Content="&#x21BB;" Width="20" Height="20" Padding="0,-2,0,0" ToolTip="Reset to Default" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="Note: Hardware path is preferred. If disabled, software fallback will not be used when hardware apply fails." Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                        <TextBlock Text="Note: these display-management controls adjust the selected display backend where supported. NVIDIA Digital Vibrance below is a separate NVIDIA driver color control." Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
                         <!-- NVIDIA Digital Vibrance Controls (moved from GPU Driver tab) -->
                         <Border x:Name="NvidiaVibranceGroup" Background="{DynamicResource ControlBg}" BorderBrush="{DynamicResource ControlBorder}" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,12" IsEnabled="False">
@@ -515,12 +515,18 @@
 
                                         <Grid Margin="0,0,0,8">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="180"/>
-                                                <ColumnDefinition Width="150"/>
-                                                <ColumnDefinition Width="330"/>
+                                                <ColumnDefinition Width="170"/>
+                                                <ColumnDefinition Width="135"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
@@ -532,16 +538,15 @@
                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Setting" FontWeight="SemiBold" Margin="0,0,8,4"/>
                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="Current" FontWeight="SemiBold" Margin="0,0,8,4"/>
                                             <TextBlock Grid.Row="0" Grid.Column="2" Text="Control" FontWeight="SemiBold" Margin="0,0,8,4"/>
-                                            <TextBlock Grid.Row="0" Grid.Column="3" Text="Status" FontWeight="SemiBold" Margin="0,0,0,4"/>
 
                                             <TextBlock Grid.Row="1" Grid.Column="0" Text="Driver FPS Cap" Margin="0,0,8,4"/>
                                             <TextBlock x:Name="NvidiaProfileFpsCapValueText" Grid.Row="1" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
                                             <TextBlock Grid.Row="1" Grid.Column="2" Text="Use FPS cap controls above" Opacity="0.75" Margin="0,0,8,4"/>
-                                            <TextBlock x:Name="NvidiaProfileFpsCapStatusText" Grid.Row="1" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                                            <TextBlock x:Name="NvidiaProfileFpsCapStatusText" Grid.Row="2" Grid.Column="2" Text="-" Opacity="0.75" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"/>
 
-                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Low Latency Mode" Margin="0,0,8,4"/>
-                                            <TextBlock x:Name="NvidiaProfileLowLatencyValueText" Grid.Row="2" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
-                                            <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Margin="0,0,12,6">
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Low Latency Mode" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileLowLatencyValueText" Grid.Row="3" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
+                                            <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" Margin="0,0,0,4">
                                                 <ComboBox x:Name="NvidiaLowLatencyComboBox" Width="110">
                                                     <ComboBoxItem Content="Off" Tag="0"/>
                                                     <ComboBoxItem Content="On" Tag="1"/>
@@ -549,16 +554,16 @@
                                                 <Button x:Name="NvidiaLowLatencyApplyButton" Content="Apply" Width="76" Margin="8,0,0,0"/>
                                                 <Button x:Name="NvidiaLowLatencyRestoreButton" Content="Restore" Width="82" Margin="8,0,0,0"/>
                                             </StackPanel>
-                                            <TextBlock x:Name="NvidiaProfileLowLatencyStatusText" Grid.Row="2" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                                            <TextBlock x:Name="NvidiaProfileLowLatencyStatusText" Grid.Row="4" Grid.Column="2" Text="-" Opacity="0.75" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"/>
 
-                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Low Latency CPL State" Margin="0,0,8,4"/>
-                                            <TextBlock x:Name="NvidiaProfileLowLatencyCplValueText" Grid.Row="3" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
-                                            <TextBlock Grid.Row="3" Grid.Column="2" Text="Ultra read-only" Opacity="0.75" Margin="0,0,8,4"/>
-                                            <TextBlock x:Name="NvidiaProfileLowLatencyCplStatusText" Grid.Row="3" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Low Latency CPL State" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileLowLatencyCplValueText" Grid.Row="5" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
+                                            <TextBlock Grid.Row="5" Grid.Column="2" Text="Ultra read-only" Opacity="0.75" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileLowLatencyCplStatusText" Grid.Row="6" Grid.Column="2" Text="-" Opacity="0.75" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"/>
 
-                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Vertical Sync" Margin="0,0,8,4"/>
-                                            <TextBlock x:Name="NvidiaProfileVSyncValueText" Grid.Row="4" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
-                                            <StackPanel Grid.Row="4" Grid.Column="2" Orientation="Horizontal" Margin="0,0,12,6">
+                                            <TextBlock Grid.Row="7" Grid.Column="0" Text="Vertical Sync" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileVSyncValueText" Grid.Row="7" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
+                                            <StackPanel Grid.Row="7" Grid.Column="2" Orientation="Horizontal" Margin="0,0,0,4">
                                                 <ComboBox x:Name="NvidiaVSyncComboBox" Width="180">
                                                     <ComboBoxItem Content="Application controlled" Tag="0x60925292"/>
                                                     <ComboBoxItem Content="Force off" Tag="0x08416747"/>
@@ -568,17 +573,17 @@
                                                 <Button x:Name="NvidiaVSyncApplyButton" Content="Apply" Width="76" Margin="8,0,0,0"/>
                                                 <Button x:Name="NvidiaVSyncRestoreButton" Content="Restore" Width="82" Margin="8,0,0,0"/>
                                             </StackPanel>
-                                            <TextBlock x:Name="NvidiaProfileVSyncStatusText" Grid.Row="4" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                                            <TextBlock x:Name="NvidiaProfileVSyncStatusText" Grid.Row="8" Grid.Column="2" Text="-" Opacity="0.75" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"/>
 
-                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="G-SYNC Profile State/Mode" Margin="0,0,8,4"/>
-                                            <TextBlock x:Name="NvidiaProfileGSyncValueText" Grid.Row="5" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
-                                            <TextBlock Grid.Row="5" Grid.Column="2" Text="Read-only" Opacity="0.75" Margin="0,0,8,4"/>
-                                            <TextBlock x:Name="NvidiaProfileGSyncStatusText" Grid.Row="5" Grid.Column="3" Text="-" TextWrapping="Wrap" Margin="0,0,0,4"/>
+                                            <TextBlock Grid.Row="9" Grid.Column="0" Text="G-SYNC Profile State/Mode" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileGSyncValueText" Grid.Row="9" Grid.Column="1" Text="-" Margin="0,0,8,4"/>
+                                            <TextBlock Grid.Row="9" Grid.Column="2" Text="Read-only" Opacity="0.75" Margin="0,0,8,4"/>
+                                            <TextBlock x:Name="NvidiaProfileGSyncStatusText" Grid.Row="10" Grid.Column="2" Text="-" Opacity="0.75" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"/>
 
-                                            <TextBlock Grid.Row="6" Grid.Column="0" Text="DLSS / Frame Generation" Margin="0,0,8,0"/>
-                                            <TextBlock x:Name="NvidiaProfileDlssValueText" Grid.Row="6" Grid.Column="1" Text="Not exposed" Margin="0,0,8,0"/>
-                                            <TextBlock Grid.Row="6" Grid.Column="2" Text="Read-only metadata TODO" Opacity="0.75" Margin="0,0,8,0"/>
-                                            <TextBlock x:Name="NvidiaProfileDlssStatusText" Grid.Row="6" Grid.Column="3" Text="Write mapping not validated from local NPI reference." TextWrapping="Wrap"/>
+                                            <TextBlock Grid.Row="11" Grid.Column="0" Text="DLSS / Frame Generation" Margin="0,0,8,0"/>
+                                            <TextBlock x:Name="NvidiaProfileDlssValueText" Grid.Row="11" Grid.Column="1" Text="Not exposed" Margin="0,0,8,0"/>
+                                            <TextBlock Grid.Row="11" Grid.Column="2" Text="Read-only metadata TODO" Opacity="0.75" Margin="0,0,8,0"/>
+                                            <TextBlock x:Name="NvidiaProfileDlssStatusText" Grid.Row="12" Grid.Column="2" Text="Write mapping not validated from local NPI reference." Opacity="0.75" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
                                         </Grid>
                                     </StackPanel>
                                 </Border>
@@ -588,9 +593,9 @@
                                     <StackPanel>
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="Frame Cap Assistant" FontWeight="Bold" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="[?]" Foreground="#888" ToolTip="Provides FPS target recommendations based on your display refresh rate. Does not enforce or apply a cap â€” use NVIDIA Driver FPS Cap above to apply." VerticalAlignment="Center" Cursor="Help" Margin="0,0,0,6"/>
+                                            <TextBlock Text="[?]" Foreground="#888" ToolTip="Provides FPS target recommendations based on your display refresh rate. Does not enforce or apply a cap - use NVIDIA Driver FPS Cap above to apply." VerticalAlignment="Center" Cursor="Help" Margin="0,0,0,6"/>
                                         </StackPanel>
-                                        <TextBlock Text="Assistant only. No active limiter backend." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Assistant only. Uses the primary display refresh rate for the default recommendation when available." Opacity="0.75" TextWrapping="Wrap" Margin="0,0,0,8"/>
                                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                             <TextBlock Text="Refresh Rate:" Width="120" VerticalAlignment="Center"/>
                                             <Slider x:Name="FrameCapRefreshRateSlider" Minimum="30" Maximum="500" Width="260"/>

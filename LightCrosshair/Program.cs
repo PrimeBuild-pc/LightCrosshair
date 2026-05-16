@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows.Forms;
 using System.Diagnostics;
 using System.Threading;
+using LightCrosshair.GpuDriver;
 
 namespace LightCrosshair;
 
@@ -20,10 +21,17 @@ static class Program
     public static bool DebugLoggingEnabled { get; set; } = GetDefaultDebugLoggingEnabled();
 
     [STAThread]
-    static void Main()
+    static int Main(string[] args)
     {
+        if (NvidiaHelperHost.IsHelperInvocation(args))
+        {
+            return NvidiaHelperHost.Run(args);
+        }
+
         try
         {
+            InitializeEarlyDiagnostics();
+
             // Set up error logging
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.ThreadException += Application_ThreadException;
@@ -41,7 +49,7 @@ static class Program
             if (!created)
             {
                 // Another instance running – optionally bring to front via IPC (omitted here)
-                return;
+                return 0;
             }
 
             // Initialize profiles centrally
@@ -66,7 +74,10 @@ static class Program
             LogError(ex, "Main method");
             MessageBox.Show($"Error: {ex.Message}\n\nCheck error.log for details.", "Error",
                 MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return 1;
         }
+
+        return 0;
     }
 
     private static void TryRestoreDisplayState(string reason)
@@ -129,6 +140,24 @@ static class Program
     private static void EnsureLogDirectory()
     {
         Directory.CreateDirectory(_logDirectory);
+    }
+
+    private static void InitializeEarlyDiagnostics()
+    {
+        try
+        {
+            lock (_logGate)
+            {
+                EnsureLogDirectory();
+                AppendWithRotation(
+                    _debugLogPath,
+                    $"{DateTime.Now:dd/MM/yyyy HH:mm:ss} Program: process start\n");
+            }
+        }
+        catch
+        {
+            // Startup diagnostics must never block application launch.
+        }
     }
 
     private static void AppendWithRotation(string path, string text)
@@ -197,6 +226,25 @@ static class Program
         catch (Exception ex)
         {
             Debug.WriteLine($"[LogDebug] Logging pipeline failure: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    public static void LogLifecycle(string message, string? context = null)
+    {
+        try
+        {
+            string timestamp = DateTime.Now.ToString("[dd/MM/yyyy HH:mm:ss]");
+            string line = context is null ? $"{timestamp} {message}\n" : $"{timestamp} {context}: {message}\n";
+            lock (_logGate)
+            {
+                EnsureLogDirectory();
+                AppendWithRotation(_debugLogPath, line);
+            }
+            Debug.WriteLine(line);
+        }
+        catch
+        {
+            // Lifecycle diagnostics are best-effort only.
         }
     }
 }

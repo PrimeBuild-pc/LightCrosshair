@@ -44,6 +44,7 @@ namespace LightCrosshair
 
         public static void Show(IProfileService profiles)
         {
+            Program.LogLifecycle("Settings window open requested.", nameof(WpfSettingsHost));
             if (System.Windows.Application.Current == null)
             {
                 // Create a WPF Application without shutting down the process when last window closes
@@ -54,9 +55,11 @@ namespace LightCrosshair
             {
                 if (_window == null || !_window.IsLoaded)
                 {
+                    Program.LogLifecycle("Creating SettingsWindow instance.", nameof(WpfSettingsHost));
                     _window = new SettingsWindow(profiles);
                 }
 
+                Program.LogLifecycle("SettingsWindow created; syncing display settings.", nameof(WpfSettingsHost));
                 _window.SyncDisplaySettingsFromConfig();
                 if (_window.WindowState == System.Windows.WindowState.Minimized)
                 {
@@ -72,6 +75,7 @@ namespace LightCrosshair
                 // Recovery path for stale window state (prevents hotkey from becoming a no-op).
                 try
                 {
+                    Program.LogLifecycle("Retrying SettingsWindow creation after primary path failure.", nameof(WpfSettingsHost));
                     _window = new SettingsWindow(profiles);
                     _window.SyncDisplaySettingsFromConfig();
                     BringToFront(_window);
