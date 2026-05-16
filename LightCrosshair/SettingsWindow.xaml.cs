@@ -2010,9 +2010,15 @@ namespace LightCrosshair
             valueText.Text = item.Status == NvidiaProfileAuditStatus.Present
                 ? item.FriendlyValue
                 : "Not present";
-            statusText.Text = item.Definition.IsReferenceOnly
-                ? $"Read-only reference. {item.StatusText}"
-                : item.StatusText;
+            if (item.Definition.IsReferenceOnly)
+            {
+                statusText.Text = settingId == NvidiaProfileSettingCatalog.LowLatencyCplStateSettingId
+                    ? $"{item.Definition.HelpText} {item.StatusText}"
+                    : $"Read-only reference. {item.StatusText}";
+                return;
+            }
+
+            statusText.Text = item.StatusText;
         }
 
         private static uint? FindAuditRawValue(NvidiaProfileAuditResult result, uint settingId) =>
@@ -2033,7 +2039,8 @@ namespace LightCrosshair
                     .Where(item => item?.Status == NvidiaProfileAuditStatus.Present)
                     .Select(item => item!.FriendlyValue)
                     .DefaultIfEmpty("Not present"));
-            NvidiaProfileGSyncStatusText.Text = "Read-only until write mapping is validated.";
+            NvidiaProfileGSyncStatusText.Text =
+                "Read-only: local metadata does not identify a single safe per-app write target for Application/default, Enabled, and Disabled.";
         }
 
         private void SetNvidiaProfileApplyControlsEnabled(bool isEnabled)
