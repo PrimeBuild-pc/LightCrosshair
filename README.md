@@ -7,7 +7,8 @@
 [![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Latest Release](https://img.shields.io/github/v/release/PrimeBuild-pc/LightCrosshair?label=release&logo=github)](../../releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/PrimeBuild-pc/LightCrosshair/total?label=downloads&logo=github)](../../releases)
+[![Latest Downloads](https://img.shields.io/github/downloads/PrimeBuild-pc/LightCrosshair/latest/total?label=latest%20downloads&logo=github&color=green)](../../releases/latest)
+[![Total Downloads](https://img.shields.io/github/downloads/PrimeBuild-pc/LightCrosshair/total?label=total%20downloads&logo=github&color=lightgrey)](../../releases)
 [![Issues](https://img.shields.io/github/issues/PrimeBuild-pc/LightCrosshair?label=issues&logo=github)](../../issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/PrimeBuild-pc/LightCrosshair?label=pull%20requests&logo=github)](../../pulls)
 [![Stars](https://img.shields.io/github/stars/PrimeBuild-pc/LightCrosshair?style=flat&label=stars&logo=github)](../../stargazers)
@@ -93,7 +94,12 @@ WinGet package updates may lag behind GitHub Releases. When available, this may 
 winget install --id PrimeBuild.LightCrosshair --exact
 ```
 
-Chocolatey submission updates are pending and are not advertised as a live install channel yet.
+Install or upgrade the approved Chocolatey Community package:
+
+```powershell
+choco install lightcrosshair
+choco upgrade lightcrosshair
+```
 
 ---
 
