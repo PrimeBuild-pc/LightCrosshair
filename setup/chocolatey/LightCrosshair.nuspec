@@ -3,7 +3,7 @@
   <metadata>
     <id>lightcrosshair</id>
     <version>1.7.0</version>
-    <packageSourceUrl>https://github.com/PrimeBuild-pc/LightCrosshair</packageSourceUrl>
+    <packageSourceUrl>https://github.com/PrimeBuild-pc/LightCrosshair/tree/main/setup/chocolatey</packageSourceUrl>
     <owners>PrimeBuild</owners>
     <title>LightCrosshair</title>
     <authors>PrimeBuild</authors>
@@ -49,6 +49,5 @@ See https://github.com/PrimeBuild-pc/LightCrosshair/releases for full details.
   </metadata>
   <files>
     <file src="tools\**" target="tools" />
-
   </files>
 </package>
