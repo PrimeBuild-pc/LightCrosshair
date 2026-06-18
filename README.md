@@ -94,12 +94,7 @@ WinGet package updates may lag behind GitHub Releases. When available, this may 
 winget install --id PrimeBuild.LightCrosshair --exact
 ```
 
-Install or upgrade the approved Chocolatey Community package:
-
-```powershell
-choco install lightcrosshair
-choco upgrade lightcrosshair
-```
+The Chocolatey package update for 1.7.0 is prepared and will be available after Chocolatey Community moderation.
 
 ---
 
