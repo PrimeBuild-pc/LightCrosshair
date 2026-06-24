@@ -1,6 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace LightCrosshair
 {
     internal enum FrameGenerationProviderKind
@@ -37,63 +34,30 @@ namespace LightCrosshair
         double? PresentedFps,
         string EvidenceText)
     {
-        public static FrameGenerationProviderSignal Unavailable(
-            FrameGenerationProviderKind providerKind,
-            string evidenceText) =>
-            new(
-                providerKind,
-                FrameGenerationProviderCapability.Unsupported,
-                false,
-                false,
-                false,
-                string.Empty,
-                string.Empty,
-                null,
-                null,
-                null,
-                evidenceText);
+        public static FrameGenerationProviderSignal Unavailable(FrameGenerationProviderKind providerKind, string evidenceText) =>
+            new(providerKind, FrameGenerationProviderCapability.Unsupported, false, false, false, string.Empty, string.Empty, null, null, null, evidenceText);
 
-        public FrameGenerationVerifiedSignal? ToVerifiedSignal()
-        {
-            if (!IsAvailable || !IsVerified)
-            {
-                return null;
-            }
-
-            return new FrameGenerationVerifiedSignal(
-                IsDetected,
-                Vendor,
-                Technology,
-                IsDetected ? EstimatedGeneratedFrameRatio : null,
-                IsDetected ? EstimatedAppFps : null,
-                PresentedFps,
-                EvidenceText);
-        }
+        public FrameGenerationVerifiedSignal? ToVerifiedSignal() =>
+            IsAvailable && IsVerified
+                ? new FrameGenerationVerifiedSignal(
+                    IsDetected,
+                    Vendor,
+                    Technology,
+                    IsDetected ? EstimatedGeneratedFrameRatio : null,
+                    IsDetected ? EstimatedAppFps : null,
+                    PresentedFps,
+                    EvidenceText)
+                : null;
     }
 
-    internal interface IFrameGenerationSignalProvider
+    internal static class NoOpFrameGenerationSignalProvider
     {
-        FrameGenerationProviderKind Kind { get; }
-        bool IsEnabled { get; }
+        public const FrameGenerationProviderKind Kind = FrameGenerationProviderKind.None;
+        public const bool IsEnabled = false;
 
-        ValueTask<FrameGenerationProviderSignal> TryGetSignalAsync(
-            int? processId,
-            CancellationToken cancellationToken);
-    }
-
-    internal sealed class NoOpFrameGenerationSignalProvider : IFrameGenerationSignalProvider
-    {
-        public FrameGenerationProviderKind Kind => FrameGenerationProviderKind.None;
-        public bool IsEnabled => false;
-
-        public ValueTask<FrameGenerationProviderSignal> TryGetSignalAsync(
-            int? processId,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            return ValueTask.FromResult(FrameGenerationProviderSignal.Unavailable(
+        public static FrameGenerationProviderSignal GetSignal() =>
+            FrameGenerationProviderSignal.Unavailable(
                 Kind,
-                "No verified frame-generation signal provider is enabled."));
-        }
+                "No verified frame-generation signal provider is enabled.");
     }
 }

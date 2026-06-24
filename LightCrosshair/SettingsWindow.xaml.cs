@@ -1632,8 +1632,9 @@ namespace LightCrosshair
 
         private static GpuDetResult BuildSafeGpuDetectionResult(GpuVendorKind vendor, string adapterDescription)
         {
-            var caps = vendor == GpuVendorKind.Nvidia
-                ? new GpuCapabilities
+            var caps = vendor switch
+            {
+                GpuVendorKind.Nvidia => new GpuCapabilities
                 {
                     NvidiaFpsCap = GpuCapabilityStatus.Supported,
                     NvidiaColorVibrance = GpuCapabilityStatus.Supported,
@@ -1641,8 +1642,18 @@ namespace LightCrosshair
                     AmdColorManagement = GpuCapabilityStatus.Unsupported,
                     AmdChill = GpuCapabilityStatus.Unsupported,
                     AmdFreeSync = GpuCapabilityStatus.Unsupported
-                }
-                : GpuCapabilities.None();
+                },
+                GpuVendorKind.Amd => new GpuCapabilities
+                {
+                    NvidiaFpsCap = GpuCapabilityStatus.Unsupported,
+                    NvidiaColorVibrance = GpuCapabilityStatus.Unsupported,
+                    NvidiaGSync = GpuCapabilityStatus.Unsupported,
+                    AmdColorManagement = GpuCapabilityStatus.Supported,
+                    AmdChill = GpuCapabilityStatus.Unsupported,
+                    AmdFreeSync = GpuCapabilityStatus.Unsupported
+                },
+                _ => GpuCapabilities.None()
+            };
 
             return new GpuDetResult
             {
