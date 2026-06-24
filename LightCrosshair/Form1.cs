@@ -24,7 +24,7 @@ namespace LightCrosshair
     // Legacy incremental rendering fields replaced by central renderer
     private CrosshairProfile? _lastRenderedProfile; // retained temporarily for menu diff logic
     private readonly object _renderLock = new object();
-    private ICrosshairRenderBackend _renderer = new CrosshairRenderer();
+    private CrosshairRenderer _renderer = new CrosshairRenderer();
     private Bitmap? _currentFrame; // last produced bitmap copy
     private bool _configDirty = true; // marks need to request new bitmap from renderer
         private float _dpiScaleFactor = 1.0f;
@@ -139,9 +139,8 @@ namespace LightCrosshair
             InitializeDpiAwareness();
             this.DpiChanged += Form1_DpiChanged;
 
-            // Try the low-level Skia backend first, fallback to GDI renderer if unavailable.
             _renderer.Dispose();
-            _renderer = CreateRenderBackend();
+            _renderer = new CrosshairRenderer();
             _renderer.DpiScale = _dpiScaleFactor;
             _renderer.AntiAlias = _profileService.Current.AntiAlias;
 
@@ -1067,22 +1066,6 @@ namespace LightCrosshair
             ClearGraphicsCache();
 
             try { _ = _profileService.PersistAsync(); } catch (Exception ex) { Program.LogError(ex, "PersistAsync on close"); }
-        }
-
-        private ICrosshairRenderBackend CreateRenderBackend()
-        {
-            try
-            {
-                var backend = new SkiaCrosshairRenderer();
-                Program.LogDebug("Rendering backend selected: SkiaSharp", nameof(Form1));
-                return backend;
-            }
-            catch (Exception ex)
-            {
-                Program.LogError(ex, "Skia renderer init failed, fallback to GDI");
-                Program.LogDebug("Rendering backend selected: GDI fallback", nameof(Form1));
-                return new CrosshairRenderer();
-            }
         }
 
         private void SaveOverlayVisibilityPreference()

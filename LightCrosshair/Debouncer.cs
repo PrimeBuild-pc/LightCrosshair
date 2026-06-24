@@ -5,72 +5,50 @@ namespace LightCrosshair
 {
     public sealed class Debouncer : IDisposable
     {
-        private readonly int _ms;
-        private System.Threading.Timer? _timer;
+        private readonly int _milliseconds;
         private readonly object _gate = new();
-        private long _version;
+        private System.Threading.Timer? _timer;
+        private Action? _action;
         private bool _disposed;
 
-        private sealed class DebounceState
-        {
-            public DebounceState(long version, Action action)
-            {
-                Version = version;
-                Action = action;
-            }
-
-            public long Version { get; }
-            public Action Action { get; }
-        }
-
-        public Debouncer(int milliseconds) => _ms = milliseconds;
+        public Debouncer(int milliseconds) => _milliseconds = milliseconds;
 
         public void Trigger(Action action)
         {
-            if (action == null) throw new ArgumentNullException(nameof(action));
+            ArgumentNullException.ThrowIfNull(action);
 
-            DebounceState state;
             lock (_gate)
             {
-                if (_disposed)
-                {
-                    return;
-                }
-
-                long version = ++_version;
-                state = new DebounceState(version, action);
-                _timer?.Dispose();
-                _timer = new System.Threading.Timer(_ =>
-                {
-                    var payload = (DebounceState)_!;
-                    lock (_gate)
-                    {
-                        if (_disposed || payload.Version != _version)
-                        {
-                            return;
-                        }
-
-                        _timer?.Dispose();
-                        _timer = null;
-                    }
-
-                    payload.Action();
-                }, state, _ms, Timeout.Infinite);
+                if (_disposed) return;
+                _action = action;
+                _timer ??= new System.Threading.Timer(_ => Run(), null, Timeout.Infinite, Timeout.Infinite);
+                _timer.Change(_milliseconds, Timeout.Infinite);
             }
+        }
+
+        private void Run()
+        {
+            Action? action;
+            lock (_gate)
+            {
+                if (_disposed) return;
+                action = _action;
+                _action = null;
+                _timer?.Change(Timeout.Infinite, Timeout.Infinite);
+            }
+
+            action?.Invoke();
         }
 
         public void Dispose()
         {
             lock (_gate)
             {
-                if (_disposed)
-                {
-                    return;
-                }
-
+                if (_disposed) return;
                 _disposed = true;
                 _timer?.Dispose();
                 _timer = null;
+                _action = null;
             }
         }
     }

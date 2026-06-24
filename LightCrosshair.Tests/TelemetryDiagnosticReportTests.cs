@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Threading;
-using System.Threading.Tasks;
 using LightCrosshair.Diagnostics;
 using LightCrosshair.FrameLimiting;
 using Xunit;
@@ -159,12 +157,9 @@ namespace LightCrosshair.Tests
         }
 
         [Fact]
-        public async Task Build_FrameLimiter_NoOp_Does_Not_Report_Active_Cap()
+        public void Build_FrameLimiter_NoOp_Does_Not_Report_Active_Cap()
         {
-            IFrameLimiterBackend backend = new NoOpFrameLimiterBackend();
-            FrameLimiterStatus limiterStatus = await backend.GetStatusAsync(
-                FrameLimiterTarget.ForProcessName("sample.exe"),
-                CancellationToken.None);
+            FrameLimiterStatus limiterStatus = NoOpFrameLimiter.GetStatus();
 
             TelemetryDiagnosticReport report = TelemetryDiagnosticReportBuilder.Build(
                 CreateSnapshot(FrameGenerationDetectionResult.Unknown),

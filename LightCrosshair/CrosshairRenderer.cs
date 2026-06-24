@@ -8,7 +8,7 @@ using System.Text;
 namespace LightCrosshair
 {
 
-    internal sealed class CrosshairRenderer : ICrosshairRenderBackend
+    internal sealed class CrosshairRenderer : IDisposable
     {
         private readonly object _sync = new();
     private Bitmap? _cachedBitmap;

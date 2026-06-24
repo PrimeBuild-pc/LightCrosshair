@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using LightCrosshair;
 using Xunit;
 
@@ -8,16 +6,12 @@ namespace LightCrosshair.Tests
     public class FrameGenerationSignalProviderTests
     {
         [Fact]
-        public async Task NoOpProvider_Returns_Unavailable_Unverified_Signal()
+        public void NoOpProvider_Returns_Unavailable_Unverified_Signal()
         {
-            IFrameGenerationSignalProvider provider = new NoOpFrameGenerationSignalProvider();
+            FrameGenerationProviderSignal signal = NoOpFrameGenerationSignalProvider.GetSignal();
 
-            FrameGenerationProviderSignal signal = await provider.TryGetSignalAsync(
-                processId: 1234,
-                CancellationToken.None);
-
-            Assert.Equal(FrameGenerationProviderKind.None, provider.Kind);
-            Assert.False(provider.IsEnabled);
+            Assert.Equal(FrameGenerationProviderKind.None, NoOpFrameGenerationSignalProvider.Kind);
+            Assert.False(NoOpFrameGenerationSignalProvider.IsEnabled);
             Assert.False(signal.IsAvailable);
             Assert.False(signal.IsVerified);
             Assert.False(signal.IsDetected);
