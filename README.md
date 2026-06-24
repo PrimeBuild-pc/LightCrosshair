@@ -11,7 +11,6 @@
 [![Total Downloads](https://img.shields.io/github/downloads/PrimeBuild-pc/LightCrosshair/total?label=total%20downloads&logo=github&color=lightgrey)](../../releases)
 [![Issues](https://img.shields.io/github/issues/PrimeBuild-pc/LightCrosshair?label=issues&logo=github)](../../issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/PrimeBuild-pc/LightCrosshair?label=pull%20requests&logo=github)](../../pulls)
-[![Stars](https://img.shields.io/github/stars/PrimeBuild-pc/LightCrosshair?style=flat&label=stars&logo=github)](../../stargazers)
 [![License](https://img.shields.io/github/license/PrimeBuild-pc/LightCrosshair?label=license)](LICENSE)
 [![Codecov](https://codecov.io/gh/PrimeBuild-pc/LightCrosshair/branch/main/graph/badge.svg)](https://codecov.io/gh/PrimeBuild-pc/LightCrosshair)
 
@@ -74,27 +73,27 @@ Download the latest build from the **[GitHub Releases page](../../releases/lates
 
 Use the installer for the normal Start Menu experience:
 
-- [`LightCrosshair-Setup-1.7.0.exe`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.0/LightCrosshair-Setup-1.7.0.exe)
-  SHA256: `82E4D878DF7881F5DE88C4A9444C200F18CE1BD14E0C88AFEF9C05099808090E`
+- [`LightCrosshair-Setup-1.7.1.exe`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.1/LightCrosshair-Setup-1.7.1.exe)
+  SHA256: `90DAFF7D58E69FB06BD2E1BF347CE2FFC5E2B9C467049C24432E5CCC8C2E73D8`
 
 ### Portable ZIP
 
 Use the portable ZIP if you want to extract and run the app from a folder you control:
 
-- [`LightCrosshair-v1.7.0-x64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.0/LightCrosshair-v1.7.0-x64.zip)
-  SHA256: `672BC0E0C6DA33761969ACD3DD1D9BBC0A027B73140DCF64FD6C0C8B82765FD3`
-- [`LightCrosshair-v1.7.0-ARM64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.0/LightCrosshair-v1.7.0-ARM64.zip)
-  SHA256: `4AC93A4B3AC6DE15C08ECBA3CA151E387D701B1624689EA673FF4478ADDC0FBE`
+- [`LightCrosshair-v1.7.1-x64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.1/LightCrosshair-v1.7.1-x64.zip)
+  SHA256: `A7F835260A472B66AFDB970A0406ABCC998BDBC79879BFD082FD2212CE8242EC`
+- [`LightCrosshair-v1.7.1-ARM64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.1/LightCrosshair-v1.7.1-ARM64.zip)
+  SHA256: `23AA5A6222FB58335121ADF863E547568610A1DFEC0F17ADFF27B5AEAAF6A165`
 
 ### Package Managers
 
-WinGet package updates may lag behind GitHub Releases. When available, this may install the latest approved package version, not necessarily v1.7.0:
+WinGet package updates may lag behind GitHub Releases. When available, this may install the latest approved package version, not necessarily v1.7.1:
 
 ```powershell
 winget install --id PrimeBuild.LightCrosshair --exact
 ```
 
-The Chocolatey package update for 1.7.0 is prepared and will be available after Chocolatey Community moderation.
+The Chocolatey package update for 1.7.1 is prepared and will be available after Chocolatey Community moderation.
 
 ---
 
@@ -130,7 +129,7 @@ The Chocolatey package update for 1.7.0 is prepared and will be available after 
 
 ---
 
-## What's New in v1.7.0
+## What's New in v1.7.1
 
 - Fixed NVIDIA FPS cap profile binding so supported per-app cap controls target the selected application profile.
 - Added NVIDIA profile audit information before applying supported per-app settings.
@@ -193,7 +192,6 @@ This project is licensed under the **MIT License**. See [LICENSE](LICENSE).
 If LightCrosshair is useful to you, consider supporting the project.
 
 [![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white)](https://paypal.me/PrimeBuildOfficial?country.x=IT&locale.x=it_IT)
-[![Star on GitHub](https://img.shields.io/github/stars/PrimeBuild-pc/LightCrosshair?style=social)](../../stargazers)
 [![Report Bug](https://img.shields.io/badge/Report-Bug-red?logo=github)](../../issues)
 [![Request Feature](https://img.shields.io/badge/Request-Feature-blue?logo=github)](../../issues)
 [![Open Discussions](https://img.shields.io/badge/Open-Discussions-purple?logo=github)](../../discussions)
