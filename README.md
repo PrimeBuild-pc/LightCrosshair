@@ -1,19 +1,19 @@
 <div align="center">
-
-# 🎯 LightCrosshair
-
-**A lightweight, customizable crosshair overlay for competitive gaming on Windows.**
-
-[![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
-[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
-[![Latest Release](https://img.shields.io/github/v/release/PrimeBuild-pc/LightCrosshair?label=release&logo=github)](../../releases/latest)
-[![Latest Downloads](https://img.shields.io/github/downloads/PrimeBuild-pc/LightCrosshair/latest/total?label=latest%20downloads&logo=github&color=green)](../../releases/latest)
-[![Total Downloads](https://img.shields.io/github/downloads/PrimeBuild-pc/LightCrosshair/total?label=total%20downloads&logo=github&color=lightgrey)](../../releases)
-[![Issues](https://img.shields.io/github/issues/PrimeBuild-pc/LightCrosshair?label=issues&logo=github)](../../issues)
-[![Pull Requests](https://img.shields.io/github/issues-pr/PrimeBuild-pc/LightCrosshair?label=pull%20requests&logo=github)](../../pulls)
-[![License](https://img.shields.io/github/license/PrimeBuild-pc/LightCrosshair?label=license)](LICENSE)
-
-[Download](../../releases/latest) • [Documentation](docs/SETTINGS.md) • [Report a bug](../../issues) • [Request a feature](../../issues) • [Support](#support-the-project)
+  <img src="readme-banner.svg" alt="LightCrosshair — lightweight custom crosshair overlay for Windows" width="100%">
+  <p><strong>A lightweight, customizable crosshair overlay for competitive gaming on Windows.</strong></p>
+  <p>
+    <a href="https://github.com/PrimeBuild-pc/LightCrosshair/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/PrimeBuild-pc/LightCrosshair?style=plastic&amp;logo=git&amp;logoColor=white"></a>
+    <a href="https://github.com/PrimeBuild-pc/LightCrosshair/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/PrimeBuild-pc/LightCrosshair?style=plastic&amp;logo=github"></a>
+    <a href="https://github.com/PrimeBuild-pc/LightCrosshair/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/PrimeBuild-pc/LightCrosshair?style=plastic&amp;logo=github"></a>
+  </p>
+  <p>
+    <a href="https://github.com/PrimeBuild-pc/LightCrosshair/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/PrimeBuild-pc/LightCrosshair?style=plastic&amp;logo=github&amp;label=release"></a>
+    <a href="https://github.com/PrimeBuild-pc/LightCrosshair/releases"><img alt="Total downloads" src="https://img.shields.io/github/downloads/PrimeBuild-pc/LightCrosshair/total?style=plastic&amp;logo=github&amp;label=downloads&amp;color=2ea44f"></a>
+    <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/PrimeBuild-pc/LightCrosshair?style=plastic"></a>
+    <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=plastic&amp;logo=windows&amp;logoColor=white">
+    <img alt=".NET 8" src="https://img.shields.io/badge/.NET-8-512BD4?style=plastic&amp;logo=dotnet&amp;logoColor=white">
+  </p>
+  <p><a href="../../releases/latest">Download</a> · <a href="docs/SETTINGS.md">Documentation</a> · <a href="../../issues">Report a bug</a> · <a href="#support-the-project">Support</a></p>
 
 </div>
 
