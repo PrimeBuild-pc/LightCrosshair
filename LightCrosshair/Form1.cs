@@ -76,6 +76,7 @@ namespace LightCrosshair
     private bool _isExiting;
     private bool _runtimeInitialized;
     private bool _shutdownWatchdogStarted;
+    private Rectangle _crosshairScreenBounds = Rectangle.Empty;
 
     // Autosave centralized in ProfileService now
         private StatusStrip? _statusStrip; // simple status surface for Saved HH:MM:SS
@@ -158,6 +159,7 @@ namespace LightCrosshair
             // Subscribe to application exit events safely
             Application.ApplicationExit += OnApplication_Exit;
             AppDomain.CurrentDomain.ProcessExit += OnAppDomain_ProcessExit;
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged += SystemEvents_DisplaySettingsChanged;
         }
 
         private void SetupStatusStrip()
@@ -954,14 +956,27 @@ namespace LightCrosshair
             _profileService.Switch(list[next].Id);
         }
 
+        private void ApplyOverlayMonitorTargets()
+        {
+            var cfg = CrosshairConfig.Instance;
+            Rectangle crosshairBounds = OverlayMonitorSelector.ResolveBounds(cfg.CrosshairMonitorDeviceName);
+            _fpsOverlayForm?.SetTargetBounds(OverlayMonitorSelector.ResolveBounds(cfg.FpsOverlayMonitorDeviceName));
+            if (_crosshairScreenBounds != crosshairBounds)
+            {
+                CenterCrosshair(crosshairBounds);
+            }
+        }
+
         private void CenterCrosshair()
         {
-            if (!ShouldDisplayCrosshairOverlay()) return;
+            CenterCrosshair(OverlayMonitorSelector.ResolveBounds(CrosshairConfig.Instance.CrosshairMonitorDeviceName));
+        }
 
+        private void CenterCrosshair(Rectangle screenBounds)
+        {
             // First ensure the form is properly sized
             UpdateFormSize();
-
-            Rectangle screenBounds = Screen.PrimaryScreen?.Bounds ?? new Rectangle(0, 0, 1920, 1080);
+            _crosshairScreenBounds = screenBounds;
 
             // Calculate the exact pixel center of the screen
             // For 1440p (2560x1440), center should be at (1280, 720)
@@ -1318,6 +1333,7 @@ namespace LightCrosshair
                 }
 
                 SyncFpsTimerInterval();
+                ApplyOverlayMonitorTargets();
                 UpdateCrosshairVisibilityState();
             }
 
@@ -1380,6 +1396,27 @@ namespace LightCrosshair
             }
         }
 
+        private void SystemEvents_DisplaySettingsChanged(object? sender, EventArgs e)
+        {
+            if (_isExiting || IsDisposed || !IsHandleCreated)
+            {
+                return;
+            }
+
+            try
+            {
+                BeginInvoke(new Action(() =>
+                {
+                    ApplyOverlayMonitorTargets();
+                    WpfSettingsHost.RefreshDisplayUiFromConfig();
+                }));
+            }
+            catch (InvalidOperationException)
+            {
+                // Window is shutting down.
+            }
+        }
+
         private void OnApplication_Exit(object? sender, EventArgs e)
         {
             GammaController.RestoreOriginal();
@@ -1422,6 +1459,7 @@ namespace LightCrosshair
 
             Application.ApplicationExit -= OnApplication_Exit;
             AppDomain.CurrentDomain.ProcessExit -= OnAppDomain_ProcessExit;
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemEvents_DisplaySettingsChanged;
         }
     }
 }

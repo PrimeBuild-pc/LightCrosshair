@@ -28,5 +28,38 @@ namespace LightCrosshair.Tests
                 shouldShowFpsOverlay,
                 fpsOverlayBecameVisible));
         }
+
+        [Fact]
+        public void OverlayMonitor_UsesConfiguredDisplay_WhenAvailable()
+        {
+            int index = OverlayMonitorSelector.ResolveIndex(
+                @"\\.\display2",
+                new[] { @"\\.\DISPLAY1", @"\\.\DISPLAY2" },
+                primaryIndex: 0);
+
+            Assert.Equal(1, index);
+        }
+
+        [Fact]
+        public void OverlayMonitor_FallsBackToPrimary_WhenConfiguredDisplayIsUnavailable()
+        {
+            int index = OverlayMonitorSelector.ResolveIndex(
+                @"\\.\DISPLAY3",
+                new[] { @"\\.\DISPLAY1", @"\\.\DISPLAY2" },
+                primaryIndex: 1);
+
+            Assert.Equal(1, index);
+        }
+
+        [Theory]
+        [InlineData(@"\\.\DISPLAY1", @"\\.\DISPLAY2", @"\\.\DISPLAY1")]
+        [InlineData("", @"\\.\DISPLAY2", @"\\.\DISPLAY2")]
+        public void MonitorConfig_PrefersDistinctSetting_AndMigratesLegacySetting(
+            string configuredDeviceName,
+            string legacyDeviceName,
+            string expected)
+        {
+            Assert.Equal(expected, CrosshairConfig.ResolveMonitorDeviceName(configuredDeviceName, legacyDeviceName));
+        }
     }
 }

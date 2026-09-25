@@ -72,21 +72,21 @@ Download the latest build from the **[GitHub Releases page](../../releases/lates
 
 Use the installer for the normal Start Menu experience:
 
-- [`LightCrosshair-Setup-1.7.1.exe`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.1/LightCrosshair-Setup-1.7.1.exe)
-  SHA256: `90DAFF7D58E69FB06BD2E1BF347CE2FFC5E2B9C467049C24432E5CCC8C2E73D8`
+- [`LightCrosshair-Setup-1.8.0.exe`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.8.0/LightCrosshair-Setup-1.8.0.exe)
+  SHA256: `1F25C2B6DF489568B8E65539DA5F2D82ECE57D65172669616AB45DF7C125B8A7`
 
 ### Portable ZIP
 
 Use the portable ZIP if you want to extract and run the app from a folder you control:
 
-- [`LightCrosshair-v1.7.1-x64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.1/LightCrosshair-v1.7.1-x64.zip)
-  SHA256: `A7F835260A472B66AFDB970A0406ABCC998BDBC79879BFD082FD2212CE8242EC`
-- [`LightCrosshair-v1.7.1-ARM64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.7.1/LightCrosshair-v1.7.1-ARM64.zip)
-  SHA256: `23AA5A6222FB58335121ADF863E547568610A1DFEC0F17ADFF27B5AEAAF6A165`
+- [`LightCrosshair-v1.8.0-x64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.8.0/LightCrosshair-v1.8.0-x64.zip)
+  SHA256: `F104BCE76926BAE253358EDD9655E9D92BB0DCE207DCD805D80A72FB111656DB`
+- [`LightCrosshair-v1.8.0-ARM64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.8.0/LightCrosshair-v1.8.0-ARM64.zip)
+  SHA256: `806BBAD3CB7D380593F69C10F9D15EFC1B88C5B58ADA9BE102D2F0CEA91A0E6C`
 
 ### Package Managers
 
-WinGet package updates may lag behind GitHub Releases. When available, this may install the latest approved package version, not necessarily v1.7.1:
+WinGet package updates may lag behind GitHub Releases. When available, this may install the latest approved package version, not necessarily v1.8.0:
 
 ```powershell
 winget install --id PrimeBuild.LightCrosshair --exact
@@ -123,18 +123,18 @@ The Chocolatey package update for 1.7.1 is prepared and will be available after 
 - Optional performance overlay with Off, Minimal, and Detailed modes.
 - Frame Cap Assistant for target-FPS guidance.
 - Supported NVIDIA per-app profile controls and AMD-related display/color paths.
-- Multi-monitor and DPI-aware overlay behavior.
+- Independent monitor selection for the crosshair and FPS overlay, with DPI-aware positioning.
 - Non-injected design with no game hooks.
 
 ---
 
-## What's New in v1.7.1
+## What's New in v1.8.0
 
-- Fixed NVIDIA FPS cap profile binding so supported per-app cap controls target the selected application profile.
-- Added NVIDIA profile audit information before applying supported per-app settings.
-- Added NVIDIA Low Latency Off/On and VSync per-app controls.
-- Added read-only NVIDIA G-SYNC and Low Latency CPL state display.
-- Kept safety boundaries: no global NVIDIA profile writes, no raw setting editor, no DLSS writes, no G-SYNC writes, and the app remains `asInvoker`.
+- Added independent monitor selection for the crosshair and FPS overlay.
+- Added automatic fallback to the primary display when a configured monitor is unavailable.
+- Preserved previous monitor settings through a backward-compatible configuration migration.
+- Reduced the FPS overlay window to the selected display instead of spanning the full virtual desktop.
+- Kept monitor changes event-driven, with no extra polling or render-loop work.
 
 ---
 
