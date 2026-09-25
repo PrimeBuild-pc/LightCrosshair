@@ -1,0 +1,170 @@
+name: Publish package managers
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable version without the v prefix
+        required: true
+        type: string
+      publish_chocolatey:
+        description: Publish to Chocolatey
+        required: true
+        default: true
+        type: boolean
+      publish_winget:
+        description: Submit to WinGet
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-managers-${{ github.event.release.tag_name || inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    runs-on: windows-2022
+    env:
+      PUBLISH_CHOCOLATEY: ${{ github.event_name == 'release' || inputs.publish_chocolatey }}
+      PUBLISH_WINGET: ${{ github.event_name == 'release' || inputs.publish_winget }}
+
+    steps:
+      - name: Checkout package sources
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Resolve release asset
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          VERSION_INPUT: ${{ inputs.version }}
+        run: |
+          $version = if ($env:GITHUB_EVENT_NAME -eq 'release') {
+            $env:RELEASE_TAG -replace '^v', ''
+          } else {
+            $env:VERSION_INPUT
+          }
+
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Package-manager releases require a stable major.minor.patch version: '$version'."
+          }
+
+          $tag = "v$version"
+          $assetName = "LightCrosshair-Setup-$version.exe"
+          $release = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$tag" | ConvertFrom-Json
+          $asset = $release.assets | Where-Object name -eq $assetName | Select-Object -First 1
+          if (-not $asset) { throw "Release asset '$assetName' was not found on $tag." }
+
+          $installer = Join-Path $env:RUNNER_TEMP $assetName
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $installer
+          $sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer).Hash
+          $releaseDate = ([DateTimeOffset]::Parse($release.published_at)).UtcDateTime.ToString('yyyy-MM-dd')
+
+          @(
+            "PACKAGE_VERSION=$version"
+            "RELEASE_TAG=$tag"
+            "RELEASE_DATE=$releaseDate"
+            "INSTALLER_URL=$($asset.browser_download_url)"
+            "INSTALLER_SHA256=$sha256"
+          ) | Add-Content -Path $env:GITHUB_ENV -Encoding utf8
+
+      - name: Publish Chocolatey package
+        if: env.PUBLISH_CHOCOLATEY == 'true'
+        shell: pwsh
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:CHOCOLATEY_API_KEY)) {
+            throw 'Repository secret CHOCOLATEY_API_KEY is not configured.'
+          }
+
+          $packageQuery = "https://community.chocolatey.org/api/v2/Packages(Id='lightcrosshair',Version='$env:PACKAGE_VERSION')"
+          try {
+            Invoke-WebRequest -Uri $packageQuery -UseBasicParsing | Out-Null
+            Write-Host "Chocolatey lightcrosshair $env:PACKAGE_VERSION already exists; skipping."
+            exit 0
+          } catch {
+            if ($_.Exception.Response.StatusCode.value__ -ne 404) { throw }
+          }
+
+          $stage = Join-Path $env:RUNNER_TEMP 'chocolatey'
+          Copy-Item setup/chocolatey $stage -Recurse
+          Remove-Item (Join-Path $stage '*.nupkg') -Force -ErrorAction SilentlyContinue
+
+          $nuspecPath = Join-Path $stage 'LightCrosshair.nuspec'
+          [xml]$nuspec = Get-Content -LiteralPath $nuspecPath
+          $metadata = $nuspec.package.metadata
+          $metadata.version = $env:PACKAGE_VERSION
+          $metadata.projectUrl = "https://github.com/$env:GITHUB_REPOSITORY/releases/tag/$env:RELEASE_TAG"
+          $metadata.releaseNotes = $metadata.projectUrl
+          $metadata.description = $metadata.description -replace 'LightCrosshair \d+\.\d+\.\d+ installer', "LightCrosshair $env:PACKAGE_VERSION installer"
+          $nuspec.Save($nuspecPath)
+
+          $installPath = Join-Path $stage 'tools/chocolateyinstall.ps1'
+          $install = Get-Content -LiteralPath $installPath -Raw
+          $install = $install -replace '\$installerUrl\s*=\s*''[^'']+''', "`$installerUrl = '$env:INSTALLER_URL'"
+          $install = $install -replace '\$checksum\s*=\s*''[0-9A-Fa-f]{64}''', "`$checksum = '$env:INSTALLER_SHA256'"
+          if ($install -notmatch [regex]::Escape($env:INSTALLER_URL) -or $install -notmatch $env:INSTALLER_SHA256) {
+            throw 'Chocolatey installer URL or checksum substitution failed.'
+          }
+          Set-Content -LiteralPath $installPath -Value $install -Encoding utf8
+
+          $verificationPath = Join-Path $stage 'tools/VERIFICATION.txt'
+          $verification = Get-Content -LiteralPath $verificationPath -Raw
+          $verification = $verification -replace 'https://github\.com/PrimeBuild-pc/LightCrosshair/releases/download/v[^/]+/LightCrosshair-Setup-[^\s]+\.exe', $env:INSTALLER_URL
+          $verification = $verification -replace '(?m)^[0-9A-Fa-f]{64}$', $env:INSTALLER_SHA256
+          $verification = $verification -replace 'LightCrosshair-Setup-\d+\.\d+\.\d+\.exe', "LightCrosshair-Setup-$env:PACKAGE_VERSION.exe"
+          if ($verification -notmatch [regex]::Escape($env:INSTALLER_URL) -or $verification -notmatch $env:INSTALLER_SHA256) {
+            throw 'Chocolatey verification URL or checksum substitution failed.'
+          }
+          Set-Content -LiteralPath $verificationPath -Value $verification -Encoding utf8
+
+          choco pack $nuspecPath --outputdirectory $stage --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "choco pack failed with exit code $LASTEXITCODE." }
+
+          $package = Join-Path $stage "lightcrosshair.$env:PACKAGE_VERSION.nupkg"
+          choco push $package --source https://push.chocolatey.org/ --api-key $env:CHOCOLATEY_API_KEY --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "choco push failed with exit code $LASTEXITCODE." }
+
+      - name: Submit WinGet update
+        if: env.PUBLISH_WINGET == 'true'
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINGET_TOKEN)) {
+            throw 'Repository secret WINGET_TOKEN is not configured.'
+          }
+
+          $manifestApi = "https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests/p/PrimeBuild/LightCrosshair/$env:PACKAGE_VERSION"
+          try {
+            Invoke-WebRequest -Uri $manifestApi -Headers @{ 'User-Agent' = 'LightCrosshair release workflow' } -UseBasicParsing | Out-Null
+            Write-Host "WinGet PrimeBuild.LightCrosshair $env:PACKAGE_VERSION already exists; skipping."
+            exit 0
+          } catch {
+            if ($_.Exception.Response.StatusCode.value__ -ne 404) { throw }
+          }
+
+          $wingetCreate = Join-Path $env:RUNNER_TEMP 'wingetcreate.exe'
+          Invoke-WebRequest -Uri 'https://github.com/microsoft/winget-create/releases/download/v1.12.13.0/wingetcreate.exe' -OutFile $wingetCreate
+          $expectedHash = '24042BD37915805615E6CF969AC57C6439124C3FE85823327F5F3FB24BD9FFEA'
+          $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $wingetCreate).Hash
+          if ($actualHash -ne $expectedHash) { throw 'wingetcreate.exe checksum mismatch.' }
+
+          & $wingetCreate update PrimeBuild.LightCrosshair `
+            --version $env:PACKAGE_VERSION `
+            --urls "$env:INSTALLER_URL|x64" `
+            --release-notes-url "https://github.com/$env:GITHUB_REPOSITORY/releases/tag/$env:RELEASE_TAG" `
+            --release-date $env:RELEASE_DATE `
+            --prtitle "Update PrimeBuild.LightCrosshair to $env:PACKAGE_VERSION" `
+            --submit --no-open --token $env:WINGET_TOKEN
+          if ($LASTEXITCODE -ne 0) { throw "wingetcreate failed with exit code $LASTEXITCODE." }
