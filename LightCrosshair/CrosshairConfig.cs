@@ -54,6 +54,10 @@ namespace LightCrosshair
         public int CrosshairThickness { get; set; } = 2;
         public string CrosshairStyle { get; set; } = "Cross";
         public bool Visible { get; set; } = true;
+        public string CrosshairMonitorDeviceName { get; set; } = "";
+        public string FpsOverlayMonitorDeviceName { get; set; } = "";
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public string? OverlayMonitorDeviceName { get; set; }
         public string TargetProcessName { get; set; } = "";
         
         // Hotkey settings
@@ -230,6 +234,8 @@ namespace LightCrosshair
                         CrosshairThickness = Math.Max(1, Math.Min(10, loadedConfig.CrosshairThickness));
                         CrosshairStyle = loadedConfig.CrosshairStyle ?? "Cross";
                         Visible = loadedConfig.Visible;
+                        CrosshairMonitorDeviceName = ResolveMonitorDeviceName(loadedConfig.CrosshairMonitorDeviceName, loadedConfig.OverlayMonitorDeviceName);
+                        FpsOverlayMonitorDeviceName = ResolveMonitorDeviceName(loadedConfig.FpsOverlayMonitorDeviceName, loadedConfig.OverlayMonitorDeviceName);
                         TargetProcessName = loadedConfig.TargetProcessName ?? string.Empty;
                         HotkeyKey = loadedConfig.HotkeyKey;
                         HotkeyUseAlt = loadedConfig.HotkeyUseAlt;
@@ -321,6 +327,13 @@ namespace LightCrosshair
                     Debug.WriteLine($"Error in OnSettingsChanged: {ex.Message}");
                 }
             }
+        }
+
+        internal static string ResolveMonitorDeviceName(string? configuredDeviceName, string? legacyDeviceName)
+        {
+            return !string.IsNullOrWhiteSpace(configuredDeviceName)
+                ? configuredDeviceName
+                : legacyDeviceName ?? string.Empty;
         }
 
         public static int NormalizeGraphRefreshRatePreset(int value)

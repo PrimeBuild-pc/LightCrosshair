@@ -213,6 +213,10 @@
                         </StackPanel>
                         
                         <TextBlock Text="Position &amp; Tweaks" FontWeight="Bold" Margin="0,12,0,6"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Crosshair monitor:" Width="120" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="CrosshairMonitorCombo" Width="260" ToolTip="Selects the monitor used by the crosshair."/>
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,12">
                             <Button x:Name="NudgeLeft" Content="&#x2190;" Width="40" ToolTip="Move left 1px"/>
                             <Button x:Name="NudgeUp" Content="&#x2191;" Width="40" ToolTip="Move up 1px"/>
@@ -387,6 +391,11 @@
                     <StackPanel Margin="12">
                         <TextBlock Text="Performance Overlay" FontWeight="Bold" Margin="0,0,0,12"/>
                         <CheckBox x:Name="EnableFpsCheckbox" Content="Enable FPS Overlay" Margin="0,0,0,12"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="FPS monitor:" Width="120" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="FpsOverlayMonitorCombo" Width="260" ToolTip="Selects the monitor used by the FPS overlay."/>
+                        </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="Display Mode:" Width="120" VerticalAlignment="Center"/>

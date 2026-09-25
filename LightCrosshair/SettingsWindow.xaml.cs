@@ -842,6 +842,41 @@ namespace LightCrosshair
                 Program.LogDebug($"UpdatePositionStatus failed: {ex.Message}", nameof(SettingsWindow));
             }
         }
+
+        private void RefreshMonitorItems(System.Windows.Controls.ComboBox combo, string configuredDeviceName)
+        {
+            bool wasSuppressed = _suppressUiEvents;
+            _suppressUiEvents = true;
+            try
+            {
+                combo.Items.Clear();
+                ComboBoxItem? fallback = null;
+                foreach (var screen in System.Windows.Forms.Screen.AllScreens)
+                {
+                    var item = new ComboBoxItem
+                    {
+                        Content = $"{screen.DeviceName.Replace(@"\\.\", string.Empty)} — {screen.Bounds.Width}x{screen.Bounds.Height}{(screen.Primary ? " (Primary)" : string.Empty)}",
+                        Tag = screen.DeviceName
+                    };
+                    combo.Items.Add(item);
+
+                    if (screen.Primary)
+                    {
+                        fallback = item;
+                    }
+                    if (string.Equals(screen.DeviceName, configuredDeviceName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        combo.SelectedItem = item;
+                    }
+                }
+
+                combo.SelectedItem ??= fallback ?? combo.Items.OfType<ComboBoxItem>().FirstOrDefault();
+            }
+            finally
+            {
+                _suppressUiEvents = wasSuppressed;
+            }
+        }
     
         private void LoadAdvancedSettings()
         {
@@ -868,6 +903,9 @@ namespace LightCrosshair
             HkCtrl3.IsChecked = cfg.SettingsWindowHotkeyUseControl;
             HkShift3.IsChecked = cfg.SettingsWindowHotkeyUseShift;
             LoadKeysCombo(HkKey3Combo, cfg.SettingsWindowHotkeyKey);
+
+            RefreshMonitorItems(CrosshairMonitorCombo, cfg.CrosshairMonitorDeviceName);
+            RefreshMonitorItems(FpsOverlayMonitorCombo, cfg.FpsOverlayMonitorDeviceName);
 
             // Gamma
             EnableGammaCheckbox.IsChecked = cfg.EnableGammaOverride;
@@ -971,6 +1009,8 @@ namespace LightCrosshair
 
                 TargetProcessTextBox.Text = cfg.TargetProcessName;
                 RefreshProcessPickerItems();
+                RefreshMonitorItems(CrosshairMonitorCombo, cfg.CrosshairMonitorDeviceName);
+                RefreshMonitorItems(FpsOverlayMonitorCombo, cfg.FpsOverlayMonitorDeviceName);
             }
             finally
             {
@@ -1276,6 +1316,34 @@ namespace LightCrosshair
                 TargetProcessTextBox.Text = string.Empty;
                 SaveTargetProcessFromUi(cfg);
             };
+            CrosshairMonitorCombo.SelectionChanged += (_, __) =>
+            {
+                if (_suppressUiEvents || CrosshairMonitorCombo.SelectedItem is not ComboBoxItem item || item.Tag is not string deviceName)
+                {
+                    return;
+                }
+
+                if (!string.Equals(cfg.CrosshairMonitorDeviceName, deviceName, StringComparison.OrdinalIgnoreCase))
+                {
+                    cfg.CrosshairMonitorDeviceName = deviceName;
+                    cfg.SaveSettings();
+                    UpdatePositionStatus();
+                }
+            };
+            FpsOverlayMonitorCombo.SelectionChanged += (_, __) =>
+            {
+                if (_suppressUiEvents || FpsOverlayMonitorCombo.SelectedItem is not ComboBoxItem item || item.Tag is not string deviceName)
+                {
+                    return;
+                }
+
+                if (!string.Equals(cfg.FpsOverlayMonitorDeviceName, deviceName, StringComparison.OrdinalIgnoreCase))
+                {
+                    cfg.FpsOverlayMonitorDeviceName = deviceName;
+                    cfg.SaveSettings();
+                }
+            };
+
             // FPS Overlay
             EnableFpsCheckbox.Checked += (_,__) =>
             {

@@ -97,6 +97,14 @@ The Crosshair Builder tab in the Settings window lets you customise the appearan
 
 The crosshair can be nudged in 1-pixel increments to fine-tune its screen position. This is useful when the crosshair doesn't align perfectly with the centre of your screen.
 
+#### Crosshair Monitor
+
+- **What it does:** Selects the monitor used by the crosshair independently from the FPS overlay.
+- **UI control:** Dropdown labelled "Crosshair monitor".
+- **Default:** Primary monitor.
+- **Fallback:** If the selected monitor is disconnected, LightCrosshair temporarily uses the primary monitor and restores the selection when that display is available again.
+- **Performance impact:** None during rendering; display changes are handled only when settings or the Windows display layout change.
+
 #### Nudge Buttons
 
 - **What they do:** Move the crosshair 1 pixel in the respective direction.
@@ -247,6 +255,13 @@ Read-only status indicators showing the availability of variable refresh rate (V
 ---
 
 ## FPS Overlay Settings
+
+### FPS Monitor
+
+- **What it does:** Selects the monitor used by the FPS overlay independently from the crosshair.
+- **UI control:** Dropdown labelled "FPS monitor".
+- **Default:** Primary monitor.
+- **Fallback:** If the selected monitor is unavailable, the FPS overlay uses the primary monitor.
 
 The FPS & Performance tab controls LightCrosshair's built-in frame rate and frame timing overlay. It uses non-injected ETW telemetry with optional RTSS fallback.
 

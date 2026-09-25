@@ -92,15 +92,21 @@ namespace LightCrosshair
             TopMost = true;
             DoubleBuffered = true;
 
-            Rectangle bounds = Rectangle.Empty;
-            foreach (var screen in Screen.AllScreens)
+            Bounds = OverlayMonitorSelector.ResolveBounds(CrosshairConfig.Instance.FpsOverlayMonitorDeviceName);
+            BackColor = OverlayTransparencyKey;
+            TransparencyKey = OverlayTransparencyKey;
+        }
+
+        public void SetTargetBounds(Rectangle bounds)
+        {
+            if (Bounds == bounds)
             {
-                bounds = Rectangle.Union(bounds, screen.Bounds);
+                return;
             }
 
             Bounds = bounds;
-            BackColor = OverlayTransparencyKey;
-            TransparencyKey = OverlayTransparencyKey;
+            _lastOverlayBounds = Rectangle.Empty;
+            Invalidate();
         }
 
         public void UpdateState(FpsMetricsSnapshot snapshot, string source, string status)
@@ -158,8 +164,8 @@ namespace LightCrosshair
             e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
             float scale = Math.Clamp(cfg.FpsOverlayScale / 100f, 0.75f, 3f);
-            float x = cfg.FpsOverlayX - Bounds.Left;
-            float y = cfg.FpsOverlayY - Bounds.Top;
+            float x = cfg.FpsOverlayX;
+            float y = cfg.FpsOverlayY;
             float padding = 6f * scale;
 
             EnsureRenderResources(cfg, scale);
@@ -331,8 +337,8 @@ namespace LightCrosshair
             float panelWidth = Math.Max(textWidth, graphWidth) + padding * 2f;
             float panelHeight = textHeight + (showGraph ? graphGap + graphHeight : 0f) + padding * 2f;
 
-            float x = cfg.FpsOverlayX - Bounds.Left;
-            float y = cfg.FpsOverlayY - Bounds.Top;
+            float x = cfg.FpsOverlayX;
+            float y = cfg.FpsOverlayY;
             x = Math.Clamp(x, 0, Math.Max(0, ClientSize.Width - panelWidth));
             y = Math.Clamp(y, 0, Math.Max(0, ClientSize.Height - panelHeight));
 
