@@ -92,7 +92,7 @@ WinGet package updates may lag behind GitHub Releases. When available, this may 
 winget install --id PrimeBuild.LightCrosshair --exact
 ```
 
-The Chocolatey package update for 1.7.1 is prepared and will be available after Chocolatey Community moderation.
+Chocolatey and WinGet updates may remain pending while their community repositories validate the latest release.
 
 ---
 
