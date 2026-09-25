@@ -73,16 +73,16 @@ Download the latest build from the **[GitHub Releases page](../../releases/lates
 Use the installer for the normal Start Menu experience:
 
 - [`LightCrosshair-Setup-1.8.0.exe`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.8.0/LightCrosshair-Setup-1.8.0.exe)
-  SHA256: `83A34C7D5CF5C4AE598364D30CE08276728F7BB95F8AA1EF32598C87C524ACAC`
+  SHA256: `1F25C2B6DF489568B8E65539DA5F2D82ECE57D65172669616AB45DF7C125B8A7`
 
 ### Portable ZIP
 
 Use the portable ZIP if you want to extract and run the app from a folder you control:
 
 - [`LightCrosshair-v1.8.0-x64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.8.0/LightCrosshair-v1.8.0-x64.zip)
-  SHA256: `D240EC3F602E8833E02166FE732FF4884D0F87E58BA4FE268C5A7FB6C4434E0A`
+  SHA256: `F104BCE76926BAE253358EDD9655E9D92BB0DCE207DCD805D80A72FB111656DB`
 - [`LightCrosshair-v1.8.0-ARM64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.8.0/LightCrosshair-v1.8.0-ARM64.zip)
-  SHA256: `5D573AD34ECD7349AFF6D8247D14B4FEDA1EB0CEB5402BEECE3CA69483FA8593`
+  SHA256: `806BBAD3CB7D380593F69C10F9D15EFC1B88C5B58ADA9BE102D2F0CEA91A0E6C`
 
 ### Package Managers
 
