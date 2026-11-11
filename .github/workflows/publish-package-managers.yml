@@ -121,7 +121,7 @@ jobs:
           $verificationPath = Join-Path $stage 'tools/VERIFICATION.txt'
           $verification = Get-Content -LiteralPath $verificationPath -Raw
           $verification = $verification -replace 'https://github\.com/PrimeBuild-pc/LightCrosshair/releases/download/v[^/]+/LightCrosshair-Setup-[^\s]+\.exe', $env:INSTALLER_URL
-          $verification = $verification -replace '(?m)^[0-9A-Fa-f]{64}$', $env:INSTALLER_SHA256
+          $verification = $verification -replace '(?m)^[0-9A-Fa-f]{64}(?=\r?$)', $env:INSTALLER_SHA256
           $verification = $verification -replace 'LightCrosshair-Setup-\d+\.\d+\.\d+\.exe', "LightCrosshair-Setup-$env:PACKAGE_VERSION.exe"
           if ($verification -notmatch [regex]::Escape($env:INSTALLER_URL) -or $verification -notmatch $env:INSTALLER_SHA256) {
             throw 'Chocolatey verification URL or checksum substitution failed.'
