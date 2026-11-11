@@ -125,11 +125,12 @@ public class VisibilityBindingTests
     [Fact]
     public void LegacyConfigRetainsKeyboardAndAllModifiers()
     {
-        using var config = new CrosshairConfig(loadSettings: false);
+        // Pure snapshots own no resources; Dispose would autosave them to the user settings path.
+        var config = new CrosshairConfig(loadSettings: false);
         config.HotkeyKey = Keys.F9;
         config.HotkeyUseAlt = false; config.HotkeyUseControl = true;
         config.HotkeyUseShift = true; config.HotkeyUseWin = true;
-        using var migrated = CrosshairConfig.DeserializeSettings(JsonSerializer.Serialize(config))!;
+        var migrated = CrosshairConfig.DeserializeSettings(JsonSerializer.Serialize(config))!;
         Assert.Null(migrated.VisibilityBinding);
         Assert.Equal(new VisibilityBinding { Key = (int)Keys.F9, Modifiers = 14 }, migrated.ResolveVisibilityBinding());
         migrated.VisibilityBinding = new() { Input = BindingInput.WheelUp, Mode = BindingMode.HoldToHide };
@@ -184,7 +185,7 @@ public class VisibilityBindingTests
     [Fact]
     public void ConflictsIncludeGlobalAndProfileHotkeysForAllModes()
     {
-        using var cfg = new CrosshairConfig(loadSettings: false);
+        var cfg = new CrosshairConfig(loadSettings: false);
         foreach (BindingMode mode in Enum.GetValues<BindingMode>())
         {
             Assert.Contains("Forward", VisibilityBindingConflicts.Find(new() { Key = (int)Keys.C, Mode = mode }, cfg, [])!);
