@@ -25,16 +25,6 @@
 
 ---
 
-## Demo
-
-<div align="center">
-
-[![Watch the demo video](https://img.youtube.com/vi/CKbj2eObQ1E/maxresdefault.jpg)](https://www.youtube.com/watch?v=CKbj2eObQ1E)
-
-**Watch the demo on YouTube**
-
-</div>
-
 ## Screenshots
 
 <table>
