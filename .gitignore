@@ -567,6 +567,7 @@ Temporary Items
 /*.md
 !README.md
 !LICENSE.md
+!CHANGELOG.md
 
 dist/
 

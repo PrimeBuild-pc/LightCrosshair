@@ -234,13 +234,16 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12">
                         <TextBlock Text="Global Hotkeys" FontWeight="Bold" Margin="0,0,0,12"/>
+                        <TextBlock Text="Crosshair visibility" FontWeight="Bold" Margin="0,0,0,6"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                            <TextBlock Text="Toggle Crosshair:" Width="140" VerticalAlignment="Center"/>
-                            <CheckBox x:Name="HkAlt1" Content="Alt" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <CheckBox x:Name="HkCtrl1" Content="Ctrl" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <CheckBox x:Name="HkShift1" Content="Shift" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <ComboBox x:Name="HkKey1Combo" Width="100"/>
+                            <Button x:Name="VisibilityCaptureButton" Width="240" Content="Press a binding" ToolTip="Click, then press a key, mouse button or wheel with Ctrl / Alt / Shift / Win. Escape cancels."/>
+                            <ComboBox x:Name="VisibilityModeCombo" Width="160" Margin="12,0,0,0" SelectedIndex="0" AutomationProperties.Name="Visibility binding mode">
+                                <ComboBoxItem Content="Toggle"/>
+                                <ComboBoxItem Content="Hold to hide"/>
+                                <ComboBoxItem Content="Hold to show"/>
+                            </ComboBox>
                         </StackPanel>
+                        <TextBlock x:Name="VisibilityBindingStatus" Text="Press a key/click/wheel with optional Ctrl, Alt, Shift or Win. Wheel supports Toggle only." TextWrapping="Wrap" Margin="0,0,0,16"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="Cycle Profiles Forward:" Width="140" VerticalAlignment="Center"/>
                             <CheckBox x:Name="HkAlt2" Content="Alt" VerticalAlignment="Center" Margin="0,0,8,0"/>

@@ -72,21 +72,21 @@ Download the latest build from the **[GitHub Releases page](../../releases/lates
 
 Use the installer for the normal Start Menu experience:
 
-- [`LightCrosshair-Setup-1.8.0.exe`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.8.0/LightCrosshair-Setup-1.8.0.exe)
+- [`LightCrosshair-Setup-1.9.0.exe`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.9.0/LightCrosshair-Setup-1.9.0.exe)
   SHA256: `1F25C2B6DF489568B8E65539DA5F2D82ECE57D65172669616AB45DF7C125B8A7`
 
 ### Portable ZIP
 
 Use the portable ZIP if you want to extract and run the app from a folder you control:
 
-- [`LightCrosshair-v1.8.0-x64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.8.0/LightCrosshair-v1.8.0-x64.zip)
+- [`LightCrosshair-v1.9.0-x64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.9.0/LightCrosshair-v1.9.0-x64.zip)
   SHA256: `F104BCE76926BAE253358EDD9655E9D92BB0DCE207DCD805D80A72FB111656DB`
-- [`LightCrosshair-v1.8.0-ARM64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.8.0/LightCrosshair-v1.8.0-ARM64.zip)
+- [`LightCrosshair-v1.9.0-ARM64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.9.0/LightCrosshair-v1.9.0-ARM64.zip)
   SHA256: `806BBAD3CB7D380593F69C10F9D15EFC1B88C5B58ADA9BE102D2F0CEA91A0E6C`
 
 ### Package Managers
 
-WinGet package updates may lag behind GitHub Releases. When available, this may install the latest approved package version, not necessarily v1.8.0:
+WinGet package updates may lag behind GitHub Releases. When available, this may install the latest approved package version, not necessarily v1.9.0:
 
 ```powershell
 winget install --id PrimeBuild.LightCrosshair --exact
@@ -128,13 +128,21 @@ Chocolatey and WinGet updates may remain pending while their community repositor
 
 ---
 
-## What's New in v1.8.0
+## What's New in v1.9.0
 
-- Added independent monitor selection for the crosshair and FPS overlay.
-- Added automatic fallback to the primary display when a configured monitor is unavailable.
-- Preserved previous monitor settings through a backward-compatible configuration migration.
-- Reduced the FPS overlay window to the selected display instead of spanning the full virtual desktop.
-- Kept monitor changes event-driven, with no extra polling or render-loop work.
+- Bind crosshair visibility to Middle click, Mouse4, Mouse5, Wheel Up/Down, or Right click for ADS.
+- Combine keyboard keys and mouse buttons with Ctrl, Alt, Shift, and Win.
+- Choose Toggle, Hold to hide, or Hold to show. Wheel bindings support Toggle only.
+- Capture bindings in Settings → Hotkeys, with conflict detection and profile persistence.
+- Existing keyboard shortcuts and saved profiles retain their previous behavior.
+
+### Mouse bindings and modifiers
+
+In **Settings → Hotkeys**, click the visibility binding field, then press a key, mouse button, or wheel direction with optional modifiers (for example `Alt+Mouse4` or `Ctrl+RightClick`). Choose **Toggle**, **Hold to hide**, or **Hold to show**. Escape cancels capture. Hold restores the previous visibility state on release and does not save a temporary state. Saved profiles include the binding; older profiles inherit the global shortcut.
+
+Extra gaming-mouse buttons are supported when Windows exposes them as XButton1 (Mouse4) or XButton2 (Mouse5). DPI buttons without a Windows XButton mapping cannot be captured.
+
+The app observes input through read-only Windows input hooks; it does not inject or modify input, and clicks continue to reach the game. Check your game's anti-cheat and overlay rules before use.
 
 ---
 

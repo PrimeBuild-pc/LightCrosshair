@@ -60,6 +60,13 @@ namespace LightCrosshair
         public string? OverlayMonitorDeviceName { get; set; }
         public string TargetProcessName { get; set; } = "";
         
+        // Null in pre-1.9 settings: resolve the original keyboard fields unchanged.
+        public VisibilityBinding? VisibilityBinding { get; set; }
+        public VisibilityBinding ResolveVisibilityBinding() => VisibilityBinding is { IsValid: true } binding
+            ? binding : new VisibilityBinding { Key = (int)HotkeyKey,
+                Modifiers = (HotkeyUseAlt ? 1 : 0) | (HotkeyUseControl ? 2 : 0) |
+                    (HotkeyUseShift ? 4 : 0) | (HotkeyUseWin ? 8 : 0) };
+
         // Hotkey settings
         public Keys HotkeyKey { get; set; } = Keys.X;
         public bool HotkeyUseAlt { get; set; } = true;
@@ -148,7 +155,7 @@ namespace LightCrosshair
         {
         }
 
-        internal CrosshairConfig(bool loadSettings)
+        internal CrosshairConfig(bool loadSettings, string? configFilePath = null)
         {
             try
             {
@@ -163,7 +170,7 @@ namespace LightCrosshair
                     Directory.CreateDirectory(appDataPath);
                 }
                 
-                _configFilePath = Path.Combine(appDataPath, "crosshair_settings.json");
+                _configFilePath = configFilePath ?? Path.Combine(appDataPath, "crosshair_settings.json");
                 
                 // Load settings
                 if (loadSettings && !_isDeserializing)
@@ -214,18 +221,8 @@ namespace LightCrosshair
                 if (File.Exists(_configFilePath))
                 {
                     string jsonString = File.ReadAllText(_configFilePath);
-                    CrosshairConfig? loadedConfig;
-                    bool previous = _isDeserializing;
-                    try
-                    {
-                        _isDeserializing = true;
-                        loadedConfig = JsonSerializer.Deserialize<CrosshairConfig>(jsonString);
-                    }
-                    finally
-                    {
-                        _isDeserializing = previous;
-                    }
-                    
+                    var loadedConfig = DeserializeSettings(jsonString);
+
                     if (loadedConfig != null)
                     {
                         // Copy properties from loaded config
@@ -237,6 +234,7 @@ namespace LightCrosshair
                         CrosshairMonitorDeviceName = ResolveMonitorDeviceName(loadedConfig.CrosshairMonitorDeviceName, loadedConfig.OverlayMonitorDeviceName);
                         FpsOverlayMonitorDeviceName = ResolveMonitorDeviceName(loadedConfig.FpsOverlayMonitorDeviceName, loadedConfig.OverlayMonitorDeviceName);
                         TargetProcessName = loadedConfig.TargetProcessName ?? string.Empty;
+                        VisibilityBinding = loadedConfig.VisibilityBinding is { IsValid: true } ? loadedConfig.VisibilityBinding : null;
                         HotkeyKey = loadedConfig.HotkeyKey;
                         HotkeyUseAlt = loadedConfig.HotkeyUseAlt;
                         HotkeyUseControl = loadedConfig.HotkeyUseControl;
@@ -300,6 +298,17 @@ namespace LightCrosshair
                 Debug.WriteLine($"Error loading settings: {ex.Message}");
                 // Don't show message box here as it might be called during initialization
             }
+        }
+
+        internal static CrosshairConfig? DeserializeSettings(string json)
+        {
+            bool previous = _isDeserializing;
+            try
+            {
+                _isDeserializing = true;
+                return JsonSerializer.Deserialize<CrosshairConfig>(json);
+            }
+            finally { _isDeserializing = previous; }
         }
 
         public void ReRegisterHotkeys()
