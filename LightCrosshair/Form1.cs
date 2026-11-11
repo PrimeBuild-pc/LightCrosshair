@@ -1216,7 +1216,7 @@ namespace LightCrosshair
                 !HotkeyManager.Instance.RegisterHotkeyWithId(HotkeyManager.TOGGLE_VISIBILITY_ID,
                     _visibilityBinding.Modifiers, _visibilityBinding.Key))
                 Program.LogDebug("Visibility hotkey conflict", nameof(Form1));
-            UpdateCrosshairVisibilityState();
+            if (_runtimeInitialized) UpdateCrosshairVisibilityState();
 
             int cycleModifiers = BuildHotkeyModifiers(
                 cfg.CycleProfileHotkeyUseAlt,
