@@ -15,6 +15,28 @@ namespace LightCrosshair
 
         public static HotkeyManager Instance => _instance.Value;
 
+        public bool IsCapturing { get; private set; }
+        public event Action<VisibilityBinding>? BindingCaptured;
+        public void SetCapture(bool capture)
+        {
+            IsCapturing = capture;
+            CrosshairConfig.Instance.ReRegisterHotkeys();
+        }
+        internal void PublishCapturedBinding(VisibilityBinding binding) => BindingCaptured?.Invoke(binding);
+
+        internal bool IsVisibilityBindingAvailable(VisibilityBinding binding)
+        {
+            if (binding.Input != BindingInput.Keyboard) return true;
+            lock (_lockObject)
+            {
+                if (_registeredHotkeys.TryGetValue(TOGGLE_VISIBILITY_ID, out var current) &&
+                    current == (binding.Modifiers, binding.Key)) return true;
+                if (!RegisterHotkey(binding.Modifiers, binding.Key, out int probeId)) return false;
+                UnregisterHotkey(probeId);
+                return true;
+            }
+        }
+
         private IntPtr _windowHandle = IntPtr.Zero;
         private readonly Dictionary<int, (int ModifierKeys, int VirtualKey)> _registeredHotkeys = 
             new Dictionary<int, (int, int)>();

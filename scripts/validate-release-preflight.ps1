@@ -2,7 +2,7 @@
 # Performs local, non-publishing checks only.
 
 param(
-    [string]$ExpectedVersion = "1.7.0",
+    [string]$ExpectedVersion = "1.9.0",
     [switch]$AllowMain
 )
 

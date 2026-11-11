@@ -265,6 +265,7 @@ namespace LightCrosshair
 
             _suppressUiEvents = false;
             UpdateBuilderControlsState();
+            RefreshVisibilityBinding();
         }
 
         private void ApplyChange(Action<CrosshairProfile> change)
@@ -276,6 +277,73 @@ namespace LightCrosshair
             {
                 _profiles.Update(cur);
             }
+        }
+
+        private VisibilityBinding EffectiveVisibilityBinding() => _profiles.Current.VisibilityBinding is { IsValid: true } binding
+            ? binding : CrosshairConfig.Instance.ResolveVisibilityBinding();
+
+        private void RefreshVisibilityBinding()
+        {
+            if (VisibilityCaptureButton == null) return;
+            bool previous = _suppressUiEvents;
+            _suppressUiEvents = true;
+            var binding = EffectiveVisibilityBinding();
+            VisibilityCaptureButton.Content = binding.ToString();
+            VisibilityModeCombo.SelectedIndex = (int)binding.Mode;
+            ((ComboBoxItem)VisibilityModeCombo.Items[1]).IsEnabled = !binding.IsWheel;
+            ((ComboBoxItem)VisibilityModeCombo.Items[2]).IsEnabled = !binding.IsWheel;
+            _suppressUiEvents = previous;
+        }
+
+        private void StopBindingCapture()
+        {
+            HotkeyManager.Instance.BindingCaptured -= OnBindingCaptured;
+            if (HotkeyManager.Instance.IsCapturing) HotkeyManager.Instance.SetCapture(false);
+            RefreshVisibilityBinding();
+        }
+
+        private void OnBindingCaptured(VisibilityBinding binding)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (!HotkeyManager.Instance.IsCapturing) return;
+                StopBindingCapture();
+                if (binding.Input == BindingInput.Keyboard && binding.Key == (int)Keys.Escape)
+                {
+                    VisibilityBindingStatus.Text = "Binding capture cancelled.";
+                    return;
+                }
+                var mode = EffectiveVisibilityBinding().Mode;
+                SaveVisibilityBinding(binding with { Mode = binding.IsWheel ? BindingMode.Toggle : mode });
+            }));
+        }
+
+        private void SaveVisibilityBinding(VisibilityBinding binding)
+        {
+            var cfg = CrosshairConfig.Instance;
+            string? conflict = VisibilityBindingConflicts.Find(binding, cfg, _profiles.Profiles);
+            if (!binding.IsValid || conflict != null || !HotkeyManager.Instance.IsVisibilityBindingAvailable(binding))
+            {
+                RefreshVisibilityBinding();
+                VisibilityBindingStatus.Text = conflict ?? (binding.IsValid
+                    ? "This keyboard shortcut is already reserved by Windows or another app."
+                    : "Wheel bindings only support Toggle.");
+                return;
+            }
+            cfg.VisibilityBinding = binding;
+            if (binding.Input == BindingInput.Keyboard)
+            {
+                cfg.HotkeyKey = (Keys)binding.Key;
+                cfg.HotkeyUseAlt = (binding.Modifiers & 1) != 0;
+                cfg.HotkeyUseControl = (binding.Modifiers & 2) != 0;
+                cfg.HotkeyUseShift = (binding.Modifiers & 4) != 0;
+                cfg.HotkeyUseWin = (binding.Modifiers & 8) != 0;
+            }
+            ApplyChange(p => p.VisibilityBinding = binding);
+            cfg.SaveSettings();
+            cfg.ReRegisterHotkeys();
+            RefreshVisibilityBinding();
+            VisibilityBindingStatus.Text = "Binding saved. Wheel supports Toggle only.";
         }
 
         private void ApplyTheme(AppTheme theme)
@@ -375,6 +443,7 @@ namespace LightCrosshair
                 }
 
                 var cur = StampDisplaySettingsIntoProfile(_profiles.Current.Clone());
+                cur.VisibilityBinding = EffectiveVisibilityBinding();
                 cur.Id = p.Id;
                 cur.Name = p.Name;
                 _profiles.Update(cur);
@@ -427,6 +496,7 @@ namespace LightCrosshair
                     }
 
                     var cur = StampDisplaySettingsIntoProfile(_profiles.Current.Clone());
+                    cur.VisibilityBinding = EffectiveVisibilityBinding();
                     cur.Id = existing.Id;
                     cur.Name = existing.Name;
                     _profiles.Update(cur);
@@ -444,6 +514,7 @@ namespace LightCrosshair
             {
                 var name = $"Profile {targetIndex + 1}";
                 var source = StampDisplaySettingsIntoProfile(_profiles.Current.Clone());
+                source.VisibilityBinding = EffectiveVisibilityBinding();
                 var created = _profiles.AddClone(source, name);
                 int idx = _profiles.Profiles.ToList().FindIndex(x => x.Id == created.Id);
                 int delta = targetIndex - idx;
@@ -505,6 +576,7 @@ namespace LightCrosshair
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
+            StopBindingCapture();
             if (_allowWindowClose)
             {
                 FlushPendingSettingsSave();
@@ -884,10 +956,7 @@ namespace LightCrosshair
             var cfg = CrosshairConfig.Instance;
             
             // Hotkeys
-            HkAlt1.IsChecked = cfg.HotkeyUseAlt;
-            HkCtrl1.IsChecked = cfg.HotkeyUseControl;
-            HkShift1.IsChecked = cfg.HotkeyUseShift;
-            LoadKeysCombo(HkKey1Combo, cfg.HotkeyKey);
+            RefreshVisibilityBinding();
 
             HkAlt2.IsChecked = cfg.CycleProfileHotkeyUseAlt;
             HkCtrl2.IsChecked = cfg.CycleProfileHotkeyUseControl;
@@ -1126,64 +1195,85 @@ namespace LightCrosshair
         {
             var cfg = CrosshairConfig.Instance;
 
-            // Hotkey Toggle
-            HkAlt1.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseAlt = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkAlt1.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseAlt = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkCtrl1.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseControl = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkCtrl1.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseControl = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkShift1.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseShift = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkShift1.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.HotkeyUseShift = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkKey1Combo.SelectionChanged += (_, __) => 
+            VisibilityCaptureButton.Click += (_, _) =>
             {
-                if (_suppressUiEvents || HkKey1Combo.SelectedItem == null) return;
-                cfg.HotkeyKey = (System.Windows.Forms.Keys)((System.Windows.Controls.ComboBoxItem)HkKey1Combo.SelectedItem).Tag;
+                if (HotkeyManager.Instance.IsCapturing) { StopBindingCapture(); return; }
+                HotkeyManager.Instance.BindingCaptured += OnBindingCaptured;
+                HotkeyManager.Instance.SetCapture(true);
+                VisibilityCaptureButton.Content = "Press key / click / wheel...";
+                VisibilityBindingStatus.Text = "Listening. Escape cancels. Input still reaches other apps.";
+            };
+            VisibilityModeCombo.SelectionChanged += (_, _) =>
+            {
+                if (_suppressUiEvents || VisibilityModeCombo.SelectedIndex < 0) return;
+                var binding = EffectiveVisibilityBinding();
+                SaveVisibilityBinding(binding with { Mode = (BindingMode)VisibilityModeCombo.SelectedIndex });
+            };
+            IsVisibleChanged += (_, _) => { if (!IsVisible) StopBindingCapture(); };
+            Deactivated += (_, _) => StopBindingCapture();
+
+            var acceptedHotkeys = CaptureExistingHotkeys();
+            (Keys, bool, bool, bool)[] CaptureExistingHotkeys() => new[] {
+                (cfg.CycleProfileHotkeyKey, cfg.CycleProfileHotkeyUseAlt, cfg.CycleProfileHotkeyUseControl, cfg.CycleProfileHotkeyUseShift),
+                (cfg.CycleProfilePrevHotkeyKey, cfg.CycleProfilePrevHotkeyUseAlt, cfg.CycleProfilePrevHotkeyUseControl, cfg.CycleProfilePrevHotkeyUseShift),
+                (cfg.SettingsWindowHotkeyKey, cfg.SettingsWindowHotkeyUseAlt, cfg.SettingsWindowHotkeyUseControl, cfg.SettingsWindowHotkeyUseShift) };
+            void SaveExistingHotkeys()
+            {
+                string? conflict = VisibilityBindingConflicts.Find(EffectiveVisibilityBinding(), cfg, _profiles.Profiles);
+                if (conflict != null)
+                {
+                    (cfg.CycleProfileHotkeyKey, cfg.CycleProfileHotkeyUseAlt, cfg.CycleProfileHotkeyUseControl, cfg.CycleProfileHotkeyUseShift) = acceptedHotkeys[0];
+                    (cfg.CycleProfilePrevHotkeyKey, cfg.CycleProfilePrevHotkeyUseAlt, cfg.CycleProfilePrevHotkeyUseControl, cfg.CycleProfilePrevHotkeyUseShift) = acceptedHotkeys[1];
+                    (cfg.SettingsWindowHotkeyKey, cfg.SettingsWindowHotkeyUseAlt, cfg.SettingsWindowHotkeyUseControl, cfg.SettingsWindowHotkeyUseShift) = acceptedHotkeys[2];
+                    SyncDisplaySettingsFromConfig();
+                    VisibilityBindingStatus.Text = conflict;
+                    return;
+                }
+                acceptedHotkeys = CaptureExistingHotkeys();
                 cfg.SaveSettings();
                 cfg.ReRegisterHotkeys();
-            };
+            }
 
             // Hotkey Cycle
-            HkAlt2.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseAlt = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkAlt2.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseAlt = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkCtrl2.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseControl = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkCtrl2.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseControl = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkShift2.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseShift = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkShift2.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseShift = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkAlt2.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseAlt = true; SaveExistingHotkeys(); } };
+            HkAlt2.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseAlt = false; SaveExistingHotkeys(); } };
+            HkCtrl2.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseControl = true; SaveExistingHotkeys(); } };
+            HkCtrl2.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseControl = false; SaveExistingHotkeys(); } };
+            HkShift2.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseShift = true; SaveExistingHotkeys(); } };
+            HkShift2.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfileHotkeyUseShift = false; SaveExistingHotkeys(); } };
             HkKey2Combo.SelectionChanged += (_, __) => 
             {
                 if (_suppressUiEvents || HkKey2Combo.SelectedItem == null) return;
                 cfg.CycleProfileHotkeyKey = (System.Windows.Forms.Keys)((System.Windows.Controls.ComboBoxItem)HkKey2Combo.SelectedItem).Tag;
-                cfg.SaveSettings();
-                cfg.ReRegisterHotkeys();
+                SaveExistingHotkeys();
             };
 
             // Hotkey Cycle Back
-            HkAlt4.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseAlt = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkAlt4.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseAlt = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkCtrl4.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseControl = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkCtrl4.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseControl = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkShift4.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseShift = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkShift4.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseShift = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkAlt4.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseAlt = true; SaveExistingHotkeys(); } };
+            HkAlt4.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseAlt = false; SaveExistingHotkeys(); } };
+            HkCtrl4.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseControl = true; SaveExistingHotkeys(); } };
+            HkCtrl4.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseControl = false; SaveExistingHotkeys(); } };
+            HkShift4.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseShift = true; SaveExistingHotkeys(); } };
+            HkShift4.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.CycleProfilePrevHotkeyUseShift = false; SaveExistingHotkeys(); } };
             HkKey4Combo.SelectionChanged += (_, __) =>
             {
                 if (_suppressUiEvents || HkKey4Combo.SelectedItem == null) return;
                 cfg.CycleProfilePrevHotkeyKey = (System.Windows.Forms.Keys)((System.Windows.Controls.ComboBoxItem)HkKey4Combo.SelectedItem).Tag;
-                cfg.SaveSettings();
-                cfg.ReRegisterHotkeys();
+                SaveExistingHotkeys();
             };
 
             // Hotkey Toggle Settings Window
-            HkAlt3.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseAlt = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkAlt3.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseAlt = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkCtrl3.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseControl = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkCtrl3.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseControl = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkShift3.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseShift = true; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
-            HkShift3.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseShift = false; cfg.SaveSettings(); cfg.ReRegisterHotkeys(); } };
+            HkAlt3.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseAlt = true; SaveExistingHotkeys(); } };
+            HkAlt3.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseAlt = false; SaveExistingHotkeys(); } };
+            HkCtrl3.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseControl = true; SaveExistingHotkeys(); } };
+            HkCtrl3.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseControl = false; SaveExistingHotkeys(); } };
+            HkShift3.Checked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseShift = true; SaveExistingHotkeys(); } };
+            HkShift3.Unchecked += (_, __) => { if (!_suppressUiEvents) { cfg.SettingsWindowHotkeyUseShift = false; SaveExistingHotkeys(); } };
             HkKey3Combo.SelectionChanged += (_, __) =>
             {
                 if (_suppressUiEvents || HkKey3Combo.SelectedItem == null) return;
                 cfg.SettingsWindowHotkeyKey = (System.Windows.Forms.Keys)((System.Windows.Controls.ComboBoxItem)HkKey3Combo.SelectedItem).Tag;
-                cfg.SaveSettings();
-                cfg.ReRegisterHotkeys();
+                SaveExistingHotkeys();
             };
 
             // Gamma

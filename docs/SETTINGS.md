@@ -673,3 +673,20 @@ For a quick reference of every label that can appear in the performance overlay,
 | [`HotkeyManager.cs`](../LightCrosshair/HotkeyManager.cs) | Win32 global hotkey registration |
 | [`CrosshairVisibilityPreset.cs`](../LightCrosshair/CrosshairVisibilityPreset.cs) | High-contrast visibility preset logic |
 | [`SystemFpsMonitor.cs`](../LightCrosshair/SystemFpsMonitor.cs) | FPS telemetry: ETW capture, RTSS fallback, metrics buffer |
+
+
+## Advanced visibility bindings (v1.9.0)
+
+Open **Hotkeys** and click the crosshair visibility binding field. Press a keyboard key, Middle click, Mouse4 (XButton1), Mouse5 (XButton2), Wheel Up, Wheel Down, or Right click. Hold any combination of Ctrl, Alt, Shift, or Win while capturing. Escape cancels. Conflicts with the existing global/profile hotkeys or reserved keyboard shortcuts are reported without replacing the previous binding.
+
+- **Toggle:** each press changes visibility; keyboard auto-repeat is ignored.
+- **Hold to hide:** hide while the matching chord is held, then restore the previous visibility.
+- **Hold to show:** show while the matching chord is held, then restore the previous visibility.
+
+Wheel directions only support Toggle. Releasing the trigger or a required modifier ends Hold; press the trigger again to reactivate it. Recording detection and the profile's crosshair-enabled setting still apply. Temporary Hold state is never persisted.
+
+The current binding is stored in settings and copied with saved profiles. Existing settings migrate from their original keyboard key and modifier flags to Toggle. Older profiles inherit the global binding until explicitly saved with one. Additional gaming-mouse buttons require Windows to expose XButton1/XButton2.
+
+Input hooks run on a dedicated message-loop thread and always pass input onward. A read-only Raw Input watchdog detects activity that no longer reaches an installed hook and reinstalls it after a short grace period. Lost releases are reconciled with the current physical key/button state. Hooks are removed on exit.
+
+**Anti-cheat:** LightCrosshair reads input without injecting or modifying it. This is not a guarantee of approval by any anti-cheat system; check the rules of your game.

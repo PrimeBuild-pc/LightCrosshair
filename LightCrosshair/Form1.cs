@@ -19,6 +19,9 @@ namespace LightCrosshair
     private readonly AppPreferences _prefs;
         private Color fillColor = Color.Transparent;
         private bool isVisible = true;
+        private VisibilityInputHook? _visibilityInput;
+        private VisibilityBinding _visibilityBinding = new();
+        private readonly VisibilityBindingState _visibilityState = new();
 
         // Performance optimization fields
     // Legacy incremental rendering fields replaced by central renderer
@@ -424,7 +427,7 @@ namespace LightCrosshair
 
         private bool ShouldDisplayCrosshairOverlay()
         {
-            bool result = isVisible && CurrentProfile.EnableCustomCrosshair && !_isRecordingDetected;
+            bool result = (_visibilityState.Override ?? isVisible) && CurrentProfile.EnableCustomCrosshair && !_isRecordingDetected;
             Program.LogDebug($"[DIAG] ShouldDisplayCrosshairOverlay={result} (isVisible={isVisible}, EnableCustomCrosshair={CurrentProfile.EnableCustomCrosshair}, _isRecordingDetected={_isRecordingDetected})", nameof(Form1));
             return result;
         }
@@ -567,6 +570,7 @@ namespace LightCrosshair
     private void Service_CurrentChanged(CrosshairProfile profile)
         {
             ApplyDisplaySettingsFromProfile(profile);
+            RegisterConfiguredGlobalHotkeys();
 
             // Mark that we need a redraw and invalidate only if profile actually changed
             lock (_renderLock)
@@ -782,14 +786,40 @@ namespace LightCrosshair
 
         protected override void WndProc(ref Message m)
         {
+            if (m.Msg == VisibilityInputHook.ResetMessage)
+            {
+                _visibilityState.Reset();
+                UpdateCrosshairVisibilityState();
+                return;
+            }
+            if (m.Msg == VisibilityInputHook.InputMessage)
+            {
+                if (_visibilityInput == null || m.LParam.ToInt32() != _visibilityInput.Generation) return;
+                int packed = m.WParam.ToInt32();
+                var input = (BindingInput)(packed & 255);
+                int key = (packed >> 8) & 255, modifiers = (packed >> 16) & 15;
+                bool down = (packed & (1 << 20)) != 0;
+                if (HotkeyManager.Instance.IsCapturing)
+                {
+                    var captured = new VisibilityBinding { Input = input, Key = key, Modifiers = modifiers };
+                    if (down && captured.IsValid) HotkeyManager.Instance.PublishCapturedBinding(captured);
+                }
+                else
+                {
+                    if (_visibilityState.Process(_visibilityBinding, input, key, modifiers, down)) ToggleVisibility();
+                    else UpdateCrosshairVisibilityState();
+                }
+                return;
+            }
             // Handle hotkey messages
             if (m.Msg == WM_HOTKEY)
             {
+                if (HotkeyManager.Instance.IsCapturing) return;
                 int hotkeyId = m.WParam.ToInt32();
 
                 if (hotkeyId == HotkeyManager.TOGGLE_VISIBILITY_ID)
                 {
-                    ToggleVisibility();
+                    if (_visibilityBinding.Input == BindingInput.Keyboard && _visibilityBinding.Mode == BindingMode.Toggle) ToggleVisibility();
                     return;
                 }
                 if (hotkeyId == HotkeyManager.CYCLE_PROFILE_NEXT_ID)
@@ -1039,6 +1069,8 @@ namespace LightCrosshair
 
             // Unregister global hotkeys managed centrally
             HotkeyManager.Instance.UnregisterAll();
+            _visibilityInput?.Dispose();
+            _visibilityInput = null;
 
             // Clean up resources
             if (notifyIcon != null)
@@ -1175,11 +1207,16 @@ namespace LightCrosshair
             HotkeyManager.Instance.UnregisterHotkey(HotkeyManager.CYCLE_PROFILE_PREV_ID);
             HotkeyManager.Instance.UnregisterHotkey(HotkeyManager.TOGGLE_SETTINGS_WINDOW_ID);
 
-            int visibilityModifiers = BuildHotkeyModifiers(cfg.HotkeyUseAlt, cfg.HotkeyUseControl, cfg.HotkeyUseShift, cfg.HotkeyUseWin);
-            if (!HotkeyManager.Instance.RegisterHotkeyWithId(HotkeyManager.TOGGLE_VISIBILITY_ID, visibilityModifiers, (int)cfg.HotkeyKey))
-            {
-                Program.LogDebug("Toggle Visibility hotkey conflict", nameof(Form1));
-            }
+            _visibilityBinding = CurrentProfile.VisibilityBinding is { IsValid: true } profileBinding
+                ? profileBinding : cfg.ResolveVisibilityBinding();
+            _visibilityState.Reset();
+            _visibilityInput ??= new VisibilityInputHook(Handle);
+            _visibilityInput.Configure(_visibilityBinding, HotkeyManager.Instance.IsCapturing);
+            if (_visibilityBinding.Input == BindingInput.Keyboard && _visibilityBinding.Mode == BindingMode.Toggle &&
+                !HotkeyManager.Instance.RegisterHotkeyWithId(HotkeyManager.TOGGLE_VISIBILITY_ID,
+                    _visibilityBinding.Modifiers, _visibilityBinding.Key))
+                Program.LogDebug("Visibility hotkey conflict", nameof(Form1));
+            if (_runtimeInitialized) UpdateCrosshairVisibilityState();
 
             int cycleModifiers = BuildHotkeyModifiers(
                 cfg.CycleProfileHotkeyUseAlt,

@@ -207,6 +207,9 @@ namespace LightCrosshair
             }
         }
 
+        // Null on older profiles preserves the global visibility binding.
+        public VisibilityBinding? VisibilityBinding { get; set; }
+
         // Hotkey
         public Keys HotKey { get; set; } = Keys.None;
 
@@ -276,7 +279,7 @@ namespace LightCrosshair
                             if (profile.SchemaVersion < ProfileSchema.Current)
                             {
                                 // Map legacy Shape to EnumShape if default enum value
-                                if (profile.EnumShape == default)
+                                if (profile.SchemaVersion < 5 && profile.EnumShape == default)
                                 {
                                     profile.EnumShape = ShapeNormalizer.ToEnum(profile.Shape);
                                 }
@@ -413,6 +416,7 @@ namespace LightCrosshair
                 InnerShapeInnerColor = this.InnerShapeInnerColor,
                 InnerShapeFillColor = this.InnerShapeFillColor,
                 HotKey = this.HotKey,
+                VisibilityBinding = this.VisibilityBinding,
                 HideDuringScreenRecording = this.HideDuringScreenRecording,
                 AntiAlias = this.AntiAlias,
                 IsImmutableDefault = this.IsImmutableDefault,
@@ -483,6 +487,7 @@ namespace LightCrosshair
                    InnerShapeInnerColor.ToArgb() == other.InnerShapeInnerColor.ToArgb() &&
                    InnerShapeFillColor.ToArgb() == other.InnerShapeFillColor.ToArgb() &&
                    HotKey == other.HotKey &&
+                   VisibilityBinding == other.VisibilityBinding &&
                    HideDuringScreenRecording == other.HideDuringScreenRecording &&
                    AntiAlias == other.AntiAlias &&
                    IsImmutableDefault == other.IsImmutableDefault &&
@@ -500,6 +505,6 @@ namespace LightCrosshair
 
     public static class ProfileSchema
     {
-        public const int Current = 5; // v5: add display color management settings per profile
+        public const int Current = 6; // v6: optional visibility input binding; null inherits global settings
     }
 }
