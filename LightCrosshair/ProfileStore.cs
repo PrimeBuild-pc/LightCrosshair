@@ -54,6 +54,12 @@ namespace LightCrosshair
 
             foreach (var p in list ?? new List<CrosshairProfile>())
             {
+                // v6 only adds an optional binding. Do not rerun legacy color/shape migrations on v5 profiles.
+                if (p.SchemaVersion == 5)
+                {
+                    p.SchemaVersion = ProfileSchema.Current;
+                    continue;
+                }
                 if (p.SchemaVersion < ProfileSchema.Current)
                 {
                     if (p.EnumShape == default && !string.IsNullOrWhiteSpace(p.Shape))

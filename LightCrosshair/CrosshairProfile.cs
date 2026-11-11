@@ -279,7 +279,7 @@ namespace LightCrosshair
                             if (profile.SchemaVersion < ProfileSchema.Current)
                             {
                                 // Map legacy Shape to EnumShape if default enum value
-                                if (profile.EnumShape == default)
+                                if (profile.SchemaVersion < 5 && profile.EnumShape == default)
                                 {
                                     profile.EnumShape = ShapeNormalizer.ToEnum(profile.Shape);
                                 }

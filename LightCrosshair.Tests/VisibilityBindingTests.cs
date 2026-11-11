@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -161,13 +162,18 @@ public class VisibilityBindingTests
         Directory.CreateDirectory(directory);
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(directory, "profiles.json"),
-                "[{\"Id\":\"old\",\"Name\":\"Legacy\",\"SchemaVersion\":5,\"HotKey\":120,\"EnableCustomCrosshair\":false}]");
+            var legacy = new CrosshairProfile { Id = "old", Name = "Legacy", SchemaVersion = 5,
+                HotKey = Keys.F9, EnableCustomCrosshair = false, Shape = "CirclePlus",
+                EnumShape = CrosshairShape.Dot, OuterColor = Color.Transparent,
+                InnerShapeColor = Color.Transparent, InnerShapeEdgeColor = Color.Red };
+            await File.WriteAllTextAsync(Path.Combine(directory, "profiles.json"), JsonSerializer.Serialize(new[] { legacy }));
             var profile = Assert.Single(await ProfileStore.LoadAsync(Path.Combine(directory, "profiles.json")));
             Assert.Equal(Keys.F9, profile.HotKey);
             Assert.False(profile.EnableCustomCrosshair);
             Assert.Null(profile.VisibilityBinding);
             Assert.Equal(ProfileSchema.Current, profile.SchemaVersion);
+            legacy.SchemaVersion = ProfileSchema.Current;
+            Assert.True(legacy.ContentEquals(profile));
             profile.VisibilityBinding = new() { Input = BindingInput.Mouse4, Modifiers = 1, Mode = BindingMode.HoldToHide };
             await ProfileStore.SaveAtomicAsync(new List<CrosshairProfile> { profile }, Path.Combine(directory, "profiles.json"));
             Assert.Equal(profile.VisibilityBinding, Assert.Single(await ProfileStore.LoadAsync(Path.Combine(directory, "profiles.json"))).VisibilityBinding);
