@@ -188,7 +188,7 @@ This project is licensed under the **MIT License**. See [LICENSE](LICENSE).
 
 If LightCrosshair is useful to you, consider supporting the project.
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Y6U02AIRB8) [![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white)](https://paypal.me/PrimeBuildOfficial?country.x=IT&locale.x=it_IT)
+[![Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?style=plastic&logo=ko-fi&logoColor=white)](https://ko-fi.com/primebuild) [![PayPal](https://img.shields.io/badge/Support-PayPal-0070BA?style=plastic&logo=paypal&logoColor=white)](https://paypal.me/PrimeBuildOfficial?country.x=IT&locale.x=it_IT)
 [![Report Bug](https://img.shields.io/badge/Report-Bug-red?logo=github)](../../issues)
 [![Request Feature](https://img.shields.io/badge/Request-Feature-blue?logo=github)](../../issues)
 [![Open Discussions](https://img.shields.io/badge/Open-Discussions-purple?logo=github)](../../discussions)
