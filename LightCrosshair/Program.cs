@@ -1,250 +1,55 @@
-using System;
-using System.IO;
-using System.Windows.Forms;
-using System.Diagnostics;
-using System.Threading;
 using LightCrosshair.GpuDriver;
+using System.Text;
 
 namespace LightCrosshair;
 
-static class Program
+internal static class Program
 {
-    private static readonly object _logGate = new object();
-    private static readonly string _logDirectory = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "LightCrosshair",
-        "logs");
-    private static readonly string _errorLogPath = Path.Combine(_logDirectory, "error.log");
-    private static readonly string _debugLogPath = Path.Combine(_logDirectory, "debug.log");
-    private const long MaxLogSizeBytes = 2 * 1024 * 1024;
-    private static int _shutdownRestoreTriggered;
-    public static bool DebugLoggingEnabled { get; set; } = GetDefaultDebugLoggingEnabled();
+    private static readonly object LogGate = new();
+    internal static string DataRoot => Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LightCrosshair", "v2");
+    public static bool DebugLoggingEnabled { get; set; } = Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DEBUG_LOG") == "1";
 
     [STAThread]
-    static int Main(string[] args)
+    private static int Main(string[] args)
     {
-        if (NvidiaHelperHost.IsHelperInvocation(args))
-        {
-            return NvidiaHelperHost.Run(args);
-        }
-
+        if (NvidiaHelperHost.IsHelperInvocation(args)) return NvidiaHelperHost.Run(args);
+        using var mutex = new Mutex(true, @"Local\LightCrosshair.Core", out bool created);
+        if (!created) return 0;
+        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+        Application.EnableVisualStyles();
+        Application.SetCompatibleTextRenderingDefault(false);
+        Application.ThreadException += (_, e) => LogError(e.Exception, "UI thread");
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => { if (e.ExceptionObject is Exception ex) LogError(ex, "Unhandled"); };
         try
         {
-            InitializeEarlyDiagnostics();
-
-            // Set up error logging
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-            Application.ThreadException += Application_ThreadException;
-            AppDomain.CurrentDomain.ProcessExit += (_, __) => TryRestoreDisplayState("ProcessExit");
-            Application.ApplicationExit += (_, __) => TryRestoreDisplayState("ApplicationExit");
-
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-
-            // Enhanced DPI awareness for better performance across different displays
-            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-
-            bool created;
-            using var mutex = new System.Threading.Mutex(true, "LightCrosshair_Singleton", out created);
-            if (!created)
-            {
-                // Another instance running – optionally bring to front via IPC (omitted here)
-                return 0;
-            }
-
-            // Initialize profiles centrally
-            var ps = ProfileService.Instance;
-            ps.InitializeAsync().GetAwaiter().GetResult();
-
-            // Capture user baseline before any runtime color adjustment can be applied.
-            GammaController.SaveOriginal();
-
-            using var form = new Form1(ps);
-            try
-            {
-                Application.Run(form);
-            }
-            finally
-            {
-                TryRestoreDisplayState("MainLoopExit");
-            }
+            using var form = new Form1();
+            Application.Run(form);
+            return 0;
         }
-        catch (Exception ex)
-        {
-            LogError(ex, "Main method");
-            MessageBox.Show($"Error: {ex.Message}\n\nCheck error.log for details.", "Error",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
-            return 1;
-        }
-
-        return 0;
+        catch (Exception ex) { LogError(ex, "Startup"); return 1; }
     }
 
-    private static void TryRestoreDisplayState(string reason)
-    {
-        if (Interlocked.Exchange(ref _shutdownRestoreTriggered, 1) != 0)
-        {
-            return;
-        }
-
-        try
-        {
-            DisplayManager.StopMonitoring();
-        }
-        catch (Exception ex)
-        {
-            LogError(ex, $"TryRestoreDisplayState.StopMonitoring ({reason})");
-        }
-
-        try
-        {
-            GammaController.RestoreOriginal();
-            LogDebug($"Display state restore requested on shutdown ({reason}).", nameof(Program));
-        }
-        catch (Exception ex)
-        {
-            LogError(ex, $"TryRestoreDisplayState.RestoreOriginal ({reason})");
-        }
-    }
-
-    private static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
-    {
-        LogError(e.Exception, "Thread exception");
-        MessageBox.Show($"Thread error: {e.Exception.Message}\n\nCheck error.log for details.", "Error",
-            MessageBoxButtons.OK, MessageBoxIcon.Error);
-    }
-
-    private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
-    {
-        if (e.ExceptionObject is Exception ex)
-        {
-            LogError(ex, "Unhandled exception");
-            MessageBox.Show($"Unhandled error: {ex.Message}\n\nCheck error.log for details.", "Error",
-                MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-    }
-
-    private static bool GetDefaultDebugLoggingEnabled()
-    {
-#if DEBUG
-        return true;
-#else
-        string? env = Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DEBUG_LOG");
-        if (string.IsNullOrWhiteSpace(env)) return false;
-        return env.Equals("1", StringComparison.OrdinalIgnoreCase) ||
-               env.Equals("true", StringComparison.OrdinalIgnoreCase) ||
-               env.Equals("yes", StringComparison.OrdinalIgnoreCase);
-#endif
-    }
-
-    private static void EnsureLogDirectory()
-    {
-        Directory.CreateDirectory(_logDirectory);
-    }
-
-    private static void InitializeEarlyDiagnostics()
+    public static void LogError(Exception ex, string context) => WriteLog($"{context}: {ex.GetType().Name}");
+    public static void LogDebug(string message, string? context = null) { if (DebugLoggingEnabled) WriteLog(context ?? "Debug"); }
+    // Legacy driver diagnostics may contain paths. Log the operation only.
+    public static void LogLifecycle(string message, string? context = null) => WriteLog(context ?? "Lifecycle");
+    internal static void WriteLog(string message)
     {
         try
         {
-            lock (_logGate)
+            lock (LogGate)
             {
-                EnsureLogDirectory();
-                AppendWithRotation(
-                    _debugLogPath,
-                    $"{DateTime.Now:dd/MM/yyyy HH:mm:ss} Program: process start\n");
-            }
-        }
-        catch
-        {
-            // Startup diagnostics must never block application launch.
-        }
-    }
-
-    private static void AppendWithRotation(string path, string text)
-    {
-        if (File.Exists(path))
-        {
-            var info = new FileInfo(path);
-            if (info.Length >= MaxLogSizeBytes)
-            {
-                string archived = path + ".1";
-                if (File.Exists(archived))
+                string directory = Path.Combine(DataRoot, "logs");
+                Directory.CreateDirectory(directory);
+                string path = Path.Combine(directory, "core.log");
+                if (File.Exists(path) && new FileInfo(path).Length >= 1024 * 1024)
                 {
-                    File.Delete(archived);
+                    File.Move(path + ".1", path + ".2", true);
+                    File.Move(path, path + ".1", true);
                 }
-
-                File.Move(path, archived);
+                File.AppendAllText(path, $"{DateTimeOffset.UtcNow:O} {message}\n", Encoding.UTF8);
             }
         }
-
-        File.AppendAllText(path, text);
-    }
-
-    public static void LogError(Exception ex, string context)
-    {
-        try
-        {
-            string timestamp = DateTime.Now.ToString("[dd/MM/yyyy HH:mm:ss]");
-            string errorMessage = $"{timestamp} {context}: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n\n";
-            lock (_logGate)
-            {
-                EnsureLogDirectory();
-                AppendWithRotation(_errorLogPath, errorMessage);
-            }
-            try { Console.WriteLine(errorMessage); }
-            catch (Exception consoleEx)
-            {
-                Debug.WriteLine($"[LogError->Console] {consoleEx.GetType().Name}: {consoleEx.Message}");
-            }
-            Debug.WriteLine(errorMessage);
-        }
-        catch
-        {
-            // If logging fails, we can't do much about it
-        }
-    }
-
-    public static void LogDebug(string message, string? context = null)
-    {
-        if (!DebugLoggingEnabled) return;
-        try
-        {
-            string timestamp = DateTime.Now.ToString("[dd/MM/yyyy HH:mm:ss]");
-            string line = context is null ? $"{timestamp} {message}\n" : $"{timestamp} {context}: {message}\n";
-            lock (_logGate)
-            {
-                EnsureLogDirectory();
-                AppendWithRotation(_debugLogPath, line);
-            }
-            try { Console.WriteLine(line.TrimEnd()); }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[LogDebug->Console] {ex.GetType().Name}: {ex.Message}");
-            }
-            Debug.WriteLine(line);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[LogDebug] Logging pipeline failure: {ex.GetType().Name}: {ex.Message}");
-        }
-    }
-
-    public static void LogLifecycle(string message, string? context = null)
-    {
-        try
-        {
-            string timestamp = DateTime.Now.ToString("[dd/MM/yyyy HH:mm:ss]");
-            string line = context is null ? $"{timestamp} {message}\n" : $"{timestamp} {context}: {message}\n";
-            lock (_logGate)
-            {
-                EnsureLogDirectory();
-                AppendWithRotation(_debugLogPath, line);
-            }
-            Debug.WriteLine(line);
-        }
-        catch
-        {
-            // Lifecycle diagnostics are best-effort only.
-        }
+        catch { /* Diagnostics cannot prevent restoration or shutdown. */ }
     }
 }
