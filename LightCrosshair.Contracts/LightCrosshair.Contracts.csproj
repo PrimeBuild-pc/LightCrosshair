@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Shared contract between LightCrosshair.exe (Core) and LightCrosshair.UI.exe.
+       Types only, no Windows dependencies. Changes follow docs/v2/CONTRACT.md "Change rules". -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>
