@@ -20,10 +20,10 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 - [x] Remove Frame Cap Assistant, FPS Detailed mode, graphs, pacing diagnostics, frame-gen heuristics, RTSS fallback, G-Sync/FreeSync/color-management status code, update checker (moves to UI), and their tests
 - [x] Update CI workflow to .NET 10 and the new solution layout
 ### C2 Store
-- [ ] `store.json` load/save (atomic, debounced), invariants, corrupt-file recovery
-- [ ] Backups (hourly, newest 10, before migration)
-- [ ] Migration from v1 files per CONTRACT.md §5, v1 files untouched
-- [ ] Tests: round-trip, every v1 shape and composite, process-bound profiles, hotkeys, corrupt store, idempotent migration
+- [x] `store.json` load/save (atomic, debounced), invariants, corrupt-file recovery
+- [x] Backups (hourly, newest 10, before migration)
+- [x] Migration from v1 files per CONTRACT.md §5, v1 files untouched
+- [x] Tests: round-trip, every v1 shape and composite, process-bound profiles, hotkeys, corrupt store, idempotent migration
 ### C3 Overlay and renderer
 - [ ] Layer renderer for Arms / Dot / Ring / Box / Image with rotation, offset, opacity, outline, antialias toggle; pixel-crisp when rotation is a multiple of 90°
 - [ ] Per-pixel alpha overlay via `UpdateLayeredWindow`; click-through, topmost, no taskbar/Alt-Tab, no activation

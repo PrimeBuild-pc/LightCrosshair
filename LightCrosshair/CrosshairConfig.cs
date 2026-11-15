@@ -142,7 +142,7 @@ namespace LightCrosshair
                     "LightCrosshair");
                 
                 // Create the directory if it doesn't exist
-                if (!Directory.Exists(appDataPath))
+                if (loadSettings && !_isDeserializing && !Directory.Exists(appDataPath))
                 {
                     Directory.CreateDirectory(appDataPath);
                 }

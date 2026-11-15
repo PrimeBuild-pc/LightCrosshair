@@ -1,0 +1,118 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
+using LightCrosshair.Core;
+using LightCrosshair.Contracts;
+using Xunit;
+
+namespace LightCrosshair.Tests;
+
+public sealed class CoreStoreTests : IDisposable
+{
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "lc2-" + Guid.NewGuid().ToString("N"));
+    private string V2 => Path.Combine(_root, "v2");
+    public CoreStoreTests() => Directory.CreateDirectory(_root);
+    public void Dispose() => Directory.Delete(_root, true);
+
+    [Fact]
+    public async Task RoundTripCoalescesAndRecoversPreviousStore()
+    {
+        var store = new CoreStore(V2);
+        var doc = await store.LoadAsync(_root);
+        Assert.Contains(doc.Crosshairs, d => d.Id == doc.Settings.DefaultCrosshairId);
+        doc.Crosshairs[0].Name = "Second";
+        Task first = store.SaveAsync(doc);
+        doc.Crosshairs[0].Name = "Final";
+        await Task.WhenAll(first, store.SaveAsync(doc));
+        Assert.Equal("Final", (await new CoreStore(V2).LoadAsync(_root)).Crosshairs[0].Name);
+        Assert.Single(Directory.GetFiles(Path.Combine(V2, "backups"), "store-*.json"));
+        await File.WriteAllTextAsync(Path.Combine(V2, "store.json"), "{broken");
+        var recovery = new CoreStore(V2);
+        var restored = await recovery.LoadAsync(_root);
+        Assert.True(recovery.Recovered);
+        Assert.Equal("Classic Cross", restored.Crosshairs[0].Name);
+        Assert.Single(Directory.GetFiles(V2, "store.corrupt-*.json"));
+    }
+
+    [Fact]
+    public async Task InvalidNewestBackupFallsBackToValidOlderBackup()
+    {
+        var store = new CoreStore(V2);
+        var doc = await store.LoadAsync(_root);
+        string backups = Path.Combine(V2, "backups");
+        File.Copy(Path.Combine(V2, "store.json"), Path.Combine(backups, "store-20000101.json"));
+        await File.WriteAllTextAsync(Path.Combine(backups, "store-99999999.json"), "{}");
+        await File.WriteAllTextAsync(Path.Combine(V2, "store.json"), "null");
+        var recovered = await new CoreStore(V2).LoadAsync(_root);
+        Assert.Equal(doc.Settings.DefaultCrosshairId, recovered.Settings.DefaultCrosshairId);
+    }
+
+    [Theory]
+    [InlineData(CrosshairShape.Dot, LayerKind.Dot)]
+    [InlineData(CrosshairShape.Cross, LayerKind.Arms)]
+    [InlineData(CrosshairShape.CrossOutlined, LayerKind.Arms)]
+    [InlineData(CrosshairShape.Circle, LayerKind.Ring)]
+    [InlineData(CrosshairShape.CircleOutlined, LayerKind.Ring)]
+    [InlineData(CrosshairShape.T, LayerKind.Arms)]
+    [InlineData(CrosshairShape.X, LayerKind.Arms)]
+    [InlineData(CrosshairShape.Box, LayerKind.Box)]
+    [InlineData(CrosshairShape.GapCross, LayerKind.Arms)]
+    [InlineData(CrosshairShape.Custom, LayerKind.Arms)]
+    public void EveryLegacyShapeProducesEditableLayers(CrosshairShape shape, LayerKind expected)
+    {
+        var p = new CrosshairProfile { EnumShape = shape, Shape = shape.ToString(), Size = 24, Thickness = 3, GapSize = 2, OuterColor = System.Drawing.Color.Cyan, AntiAlias = false };
+        var d = LegacyMigration.Convert(p);
+        var layer = Assert.Single(d.Layers);
+        Assert.Equal(expected, layer.Kind);
+        Assert.Equal("#00FFFF", layer.Color);
+        Assert.Equal(shape == CrosshairShape.X ? 45 : 0, layer.Rotation);
+        Assert.False(d.AntiAlias);
+        if (shape == CrosshairShape.T) Assert.False(layer.Arms.HasFlag(ArmMask.Top));
+    }
+
+    [Theory]
+    [InlineData(CompositeShapeType.CircleDot, LayerKind.Ring, LayerKind.Dot)]
+    [InlineData(CompositeShapeType.CrossDot, LayerKind.Arms, LayerKind.Dot)]
+    [InlineData(CompositeShapeType.CircleCross, LayerKind.Ring, LayerKind.Arms)]
+    [InlineData(CompositeShapeType.CircleX, LayerKind.Ring, LayerKind.Arms)]
+    public void EveryCompositePreservesBothComponents(CompositeShapeType shape, LayerKind outer, LayerKind inner)
+    {
+        var d = LegacyMigration.Convert(new() { EnumShape = CrosshairShape.Custom, Shape = shape.ToString(), InnerSize = 8, InnerGapSize = 1 });
+        Assert.Equal(2, d.Layers.Count); Assert.Equal(outer, d.Layers[0].Kind); Assert.Equal(inner, d.Layers[1].Kind);
+    }
+
+    [Fact]
+    public async Task MigrationPreservesProcessBindingActiveProfileAndAllSourceBytes()
+    {
+        var profile = new CrosshairProfile { Id = "legacy", Name = "Old", HasDisplayColorProfile = true, DisplayEnableGammaOverride = true,
+            DisplayTargetProcessName = "Game.EXE", DisplayGammaValue = 120, VisibilityBinding = new() { Input = BindingInput.Mouse5, Mode = BindingMode.HoldToHide } };
+        string source = JsonSerializer.Serialize(new[] { profile });
+        await File.WriteAllTextAsync(Path.Combine(_root, "profiles.json"), source);
+        await File.WriteAllTextAsync(Path.Combine(_root, "prefs.json"), "{\"LastProfileId\":\"legacy\",\"OverlayVisible\":false}");
+        await File.WriteAllTextAsync(Path.Combine(_root, "crosshair_settings.json"), "{\"HotkeyKey\":120,\"HotkeyUseAlt\":false,\"HotkeyUseControl\":true,\"CrosshairMonitorDeviceName\":\"monitor\"}");
+        var store = new CoreStore(V2);
+        var doc = await store.LoadAsync(_root);
+        var game = Assert.Single(doc.GameProfiles);
+        Assert.Equal("game.exe", game.ProcessName); Assert.Equal(120, game.DisplayColors!.Gamma);
+        Assert.Equal("Mouse5", game.VisibilityBinding!.Key);
+        Assert.Equal("F9", doc.Settings.Hotkeys.ToggleVisibility.Key);
+        Assert.Equal(KeyModifiers.Control, doc.Settings.Hotkeys.ToggleVisibility.Modifiers);
+        Assert.Equal("legacy", doc.Settings.DefaultCrosshairId); Assert.False(doc.Settings.CrosshairVisible);
+        Assert.Equal(source, await File.ReadAllTextAsync(Path.Combine(_root, "profiles.json")));
+        var again = await new CoreStore(V2).LoadAsync(_root);
+        Assert.Single(again.Crosshairs); Assert.Single(again.GameProfiles);
+    }
+
+    [Fact]
+    public void TrustBoundaryRejectsMalformedPayloadsAndClampsGeometry()
+    {
+        Assert.Throws<CoreException>(() => Validation.Design(new() { Name = "x", Layers = [new() { Color = "red" }] }, V2));
+        Assert.Throws<CoreException>(() => Validation.Design(new() { Name = "x", Layers = [new() { Kind = LayerKind.Image, ImageFile = "../secret.png" }] }, V2));
+        Assert.Throws<CoreException>(() => Validation.Binding(new() { Key = "WheelUp", Mode = Contracts.BindingMode.HoldToHide }));
+        Assert.Throws<CoreException>(() => Validation.ProcessName("../game.exe"));
+        var d = Validation.Design(new() { Name = " x ", Layers = [new() { Length = -10, Opacity = 99 }] }, V2);
+        Assert.Equal("x", d.Name); Assert.Equal(1, d.Layers[0].Length); Assert.Equal(1, d.Layers[0].Opacity);
+    }
+}

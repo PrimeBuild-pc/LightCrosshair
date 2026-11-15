@@ -44,7 +44,7 @@ internal static class Program
                 string path = Path.Combine(directory, "core.log");
                 if (File.Exists(path) && new FileInfo(path).Length >= 1024 * 1024)
                 {
-                    File.Move(path + ".1", path + ".2", true);
+                    if (File.Exists(path + ".1")) File.Move(path + ".1", path + ".2", true);
                     File.Move(path, path + ".1", true);
                 }
                 File.AppendAllText(path, $"{DateTimeOffset.UtcNow:O} {message}\n", Encoding.UTF8);

@@ -28,4 +28,10 @@ The settings executable is supplied by the separate UI workstream. Bootstrap cur
 
 ## Contract change requests
 
-None yet.
+### Filled boxes
+Why: v1 Box has an independent fill color; the contract only defines an outlined Box.
+Proposed optional C# addition: `public string? FillColor { get; set; }` on CrosshairLayer (null = unfilled).
+Workaround: `// CONTRACT-REQUEST: Filled boxes` in LegacyMigration uses a thick inset Box below the border. Large fills (>128 px) cannot be represented exactly with max Thickness 64. Other migrated geometry follows the new integer-pixel convention; old rounded-cap X geometry and radius rounding can differ by a pixel.
+
+### Legacy driver cap ownership
+v1 stores NVIDIA caps in driver profiles, not in its JSON profile model. No v1 file is changed. Driver caps remain untouched until the v2 game profile explicitly manages one. Reading matching driver caps during migration is deferred to hardware validation to avoid initializing GPU APIs on first launch.
