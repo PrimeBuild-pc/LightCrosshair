@@ -12,8 +12,8 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 
 ## Codex — Core, branch `v2-core`
 ### C0 Baseline (before changing code)
-- [ ] `scripts/perf/measure.ps1`: Release build, start app, sample private bytes, working set, CPU % and GDI/USER handles for 60 s idle; open/close settings 5 times; startup time. Writes CSV + summary.
-- [ ] Run it on v1.9 code, write `docs/v2/BASELINE.md` (machine, numbers, method)
+- [x] `scripts/perf/measure.ps1`: Release build, start app, sample private bytes, working set, CPU % and GDI/USER handles for 60 s idle; open/close settings 5 times; startup time. Writes CSV + summary.
+- [x] Run it on v1.9 code, write `docs/v2/BASELINE.md` (machine, numbers, method)
 ### C1 Platform and cleanup
 - [ ] Retarget `LightCrosshair` and `LightCrosshair.Tests` to `net10.0-windows`; reference `LightCrosshair.Contracts`
 - [ ] Remove WPF from Core: `SettingsWindow.xaml(.cs)`, `WpfSettingsHost.cs`, `UseWPF`
