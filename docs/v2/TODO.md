@@ -25,12 +25,12 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 - [x] Migration from v1 files per CONTRACT.md §5, v1 files untouched
 - [x] Tests: round-trip, every v1 shape and composite, process-bound profiles, hotkeys, corrupt store, idempotent migration
 ### C3 Overlay and renderer
-- [ ] Layer renderer for Arms / Dot / Ring / Box / Image with rotation, offset, opacity, outline, antialias toggle; pixel-crisp when rotation is a multiple of 90°
-- [ ] Per-pixel alpha overlay via `UpdateLayeredWindow`; click-through, topmost, no taskbar/Alt-Tab, no activation
-- [ ] Redraw only on change; no timers while static
-- [ ] Monitor selection with fallback; handle `WM_DISPLAYCHANGE`, `WM_DPICHANGED`, monitor hot-plug
-- [ ] `render` to PNG with the same renderer (< 5 ms at 128 px)
-- [ ] Tests: geometry per kind, outline, bounds, rotation, render determinism
+- [x] Layer renderer for Arms / Dot / Ring / Box / Image with rotation, offset, opacity, outline, antialias toggle; pixel-crisp when rotation is a multiple of 90°
+- [x] Per-pixel alpha overlay via `UpdateLayeredWindow`; click-through, topmost, no taskbar/Alt-Tab, no activation
+- [x] Redraw only on change; no timers while static
+- [x] Monitor selection with fallback; handle `WM_DISPLAYCHANGE`, `WM_DPICHANGED`, monitor hot-plug
+- [x] `render` to PNG with the same renderer (< 5 ms at 128 px)
+- [x] Tests: geometry per kind, outline, bounds, rotation, render determinism
 ### C4 Game profiles
 - [ ] `SetWinEventHook` foreground detection; process name resolution
 - [ ] Apply / restore crosshair, display colors, FPS overlay override, visibility binding override

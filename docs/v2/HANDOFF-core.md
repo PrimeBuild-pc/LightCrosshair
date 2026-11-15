@@ -24,7 +24,7 @@ See BASELINE.md. v2 pending.
 
 ## Known issues and risks
 
-The settings executable is supplied by the separate UI workstream. Bootstrap currently uses the old bitmap renderer until C3.
+The settings executable is supplied by the separate UI workstream. Layered rendering is active. Hardware/DPI/hot-plug smoke checks remain to be run in C9.
 
 ## Contract change requests
 
