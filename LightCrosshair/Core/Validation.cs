@@ -88,6 +88,7 @@ internal static partial class Validation
         fps.OffsetX = Math.Clamp(fps.OffsetX, 0, 16384); fps.OffsetY = Math.Clamp(fps.OffsetY, 0, 16384);
         settings.DismissedSuggestions = settings.DismissedSuggestions.Select(ProcessName).Distinct().Take(1000).ToList();
         if (settings.MonitorDeviceName?.Length > 128 || fps.MonitorDeviceName?.Length > 128) throw Invalid("Invalid monitor.");
+        settings.DisplayColors = Colors(settings.DisplayColors);
         return settings;
     }
     internal static InputBinding HoldBinding(InputBinding? binding)
@@ -105,13 +106,17 @@ internal static partial class Validation
         if (game.VisibilityBinding is not null) game.VisibilityBinding = Binding(game.VisibilityBinding);
         if (game.HoldVisibility is not null) game.HoldVisibility = HoldBinding(game.HoldVisibility);
         if (game.NvidiaFpsCap.HasValue) game.NvidiaFpsCap = Math.Clamp(game.NvidiaFpsCap.Value, 20, 1000);
-        if (game.DisplayColors is { } c)
-        {
-            c.Gamma = Math.Clamp(c.Gamma, 50, 150); c.Contrast = Math.Clamp(c.Contrast, 50, 150);
-            c.Brightness = Math.Clamp(c.Brightness, 50, 150); c.Vibrance = Math.Clamp(c.Vibrance, 0, 100);
-            if (c.NvidiaDigitalVibrance.HasValue) c.NvidiaDigitalVibrance = Math.Clamp(c.NvidiaDigitalVibrance.Value, 0, 100);
-        }
+        game.DisplayColors = Colors(game.DisplayColors);
         return game;
+    }
+    public static DisplayColorSettings? Colors(DisplayColorSettings? colors)
+    {
+        if (colors is null) return null;
+        var c = Copy(colors);
+        c.Gamma = Math.Clamp(c.Gamma, 50, 150); c.Contrast = Math.Clamp(c.Contrast, 50, 150);
+        c.Brightness = Math.Clamp(c.Brightness, 50, 150); c.Vibrance = Math.Clamp(c.Vibrance, 0, 100);
+        if (c.NvidiaDigitalVibrance.HasValue) c.NvidiaDigitalVibrance = Math.Clamp(c.NvidiaDigitalVibrance.Value, 0, 100);
+        return c;
     }
     public static StoreDocument Store(StoreDocument? store, string imagesDirectory)
     {

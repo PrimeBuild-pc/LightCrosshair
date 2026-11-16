@@ -288,4 +288,6 @@
   <data name="Nav_FpsVisible" xml:space="preserve"><value>Mostrar superposición FPS</value></data>
   <data name="Fps_Graph" xml:space="preserve"><value>Gráfico de tiempo de fotograma</value></data>
   <data name="Fps_Help" xml:space="preserve"><value>FPS, tiempo de fotograma y mínimo del 1%. Los perfiles pueden modificar el ajuste global.</value></data>
+  <data name="Settings_ColorsHelp" xml:space="preserve"><value>Se aplica al escritorio y a las aplicaciones. Un perfil de juego habilitado tiene prioridad. Arrastra para previsualizar; al soltar se restaura el contexto actual.</value></data>
+  <data name="Settings_UseColors" xml:space="preserve"><value>Ajustar los colores de pantalla</value></data>
 </root>

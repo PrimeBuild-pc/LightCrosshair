@@ -12,6 +12,7 @@ internal sealed partial class Form1
     private GameContext? _context;
     private string? _contextProcess, _colorsKey;
     private int _foregroundPid;
+    private DisplayColorSettings? _colorPreview;
     private bool? _holdOverride;
     private readonly HashSet<string> _suggested = new();
     private bool _closing, _allowClose;
@@ -54,7 +55,7 @@ internal sealed partial class Form1
         Runtime.ActiveCrosshairId = _context.CrosshairId;
         if (Runtime.Monitors.Count == 0)
             Runtime.Monitors = MonitorNames.Populate(Screen.AllScreens.Select(s => new MonitorInfo { DeviceName = s.DeviceName, IsPrimary = s.Primary, Width = s.Bounds.Width, Height = s.Bounds.Height }));
-        var colors = _context.DisplayColors;
+        var colors = _colorPreview ?? _context.DisplayColors;
         string colorsKey = (_context.Game?.Id ?? "") + ":" + System.Text.Json.JsonSerializer.Serialize(colors, ContractJson.Options);
         if (_colorsKey != colorsKey) { _colorsKey = colorsKey; Runtime.DisplayColorsError = null; _ = _colors.SetAsync(colors); }
         _fps.Configure(_context.FpsEnabled, _foregroundPid, Document.Settings.FpsOverlay, Document.Settings.MonitorDeviceName, Document.Settings.Language);

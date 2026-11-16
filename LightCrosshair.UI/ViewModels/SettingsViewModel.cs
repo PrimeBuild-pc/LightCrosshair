@@ -27,6 +27,7 @@ public sealed class LanguageOption
 public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly ICoreClient _core;
+    private readonly DisplayColorsPreview _colorPreview;
     private readonly IUiServices _ui;
     private readonly IReleaseFeed _feed;
     private readonly TimeSpan _debounce;
@@ -39,6 +40,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     public SettingsViewModel(ICoreClient core, IUiServices ui, IReleaseFeed? feed = null, TimeSpan? debounce = null)
     {
         _core = core;
+        _colorPreview = new(core);
+        _colorPreview.Failed += () => Error = ErrorText.For(null);
         _ui = ui;
         _feed = feed ?? new GitHubReleaseFeed();
         _debounce = debounce ?? TimeSpan.FromMilliseconds(200);
@@ -72,6 +75,25 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _updateMessage = "";
     [ObservableProperty] private bool _checking;
     [ObservableProperty] private IReadOnlyList<MonitorInfo> _monitors = [];
+
+    [ObservableProperty] private string _displayColorsMessage = "";
+    public bool NvidiaColorSupported { get; private set; }
+    public void ApplyRuntime(RuntimeState runtime)
+    {
+        DisplayColorsMessage = DisplayColorText.For(runtime.DisplayColorsError);
+        NvidiaColorSupported = runtime.Gpu.NvidiaDigitalVibrance; OnPropertyChanged(nameof(NvidiaColorSupported));
+    }
+    public bool UseColors { get => _settings.DisplayColorsEnabled; set { _settings.DisplayColorsEnabled = value; _settings.DisplayColors ??= new(); OnPropertyChanged(); Touch(); } }
+    private DisplayColorSettings Colors() => _settings.DisplayColors ??= new();
+    public int Gamma { get => _settings.DisplayColors?.Gamma ?? 100; set { Colors().Gamma = value; ColorTouched(); } }
+    public int Contrast { get => _settings.DisplayColors?.Contrast ?? 100; set { Colors().Contrast = value; ColorTouched(); } }
+    public int Brightness { get => _settings.DisplayColors?.Brightness ?? 100; set { Colors().Brightness = value; ColorTouched(); } }
+    public int Vibrance { get => _settings.DisplayColors?.Vibrance ?? 50; set { Colors().Vibrance = value; ColorTouched(); } }
+    public int NvidiaVibrance { get => _settings.DisplayColors?.NvidiaDigitalVibrance ?? 50; set { Colors().NvidiaDigitalVibrance = value; ColorTouched(); } }
+    private void ColorTouched() { Touch(); NotifyColors(); if (UseColors) _colorPreview.Update(Colors()); }
+    private void NotifyColors() { foreach (var name in new[] { nameof(NvidiaVibrance), nameof(UseColors), nameof(Gamma), nameof(Contrast), nameof(Brightness), nameof(Vibrance) }) OnPropertyChanged(name); }
+    [RelayCommand] private void BeginColors() => _colorPreview.Begin();
+    [RelayCommand] private async Task EndColorsAsync() { await FlushAsync(); await _colorPreview.EndAsync(); }
 
     public string Language { get => _settings.Language; set { if (_settings.Language == value) return; _settings.Language = value; Loc.Instance.Apply(value); OnPropertyChanged(); Touch(); } }
     public string? MonitorDeviceName
@@ -117,6 +139,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _suspend = true;
         _settings = JsonClone.Clone(snapshot.Store.Settings);
         Monitors = snapshot.Runtime.Monitors;
+        ApplyRuntime(snapshot.Runtime);
         RebuildMonitorChoices();
         Loc.Instance.Apply(_settings.Language);
         NotifyAll();
@@ -242,6 +265,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     private void NotifyAll()
     {
+        NotifyColors();
         foreach (var name in new[]
         {
             nameof(Language), nameof(MonitorDeviceName), nameof(OffsetX), nameof(OffsetY), nameof(ShowOnlyInConfiguredGames),

@@ -10,6 +10,7 @@ namespace LightCrosshair.UI.ViewModels;
 public sealed partial class GamesViewModel : ObservableObject
 {
     private readonly ICoreClient _core;
+    private readonly DisplayColorsPreview _colorPreview;
     private readonly IUiServices _ui;
     private readonly HashSet<string> _notNow = new(StringComparer.OrdinalIgnoreCase);
     private GameProfile _working = new();
@@ -88,11 +89,11 @@ public sealed partial class GamesViewModel : ObservableObject
             _ = PersistCrosshairAsync(Selected?.Id, _working.CrosshairId);
         }
     }
-    public int Gamma { get => _working.DisplayColors?.Gamma ?? 100; set { Colors().Gamma = value; Touch(); } }
-    public int Contrast { get => _working.DisplayColors?.Contrast ?? 100; set { Colors().Contrast = value; Touch(); } }
-    public int Brightness { get => _working.DisplayColors?.Brightness ?? 100; set { Colors().Brightness = value; Touch(); } }
-    public int Vibrance { get => _working.DisplayColors?.Vibrance ?? 50; set { Colors().Vibrance = value; Touch(); } }
-    public int NvidiaVibrance { get => _working.DisplayColors?.NvidiaDigitalVibrance ?? 50; set { Colors().NvidiaDigitalVibrance = value; Touch(); } }
+    public int Gamma { get => _working.DisplayColors?.Gamma ?? 100; set { Colors().Gamma = value; ColorTouched(); } }
+    public int Contrast { get => _working.DisplayColors?.Contrast ?? 100; set { Colors().Contrast = value; ColorTouched(); } }
+    public int Brightness { get => _working.DisplayColors?.Brightness ?? 100; set { Colors().Brightness = value; ColorTouched(); } }
+    public int Vibrance { get => _working.DisplayColors?.Vibrance ?? 50; set { Colors().Vibrance = value; ColorTouched(); } }
+    public int NvidiaVibrance { get => _working.DisplayColors?.NvidiaDigitalVibrance ?? 50; set { Colors().NvidiaDigitalVibrance = value; ColorTouched(); } }
     public int Cap { get => _working.NvidiaFpsCap ?? 144; set { _working.NvidiaFpsCap = value; Touch(); } }
     public InputBinding Visibility => _working.VisibilityBinding ?? new InputBinding();
 
@@ -119,6 +120,8 @@ public sealed partial class GamesViewModel : ObservableObject
     public GamesViewModel(ICoreClient core, IUiServices ui)
     {
         _core = core;
+        _colorPreview = new(core);
+        _colorPreview.Failed += () => Error = ErrorText.For(null);
         _ui = ui;
         Loc.Instance.Changed += (_, _) => OnPropertyChanged(nameof(SuggestionText));
     }
@@ -194,6 +197,7 @@ public sealed partial class GamesViewModel : ObservableObject
     [RelayCommand]
     private void Select(GameProfile? profile)
     {
+        _ = _colorPreview.EndAsync();
         if (profile == null)
         {
             Selected = null;
@@ -428,6 +432,9 @@ public sealed partial class GamesViewModel : ObservableObject
         return profile == null ? null : JsonClone.Clone(profile);
     }
 
+    [RelayCommand] private void BeginColors() => _colorPreview.Begin();
+    [RelayCommand] private Task EndColorsAsync() => _colorPreview.EndAsync();
+    private void ColorTouched() { Touch(); if (UseColors) _colorPreview.Update(Colors()); }
     private DisplayColorSettings Colors() => _working.DisplayColors ??= new DisplayColorSettings();
 
     private void Touch()

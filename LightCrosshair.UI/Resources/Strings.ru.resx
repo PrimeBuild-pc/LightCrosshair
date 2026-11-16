@@ -288,4 +288,6 @@
   <data name="Nav_FpsVisible" xml:space="preserve"><value>Показывать FPS</value></data>
   <data name="Fps_Graph" xml:space="preserve"><value>График времени кадра</value></data>
   <data name="Fps_Help" xml:space="preserve"><value>FPS, время кадра и минимум 1%. Профили игр могут переопределять общий переключатель.</value></data>
+  <data name="Settings_ColorsHelp" xml:space="preserve"><value>Применяется к рабочему столу и приложениям. Включённый профиль игры имеет приоритет. Перетаскивайте для предпросмотра; отпустите для возврата к текущим настройкам.</value></data>
+  <data name="Settings_UseColors" xml:space="preserve"><value>Настроить цвета экрана</value></data>
 </root>

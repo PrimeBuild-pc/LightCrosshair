@@ -51,7 +51,12 @@ public class NumberSlider : StackPanel
         _slider.ValueChanged += (_, _) => { if (!_internal) Value = _slider.Value; };
         _slider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler((_, _) => DragStartedCommand?.Execute(null)), true);
         _slider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler((_, _) => DragCompletedCommand?.Execute(null)), true);
-        _box.LostFocus += (_, _) => CommitText();
+        _box.GotKeyboardFocus += (_, _) => DragStartedCommand?.Execute(null);
+        _box.LostFocus += (_, _) => { CommitText(); DragCompletedCommand?.Execute(null); };
+        _slider.PreviewMouseLeftButtonDown += (_, _) => DragStartedCommand?.Execute(null);
+        _slider.PreviewMouseLeftButtonUp += (_, _) => DragCompletedCommand?.Execute(null);
+        _slider.GotKeyboardFocus += (_, _) => DragStartedCommand?.Execute(null);
+        _slider.LostKeyboardFocus += (_, _) => DragCompletedCommand?.Execute(null);
         _box.PreviewKeyDown += OnBoxKey;
         Loaded += (_, _) => SyncFromValue();
     }

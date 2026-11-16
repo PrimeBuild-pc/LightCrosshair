@@ -121,13 +121,13 @@
           <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Games_UseColors}" IsChecked="{Binding UseColors}" IsEnabled="{Binding GammaSupported}" AutomationProperties.Name="{loc:Tr Games_UseColors}"/>
           <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_ReasonGamma}" Visibility="{Binding GammaSupported, Converter={StaticResource VisInv}}" Margin="0,4,0,8"/>
           <StackPanel Visibility="{Binding UseColors, Converter={StaticResource Vis}}">
-            <controls:NumberSlider Caption="{loc:Tr Games_Gamma}" Value="{Binding Gamma}" Minimum="50" Maximum="150"/>
-            <controls:NumberSlider Caption="{loc:Tr Games_Contrast}" Value="{Binding Contrast}" Minimum="50" Maximum="150"/>
-            <controls:NumberSlider Caption="{loc:Tr Games_Brightness}" Value="{Binding Brightness}" Minimum="50" Maximum="150"/>
-            <controls:NumberSlider Caption="{loc:Tr Games_Vibrance}" Value="{Binding Vibrance}" Minimum="0" Maximum="100"/>
+            <controls:NumberSlider DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}" Caption="{loc:Tr Games_Gamma}" Value="{Binding Gamma}" Minimum="50" Maximum="150"/>
+            <controls:NumberSlider DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}" Caption="{loc:Tr Games_Contrast}" Value="{Binding Contrast}" Minimum="50" Maximum="150"/>
+            <controls:NumberSlider DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}" Caption="{loc:Tr Games_Brightness}" Value="{Binding Brightness}" Minimum="50" Maximum="150"/>
+            <controls:NumberSlider DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}" Caption="{loc:Tr Games_Vibrance}" Value="{Binding Vibrance}" Minimum="0" Maximum="100"/>
           </StackPanel>
           <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_ReasonNvidiaColor}" Visibility="{Binding NvidiaColorSupported, Converter={StaticResource VisInv}}"/>
-          <controls:NumberSlider Caption="{loc:Tr Games_NvidiaVibrance}" Value="{Binding NvidiaVibrance}" Minimum="0" Maximum="100" IsEnabled="{Binding NvidiaColorSupported}" Visibility="{Binding UseColors, Converter={StaticResource Vis}}"/>
+          <controls:NumberSlider DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}" Caption="{loc:Tr Games_NvidiaVibrance}" Value="{Binding NvidiaVibrance}" Minimum="0" Maximum="100" IsEnabled="{Binding NvidiaColorSupported}" Visibility="{Binding UseColors, Converter={StaticResource Vis}}"/>
           <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Games_FpsCap}"/>
           <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_ReasonNvidiaCap}" Visibility="{Binding CapSupported, Converter={StaticResource VisInv}}"/>
           <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Games_FpsCap}" IsChecked="{Binding UseCap}" IsEnabled="{Binding CapSupported}" AutomationProperties.Name="{loc:Tr Games_FpsCap}"/>

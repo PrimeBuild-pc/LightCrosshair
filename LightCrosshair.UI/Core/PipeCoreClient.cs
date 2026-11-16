@@ -78,6 +78,9 @@ public sealed class PipeCoreClient : ICoreClient, IAsyncDisposable
     public Task<AppSettings> SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default)
         => InvokeRequired<AppSettings>(IpcMethods.SaveSettings, settings, _options.RequestTimeout, cancellationToken);
 
+    public async Task PreviewDisplayColorsAsync(DisplayColorSettings? colors, CancellationToken cancellationToken = default)
+        => await InvokeAsync(IpcMethods.PreviewDisplayColors, new DisplayColorsPreviewRequest { Colors = colors }, _options.RequestTimeout, cancellationToken).ConfigureAwait(false);
+
     public async Task PreviewAsync(CrosshairDesign? design, CancellationToken cancellationToken = default)
         => await InvokeAsync(IpcMethods.Preview, new PreviewRequest { Design = design }, _options.RequestTimeout, cancellationToken).ConfigureAwait(false);
 

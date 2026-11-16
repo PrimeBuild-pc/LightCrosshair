@@ -41,6 +41,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Hotkeys.ApplyRuntime(runtime);
             Games.ApplyRuntime(runtime);
+            Settings.ApplyRuntime(runtime);
             Library.ApplyRuntime(runtime);
             if (_core.Snapshot != null && (runtime.PendingSuggestion != null || Games.Suggestion != null))
                 Games.Apply(_core.Snapshot);
@@ -110,6 +111,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void Park()
     {
+        _ = Settings.EndColorsCommand.ExecuteAsync(null);
+        _ = Games.EndColorsCommand.ExecuteAsync(null);
         _ = Studio.LeaveAsync();
         Library.ReleaseCaches();
         SetMinimized(true);
@@ -153,6 +156,8 @@ public sealed partial class MainViewModel : ObservableObject
             if (choice == UnsavedChoice.Discard) Studio.Revert();
         }
         if (Page == UiPages.Studio) await Studio.LeaveAsync().ConfigureAwait(true);
+        await Settings.EndColorsCommand.ExecuteAsync(null);
+        await Games.EndColorsCommand.ExecuteAsync(null);
         Page = page;
         OnPropertyChanged(nameof(CurrentPage));
         if (page == UiPages.Studio) Studio.Enter();

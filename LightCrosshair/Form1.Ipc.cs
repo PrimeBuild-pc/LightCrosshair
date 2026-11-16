@@ -18,7 +18,7 @@ internal sealed partial class Form1
     {
         _pipe = new(Program.PipeName,
             request => OnUiAsync(() => HandleRequestAsync(request)),
-            () => OnUiAsync(() => { _renders.DropPending(); EndPreview(); SetInputCapture(false); return Task.FromResult<object?>(null); }));
+            () => OnUiAsync(() => { _renders.DropPending(); _colorPreview = null; RefreshContext(); EndPreview(); SetInputCapture(false); return Task.FromResult<object?>(null); }));
         RuntimeUpdated += QueueRuntimeEvent;
     }
     private Task<object?> OnUiAsync(Func<Task<object?>> action)
@@ -155,6 +155,12 @@ internal sealed partial class Form1
                     throw;
                 }
                 return savedSettings;
+            case IpcMethods.PreviewDisplayColors:
+                _colorPreview = Validation.Colors(Payload<DisplayColorsPreviewRequest>(request).Colors);
+                var effectiveColors = _colorPreview ?? _context?.DisplayColors;
+                _colorsKey = (_context?.Game?.Id ?? "") + ":" + JsonSerializer.Serialize(effectiveColors, ContractJson.Options);
+                await _colors.SetAsync(effectiveColors);
+                return null;
             case IpcMethods.Preview:
                 var preview = Payload<PreviewRequest>(request).Design;
                 if (preview is null) { EndPreview(); return null; }

@@ -104,6 +104,11 @@ internal static class LegacyMigration
             s.Hotkeys.NextCrosshair = Key(config.CycleProfileHotkeyKey, config.CycleProfileHotkeyUseAlt, config.CycleProfileHotkeyUseControl, config.CycleProfileHotkeyUseShift, config.CycleProfileHotkeyUseWin);
             s.Hotkeys.PreviousCrosshair = Key(config.CycleProfilePrevHotkeyKey, config.CycleProfilePrevHotkeyUseAlt, config.CycleProfilePrevHotkeyUseControl, config.CycleProfilePrevHotkeyUseShift, config.CycleProfilePrevHotkeyUseWin);
             s.Hotkeys.OpenSettings = Key(config.SettingsWindowHotkeyKey, config.SettingsWindowHotkeyUseAlt, config.SettingsWindowHotkeyUseControl, config.SettingsWindowHotkeyUseShift, config.SettingsWindowHotkeyUseWin);
+            if (string.IsNullOrWhiteSpace(config.TargetProcessName))
+            {
+                s.DisplayColorsEnabled = config.EnableGammaOverride;
+                s.DisplayColors = new() { Gamma = config.GammaValue, Contrast = config.ContrastValue, Brightness = config.BrightnessValue, Vibrance = config.VibranceValue };
+            }
             s.FpsOverlay = new()
             {
                 Enabled = config.EnableFpsOverlay, MonitorDeviceName = CrosshairConfig.ResolveMonitorDeviceName(config.FpsOverlayMonitorDeviceName, config.OverlayMonitorDeviceName),

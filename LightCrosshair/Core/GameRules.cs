@@ -2,9 +2,8 @@ using LightCrosshair.Contracts;
 
 namespace LightCrosshair.Core;
 
-internal sealed record GameContext(string CrosshairId, GameProfile? Game, bool Visible, bool FpsEnabled, InputBinding Binding)
+internal sealed record GameContext(string CrosshairId, GameProfile? Game, bool Visible, bool FpsEnabled, InputBinding Binding, DisplayColorSettings? DisplayColors = null)
 {
-    public DisplayColorSettings? DisplayColors => Game is { DisplayColorsEnabled: true } ? Game.DisplayColors : null;
 }
 
 internal static class GameRules
@@ -16,6 +15,8 @@ internal static class GameRules
         var settings = document.Settings;
         return new(game?.CrosshairId ?? settings.DefaultCrosshairId, game,
             settings.CrosshairVisible && (game is not null || !settings.ShowOnlyInConfiguredGames),
-            game?.FpsOverlay ?? settings.FpsOverlay.Enabled, game?.VisibilityBinding ?? settings.Hotkeys.ToggleVisibility);
+            game?.FpsOverlay ?? settings.FpsOverlay.Enabled, game?.VisibilityBinding ?? settings.Hotkeys.ToggleVisibility,
+            game is { DisplayColorsEnabled: true, DisplayColors: not null } ? game.DisplayColors :
+                settings.DisplayColorsEnabled ? settings.DisplayColors : null);
     }
 }

@@ -176,6 +176,9 @@ public sealed class FakeCoreClient : ICoreClient
         }
     }
 
+    public List<DisplayColorSettings?> ColorPreviews { get; } = new();
+    public Task PreviewDisplayColorsAsync(DisplayColorSettings? colors, CancellationToken cancellationToken = default)
+    { ColorPreviews.Add(colors is null ? null : JsonClone.Clone(colors)); return Task.CompletedTask; }
     public Task PreviewAsync(CrosshairDesign? design, CancellationToken cancellationToken = default)
     {
         lock (_gate)
