@@ -1,37 +1,137 @@
 # Settings guide — LightCrosshair 2.0
 
+Open settings from the tray or with Alt+L. Closing this window ends the settings process; the Core and overlay remain running. **Exit LightCrosshair** on the Settings page stops both processes and restores display colors.
+
+## Visibility and saving
+
+**Show crosshair** in the sidebar is the global visibility switch. Layer visibility is independent: a design with every layer hidden draws nothing even when the global switch is on. Hold bindings and configured-game rules can also affect whether the overlay is shown.
+
+Studio and game-profile edits have explicit **Save** actions. Settings and global hotkey changes save automatically; errors are shown in the UI. **Apply as default** in Library saves the fallback crosshair. Cycling with hotkeys changes the current context's selection without replacing that default.
+
 ## Studio
 
-Edit up to eight layers in draw order. Arms can make crosses, T shapes, X shapes or single guides. Dot, Ring, Box and PNG Image layers add other shapes; a gap in a Box produces corner brackets. Each layer has color, opacity, position, rotation and outline. Dimensions use physical screen pixels. An odd stroke centers on the monitor center pixel; an even stroke adds its extra pixel down/right.
+Choose a design name, edit its layers and use **Save** or **Save as new**. Undo/redo is available through the buttons and Ctrl+Z/Ctrl+Y. Leaving Studio with unsaved edits offers Save, Discard or Cancel.
 
-Preview uses the same renderer as the overlay. Live preview temporarily overrides visibility and ends when disabled, when settings disconnects, or after ten minutes without an update. Save commits the design to the library. Closing settings ends the separate settings process.
+The layer list supports adding, selecting, hiding, duplicating, deleting and reordering up to eight layers. Drag a layer, use the move buttons, or press Ctrl+Up/Ctrl+Down while the list is focused. Draw order matters when layers overlap.
+
+### Layer controls
+
+| Control | Effect |
+|---|---|
+| Kind | Arms, Dot, Ring, Box or PNG Image |
+| Length / diameter | Size in physical pixels, 1–256; arm length for Arms, diameter/side for other vector shapes |
+| Thickness | Stroke width for Arms, Ring and Box, 1–64 px |
+| Gap | Empty center for Arms; open sections of a Box create corner brackets, 0–128 px |
+| Arms | Enable Top, Right, Bottom and Left independently; rotation can produce an X |
+| Color | Vector fill/stroke color in hexadecimal RGB; images retain their PNG colors |
+| Fill | Optional independent interior color for Ring and Box |
+| Opacity | Whole layer opacity, 0–100%, including its outline and fill |
+| Offset X / Y | Layer position relative to the crosshair center; editor range −128 to +128 px |
+| Rotation | Layer rotation; editor range −180° to +180° |
+| Outline | Enable an outline, choose its color and thickness, 1–8 px |
+| Image scale / Import image | Scale a PNG from 0.1× to 4×, or choose its source image |
+| Anti-alias | Smooth edges for the whole design; disable for crisp integer-pixel geometry |
+
+The controls shown depend on the selected kind. An odd-width stroke centers on the center pixel; an even-width stroke uses its extra pixel down/right. Imported designs are validated by Core; the table describes the editor's controls.
+
+### Preview
+
+Zoom at 1×, 2× or 4× and choose dark, mid, light, checkerboard or a custom background. Background and zoom are preview aids; they do not change the in-game background or crosshair size. Preview uses the same renderer as the overlay.
+
+**Live in game** sends the current editable design to the overlay, temporarily overriding global visibility. It does not save the design. Turning it off, disconnecting settings or leaving it without an update for ten minutes ends the temporary preview. Use Save to retain edits.
+
+PNG import accepts a PNG file up to 2 MiB and 512 pixels on either side. It is copied into the app's image store; the original file is not edited.
 
 ## Library and sharing
 
-Use one of 30 original presets or edit a copy. Favorites control the next/previous hotkeys; with no favorites they cycle all designs. Cycling changes only the current context and is not saved as the default.
+**My crosshairs** contains saved designs; **Presets** contains 30 bundled designs. Search by name and use tag filters to narrow the lists. Presets are read-only: edit a copy or duplicate one to save your own version. Favorites apply to saved designs and determine the next/previous hotkey order; without favorites, those hotkeys cycle all saved designs.
 
-A `LC2:` share code contains an editable design without image layers. Use `.lcx.json` export for designs containing images. PNG import accepts files up to 2 MiB and 512 pixels per side. Imported files receive new identifiers. Core validates and persists every library change, then settings receives a fresh snapshot.
+The card action menu provides Edit/Edit a copy, Duplicate and, for saved designs, Apply as default, Export and Delete. A crosshair used as the default or assigned to a game cannot be deleted until its assignments are changed.
+
+- Copy/paste an `LC2:` share code for a vector design. Image layers cannot be included in share codes.
+- Export `.lcx.json` files to include PNG images with the selected designs; import them from Library.
+- Imported or duplicated designs get new identifiers. Import does not replace the original designs.
 
 ## Games
 
-Match a profile by lower-case executable name. It can override the crosshair, display colors, visibility binding and FPS setting. An optional NVIDIA cap is written to the application's driver profile when saved and removed when that managed cap/profile is deleted. Leaving a game restores default crosshair rules and original display colors. Editing in LightCrosshair settings preserves the current game context.
+Use **Add game** to choose a running windowed process or browse to an `.exe`. A profile matches the executable file name, not a particular window title or full path. One profile is allowed per executable name.
 
-Enable Show only in configured games to hide the default elsewhere. Local suggestions offer profiles for recognized games; dismissing a suggestion persists the dismissal. No game list or process information is uploaded.
+Select a profile to edit its name and crosshair, then Save. The list's enable switch controls whether its foreground overrides are used. Deleting a profile removes its game association, leaving its saved crosshair in Library.
+
+| Control | Behavior |
+|---|---|
+| Crosshair | Saved design to use while the configured executable is in the foreground |
+| Visibility override | Use a game-specific visibility binding and mode, or inherit the global binding |
+| FPS overlay | Follow the global setting, force On or force Off |
+| Use display colors | Apply saved values while this game is active; switching off retains the values |
+| Gamma / Contrast / Brightness | Software display adjustments, 50–150; 100 is neutral |
+| Vibrance | Software vibrance, 0–100; 50 is neutral |
+| NVIDIA Digital Vibrance | Optional driver adjustment, 0–100, when supported |
+| NVIDIA FPS cap | Optional per-app driver cap; slider range 30–480 FPS |
+
+Display colors affect the display, not just the crosshair. Leaving a game restores default crosshair rules and the original display colors; working in LightCrosshair settings preserves the current game context. Unsupported driver controls are disabled with an explanation. NVIDIA features are **not yet verified on NVIDIA hardware**.
+
+A driver cap is written when the profile is saved and persists in the driver's application profile. Turning off the profile's foreground enable switch does not clear that cap: switch off the cap and Save, or delete the managed profile, to remove it. Old driver caps that were never managed by 2.0 are left untouched.
+
+Known-game suggestions offer **Create**, **Not now** and **Never for this game**. Not now suppresses the current suggestion; Never persists the dismissal. No game list or process information is uploaded.
 
 ## Hotkeys
 
-Defaults are Alt+X (visibility), Alt+C/Alt+V (cycle) and Alt+L (settings). Bind keyboard keys, MiddleClick, RightClick, Mouse4, Mouse5 or WheelUp/WheelDown with optional Alt, Ctrl, Shift and Win modifiers. Visibility supports Toggle, Hold to hide and Hold to show. Other actions and wheel bindings toggle only. Hold release restores the saved visibility preference. Mouse buttons retain their normal game behavior. Unavailable registrations and conflicts are shown in settings.
+| Default | Action |
+|---|---|
+| Alt+X | Toggle crosshair visibility |
+| Alt+C | Next favorite, or next saved design when there are no favorites |
+| Alt+V | Previous favorite, or previous saved design when there are no favorites |
+| Alt+L | Open or close settings |
 
-## Display and behavior
+Click a capture field and press the desired key or mouse button; Esc cancels. Keyboard keys, Middle click, Right click, Mouse4, Mouse5, Wheel up and Wheel down can use Alt, Ctrl, Shift and Win modifiers. **Clear** removes a binding.
 
-Select a monitor and physical-pixel position offsets; an unavailable monitor falls back to primary. Display changes trigger a redraw. Start with Windows registers the Core for the current user. Language changes update Core tray text immediately. Hide during screen recording uses a two-second process-presence check only while enabled; running recording software may hide the crosshair even when it is not actively recording.
+Visibility supports Toggle, Hold to hide and Hold to show. Other actions and all wheel bindings use Toggle. Releasing a hold restores the underlying visibility state. Core actions are paused during binding capture and resume when it ends. Input still reaches other applications; a bound mouse button keeps its normal game behavior.
 
-## FPS overlay
+Conflicts and Core registration failures appear under the affected action. Choose another binding if Windows or another application already owns it.
 
-Optional FPS, frametime and 1% low values use ETW present events for the current foreground process. Capture stops when the effective context disables it. A dash means no recent samples; Windows permissions or the game's presentation path may prevent ETW data. This is present telemetry, not an in-game frame-generation signal.
+## Settings
+
+### Display
+
+Choose the overlay monitor; the primary monitor is the default and fallback when the selected display is unavailable. **Offset X / Y** moves the whole crosshair from that monitor's center in physical pixels; the editor exposes −200 to +200 px. Positive X moves right and positive Y moves down. The position diagram and numeric fields describe the same offset.
+
+### Behavior
+
+| Setting | Effect |
+|---|---|
+| Show only in configured games | Hide the crosshair elsewhere; the global Show crosshair switch still applies |
+| Hide during screen recording | Check for recorder processes only while enabled; an open recorder can hide the crosshair even when it is not recording |
+| Start with Windows | Start the Core for the current user at sign-in |
+| Suggest known games | Offer local profile suggestions for recognized foreground executables |
+
+### FPS overlay
+
+Enable the optional FPS overlay globally, or override it per game. Capture starts/stops with the effective setting. It shows FPS with optional frametime and 1% low values for the foreground process. A dash means no recent samples; permissions and presentation paths can prevent data. These are present-event measurements, not a frame-generation detector.
+
+| Control | Effect |
+|---|---|
+| Monitor | Use the crosshair's monitor, or choose another display |
+| Offset X / Y | Position from that monitor's top-left corner; editor range 0–2000 px |
+| Scale | Text/overlay scale, 0.5×–3× |
+| Frametime / 1% low | Show or hide the additional values |
+| Text color / Background color | Hexadecimal RGB colors |
+| Background opacity | Background transparency, 0–100% |
+
+### Language, updates and exit
+
+Choose Automatic or English, Italian, Spanish, Simplified Chinese, Russian or Japanese. The UI and Core tray text update without a restart.
+
+**Check now** queries the public GitHub release feed and opens the releases page when a newer version is found; it does not download or install an update. The automatic-check preference is saved, but the current UI performs checks through the explicit Check now action.
+
+About shows the version, website/source links and license information. **Exit LightCrosshair** asks for confirmation, closes settings and stops Core, restoring display colors.
 
 ## Storage and recovery
 
-Core is the only writer of `%AppData%\LightCrosshair\v2\store.json`. The folder also contains `images`, automatic `backups`, and rolling `logs\core.log`. The prior store is backed up at most once per hour when changes occur; ten automatic store backups are retained. First migration preserves copies of the v1 source files and never alters them.
+The default data folder is `%AppData%\LightCrosshair\v2`. It contains `store.json`, imported `images`, `backups`, rolling `logs\core.log`, and the UI's `ui-placement.json`. Back up the whole folder to retain images with your designs. Core is the only writer of the main store.
 
-A corrupt store is renamed and the newest valid backup is loaded. The display-color recovery marker is removed only after original values have been restored; restart Core to retry a failed restoration. Back up the whole v2 folder to retain images as well as designs.
+Store backups are made at most once per hour when changes occur; the newest ten are retained. A corrupt store is renamed and the newest valid backup is loaded. If loading cannot recover, Core stays running with temporary defaults, shows a notification and logs the failure; it leaves the store marker unwritten so the next launch can retry. Changes in that temporary session are not durable.
+
+The display-color recovery journal is cleared only after original values are restored. If restoration fails, restart Core to retry; keep the journal rather than deleting it.
+
+Migration imports supported v1 data without writing the old files, preserving source copies under `backups/migration`. The active v1 master visibility switch becomes the global v2 switch; it does not hide the individual migrated layers. See [Upgrading from 1.9](../README.md#upgrading-from-19).
