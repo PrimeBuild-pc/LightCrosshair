@@ -46,10 +46,10 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 - [x] Global hotkeys + input-hook bindings from `AppSettings.Hotkeys` and game overrides; v1.9 semantics preserved
 - [x] Registration failures reported in `RuntimeState.HotkeyErrors` (never silent)
 ### C7 Library features
-- [ ] ~30 original presets (generic names, no player/team/game trademarks), tagged
-- [ ] Share code encode/decode per CONTRACT.md §6 + tests
-- [ ] Export/import `*.lcx.json` with embedded images + tests
-- [ ] PNG import validation (format, ≤ 512 px side, ≤ 2 MB)
+- [x] ~30 original presets (generic names, no player/team/game trademarks), tagged
+- [x] Share code encode/decode per CONTRACT.md §6 + tests
+- [x] Export/import `*.lcx.json` with embedded images + tests
+- [x] PNG import validation (format, ≤ 512 px side, ≤ 2 MB)
 ### C8 Localization, packaging, docs
 - [ ] Core strings (tray menu, notifications) in en, it, es, zh-Hans, ru, ja
 - [ ] Publish scripts produce both exes in one folder (x64, ARM64); installer, ZIP, winget/choco templates reference .NET 10 Desktop Runtime

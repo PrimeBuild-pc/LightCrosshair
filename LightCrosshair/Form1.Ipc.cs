@@ -177,7 +177,6 @@ internal sealed partial class Form1
             default: return await HandleLibraryRequestAsync(request);
         }
     }
-    private Task<object?> HandleLibraryRequestAsync(IpcEnvelope request) => throw new CoreException(IpcErrorCodes.Unsupported, "Library feature not available yet.");
     private async Task ExpirePreviewAsync(CancellationToken token)
     {
         try { await Task.Delay(TimeSpan.FromMinutes(10), token); if (!IsDisposed) EndPreview(); }
