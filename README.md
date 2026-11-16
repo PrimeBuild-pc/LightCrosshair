@@ -1,196 +1,44 @@
-<div align="center">
-  <img src="readme-banner.svg" alt="LightCrosshair — lightweight custom crosshair overlay for Windows" width="100%">
-  <p><strong>A lightweight, customizable crosshair overlay for competitive gaming on Windows.</strong></p>
-  <p>
-    <a href="https://github.com/PrimeBuild-pc/LightCrosshair/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/PrimeBuild-pc/LightCrosshair?style=plastic&amp;logo=git&amp;logoColor=white"></a>
-    <a href="https://github.com/PrimeBuild-pc/LightCrosshair/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/PrimeBuild-pc/LightCrosshair?style=plastic&amp;logo=github"></a>
-    <a href="https://github.com/PrimeBuild-pc/LightCrosshair/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/PrimeBuild-pc/LightCrosshair?style=plastic&amp;logo=github"></a>
-  </p>
-  <p>
-    <a href="https://github.com/PrimeBuild-pc/LightCrosshair/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/PrimeBuild-pc/LightCrosshair?style=plastic&amp;logo=github&amp;label=release"></a>
-    <a href="https://github.com/PrimeBuild-pc/LightCrosshair/releases"><img alt="Total downloads" src="https://img.shields.io/github/downloads/PrimeBuild-pc/LightCrosshair/total?style=plastic&amp;logo=github&amp;label=downloads&amp;color=2ea44f"></a>
-    <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/PrimeBuild-pc/LightCrosshair?style=plastic"></a>
-    <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=plastic&amp;logo=windows&amp;logoColor=white">
-    <img alt=".NET 8" src="https://img.shields.io/badge/.NET-8-512BD4?style=plastic&amp;logo=dotnet&amp;logoColor=white">
-  </p>
-  <p><a href="../../releases/latest">Download</a> · <a href="docs/SETTINGS.md">Documentation</a> · <a href="../../issues">Report a bug</a> · <a href="#support-the-project">Support</a></p>
+# LightCrosshair 2.0
 
-</div>
+A layered crosshair overlay for Windows. Version 2.0 is under development; released 1.x packages remain on the [releases page](https://github.com/PrimeBuild-pc/LightCrosshair/releases).
 
----
+Build a crosshair from up to eight layers: arms, dots, rings, boxes, corner brackets and PNG images. Start from 30 original local presets, save favorites, share a compact `LC2:` code, or export a `.lcx.json` file with embedded images.
 
-## Overview
+Game profiles select a crosshair, display colors, visibility binding and optional FPS overlay when a configured executable is in the foreground. NVIDIA per-app FPS caps are available on supported hardware. Display colors return to their original values when you leave the game or exit; a saved recovery journal supports restoration after a crash.
 
-**LightCrosshair** adds a customizable crosshair overlay to Windows 10/11 games and desktop apps, with quick hotkeys, profiles, optional performance information, and supported per-app GPU driver settings. It is designed for borderless or windowed play and does not inject into games or use game hooks.
+The tray Core and settings app are separate processes. Closing settings ends the UI process. The Core uses event-driven drawing and foreground detection; FPS capture starts only when enabled. It does not inject into games, read game memory or capture the screen. Input continues to reach other applications.
 
----
+## Run
 
-## Demo
+Use Windows 11 or a supported Windows 10 installation with [.NET Desktop Runtime 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). Extract the package and keep `LightCrosshair.exe` and `LightCrosshair.UI.exe` together. Start `LightCrosshair.exe`, then open settings from the tray or with Alt+L. Borderless or windowed games work best; exclusive fullscreen may hide ordinary desktop overlays.
 
-<div align="center">
+| Default binding | Action |
+|---|---|
+| Alt+X | Show/hide crosshair |
+| Alt+C / Alt+V | Next/previous favorite (all designs if no favorites) |
+| Alt+L | Open/close settings |
 
-[![Watch the demo video](https://img.youtube.com/vi/CKbj2eObQ1E/maxresdefault.jpg)](https://www.youtube.com/watch?v=CKbj2eObQ1E)
+Bindings support keyboard and mouse modifiers. Visibility also supports Hold to hide and Hold to show; wheel bindings toggle only. Registration conflicts appear in settings.
 
-**Watch the demo on YouTube**
+## Upgrade and data
 
-</div>
+On first v2 launch, existing v1 profiles and preferences are imported into `%AppData%\LightCrosshair\v2`. Original v1 files remain unchanged. Core alone writes the new store, with automatic backups and corrupt-file recovery. Copy the entire v2 folder to back up both designs and images. English, Italian, Spanish, Simplified Chinese, Russian and Japanese are supported.
 
-## Screenshots
+## Build
 
-<table>
-  <tr>
-    <td width="33%">
-      <img alt="LightCrosshair overlay and settings" src="https://github.com/user-attachments/assets/06fbdd78-4c0d-4a23-a63a-d9cb3943fd9f" />
-    </td>
-    <td width="33%">
-      <img alt="Crosshair customization settings" src="https://github.com/user-attachments/assets/ded3a5c3-d734-49ab-8b50-1954d1250a3f" />
-    </td>
-    <td width="33%">
-      <img alt="Profile management settings" src="https://github.com/user-attachments/assets/c7aa1464-5eb4-47ec-a67f-9e615f16a94e" />
-    </td>
-  </tr>
-  <tr>
-    <td width="33%">
-      <img alt="Performance overlay settings" src="https://github.com/user-attachments/assets/32b0bcbd-d940-47da-8eda-20a90dddfb62" />
-    </td>
-    <td width="33%">
-      <img alt="GPU driver settings" src="https://github.com/user-attachments/assets/c0743ae5-fb07-4ce7-b42f-e3a6b676c969" />
-    </td>
-    <td width="33%">
-      <img alt="NVIDIA profile controls" src="https://github.com/user-attachments/assets/89edc82b-580a-4869-a647-8700b69fec1e" />
-    </td>
-  </tr>
-</table>
-
----
-
-## Quick Install
-
-Download the latest build from the **[GitHub Releases page](../../releases/latest)**.
-
-### Installer
-
-Use the installer for the normal Start Menu experience:
-
-- [`LightCrosshair-Setup-1.9.0.exe`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.9.0/LightCrosshair-Setup-1.9.0.exe)
-  SHA256: `1F25C2B6DF489568B8E65539DA5F2D82ECE57D65172669616AB45DF7C125B8A7`
-
-### Portable ZIP
-
-Use the portable ZIP if you want to extract and run the app from a folder you control:
-
-- [`LightCrosshair-v1.9.0-x64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.9.0/LightCrosshair-v1.9.0-x64.zip)
-  SHA256: `F104BCE76926BAE253358EDD9655E9D92BB0DCE207DCD805D80A72FB111656DB`
-- [`LightCrosshair-v1.9.0-ARM64.zip`](https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.9.0/LightCrosshair-v1.9.0-ARM64.zip)
-  SHA256: `806BBAD3CB7D380593F69C10F9D15EFC1B88C5B58ADA9BE102D2F0CEA91A0E6C`
-
-### Package Managers
-
-WinGet package updates may lag behind GitHub Releases. When available, this may install the latest approved package version, not necessarily v1.9.0:
+Install .NET 10 SDK, then run:
 
 ```powershell
-winget install --id PrimeBuild.LightCrosshair --exact
+dotnet build LightCrosshair/LightCrosshair.csproj -c Release
+dotnet test LightCrosshair.Tests/LightCrosshair.Tests.csproj -c Release
+pwsh scripts/build-release.ps1
 ```
 
-Chocolatey and WinGet updates may remain pending while their community repositories validate the latest release.
+A full package requires the UI project in the same checkout. Packaging produces framework-dependent ReadyToRun single-file executables for win-x64 and win-arm64. `-CoreOnly` is a development build switch. Release artifacts are prepared locally; see [release preparation](setup/RELEASE_PREP_2.0.0.md).
 
----
+## Documentation and license
 
-## Quick Start
-
-1. Launch **LightCrosshair** from the Start Menu or run `LightCrosshair.exe` from the portable folder.
-2. Open Settings with `Alt + L` or the tray icon.
-3. Customize the crosshair shape, size, gap, color, opacity, and outline.
-4. Save profiles for different games or visibility needs.
-5. Enable the performance overlay only when you need it.
-
-### Default Hotkeys
-
-| Hotkey | Action |
-| --- | --- |
-| `Alt + X` | Toggle crosshair visibility |
-| `Alt + C` | Next profile |
-| `Alt + V` | Previous profile |
-| `Alt + L` | Toggle Settings window |
-
----
-
-## Features
-
-- Custom crosshair builder with shape, size, thickness, gap, color, opacity, and outline controls.
-- Profile workflow for switching quickly between games or setups.
-- Visibility presets for high-contrast crosshairs.
-- Optional performance overlay with Off, Minimal, and Detailed modes.
-- Frame Cap Assistant for target-FPS guidance.
-- Supported NVIDIA per-app profile controls and AMD-related display/color paths.
-- Independent monitor selection for the crosshair and FPS overlay, with DPI-aware positioning.
-- Non-injected design with no game hooks.
-
----
-
-## What's New in v1.9.0
-
-- Bind crosshair visibility to Middle click, Mouse4, Mouse5, Wheel Up/Down, or Right click for ADS.
-- Combine keyboard keys and mouse buttons with Ctrl, Alt, Shift, and Win.
-- Choose Toggle, Hold to hide, or Hold to show. Wheel bindings support Toggle only.
-- Capture bindings in Settings → Hotkeys, with conflict detection and profile persistence.
-- Existing keyboard shortcuts and saved profiles retain their previous behavior.
-
-### Mouse bindings and modifiers
-
-In **Settings → Hotkeys**, click the visibility binding field, then press a key, mouse button, or wheel direction with optional modifiers (for example `Alt+Mouse4` or `Ctrl+RightClick`). Choose **Toggle**, **Hold to hide**, or **Hold to show**. Escape cancels capture. Hold restores the previous visibility state on release and does not save a temporary state. Saved profiles include the binding; older profiles inherit the global shortcut.
-
-Extra gaming-mouse buttons are supported when Windows exposes them as XButton1 (Mouse4) or XButton2 (Mouse5). DPI buttons without a Windows XButton mapping cannot be captured.
-
-The app observes input through read-only Windows input hooks; it does not inject or modify input, and clicks continue to reach the game. Check your game's anti-cheat and overlay rules before use.
-
----
-
-## Requirements
-
-- Windows 10 or Windows 11.
-- .NET 8 Windows Desktop Runtime for framework-dependent builds.
-- Borderless windowed or windowed game mode is recommended for overlay visibility.
-
----
-
-## Limitations & Safety
-
-- LightCrosshair does **not** inject into games and does **not** use game hooks.
-- Exclusive fullscreen can hide normal overlays; use borderless windowed or windowed mode when possible.
-- Frame Cap Assistant provides guidance only and does not enforce a real FPS cap.
-- Frame pacing diagnostics use conservative heuristics, ETW-style present telemetry analysis, and optional RTSS fallback paths; PresentMon integration remains a future target and is not implemented as a live runtime backend.
-- Frame-generation and DLSS runtime control are not implemented.
-- NVIDIA profile writes are per-app only where supported; LightCrosshair does not write global NVIDIA profiles.
-- Some games or anti-cheat systems may block overlays or behave differently.
-
----
-
-## Documentation
-
-- [Settings & Options Guide](docs/SETTINGS.md)
-- [Third-Party Notices](docs/THIRD_PARTY_NOTICES.md)
-
----
-
-## Build From Source
-
-```bash
-git clone https://github.com/PrimeBuild-pc/LightCrosshair.git
-cd LightCrosshair
-dotnet build LightCrosshair.sln --configuration Release
-dotnet test LightCrosshair.sln
-```
-
-Contributions are welcome through focused bug reports, feature requests, documentation updates, and tested pull requests.
-
----
-
-## License
-
-This project is licensed under the **MIT License**. See [LICENSE](LICENSE).
-
----
+[Settings guide](docs/SETTINGS.md) · [Third-party notices](docs/THIRD_PARTY_NOTICES.md) · [MIT license](LICENSE)
 
 ## Support the Project
 

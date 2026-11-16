@@ -1,108 +1,44 @@
-<#
-Lightweight publish script for LightCrosshair
-Generates versioned single-file portable builds (win-x64 by default) + SHA256 + zip.
-Usage:
-  powershell -ExecutionPolicy Bypass -File .\publish.ps1 -Version 1.2.3[-prerelease]
-Parameters:
-  -Version       SemVer (required; pre-release labels allowed)
-  -Runtime       Runtime RID (default win-x64)
-  -SelfContained Publish self-contained output (default framework-dependent)
-  -Trim          Switch to enable trimming (experimental)
-  -DryRun        Show actions without executing
-#>
 param(
-    [Parameter(Mandatory=$true)][string]$Version,
-    [string]$Runtime = 'win-x64',
-    [switch]$SelfContained,
-    [switch]$Trim,
+    [string]$Version = '2.0.0',
+    [ValidateSet('win-x64', 'win-arm64')][string]$Runtime = 'win-x64',
+    [string]$UiProject,
+    [ValidateSet('dist', 'releases')][string]$OutputRoot = 'dist',
+    [switch]$CoreOnly,
     [switch]$DryRun
 )
-
 $ErrorActionPreference = 'Stop'
-$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$repoRoot = (Resolve-Path (Join-Path $scriptRoot '..')).Path
-$proj = Join-Path $repoRoot 'LightCrosshair\LightCrosshair.csproj'
-$outRoot = Join-Path $repoRoot 'dist'
-$outDir = Join-Path $outRoot "LightCrosshair-v$Version-$Runtime"
-
-if (-not $DryRun) {
-    if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
-    New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+$repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+if ($Version -notmatch '^\d+\.\d+\.\d+(-[A-Za-z0-9.-]+)?$') { throw 'Invalid version' }
+if (!$UiProject) { $UiProject = Join-Path $repo 'LightCrosshair.UI/LightCrosshair.UI.csproj' }
+if (!$CoreOnly -and !(Test-Path -LiteralPath $UiProject)) { throw 'UI project missing. Supply -UiProject, or use -CoreOnly for development validation.' }
+$outputBase = [IO.Path]::GetFullPath((Join-Path $repo $OutputRoot))
+$output = [IO.Path]::GetFullPath((Join-Path $outputBase "LightCrosshair-v$Version-$Runtime"))
+if (!$output.StartsWith($outputBase + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) { throw 'Output escaped the package directory' }
+if (!$DryRun) {
+    if (Test-Path -LiteralPath $output) { Remove-Item -LiteralPath $output -Recurse -Force }
+    New-Item -ItemType Directory -Path $output -Force | Out-Null
 }
-
- # Sanitize numeric portion for assembly/file versions (strip pre-release label)
-$numericVersion = ($Version -split '-')[0]
-if (-not ($numericVersion -match '^\d+\.\d+\.\d+')) {
-  throw "Version '$Version' must start with major.minor.patch (e.g. 1.2.3 or 1.2.3-beta)"
+$projects = @((Join-Path $repo 'LightCrosshair/LightCrosshair.csproj'))
+if (!$CoreOnly) { $projects += $UiProject }
+foreach ($project in $projects) {
+    $arguments = @('publish', $project, '-c', 'Release', '-r', $Runtime, '--self-contained', 'false', '-o', $output,
+        '-p:PublishSingleFile=true', '-p:PublishReadyToRun=true', '-p:PublishTrimmed=false',
+        '-p:IncludeNativeLibrariesForSelfExtract=true', '-p:EnableCompressionInSingleFile=false',
+        "-p:Version=$Version", "-p:AssemblyVersion=$(($Version -split '-')[0]).0", "-p:FileVersion=$(($Version -split '-')[0]).0",
+        '-p:UseArtifactsOutput=true', "-p:ArtifactsPath=$outputBase/build-artifacts", '-p:DebugType=none', '--nologo')
+    Write-Host "dotnet $($arguments -join ' ')"
+    if (!$DryRun) { & dotnet @arguments; if ($LASTEXITCODE) { throw "Publish failed: $project" } }
 }
-
-$assemblyFileVersion = "$numericVersion.0" # add 4th part
-$selfContainedValue = if ($SelfContained) { 'true' } else { 'false' }
-
-$props = @(
-  "/p:PublishSingleFile=true",
-  "/p:SelfContained=$selfContainedValue",
-  "/p:PublishReadyToRun=true",
-  "/p:IncludeNativeLibrariesForSelfExtract=true",
-  "/p:EnableCompressionInSingleFile=true",
-  "/p:Version=$Version",
-  "/p:AssemblyVersion=$assemblyFileVersion",
-  "/p:FileVersion=$assemblyFileVersion",
-  "/p:InformationalVersion=$Version"
-)
-if ($Trim) { $props += '/p:PublishTrimmed=true'; $props += '/p:TrimMode=partial' }
-else { $props += '/p:PublishTrimmed=false' }
-
-$publishArgs = @('publish', $proj, '--configuration','Release','--runtime',$Runtime,'--self-contained',$selfContainedValue,'--output',$outDir) + $props
-
-Write-Host "Publishing LightCrosshair $Version ($Runtime)" -ForegroundColor Cyan
-Write-Host "Self-contained: $selfContainedValue | Trim: $($Trim.IsPresent)" -ForegroundColor Gray
-Write-Host "dotnet $($publishArgs -join ' ')" -ForegroundColor DarkGray
-if (-not $DryRun) {
-  & dotnet @publishArgs
-  if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed ($LASTEXITCODE)" }
+if (!$DryRun) {
+    $expected = if ($CoreOnly) { @('LightCrosshair.exe') } else { @('LightCrosshair.exe', 'LightCrosshair.UI.exe') }
+    foreach ($name in $expected) {
+        if (!(Test-Path -LiteralPath (Join-Path $output $name))) { throw "Missing $name" }
+    }
+    if ($CoreOnly) { Set-Content -LiteralPath (Join-Path $output 'CORE-ONLY.txt') -Value 'Development Core build. Not a complete distributable package.' }
+    Set-Content -LiteralPath (Join-Path $output 'RUNTIME.txt') -Value '.NET Desktop Runtime 10 is required. Keep both executables together.'
+    $zip = "$output.zip"
+    Compress-Archive -Path (Join-Path $output '*') -DestinationPath $zip -Force
+    $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash
+    Set-Content -LiteralPath "$zip.sha256" -Value "$hash  $([IO.Path]::GetFileName($zip))" -Encoding ascii
+    Write-Host "Prepared $zip"
 }
-
-# Basic contents sanity
-$exe = Join-Path $outDir 'LightCrosshair.exe'
-if (-not $DryRun -and -not (Test-Path $exe)) { throw 'Executable not found after publish.' }
-
-# Hash + zip
-$zipPath = Join-Path $outRoot "LightCrosshair-v$Version-$Runtime.zip"
-$hashPath = $zipPath + '.sha256'
-if (-not $DryRun) {
-    if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
-    Compress-Archive -Path (Join-Path $outDir '*') -DestinationPath $zipPath -Force
-    $hash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash
-    Set-Content -Path $hashPath -Value "$hash  $(Split-Path -Leaf $zipPath)" -Encoding ASCII
-}
-
-Write-Host "Output:" -ForegroundColor Green
-Write-Host "  Directory: $outDir" -ForegroundColor Gray
-Write-Host "  Zip:       $zipPath" -ForegroundColor Gray
-Write-Host "  Hash:      $hashPath" -ForegroundColor Gray
-
-# Release notes template
-$notes = @"
-## LightCrosshair v$Version
-
-### Highlights
-- (Add key changes here)
-
-### Integrity
-SHA256: $( if (-not $DryRun) { (Get-Content $hashPath) } else { '(dry-run hash pending)' })
-
-### Run
-Extract and run LightCrosshair.exe (no install needed).
-
-### System Requirements
-- Windows 10 1809+ / Windows 11
-- If Self-contained=false: .NET Desktop Runtime 8 required
-- If Self-contained=true: no external .NET runtime required
-
-"@
-$notesPath = Join-Path $outRoot "RELEASE-NOTES-v$Version.md"
-if (-not $DryRun) { Set-Content -Path $notesPath -Value $notes -Encoding UTF8 }
-Write-Host "  Notes:     $notesPath" -ForegroundColor Gray
-
-Write-Host "Portable package prepared. Do not tag or publish a release until the release step is explicitly approved." -ForegroundColor Yellow

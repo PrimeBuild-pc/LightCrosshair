@@ -1,10 +1,18 @@
-; LightCrosshair Installer (requires .NET 8.0 Desktop Runtime installed)
+; LightCrosshair Installer (requires .NET 10 Desktop Runtime installed)
+#ifndef AppVersion
+  #define AppVersion "2.0.0"
+#endif
+#ifndef SourceDir
+  #define SourceDir "..\releases\LightCrosshair-v2.0.0-win-x64"
+#endif
 [Setup]
+AppId=LightCrosshair
 AppName=LightCrosshair
-AppVersion=1.9.0
+AppVersion={#AppVersion}
+PrivilegesRequired=admin
 DefaultDirName={autopf}\LightCrosshair
 DefaultGroupName=LightCrosshair
-OutputBaseFilename=LightCrosshair-Setup-1.9.0
+OutputBaseFilename=LightCrosshair-Setup-{#AppVersion}
 Compression=lzma
 SolidCompression=yes
 DisableDirPage=no
@@ -12,7 +20,7 @@ DisableProgramGroupPage=yes
 ArchitecturesInstallIn64BitMode=x64compatible
 
 [Files]
-Source: "..\releases\x64\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
 [Icons]
 Name: "{group}\LightCrosshair"; Filename: "{app}\LightCrosshair.exe"
@@ -20,8 +28,8 @@ Name: "{autodesktop}\LightCrosshair"; Filename: "{app}\LightCrosshair.exe"; Task
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop icon"; GroupDescription: "Additional tasks:"
-Name: "runtimelink"; Description: "Open .NET 8.0 Desktop Runtime download page (required if not installed)"; GroupDescription: "Additional tasks:"; Flags: unchecked
+Name: "runtimelink"; Description: "Open .NET 10 Desktop Runtime download page (required if not installed)"; GroupDescription: "Additional tasks:"; Flags: unchecked
 
 [Run]
 Filename: "{app}\LightCrosshair.exe"; Description: "Launch LightCrosshair"; Flags: nowait postinstall skipifsilent runasoriginaluser
-Filename: "https://dotnet.microsoft.com/en-us/download/dotnet/8.0/runtime"; Description: "Open .NET 8.0 Desktop Runtime download page"; Flags: postinstall shellexec skipifsilent runasoriginaluser; Tasks: runtimelink
+Filename: "https://dotnet.microsoft.com/en-us/download/dotnet/10.0/runtime"; Description: "Open .NET 10 Desktop Runtime download page"; Flags: postinstall shellexec skipifsilent runasoriginaluser; Tasks: runtimelink

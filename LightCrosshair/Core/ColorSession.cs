@@ -1,0 +1,126 @@
+using System.Text.Json;
+using LightCrosshair.Contracts;
+using LightCrosshair.GpuDriver;
+
+namespace LightCrosshair
+{
+
+public sealed class RampSnapshot
+{
+    public ushort[] Red { get; set; } = [];
+    public ushort[] Green { get; set; } = [];
+    public ushort[] Blue { get; set; } = [];
+    internal static RampSnapshot From(Win32GammaColorManager.GammaRamp ramp) => new() { Red = ramp.Red, Green = ramp.Green, Blue = ramp.Blue };
+    internal Win32GammaColorManager.GammaRamp ToRamp()
+    {
+        if (Red?.Length != 256 || Green?.Length != 256 || Blue?.Length != 256) throw new InvalidDataException("Invalid recovery ramp");
+        return new() { Red = Red, Green = Green, Blue = Blue };
+    }
+}
+public sealed record AmdChannelSnapshot(int Adapter, int Display, int Type, int Value);
+public sealed class ColorRecoverySnapshot
+{
+    public string Vendor { get; set; } = "";
+    public RampSnapshot? Global { get; set; }
+    public Dictionary<string, RampSnapshot> Displays { get; set; } = new();
+    public List<AmdChannelSnapshot> AmdChannels { get; set; } = [];
+    public int? NvidiaVibrance { get; set; }
+    public NvidiaVibranceState? NvidiaVibranceState { get; set; }
+}
+
+namespace Core
+{
+    internal static class ColorWriteGuard
+    {
+        [ThreadStatic] internal static Action? BeforeWrite;
+    }
+    // The durable marker IS the original state. It is flushed before the first write,
+    // survives a killed process, and is removed only when every restoration succeeds.
+    internal sealed class ColorSession(string directory, Func<IGpuColorManager>? create = null, Func<NvidiaHelperRequest, NvidiaHelperResponse>? helper = null)
+    {
+        public event Action<bool>? Failed;
+        private Task _tail = Task.CompletedTask;
+        private long _revision;
+        private readonly object _gate = new();
+        private IGpuColorManager? _manager;
+        private ColorRecoverySnapshot? _original;
+        private readonly Func<IGpuColorManager> _create = create ?? GpuColorManagerFactory.CreateDefault;
+        private readonly Func<NvidiaHelperRequest, NvidiaHelperResponse> _helper = helper ?? (request => new NvidiaHelperProcessClient().Run(request));
+        private string Marker => Path.Combine(directory, "colors-applied.json");
+        public Task SetAsync(DisplayColorSettings? colors)
+        {
+            var copy = colors is null ? null : Validation.Copy(colors);
+            lock (_gate)
+            {
+                long revision = ++_revision;
+                return _tail = _tail.ContinueWith(_ =>
+                {
+                    // A slow vendor call must not leave a backlog of obsolete game colors.
+                    if (revision == Volatile.Read(ref _revision)) Transition(copy);
+                }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            }
+        }
+        public Task RecoverAsync() => SetAsync(null);
+        private void Transition(DisplayColorSettings? colors)
+        {
+            try
+            {
+                if (File.Exists(Marker))
+                {
+                    _manager ??= _create();
+                    _original ??= JsonSerializer.Deserialize<ColorRecoverySnapshot>(File.ReadAllText(Marker), ContractJson.Options) ?? throw new InvalidDataException();
+                    if (_original.Vendor != _manager.Vendor.ToString()) throw new InvalidOperationException("Recovery adapter changed");
+                    _manager.LoadRecovery(_original);
+                    bool gammaOk = _manager.TryRestore(out _);
+                    bool vibranceOk = _original.NvidiaVibranceState is { } raw
+                        ? _helper(new() { Operation = NvidiaHelperOperations.RestoreVibrance, VibranceState = raw }).Success
+                        : !_original.NvidiaVibrance.HasValue || _helper(NvidiaHelperRequest.SetVibrance(_original.NvidiaVibrance.Value)).Success;
+                    if (!gammaOk || !vibranceOk) throw new InvalidOperationException("Color restoration failed");
+                    File.Delete(Marker); _original = null; _manager = null;
+                }
+                if (colors is null) return;
+                _manager = _create();
+                if (!_manager.TryCaptureOriginalState(out _)) throw new InvalidOperationException("Color baseline unavailable");
+                _original = _manager.CaptureRecovery(); _original.Vendor = _manager.Vendor.ToString();
+                if (colors.NvidiaDigitalVibrance.HasValue)
+                {
+                    var baseline = _helper(new() { Operation = NvidiaHelperOperations.GetVibrance });
+                    if (!baseline.Success || baseline.VibranceState is null) throw new InvalidOperationException("Vibrance baseline unavailable");
+                    _original.NvidiaVibranceState = baseline.VibranceState;
+                }
+                Directory.CreateDirectory(directory);
+                string temp = Marker + ".tmp";
+                using (var output = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+                { JsonSerializer.Serialize(output, _original, ContractJson.Options); output.Flush(true); }
+                File.Move(temp, Marker, true);
+                ColorWriteGuard.BeforeWrite = () =>
+                {
+                    // Some legacy backends capture extra endpoints lazily. Refresh the journal
+                    // immediately before each hardware write, including those extra baselines.
+                    var updated = _manager.CaptureRecovery();
+                    updated.Vendor = _original.Vendor; updated.NvidiaVibrance = _original.NvidiaVibrance; updated.NvidiaVibranceState = _original.NvidiaVibranceState;
+                    using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+                    { JsonSerializer.Serialize(stream, updated, ContractJson.Options); stream.Flush(true); }
+                    File.Move(temp, Marker, true); _original = updated;
+                };
+                try
+                {
+                    if (!_manager.TryApply(new(colors.Gamma, colors.Contrast, colors.Brightness, colors.Vibrance), out _))
+                        throw new InvalidOperationException("Color apply failed");
+                    if (colors.NvidiaDigitalVibrance.HasValue && !_helper(NvidiaHelperRequest.SetVibrance(colors.NvidiaDigitalVibrance.Value)).Success)
+                        throw new InvalidOperationException("Vibrance apply failed");
+                }
+                finally { ColorWriteGuard.BeforeWrite = null; }
+            }
+            catch (Exception ex)
+            {
+                Program.LogError(ex, "Display color transaction", directory);
+                Failed?.Invoke(colors is null || File.Exists(Marker));
+                // Partial apply must immediately try to restore. Leave the marker on failure.
+                if (colors is not null && File.Exists(Marker)) Transition(null);
+            }
+        }
+    }
+}
+
+}

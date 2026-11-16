@@ -250,6 +250,12 @@ namespace LightCrosshair
 
     internal sealed class AmdAdlColorManager
     {
+        public List<AmdChannelSnapshot> CaptureRecovery() => _originalValues.Select(e => new AmdChannelSnapshot(e.Key.AdapterIndex, e.Key.DisplayIndex, e.Key.ColorType, e.Value)).ToList();
+        public void LoadRecovery(List<AmdChannelSnapshot> channels)
+        {
+            _originalValues.Clear();
+            foreach (var c in channels) _originalValues[new ChannelKey(c.Adapter, c.Display, c.Type)] = c.Value;
+        }
         private const int ADL_OK = 0;
         private const int ADL_ERR_NOT_SUPPORTED = -3;
         private const int ADL_DISPLAY_COLOR_BRIGHTNESS = 1 << 0;
@@ -594,16 +600,10 @@ namespace LightCrosshair
                 try
                 {
                     var failedEntries = new List<string>();
-                    var unsupportedKeys = new List<ChannelKey>();
                     foreach (var kvp in _originalValues)
                     {
+                        Core.ColorWriteGuard.BeforeWrite?.Invoke();
                         int setResult = _displayColorSet!(context, kvp.Key.AdapterIndex, kvp.Key.DisplayIndex, kvp.Key.ColorType, kvp.Value);
-                        if (setResult == ADL_ERR_NOT_SUPPORTED)
-                        {
-                            unsupportedKeys.Add(kvp.Key);
-                            continue;
-                        }
-
                         if (setResult != ADL_OK)
                         {
                             if (failedEntries.Count < 8)
@@ -611,13 +611,6 @@ namespace LightCrosshair
                                 failedEntries.Add($"adapter={kvp.Key.AdapterIndex},display={kvp.Key.DisplayIndex},type={kvp.Key.ColorType},result={setResult}");
                             }
                         }
-                    }
-
-                    foreach (var key in unsupportedKeys)
-                    {
-                        _originalValues.Remove(key);
-                        var displayChannel = new DisplayChannel(key.AdapterIndex, key.DisplayIndex, ResolveChannelNameByType(key.ColorType));
-                        MarkWriteRejected(displayChannel, key.ColorType);
                     }
 
                     if (failedEntries.Count > 0)
@@ -727,6 +720,7 @@ namespace LightCrosshair
                     _originalValues[originalKey] = snapshot.Current;
                 }
 
+                Core.ColorWriteGuard.BeforeWrite?.Invoke();
                 int setResult = _displayColorSet!(context, adapterIndex, displayIndex, snapshot.ColorType, mapped);
                 if (setResult == ADL_OK)
                 {

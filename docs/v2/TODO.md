@@ -12,51 +12,51 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 
 ## Codex — Core, branch `v2-core`
 ### C0 Baseline (before changing code)
-- [ ] `scripts/perf/measure.ps1`: Release build, start app, sample private bytes, working set, CPU % and GDI/USER handles for 60 s idle; open/close settings 5 times; startup time. Writes CSV + summary.
-- [ ] Run it on v1.9 code, write `docs/v2/BASELINE.md` (machine, numbers, method)
+- [x] `scripts/perf/measure.ps1`: Release build, start app, sample private bytes, working set, CPU % and GDI/USER handles for 60 s idle; open/close settings 5 times; startup time. Writes CSV + summary.
+- [x] Run it on v1.9 code, write `docs/v2/BASELINE.md` (machine, numbers, method)
 ### C1 Platform and cleanup
-- [ ] Retarget `LightCrosshair` and `LightCrosshair.Tests` to `net10.0-windows`; reference `LightCrosshair.Contracts`
-- [ ] Remove WPF from Core: `SettingsWindow.xaml(.cs)`, `WpfSettingsHost.cs`, `UseWPF`
-- [ ] Remove Frame Cap Assistant, FPS Detailed mode, graphs, pacing diagnostics, frame-gen heuristics, RTSS fallback, G-Sync/FreeSync/color-management status code, update checker (moves to UI), and their tests
-- [ ] Update CI workflow to .NET 10 and the new solution layout
+- [x] Retarget `LightCrosshair` and `LightCrosshair.Tests` to `net10.0-windows`; reference `LightCrosshair.Contracts`
+- [x] Remove WPF from Core: `SettingsWindow.xaml(.cs)`, `WpfSettingsHost.cs`, `UseWPF`
+- [x] Remove Frame Cap Assistant, FPS Detailed mode, graphs, pacing diagnostics, frame-gen heuristics, RTSS fallback, G-Sync/FreeSync/color-management status code, update checker (moves to UI), and their tests
+- [x] Update CI workflow to .NET 10 and the new solution layout
 ### C2 Store
-- [ ] `store.json` load/save (atomic, debounced), invariants, corrupt-file recovery
-- [ ] Backups (hourly, newest 10, before migration)
-- [ ] Migration from v1 files per CONTRACT.md §5, v1 files untouched
-- [ ] Tests: round-trip, every v1 shape and composite, process-bound profiles, hotkeys, corrupt store, idempotent migration
+- [x] `store.json` load/save (atomic, debounced), invariants, corrupt-file recovery
+- [x] Backups (hourly, newest 10, before migration)
+- [x] Migration from v1 files per CONTRACT.md §5, v1 files untouched
+- [x] Tests: round-trip, every v1 shape and composite, process-bound profiles, hotkeys, corrupt store, idempotent migration
 ### C3 Overlay and renderer
-- [ ] Layer renderer for Arms / Dot / Ring / Box / Image with rotation, offset, opacity, outline, antialias toggle; pixel-crisp when rotation is a multiple of 90°
-- [ ] Per-pixel alpha overlay via `UpdateLayeredWindow`; click-through, topmost, no taskbar/Alt-Tab, no activation
-- [ ] Redraw only on change; no timers while static
-- [ ] Monitor selection with fallback; handle `WM_DISPLAYCHANGE`, `WM_DPICHANGED`, monitor hot-plug
-- [ ] `render` to PNG with the same renderer (< 5 ms at 128 px)
-- [ ] Tests: geometry per kind, outline, bounds, rotation, render determinism
+- [x] Layer renderer for Arms / Dot / Ring / Box / Image with rotation, offset, opacity, outline, antialias toggle; pixel-crisp when rotation is a multiple of 90°
+- [x] Per-pixel alpha overlay via `UpdateLayeredWindow`; click-through, topmost, no taskbar/Alt-Tab, no activation
+- [x] Redraw only on change; no timers while static
+- [x] Monitor selection with fallback; handle `WM_DISPLAYCHANGE`, `WM_DPICHANGED`, monitor hot-plug
+- [x] `render` to PNG with the same renderer (< 5 ms at 128 px)
+- [x] Tests: geometry per kind, outline, bounds, rotation, render determinism
 ### C4 Game profiles
-- [ ] `SetWinEventHook` foreground detection; process name resolution
-- [ ] Apply / restore crosshair, display colors, FPS overlay override, visibility binding override
-- [ ] Default crosshair + "show only in configured games"
-- [ ] NVIDIA per-app FPS cap on save/delete, capability detection
-- [ ] Known-games list (~50) + suggestion + tray notification → UI `--page games --suggest`
-- [ ] Tests: rule table for foreground transitions (pure logic)
+- [x] `SetWinEventHook` foreground detection; process name resolution
+- [x] Apply / restore crosshair, display colors, FPS overlay override, visibility binding override
+- [x] Default crosshair + "show only in configured games"
+- [ ] NVIDIA per-app FPS cap on save/delete, capability detection — save/delete implemented; actual feature probe and v1 driver-cap adoption deferred in HANDOFF-core.md
+- [x] Known-games list (~50) + suggestion + tray notification → UI `--page games --suggest`
+- [x] Tests: rule table for foreground transitions (pure logic)
 ### C5 IPC and lifecycle
-- [ ] Single-instance Core; pipe server per CONTRACT.md §2; all `IpcMethods`; events
-- [ ] Start/focus/close UI; UI-absent behavior (tray menu: Show/Hide crosshair, Open LightCrosshair, Exit)
-- [ ] Tests: envelope round-trip, handshake mismatch, pipelined requests, disconnect ends preview
+- [x] Single-instance Core; pipe server per CONTRACT.md §2; all `IpcMethods`; events
+- [x] Start/focus/close UI; UI-absent behavior (tray menu: Show/Hide crosshair, Open LightCrosshair, Exit)
+- [x] Tests: envelope round-trip, handshake mismatch, pipelined requests, disconnect ends preview
 ### C6 Hotkeys
-- [ ] Global hotkeys + input-hook bindings from `AppSettings.Hotkeys` and game overrides; v1.9 semantics preserved
-- [ ] Registration failures reported in `RuntimeState.HotkeyErrors` (never silent)
+- [x] Global hotkeys + input-hook bindings from `AppSettings.Hotkeys` and game overrides; v1.9 semantics preserved
+- [x] Registration failures reported in `RuntimeState.HotkeyErrors` (never silent)
 ### C7 Library features
-- [ ] ~30 original presets (generic names, no player/team/game trademarks), tagged
-- [ ] Share code encode/decode per CONTRACT.md §6 + tests
-- [ ] Export/import `*.lcx.json` with embedded images + tests
-- [ ] PNG import validation (format, ≤ 512 px side, ≤ 2 MB)
+- [x] ~30 original presets (generic names, no player/team/game trademarks), tagged
+- [x] Share code encode/decode per CONTRACT.md §6 + tests
+- [x] Export/import `*.lcx.json` with embedded images + tests
+- [x] PNG import validation (format, ≤ 512 px side, ≤ 2 MB)
 ### C8 Localization, packaging, docs
-- [ ] Core strings (tray menu, notifications) in en, it, es, zh-Hans, ru, ja
-- [ ] Publish scripts produce both exes in one folder (x64, ARM64); installer, ZIP, winget/choco templates reference .NET 10 Desktop Runtime
-- [ ] README, CHANGELOG 2.0.0, docs/SETTINGS.md rewritten for v2
+- [x] Core strings (tray menu, notifications) in en, it, es, zh-Hans, ru, ja
+- [x] Publish scripts produce both exes in one folder (x64, ARM64); installer, ZIP, winget/choco templates reference .NET 10 Desktop Runtime
+- [x] README, CHANGELOG 2.0.0, docs/SETTINGS.md rewritten for v2
 ### C9 Verification
-- [ ] Run `measure.ps1` on v2 Core, compare with budgets in PLAN.md §4, write results in HANDOFF-core.md
-- [ ] `docs/v2/HANDOFF-core.md` complete
+- [x] Run `measure.ps1` on v2 Core, compare with budgets in PLAN.md §4, write results in HANDOFF-core.md
+- [x] `docs/v2/HANDOFF-core.md` complete
 
 ## Cursor — UI, branch `v2-ui`
 ### U0 Foundation

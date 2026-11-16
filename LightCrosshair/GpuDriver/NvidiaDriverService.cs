@@ -635,6 +635,31 @@ namespace LightCrosshair.GpuDriver
             }
         }
 
+        internal NvidiaVibranceState? CaptureVibranceState()
+        {
+            if (!_initialized) return null;
+            try
+            {
+                var display = Display.GetDisplays().FirstOrDefault();
+                return display is null ? null : new(display.Name, DisplayApi.GetDVCInfo(display.Handle).CurrentLevel);
+            }
+            catch (Exception ex) { Program.LogError(ex, "Capture NVIDIA vibrance"); return null; }
+        }
+
+        internal bool RestoreVibranceState(NvidiaVibranceState state)
+        {
+            if (!_initialized) return false;
+            try
+            {
+                var display = Display.GetDisplays().FirstOrDefault(d => string.Equals(d.Name, state.DisplayName, StringComparison.OrdinalIgnoreCase));
+                if (display is null) return false;
+                var range = DisplayApi.GetDVCInfo(display.Handle);
+                if (state.RawLevel < range.MinimumLevel || state.RawLevel > range.MaximumLevel) return false;
+                DisplayApi.SetDVCLevel(display.Handle, state.RawLevel); return true;
+            }
+            catch (Exception ex) { Program.LogError(ex, "Restore NVIDIA vibrance"); return false; }
+        }
+
         /// <inheritdoc />
         public bool TryGetAmdChillStatus(out bool isEnabled, out int minFps, out int maxFps, out string statusMessage)
         {

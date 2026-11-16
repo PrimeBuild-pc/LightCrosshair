@@ -2,45 +2,38 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>lightcrosshair</id>
-    <version>1.8.0</version>
+    <version>2.0.0</version>
     <packageSourceUrl>https://github.com/PrimeBuild-pc/LightCrosshair/tree/main/setup/chocolatey</packageSourceUrl>
     <owners>PrimeBuild</owners>
     <title>LightCrosshair</title>
     <authors>PrimeBuild</authors>
     <licenseUrl>https://github.com/PrimeBuild-pc/LightCrosshair/blob/main/LICENSE.md</licenseUrl>
-    <projectUrl>https://github.com/PrimeBuild-pc/LightCrosshair/releases/tag/v1.8.0</projectUrl>
+    <projectUrl>https://github.com/PrimeBuild-pc/LightCrosshair/releases/tag/v2.0.0</projectUrl>
     <iconUrl>https://raw.githubusercontent.com/PrimeBuild-pc/LightCrosshair/main/LightCrosshair/assets/icon.png</iconUrl>
     <copyright>Copyright © 2024-2026 PrimeBuild</copyright>
     <description>
 LightCrosshair is a lightweight, high-performance crosshair overlay for competitive gaming on Windows 10/11.
 
 ## Features
-- Custom crosshair builder with full shape control
-- Lightweight performance overlay modes with ultra-lightweight mode
-- Frame Cap Assistant with no active real limiter backend
-- Process-aware display color management (per-profile gamma/contrast/brightness)
-- Modern profile workflow with immutable defaults
-- Low CPU footprint optimized for gameplay
-- Independent monitor selection for crosshair and FPS overlay with DPI awareness
-- Screen recording detection for streaming/recording
+- Layered crosshair editor and 30 local original presets
+- Separate settings application; always-on Core without WPF
+- Per-game crosshairs, colors, bindings and optional NVIDIA FPS caps
+- Local share codes and JSON files with embedded images
+- Optional FPS, frametime and 1% low overlay
 
 ## Requirements
 - Windows 10 or later
-- .NET 8.0 Windows Desktop Runtime (required for the current framework-dependent package)
+- .NET 10.0 Windows Desktop Runtime (required for the current framework-dependent package)
 
 ## Installation
-This package downloads the official LightCrosshair 1.8.0 installer from the GitHub Release and verifies its SHA256 checksum before installation.
+This package downloads the official LightCrosshair 2.0.0 installer from the GitHub Release and verifies its SHA256 checksum before installation.
 
 After installation, launch LightCrosshair from your Start Menu.
     </description>
     <summary>Lightweight gaming crosshair overlay with FPS counter and color management</summary>
-    <releaseNotes>
-v1.8.0 (September 2026): Adds independent monitor selection for the crosshair and FPS overlay, automatic primary-display fallback, backward-compatible monitor setting migration, and a smaller FPS overlay surface limited to the selected display.
-
-See https://github.com/PrimeBuild-pc/LightCrosshair/releases for full details.
-    </releaseNotes>
+    <releaseNotes>2.0.0 preparation: layered crosshairs, separate settings process and read-only migration from v1. Publication awaits final validation.</releaseNotes>
     <dependencies>
-      <dependency id="dotnet-8.0-desktopruntime" version="8.0" />
+      <dependency id="dotnet-10.0-desktopruntime" version="10.0" />
     </dependencies>
     <tags>gaming crosshair overlay fps-counter color-management competitive</tags>
     <docsUrl>https://github.com/PrimeBuild-pc/LightCrosshair#readme</docsUrl>

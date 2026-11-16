@@ -112,7 +112,7 @@ jobs:
           $installPath = Join-Path $stage 'tools/chocolateyinstall.ps1'
           $install = Get-Content -LiteralPath $installPath -Raw
           $install = $install -replace '\$installerUrl\s*=\s*''[^'']+''', "`$installerUrl = '$env:INSTALLER_URL'"
-          $install = $install -replace '\$checksum\s*=\s*''[0-9A-Fa-f]{64}''', "`$checksum = '$env:INSTALLER_SHA256'"
+          $install = $install -replace '\$checksum\s*=\s*''[^'']+''', "`$checksum = '$env:INSTALLER_SHA256'"
           if ($install -notmatch [regex]::Escape($env:INSTALLER_URL) -or $install -notmatch $env:INSTALLER_SHA256) {
             throw 'Chocolatey installer URL or checksum substitution failed.'
           }
@@ -160,6 +160,13 @@ jobs:
           $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $wingetCreate).Hash
           if ($actualHash -ne $expectedHash) { throw 'wingetcreate.exe checksum mismatch.' }
 
+          if ([version]$env:PACKAGE_VERSION -ge [version]'2.0.0') {
+            $manifestDir = Join-Path $env:RUNNER_TEMP 'winget-v2'
+            ./scripts/prepare-winget.ps1 -Version $env:PACKAGE_VERSION -InstallerUrl $env:INSTALLER_URL -Sha256 $env:INSTALLER_SHA256 -ReleaseDate $env:RELEASE_DATE -OutputDirectory $manifestDir
+            winget validate --manifest $manifestDir
+            if ($LASTEXITCODE -ne 0) { throw 'WinGet v2 manifest validation failed.' }
+            & $wingetCreate submit $manifestDir --token $env:WINGET_TOKEN --prtitle "Update PrimeBuild.LightCrosshair to $env:PACKAGE_VERSION" --no-open
+          } else {
           & $wingetCreate update PrimeBuild.LightCrosshair `
             --version $env:PACKAGE_VERSION `
             --urls "$env:INSTALLER_URL|x64" `
@@ -167,4 +174,5 @@ jobs:
             --release-date $env:RELEASE_DATE `
             --prtitle "Update PrimeBuild.LightCrosshair to $env:PACKAGE_VERSION" `
             --submit --no-open --token $env:WINGET_TOKEN
+          }
           if ($LASTEXITCODE -ne 0) { throw "wingetcreate failed with exit code $LASTEXITCODE." }

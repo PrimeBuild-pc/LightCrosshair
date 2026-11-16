@@ -2,9 +2,9 @@ name: .NET Build and Test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "v2", "v2-core", "v2-ui" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "v2", "v2-core", "v2-ui" ]
 
 permissions:
   contents: read
@@ -18,10 +18,10 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Setup .NET 8
+    - name: Setup .NET 10
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '10.0.x'
 
     - name: Restore dependencies
       run: dotnet restore
@@ -31,3 +31,13 @@ jobs:
 
     - name: Run tests
       run: dotnet test --no-build --verbosity normal --configuration Release
+
+    - name: Validate separate UI projects when present
+      shell: pwsh
+      run: |
+        if (Test-Path LightCrosshair.UI/LightCrosshair.UI.csproj) {
+          dotnet build LightCrosshair.UI/LightCrosshair.UI.csproj -c Release
+          if ($LASTEXITCODE) { throw 'UI build failed' }
+          dotnet test LightCrosshair.UI.Tests/LightCrosshair.UI.Tests.csproj -c Release
+          if ($LASTEXITCODE) { throw 'UI tests failed' }
+        }
