@@ -78,7 +78,7 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 - [x] Share code copy/paste; PNG import → Image layer
 ### U4 Library
 - [x] Presets + my crosshairs grid with thumbnails (cached), favorites, tag filter, search
-- [x] Apply as default, edit / edit a copy, duplicate, delete with confirmation, export/import file
+- [x] Use in active game/default context, explicit all-apps default, edit / edit a copy, duplicate, delete with confirmation, export/import file
 ### U5 Games
 - [x] Profile list + detail panel per DESIGN.md; enable switch
 - [x] Add from running processes or .exe browse; suggestion banner (accept / not now / never)
@@ -86,10 +86,18 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 ### U6 Hotkeys
 - [x] Binding capture (keys, mouse buttons, wheel, modifiers, modes, wheel = toggle only), conflicts, Core errors inline
 ### U7 Settings
-- [x] Display, behavior, FPS overlay, language, updates (port v1 update check + its tests), about, exit
+- [x] Display, behavior, global display colors, language, updates (port v1 update check + its tests), about, exit
 ### U8 Finish
 - [x] Keyboard navigation and automation names everywhere
 - [x] ViewModel tests against the fake core (Studio edit/undo, games rules, hotkeys conflicts, settings)
 - [x] Measure UI cold start and memory, record in handoff
 - [x] Dev flag `--fake-core --screenshots <dir>`: renders every page (and Studio with a 3-layer design) to PNG at 1180×740 and exits
 - [x] `docs/v2/HANDOFF-ui.md` complete, with the screenshot command and output
+
+## Final round
+- [x] Use targets active game/default; explicit all-apps default and assignment labels; Core/VM tests.
+- [x] Independent While held binding and game inherit/off/own policy; native pass-through and migration verification.
+- [x] Dedicated FPS page/switch, optional bounded frametime graph, DX11/DX12 numbers and redraw probes.
+- [x] Named-display AMD gamma fix, global colors, throttled previews and exact original recovery after forced kill.
+- [x] Regenerate six screenshots and update release documentation.
+- [x] Complete final idle/smoke checks and record parked UI first-frame results.

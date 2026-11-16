@@ -10,8 +10,10 @@ public class ColorsPreviewTests
     public async Task PreviewDropsIntermediateValuesAndAlwaysSendsFinalBeforeEnding()
     {
         var core=new FakeCoreClient(); var preview=new DisplayColorsPreview(core); preview.Begin();
+        var watch=System.Diagnostics.Stopwatch.StartNew();
         for(int i=0;i<100;i++) preview.Update(new(){Gamma=50+i});
         await preview.EndAsync();
+        Assert.True(watch.ElapsedMilliseconds >= 90); // colors and end requests share the rate limit
         Assert.InRange(core.ColorPreviews.Count,2,3); Assert.Null(core.ColorPreviews.Last());
         Assert.Equal(149,core.ColorPreviews[^2]!.Gamma);
         int count=core.ColorPreviews.Count; preview.Update(new(){Gamma=120}); await preview.EndAsync(); Assert.Equal(count,core.ColorPreviews.Count);

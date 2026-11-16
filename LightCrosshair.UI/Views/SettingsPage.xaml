@@ -15,17 +15,6 @@
           </DataTemplate>
         </ComboBox.ItemTemplate>
       </ComboBox>
-      <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_Position}"/>
-      <controls:OffsetDiagram OffsetX="{Binding OffsetX}" OffsetY="{Binding OffsetY}"/>
-      <controls:NumberSlider Caption="{loc:Tr Settings_OffsetX}" Value="{Binding OffsetX}" Minimum="-200" Maximum="200" Unit="{loc:Tr Unit_Px}"/>
-      <controls:NumberSlider Caption="{loc:Tr Settings_OffsetY}" Value="{Binding OffsetY}" Minimum="-200" Maximum="200" Unit="{loc:Tr Unit_Px}"/>
-
-      <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_Behavior}"/>
-      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_OnlyGames}" IsChecked="{Binding ShowOnlyInConfiguredGames}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_OnlyGames}"/>
-      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_HideRecording}" IsChecked="{Binding HideDuringScreenRecording}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_HideRecording}"/>
-      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_StartWindows}" IsChecked="{Binding StartWithWindows}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_StartWindows}"/>
-      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_Suggestions}" IsChecked="{Binding SuggestKnownGames}" Margin="0,4,0,12" AutomationProperties.Name="{loc:Tr Settings_Suggestions}"/>
-
       <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Games_DisplayColors}"/>
       <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Settings_ColorsHelp}" Margin="0,0,0,8" TextWrapping="Wrap"/>
       <TextBlock Style="{StaticResource WarningText}" Text="{Binding DisplayColorsMessage}" TextWrapping="Wrap" Visibility="{Binding DisplayColorsMessage, Converter={StaticResource NullVis}}"/>
@@ -37,6 +26,17 @@
         <controls:NumberSlider Caption="{loc:Tr Games_Vibrance}" Value="{Binding Vibrance}" Minimum="0" Maximum="100" DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}"/>
         <controls:NumberSlider Caption="{loc:Tr Games_NvidiaVibrance}" Value="{Binding NvidiaVibrance}" Minimum="0" Maximum="100" IsEnabled="{Binding NvidiaColorSupported}" DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}"/>
       </StackPanel>
+
+      <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_Position}"/>
+      <controls:OffsetDiagram OffsetX="{Binding OffsetX}" OffsetY="{Binding OffsetY}"/>
+      <controls:NumberSlider Caption="{loc:Tr Settings_OffsetX}" Value="{Binding OffsetX}" Minimum="-200" Maximum="200" Unit="{loc:Tr Unit_Px}"/>
+      <controls:NumberSlider Caption="{loc:Tr Settings_OffsetY}" Value="{Binding OffsetY}" Minimum="-200" Maximum="200" Unit="{loc:Tr Unit_Px}"/>
+
+      <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_Behavior}"/>
+      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_OnlyGames}" IsChecked="{Binding ShowOnlyInConfiguredGames}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_OnlyGames}"/>
+      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_HideRecording}" IsChecked="{Binding HideDuringScreenRecording}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_HideRecording}"/>
+      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_StartWindows}" IsChecked="{Binding StartWithWindows}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_StartWindows}"/>
+      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_Suggestions}" IsChecked="{Binding SuggestKnownGames}" Margin="0,4,0,12" AutomationProperties.Name="{loc:Tr Settings_Suggestions}"/>
 
       <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_Language}"/>
       <ComboBox ItemsSource="{Binding Languages}" SelectedValuePath="Id" SelectedValue="{Binding Language}" Margin="0,4,0,12" AutomationProperties.Name="{loc:Tr Settings_Language}" ItemContainerStyle="{StaticResource TextComboItem}">

@@ -496,9 +496,12 @@ public sealed class FakeCoreClient : ICoreClient
                 {
                     DefaultCrosshairId = classic.Id,
                     Language = "en",
+                    DisplayColorsEnabled = true,
+                    DisplayColors = new() { Gamma = 110, Contrast = 110, Brightness = 105, Vibrance = 60 },
                     Hotkeys = new HotkeySettings
                     {
-                        ToggleVisibility = new InputBinding { Key = "Mouse5", Mode = BindingMode.HoldToShow },
+                        ToggleVisibility = new InputBinding { Key = "X", Modifiers = KeyModifiers.Alt },
+                        HoldVisibility = new InputBinding { Key = "RightClick", Mode = BindingMode.HoldToHide },
                     },
                 },
                 Crosshairs = [classic, precision, tactical, ring],

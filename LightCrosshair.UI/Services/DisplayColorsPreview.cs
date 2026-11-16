@@ -40,6 +40,10 @@ public sealed class DisplayColorsPreview(ICoreClient core)
         _active = false;
         await _pending.ConfigureAwait(true); // Drain the final value before ending.
         if (_active) return;
+        int delay = (int)Math.Max(0, 50 - (Environment.TickCount64 - _lastSent));
+        if (delay > 0) await Task.Delay(delay).ConfigureAwait(true);
+        if (_active) return;
+        _lastSent = Environment.TickCount64;
         try { await core.PreviewDisplayColorsAsync(null).ConfigureAwait(true); }
         catch (Exception) { Failed?.Invoke(); }
     }

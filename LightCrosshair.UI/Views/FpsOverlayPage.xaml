@@ -5,6 +5,7 @@
  xmlns:controls="clr-namespace:LightCrosshair.UI.Controls">
   <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel DataContext="{Binding Editor}" MaxWidth="640" HorizontalAlignment="Left">
+      <TextBlock Style="{StaticResource WarningText}" Text="{Binding Error}" Visibility="{Binding Error, Converter={StaticResource NullVis}}"/>
       <TextBlock Style="{StaticResource BodyText}" Text="{loc:Tr Fps_Help}" TextWrapping="Wrap" Margin="0,0,0,16"/>
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_FpsOn}" IsChecked="{Binding FpsEnabled}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_FpsOn}"/>
       <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Settings_FpsMonitor}"/>

@@ -46,7 +46,7 @@ PNG import accepts a PNG file up to 2 MiB and 512 pixels on either side. It is c
 
 **My crosshairs** contains saved designs; **Presets** is a gallery of 30 bundled designs. Search by name and use tag filters to narrow the lists. Click a preset to **Use** it: accept or change the suggested name and press Enter to save and activate your copy; Esc cancels. The bundled original stays unchanged. If a copy of that preset already exists, you can reuse it.
 
-Click a saved crosshair to use it in the current context; the active design is marked **In use**. Choose Edit, or double-click, to open Studio. The saved-card menu offers Use, Edit, Duplicate, Favorite, Export and Delete. A crosshair used as the default or assigned to a game cannot be deleted until its assignments are changed.
+Click a saved crosshair to use it in the current context; cards show **In use · game name** and **Default** assignments. **Set as default for all apps** deliberately changes the default even while a game is active. Choose Edit, or double-click, to open Studio. The saved-card menu offers Use, Set as default for all apps, Edit, Duplicate, Favorite, Export and Delete. A crosshair used as the default or assigned to a game cannot be deleted until its assignments are changed.
 
 Next/previous hotkeys cycle favorites only when at least two exist. With zero or one favorite, they cycle all saved crosshairs. The order matches Library (most recently updated first); gallery presets are included only after a copy is saved. Cycling persists into the active enabled game profile or, outside a configured game, the default. Leaving a game restores the default selection without losing that game's saved choice.
 
@@ -64,16 +64,19 @@ Select a profile to edit its name and crosshair, then Save. The list's enable sw
 |---|---|
 | Crosshair | Saved design to use while the configured executable is in the foreground |
 | Visibility override | Use a game-specific visibility binding and mode, or inherit the global binding |
+| While held | Follow global, off in this game, or an independent Hold to hide / Hold to show keyboard or mouse-button binding |
 | FPS overlay | Follow the global setting, force On or force Off |
 | Use display colors | Apply saved values while this game is active; switching off retains the values |
-| Gamma / Contrast / Brightness | Software display adjustments, 50–150; 100 is neutral |
-| Vibrance | Software vibrance, 0–100; 50 is neutral |
+| Gamma / Contrast / Brightness | Display adjustments, 50–150; 100 is neutral |
+| Vibrance | Display vibrance, 0–100; 50 is neutral |
 | NVIDIA Digital Vibrance | Optional driver adjustment, 0–100, when supported |
 | NVIDIA FPS cap | Optional per-app driver cap; slider range 30–480 FPS |
 
-Display colors affect the display, not just the crosshair. Leaving a game restores default crosshair rules and the original display colors; working in LightCrosshair settings preserves the current game context. Driver-specific controls depend on the available hardware and display mode. NVIDIA features are **not yet verified on NVIDIA hardware**.
+Display colors affect the display, not just the crosshair. Leaving a game restores default crosshair rules and global display colors when enabled, otherwise the original display colors; working in LightCrosshair settings preserves the current game context. Driver-specific controls depend on the available hardware and display mode. NVIDIA features are **not yet verified on NVIDIA hardware**.
 
-AMD brightness, contrast and vibrance can work even when the display's gamma-ramp API is unavailable. Gamma 100 is neutral and preserves the existing calibration; a non-neutral gamma can be unsupported on that driver/output. Apply failures are reported through the current game context and logged with the vendor's reason. A later successful apply or leaving the game clears the apply error. A failed restoration keeps its recovery journal so it can be retried.
+AMD uses driver brightness, contrast and vibrance plus a per-display GDI gamma ramp. Gamma 100 preserves the existing calibration. Unsupported driver requests are reported inline and logged with the vendor's reason. Success clears an apply error; a failed restoration keeps its recovery journal for retry. NVIDIA features remain hardware-dependent.
+
+Drag a color slider to preview the current working values, including unsaved Games edits. Preview requests are limited to 20 per second and always drain the final value. Releasing, leaving the page, parking or disconnecting ends the preview and restores the active game/global context. Games edits still require Save; Settings saves automatically.
 
 A driver cap is written when the profile is saved and persists in the driver's application profile. Turning off the profile's foreground enable switch does not clear that cap: switch off the cap and Save, or delete the managed profile, to remove it. Old driver caps that were never managed by 2.0 are left untouched.
 
@@ -90,7 +93,7 @@ Known-game suggestions offer **Create**, **Not now** and **Never for this game**
 
 Click a capture field and press the desired keyboard key; Esc cancels. For a mouse binding, use the explicit picker for Middle click, Right click, Mouse4, Mouse5, Wheel up or Wheel down, then choose the Alt, Ctrl, Shift or Win modifiers alongside it. Mouse input can also be captured while the capture field is active. **Clear** removes a binding.
 
-Visibility supports Toggle, Hold to hide and Hold to show. Other actions and all wheel bindings use Toggle. Releasing a hold restores the underlying visibility state. Core actions are paused during binding capture and resume when it ends. Input still reaches other applications; a bound mouse button keeps its normal game behavior.
+**While held** is a separate action, unbound initially, with Hold to hide / Hold to show modes. For example, select Right click without modifiers and Hold to hide to hide while aiming. The visibility toggle keeps Alt+X. A game can inherit, disable or replace the global hold binding. Other actions and all wheel bindings use Toggle. Releasing a hold, losing focus or starting binding capture restores the underlying visibility state; the temporary hold is never saved. Core actions are paused during binding capture and resume when it ends. Input still reaches other applications; a bound mouse button keeps its normal game behavior.
 
 Conflicts and Core registration failures appear under the affected action. Choose another binding if Windows or another application already owns it.
 
@@ -99,6 +102,10 @@ Conflicts and Core registration failures appear under the affected action. Choos
 ### Display
 
 Choose the overlay monitor by model name, for example **DELL S2721DGF · Display1**. The model comes from Windows display configuration; an adapter description is used when the model is unavailable. The primary monitor is the default and fallback when the selected display is unavailable. **Offset X / Y** moves the whole crosshair from that monitor's center in physical pixels; the editor exposes −200 to +200 px. Positive X moves right and positive Y moves down. The position diagram and numeric fields describe the same offset.
+
+### Display colors
+
+Enable **Adjust display colors** in Settings to apply gamma, contrast, brightness and vibrance on the desktop and in apps. Controls and ranges match Games. Optional NVIDIA Digital Vibrance is enabled only when the GPU reports support. An active game's enabled, configured colors override globals. With neither enabled, original display values are restored. Global settings save automatically; slider preview ends on release and returns to that precedence. These changes affect the whole display, including other apps.
 
 ### Behavior
 
@@ -109,19 +116,6 @@ Choose the overlay monitor by model name, for example **DELL S2721DGF · Display
 | Start with Windows | Start the Core for the current user at sign-in |
 | Suggest known games | Offer local profile suggestions for recognized foreground executables |
 
-### FPS overlay
-
-Enable the optional FPS overlay globally, or override it per game. Capture starts/stops with the effective setting. It shows FPS with optional frametime and 1% low values for the foreground process, keeping separate swapchains independent. After two seconds without frames, “–” appears with a localized reason, such as no recent frames or unavailable capture permissions. Failed capture sessions retry while enabled. These are external ETW present-event measurements, not a frame-generation detector; no RTSS or game hook is required.
-
-| Control | Effect |
-|---|---|
-| Monitor | Use the crosshair's monitor, or choose another display |
-| Offset X / Y | Position from that monitor's top-left corner; editor range 0–2000 px |
-| Scale | Text/overlay scale, 0.5×–3× |
-| Frametime / 1% low | Show or hide the additional values |
-| Text color / Background color | Hexadecimal RGB colors |
-| Background opacity | Background transparency, 0–100% |
-
 ### Language, updates and exit
 
 Choose Automatic or English, Italian, Spanish, Simplified Chinese, Russian or Japanese. The UI and Core tray text update without a restart.
@@ -130,6 +124,20 @@ Choose Automatic or English, Italian, Spanish, Simplified Chinese, Russian or Ja
 
 About shows the version, website/source links and license information. **Exit LightCrosshair** asks for confirmation, closes settings and stops Core, restoring display colors.
 
+## FPS overlay
+
+Open **FPS overlay** in the sidebar (between Hotkeys and Settings). Use **Show FPS overlay** under Show crosshair, or the page's enable switch, to change the global setting, or override it per game. Capture starts/stops with the effective setting. It shows FPS with optional frametime and 1% low values for the foreground process, keeping separate swapchains independent. After two seconds without frames, “–” appears with a localized reason, such as no recent frames or unavailable capture permissions. Failed capture sessions retry while enabled. These are external ETW present-event measurements, not a frame-generation detector; no RTSS or game hook is required.
+
+| Control | Effect |
+|---|---|
+| Monitor | Use the crosshair's monitor, or choose another display |
+| Offset X / Y | Position from that monitor's top-left corner; editor range 0–2000 px |
+| Scale | Text/overlay scale, 0.5×–3× |
+| Frametime / 1% low | Show or hide the additional values |
+| Frametime graph | Off by default. Show about two seconds of peak frametimes under the numbers, at at most 20 redraws/s. With the graph off, unchanged numbers cause no redraw; with the overlay off, capture and its timer stop. |
+| Text color / Background color | Hexadecimal RGB colors |
+| Background opacity | Background transparency, 0–100% |
+
 ## Storage and recovery
 
 The default data folder is `%AppData%\LightCrosshair\v2`. It contains `store.json`, imported `images`, `backups`, rolling `logs\core.log`, and the UI's `ui-placement.json`. Back up the whole folder to retain images with your designs. Core is the only writer of the main store.
@@ -137,5 +145,7 @@ The default data folder is `%AppData%\LightCrosshair\v2`. It contains `store.jso
 Store backups are made at most once per hour when changes occur; the newest ten are retained. A corrupt store is renamed and the newest valid backup is loaded. If loading cannot recover, Core stays running with temporary defaults, shows a notification and logs the failure; it leaves the store marker unwritten so the next launch can retry. Changes in that temporary session are not durable.
 
 The display-color recovery journal is cleared only after original values are restored. If restoration fails, restart Core to retry; keep the journal rather than deleting it.
+
+V1 Hold bindings migrate to While held while retaining Alt+X for Toggle. V1 global colors migrate when no target process was configured.
 
 Migration imports supported v1 data without writing the old files, preserving source copies under `backups/migration`. The active v1 master visibility switch becomes the global v2 switch; it does not hide the individual migrated layers. See [Upgrading from 1.9](../README.md#upgrading-from-19).
