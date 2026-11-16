@@ -445,6 +445,68 @@ public sealed class FakeCoreClient : ICoreClient
             throw new CoreException(IpcErrorCodes.Validation);
     }
 
+    public void UseReadmeSeed()
+    {
+        lock (_gate)
+        {
+            var now = new DateTimeOffset(2026, 11, 1, 12, 0, 0, TimeSpan.Zero);
+            var classic = ReadmeClassic();
+            classic.UpdatedAt = now;
+            var precision = new CrosshairDesign
+            {
+                Name = "Precision",
+                Favorite = true,
+                UpdatedAt = now.AddMinutes(-1),
+                Layers = [new CrosshairLayer { Name = "Dot", Kind = LayerKind.Dot, Length = 2, Color = "#FFFFFF" }],
+            };
+            var tactical = new CrosshairDesign
+            {
+                Name = "Tactical",
+                UpdatedAt = now.AddMinutes(-2),
+                Layers = [new CrosshairLayer { Name = "T", Kind = LayerKind.Arms, Length = 12, Thickness = 2, Gap = 4, Arms = ArmMask.Left | ArmMask.Right | ArmMask.Bottom, Color = "#E8EAED" }],
+            };
+            var ring = new CrosshairDesign
+            {
+                Name = "Circle",
+                UpdatedAt = now.AddMinutes(-3),
+                Layers = [new CrosshairLayer { Name = "Ring", Kind = LayerKind.Ring, Length = 16, Thickness = 1, Color = "#7EB6FF" }],
+            };
+            _store = new StoreDocument
+            {
+                Settings = new AppSettings
+                {
+                    DefaultCrosshairId = classic.Id,
+                    Language = "en",
+                    Hotkeys = new HotkeySettings
+                    {
+                        ToggleVisibility = new InputBinding { Key = "Mouse5", Mode = BindingMode.HoldToShow },
+                    },
+                },
+                Crosshairs = [classic, precision, tactical, ring],
+                GameProfiles =
+                [
+                    new GameProfile { Name = "Counter-Strike 2", ProcessName = "cs2.exe", CrosshairId = classic.Id },
+                    new GameProfile { Name = "VALORANT", ProcessName = "valorant-win64-shipping.exe", CrosshairId = classic.Id },
+                ],
+            };
+            _runtime.ActiveCrosshairId = classic.Id;
+            _runtime.PendingSuggestion = null;
+            _runtime.HotkeyErrors = [];
+        }
+    }
+
+    private static CrosshairDesign ReadmeClassic() => new()
+    {
+        Name = "Classic",
+        Favorite = true,
+        Layers =
+        [
+            new CrosshairLayer { Name = "Ring", Kind = LayerKind.Ring, Length = 18, Thickness = 1, Color = "#FFFFFF", Opacity = 0.85 },
+            new CrosshairLayer { Name = "Cross", Kind = LayerKind.Arms, Length = 10, Thickness = 2, Gap = 4, Color = "#FFFFFF", Outline = true },
+            new CrosshairLayer { Name = "Dot", Kind = LayerKind.Dot, Length = 2, Color = "#3DDC97" },
+        ],
+    };
+
     private static CrosshairDesign Classic() => new()
     {
         Name = "Classic",

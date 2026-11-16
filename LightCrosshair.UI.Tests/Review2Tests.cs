@@ -1,7 +1,10 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using LightCrosshair.UI;
+using LightCrosshair.UI.Controls;
 using LightCrosshair.UI.Core;
 using LightCrosshair.UI.Services;
 using LightCrosshair.UI.ViewModels;
@@ -47,6 +50,78 @@ public class Review2Tests
             Environment.SetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT", previous);
             if (Directory.Exists(root)) Directory.Delete(root, true);
         }
+    }
+
+    [Fact]
+    public void FitPicksTheLargestIntegerZoomThatFits()
+    {
+        Assert.Equal(1, StudioViewModel.FitZoom(0, 0));
+        Assert.Equal(1, StudioViewModel.FitZoom(511, 800));
+        Assert.Equal(2, StudioViewModel.FitZoom(520, 700));
+        Assert.Equal(3, StudioViewModel.FitZoom(800, 780));
+        Assert.Equal(4, StudioViewModel.FitZoom(1100, 1024));
+    }
+
+    [Fact]
+    public async Task FitStaysInsideThePreviewAtTheReviewSizes()
+    {
+        var core = new FakeCoreClient(new InlineMarshaler());
+        await core.ConnectAsync();
+        Sta(() =>
+        {
+            var main = new MainViewModel(core, new FakeUi(), new LaunchOptions(UiPages.Studio, null, true, null));
+            var window = new MainWindow { DataContext = main, ShowInTaskbar = false };
+            window.Show();
+            try
+            {
+                main.StartAsync().GetAwaiter().GetResult();
+                AssertFit(window, main, 1000, 640);
+                AssertFit(window, main, 1180, 740);
+                window.WindowState = WindowState.Maximized;
+                Settle(window);
+                var scroll = Preview(window);
+                Assert.Equal("fit", main.Studio.ZoomMode);
+                Assert.Equal(StudioViewModel.FitZoom(scroll.ActualWidth, scroll.ActualHeight), main.Studio.Zoom);
+                Assert.NotEqual(Visibility.Visible, scroll.ComputedVerticalScrollBarVisibility);
+                Assert.NotEqual(Visibility.Visible, scroll.ComputedHorizontalScrollBarVisibility);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void SidebarMarkUsesTheDpiFrameAndHardEdges()
+    {
+        Assert.Equal(20, CrispIcon.FrameForScale(1));
+        Assert.Equal(24, CrispIcon.FrameForScale(1.25));
+        Assert.Equal(32, CrispIcon.FrameForScale(1.5));
+        Assert.Equal(40, CrispIcon.FrameForScale(2));
+        Sta(() =>
+        {
+            foreach (var scale in new[] { 1d, 1.5 })
+            {
+                var icon = new CrispIcon();
+                icon.Apply(scale);
+                var source = (BitmapSource)icon.Source;
+                Assert.Equal(CrispIcon.FrameForScale(scale), source.PixelWidth);
+                var pixels = new byte[source.PixelWidth * source.PixelHeight * 4];
+                source.CopyPixels(pixels, source.PixelWidth * 4, 0);
+                var colored = 0;
+                for (var i = 0; i < pixels.Length; i += 4)
+                {
+                    Assert.True(pixels[i + 3] is 0 or 255);
+                    if (pixels[i + 3] == 0) continue;
+                    colored++;
+                    Assert.Equal(42, pixels[i]);
+                    Assert.Equal(42, pixels[i + 1]);
+                    Assert.Equal(255, pixels[i + 2]);
+                }
+                Assert.True(colored > 10);
+            }
+        });
     }
 
     [Fact]
@@ -99,6 +174,25 @@ public class Review2Tests
                 window.Close();
             }
         });
+    }
+
+    private static void AssertFit(MainWindow window, MainViewModel main, double width, double height)
+    {
+        window.WindowState = WindowState.Normal;
+        window.Width = width;
+        window.Height = height;
+        Settle(window);
+        var scroll = Preview(window);
+        Assert.Equal("fit", main.Studio.ZoomMode);
+        Assert.Equal(StudioViewModel.FitZoom(scroll.ActualWidth, scroll.ActualHeight), main.Studio.Zoom);
+        Assert.NotEqual(Visibility.Visible, scroll.ComputedVerticalScrollBarVisibility);
+        Assert.NotEqual(Visibility.Visible, scroll.ComputedHorizontalScrollBarVisibility);
+    }
+
+    private static ScrollViewer Preview(MainWindow window)
+    {
+        var page = Find<StudioPage>(window).Single();
+        return (ScrollViewer)page.FindName("PreviewScroll")!;
     }
 
     private static void AssertBarsFollowExtent(ScrollViewer scroll, StudioPage page, StudioViewModel studio, int zoom)

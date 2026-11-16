@@ -310,6 +310,33 @@ public class ViewModelTests
         }
     }
 
+    [Fact]
+    public async Task ReadmeSeedIsSeparateFromTheDefaultFakeStore()
+    {
+        var core = await ConnectedAsync();
+        Assert.Equal("samplegame.exe", core.Snapshot!.Store.GameProfiles[0].ProcessName);
+
+        var seeded = new FakeCoreClient(new InlineMarshaler());
+        seeded.UseReadmeSeed();
+        await seeded.ConnectAsync();
+        var store = seeded.Snapshot!.Store;
+        Assert.Equal(4, store.Crosshairs.Count);
+        Assert.Equal(2, store.Crosshairs.Count(item => item.Favorite));
+        var classic = store.Crosshairs.Single(item => item.Name == "Classic");
+        Assert.Equal(3, classic.Layers.Count);
+        Assert.Contains(classic.Layers, layer => layer.Kind == LayerKind.Arms && layer.Outline);
+        Assert.Contains(classic.Layers, layer => layer.Kind == LayerKind.Dot);
+        Assert.Contains(classic.Layers, layer => layer.Kind == LayerKind.Ring);
+        Assert.Equal("cs2.exe", store.GameProfiles[0].ProcessName);
+        Assert.Equal("Counter-Strike 2", store.GameProfiles[0].Name);
+        Assert.Equal("valorant-win64-shipping.exe", store.GameProfiles[1].ProcessName);
+        Assert.Equal("VALORANT", store.GameProfiles[1].Name);
+        Assert.Null(seeded.Snapshot.Runtime.PendingSuggestion);
+        Assert.Equal("Mouse5", store.Settings.Hotkeys.ToggleVisibility.Key);
+        Assert.Equal(BindingMode.HoldToShow, store.Settings.Hotkeys.ToggleVisibility.Mode);
+        Assert.Equal("samplegame.exe", core.Snapshot.Store.GameProfiles[0].ProcessName);
+    }
+
     private static async Task<FakeCoreClient> ConnectedAsync()
     {
         var core = new FakeCoreClient(new InlineMarshaler());

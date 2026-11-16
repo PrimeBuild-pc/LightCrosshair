@@ -37,7 +37,24 @@ public static class ScreenshotRunner
                     await PumpAsync().ConfigureAwait(true);
                 }
             }
-            Save(window, Path.Combine(directory, page + ".png"));
+            HideScrollBars(window);
+            await PumpAsync().ConfigureAwait(true);
+            Save(window, Path.Combine(directory, "ui-" + page + ".png"));
+        }
+    }
+
+    private static void HideScrollBars(DependencyObject root)
+    {
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is System.Windows.Controls.ScrollViewer viewer)
+            {
+                viewer.HorizontalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Hidden;
+                viewer.VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Hidden;
+            }
+            HideScrollBars(child);
         }
     }
 
