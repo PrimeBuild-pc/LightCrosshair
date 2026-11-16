@@ -19,15 +19,21 @@ internal sealed partial class Form1 : LayeredWindow
     {
         Renderer = new(Store.ImagesDirectory);
         var menu = new ContextMenuStrip();
-        menu.Items.Add("Show/Hide crosshair", null, async (_, _) =>
+        menu.Items.Add(CoreStrings.Get("auto", "HideCrosshair"), null, async (_, _) =>
         {
             try { await ToggleVisibilityAsync(); }
             catch (Exception ex) { Program.LogError(ex, "Toggle visibility"); }
         });
-        menu.Items.Add("Open LightCrosshair", null, (_, _) => OpenSettings());
-        menu.Items.Add("Exit", null, (_, _) => Close());
+        menu.Items.Add(CoreStrings.Get("auto", "Open"), null, (_, _) => OpenSettings());
+        menu.Items.Add(CoreStrings.Get("auto", "Exit"), null, (_, _) => Close());
         _tray = new() { Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? SystemIcons.Application, Text = "LightCrosshair", ContextMenuStrip = menu, Visible = true };
         _tray.DoubleClick += (_, _) => OpenSettings();
+        _colors.Failed += restore =>
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+            try { BeginInvoke(new Action(() => { if (!IsDisposed) _tray.ShowBalloonTip(5000, "LightCrosshair", TextFor(restore ? "ColorsRestoreFailed" : "ColorsApplyFailed"), ToolTipIcon.Warning); })); }
+            catch (InvalidOperationException) { }
+        };
         _tray.BalloonTipClicked += (_, _) => OpenSettings(Runtime.PendingSuggestion is null ? null : new() { Page = UiPages.Games, SuggestProcess = Runtime.PendingSuggestion.ProcessName });
         DisplayChanged += OnDisplayChanged;
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += SystemDisplayChanged;
@@ -43,7 +49,7 @@ internal sealed partial class Form1 : LayeredWindow
             _ready = true; Runtime.ActiveCrosshairId = Document.Settings.DefaultCrosshairId;
             InitializeRuntime();
             InitializePipe();
-            if (Store.Recovered) _tray.ShowBalloonTip(3000, "LightCrosshair", "Your library was recovered from a backup.", ToolTipIcon.Info);
+            if (Store.Recovered) _tray.ShowBalloonTip(3000, "LightCrosshair", TextFor("Recovered"), ToolTipIcon.Info);
         }
         catch (Exception ex) { Program.LogError(ex, "Load store"); Close(); }
     }
@@ -88,9 +94,16 @@ internal sealed partial class Form1 : LayeredWindow
                 }
                 Process.Start(start);
             }
-            else _tray.ShowBalloonTip(3000, "LightCrosshair", "Install the settings app beside LightCrosshair.", ToolTipIcon.Info);
+            else _tray.ShowBalloonTip(3000, "LightCrosshair", TextFor("MissingUi"), ToolTipIcon.Info);
         }
         catch (Exception ex) { Program.LogError(ex, "Open settings"); }
+    }
+    private string TextFor(string key, params object[] args) => CoreStrings.Get(Document.Settings.Language, key, args);
+    private void UpdateTrayText()
+    {
+        var items = _tray.ContextMenuStrip!.Items;
+        items[0].Text = TextFor(Document.Settings.CrosshairVisible ? "HideCrosshair" : "ShowCrosshair");
+        items[1].Text = TextFor("Open"); items[2].Text = TextFor("Exit");
     }
     protected override void Dispose(bool disposing)
     {

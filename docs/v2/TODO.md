@@ -51,9 +51,9 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 - [x] Export/import `*.lcx.json` with embedded images + tests
 - [x] PNG import validation (format, ≤ 512 px side, ≤ 2 MB)
 ### C8 Localization, packaging, docs
-- [ ] Core strings (tray menu, notifications) in en, it, es, zh-Hans, ru, ja
-- [ ] Publish scripts produce both exes in one folder (x64, ARM64); installer, ZIP, winget/choco templates reference .NET 10 Desktop Runtime
-- [ ] README, CHANGELOG 2.0.0, docs/SETTINGS.md rewritten for v2
+- [x] Core strings (tray menu, notifications) in en, it, es, zh-Hans, ru, ja
+- [x] Publish scripts produce both exes in one folder (x64, ARM64); installer, ZIP, winget/choco templates reference .NET 10 Desktop Runtime
+- [x] README, CHANGELOG 2.0.0, docs/SETTINGS.md rewritten for v2
 ### C9 Verification
 - [ ] Run `measure.ps1` on v2 Core, compare with budgets in PLAN.md §4, write results in HANDOFF-core.md
 - [ ] `docs/v2/HANDOFF-core.md` complete

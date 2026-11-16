@@ -37,6 +37,7 @@ namespace Core
     // survives a killed process, and is removed only when every restoration succeeds.
     internal sealed class ColorSession(string directory, Func<IGpuColorManager>? create = null)
     {
+        public event Action<bool>? Failed;
         private Task _tail = Task.CompletedTask;
         private readonly object _gate = new();
         private IGpuColorManager? _manager;
@@ -101,6 +102,7 @@ namespace Core
             catch (Exception ex)
             {
                 Program.LogError(ex, "Display color transaction", directory);
+                Failed?.Invoke(colors is null || File.Exists(Marker));
                 // Partial apply must immediately try to restore. Leave the marker on failure.
                 if (colors is not null && File.Exists(Marker)) Transition(null);
             }

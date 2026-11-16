@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="ShowCrosshair" xml:space="preserve">
+    <value>Show crosshair</value>
+  </data>
+  <data name="HideCrosshair" xml:space="preserve">
+    <value>Hide crosshair</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Open LightCrosshair</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+  <data name="MissingUi" xml:space="preserve">
+    <value>Install the settings app beside LightCrosshair.</value>
+  </data>
+  <data name="Recovered" xml:space="preserve">
+    <value>Your library was recovered.</value>
+  </data>
+  <data name="SuggestGame" xml:space="preserve">
+    <value>Create a profile for {0}?</value>
+  </data>
+  <data name="ColorsRestoreFailed" xml:space="preserve">
+    <value>Original display colors could not be restored. Restart LightCrosshair to try again.</value>
+  </data>
+  <data name="ColorsApplyFailed" xml:space="preserve">
+    <value>Display colors could not be applied.</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>This binding is assigned to more than one action.</value>
+  </data>
+  <data name="HotkeyRegistrationFailed" xml:space="preserve">
+    <value>Windows could not register this hotkey.</value>
+  </data>
+  <data name="HookRegistrationFailed" xml:space="preserve">
+    <value>Windows could not register an input hook.</value>
+  </data>
+</root>

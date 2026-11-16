@@ -17,7 +17,7 @@ internal sealed partial class Form1
     {
         if (_context is null) return;
         var bindings = InputBindings.Resolve(Document.Settings, _context);
-        string key = JsonSerializer.Serialize(bindings.Select(b => new { b.Action, b.Input }), ContractJson.Options);
+        string key = Document.Settings.Language + JsonSerializer.Serialize(bindings.Select(b => new { b.Action, b.Input }), ContractJson.Options);
         if (_bindingsKey == key) return;
         _bindingsKey = key; _holdOverride = null; _bindingStates.Clear();
         _input ??= new(Handle);
@@ -29,10 +29,10 @@ internal sealed partial class Form1
         foreach (var action in bindings)
         {
             if (conflicts.Contains(action.HotkeyId))
-            { Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = "This binding is assigned to more than one action." }); continue; }
+            { Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = TextFor("HotkeyConflict") }); continue; }
             bool systemHotkey = action.Binding.Input == BindingInput.Keyboard && action.Binding.Mode == BindingMode.Toggle;
             if (systemHotkey && !manager.RegisterHotkeyWithId(action.HotkeyId, action.Binding.Modifiers, action.Binding.Key))
-            { Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = "Windows could not register this hotkey." }); continue; }
+            { Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = TextFor("HotkeyRegistrationFailed") }); continue; }
             _bindings.Add(action); _bindingStates[action.HotkeyId] = new();
         }
         _input.Configure(_bindings.Where(a => a.Binding.Input != BindingInput.Keyboard || a.Binding.Mode != BindingMode.Toggle).Select(a => a.Binding).ToArray(), false);
@@ -83,7 +83,7 @@ internal sealed partial class Form1
             foreach (var state in _bindingStates.Values) state.Reset(); _holdOverride = null;
             if (_input?.Error is { } error)
                 foreach (var action in _bindings.Where(a => a.Binding.Input != BindingInput.Keyboard || a.Binding.Mode != BindingMode.Toggle))
-                    Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = error });
+                    Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = TextFor("HookRegistrationFailed") });
             RefreshOverlay(); QueueRuntimeEvent(); return;
         }
         base.WndProc(ref m);

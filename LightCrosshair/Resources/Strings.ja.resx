@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="ShowCrosshair" xml:space="preserve">
+    <value>照準を表示</value>
+  </data>
+  <data name="HideCrosshair" xml:space="preserve">
+    <value>照準を非表示</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>LightCrosshair を開く</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>終了</value>
+  </data>
+  <data name="MissingUi" xml:space="preserve">
+    <value>設定アプリを LightCrosshair と同じフォルダーにインストールしてください。</value>
+  </data>
+  <data name="Recovered" xml:space="preserve">
+    <value>ライブラリを復元しました。</value>
+  </data>
+  <data name="SuggestGame" xml:space="preserve">
+    <value>{0} のプロファイルを作成しますか？</value>
+  </data>
+  <data name="ColorsRestoreFailed" xml:space="preserve">
+    <value>元の表示色を復元できませんでした。LightCrosshair を再起動して再試行してください。</value>
+  </data>
+  <data name="ColorsApplyFailed" xml:space="preserve">
+    <value>表示色を適用できませんでした。</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>この割り当ては複数の操作で使用されています。</value>
+  </data>
+  <data name="HotkeyRegistrationFailed" xml:space="preserve">
+    <value>Windows がこのホットキーを登録できませんでした。</value>
+  </data>
+  <data name="HookRegistrationFailed" xml:space="preserve">
+    <value>Windows が入力フックを登録できませんでした。</value>
+  </data>
+</root>

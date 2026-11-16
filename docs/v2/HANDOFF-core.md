@@ -20,6 +20,8 @@ Color driver transactions are serialized in background tasks; the crosshair upda
 
 `pwsh scripts/perf/measure.ps1`
 
+Packaging verification command: `pwsh scripts/build-release.ps1 -UiProject ../LightCrosshair-ui/LightCrosshair.UI/LightCrosshair.UI.csproj`. Outputs under `releases/LightCrosshair-v2.0.0-win-{x64,arm64}`. This uses the sibling UI worktree as it exists at build time, not a merged/reviewed release. Build intermediates are redirected into this worktree's releases folder. The installer keeps the original machine-wide installation scope; the local ZIP installer supports per-user extraction. Runtime/package identifiers were checked against [Microsoft deployment documentation](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview) and [runtime installation documentation](https://learn.microsoft.com/en-us/dotnet/core/install/windows).
+
 ## Baseline vs v2 numbers
 
 See BASELINE.md. v2 pending.

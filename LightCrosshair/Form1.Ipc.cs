@@ -121,11 +121,24 @@ internal sealed partial class Form1
                     await ApplyDriverCapAsync(old, null); next.GameProfiles.Remove(old); return null;
                 });
             case IpcMethods.SaveSettings:
-                return await MutateAsync(next =>
+                var previousSettings = Validation.Copy(Document.Settings);
+                object? savedSettings;
+                try
                 {
-                    next.Settings = Validation.Settings(Payload<AppSettings>(request), next.Crosshairs);
-                    return Task.FromResult<object?>(next.Settings);
-                });
+                    savedSettings = await MutateAsync(next =>
+                    {
+                        next.Settings = Validation.Settings(Payload<AppSettings>(request), next.Crosshairs);
+                        if (next.Settings.StartWithWindows != previousSettings.StartWithWindows) StartupRegistration.Apply(next.Settings.StartWithWindows);
+                        return Task.FromResult<object?>(next.Settings);
+                    });
+                }
+                catch
+                {
+                    try { StartupRegistration.Apply(previousSettings.StartWithWindows); }
+                    catch (Exception ex) { Program.LogError(ex, "Restore autostart registration"); }
+                    throw;
+                }
+                return savedSettings;
             case IpcMethods.Preview:
                 var preview = Payload<PreviewRequest>(request).Design;
                 if (preview is null) { EndPreview(); return null; }

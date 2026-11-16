@@ -41,7 +41,7 @@ internal sealed partial class Form1
             !Document.GameProfiles.Any(g => g.ProcessName == process) && !Document.Settings.DismissedSuggestions.Contains(process) && _suggested.Add(process))
         {
             Runtime.PendingSuggestion = new() { ProcessName = process, DisplayName = name };
-            _tray.ShowBalloonTip(4000, "LightCrosshair", $"Create a profile for {name}?", ToolTipIcon.Info);
+            _tray.ShowBalloonTip(4000, "LightCrosshair", TextFor("SuggestGame", name), ToolTipIcon.Info);
             RuntimeUpdated?.Invoke();
         }
     }
@@ -56,7 +56,7 @@ internal sealed partial class Form1
         string colorsKey = System.Text.Json.JsonSerializer.Serialize(colors, ContractJson.Options);
         if (_colorsKey != colorsKey) { _colorsKey = colorsKey; _ = _colors.SetAsync(colors); }
         _fps.Configure(_context.FpsEnabled, _foregroundPid, Document.Settings.FpsOverlay, Document.Settings.MonitorDeviceName);
-        ConfigureInput(); ConfigureRecording();
+        ConfigureInput(); ConfigureRecording(); UpdateTrayText();
         RefreshOverlay(); RuntimeUpdated?.Invoke();
     }
     internal async Task ApplyDriverCapAsync(GameProfile? old, GameProfile? next)

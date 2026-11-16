@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="ShowCrosshair" xml:space="preserve">
+    <value>Mostra mirino</value>
+  </data>
+  <data name="HideCrosshair" xml:space="preserve">
+    <value>Nascondi mirino</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Apri LightCrosshair</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>Esci</value>
+  </data>
+  <data name="MissingUi" xml:space="preserve">
+    <value>Installa l’app delle impostazioni accanto a LightCrosshair.</value>
+  </data>
+  <data name="Recovered" xml:space="preserve">
+    <value>La libreria è stata recuperata.</value>
+  </data>
+  <data name="SuggestGame" xml:space="preserve">
+    <value>Creare un profilo per {0}?</value>
+  </data>
+  <data name="ColorsRestoreFailed" xml:space="preserve">
+    <value>Impossibile ripristinare i colori originali. Riavvia LightCrosshair per riprovare.</value>
+  </data>
+  <data name="ColorsApplyFailed" xml:space="preserve">
+    <value>Impossibile applicare i colori dello schermo.</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>Questa combinazione è assegnata a più azioni.</value>
+  </data>
+  <data name="HotkeyRegistrationFailed" xml:space="preserve">
+    <value>Windows non ha potuto registrare questa scorciatoia.</value>
+  </data>
+  <data name="HookRegistrationFailed" xml:space="preserve">
+    <value>Windows non ha potuto registrare un hook di input.</value>
+  </data>
+</root>
