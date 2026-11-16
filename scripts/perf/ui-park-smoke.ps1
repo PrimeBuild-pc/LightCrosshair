@@ -29,11 +29,13 @@ try {
     if($others){throw 'OpenSettings spawned another UI process'}
     Write-Host 'PASS: a hidden, connected UI receives focus without closing or spawning a replacement'
 } finally {
+    try {
     if($ui){if(!$ui.HasExited){[void][ReviewNative]::ShowWindow($ui.MainWindowHandle,5);[void]$ui.CloseMainWindow();if(!$ui.WaitForExit(5000)){$ui.Kill()}};$ui.Dispose()}
     if($session -and $released -and !$session.App.HasExited){
         $session.Pipe=[IO.Pipes.NamedPipeClientStream]::new('.', $session.PipeName, [IO.Pipes.PipeDirection]::InOut, [IO.Pipes.PipeOptions]::Asynchronous)
         $session.Pipe.Connect(5000);$session.Reader=[IO.StreamReader]::new($session.Pipe,[Text.Encoding]::UTF8,$false,4096,$true)
         Invoke-ProbeCore $session hello @{protocolVersion=1;client='park-shutdown'} | Out-Null
     }
-    try{Stop-ProbeCore $session}finally{Restore-RealProfileGuard $guard (Join-Path $root 'profile-audit.json')}
+        Stop-ProbeCore $session
+    } finally { Restore-RealProfileGuard $guard (Join-Path $root 'profile-audit.json') }
 }

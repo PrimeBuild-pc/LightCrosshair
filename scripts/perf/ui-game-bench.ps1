@@ -37,11 +37,13 @@ try {
     [pscustomobject]@{Stage=$Stage;Samples=$intervals.Count;MeanMs=($intervals|Measure-Object -Average).Average;P95Ms=$intervals[[int]($intervals.Count*.95)];P99Ms=$intervals[[int]($intervals.Count*.99)];MaxMs=$intervals[-1];DataRoot=$root} | ConvertTo-Json | Set-Content (Join-Path $out 'summary.json')
     Get-Content (Join-Path $out 'summary.json')
 } finally {
+    try {
     if($probeProcess){if(!$probeProcess.HasExited){$probeProcess.Kill()};$probeProcess.Dispose()}
     if($session -and $pipeReleased -and !$session.App.HasExited){
         $session.Pipe=[IO.Pipes.NamedPipeClientStream]::new('.', $session.PipeName, [IO.Pipes.PipeDirection]::InOut, [IO.Pipes.PipeOptions]::Asynchronous)
         $session.Pipe.Connect(5000);$session.Reader=[IO.StreamReader]::new($session.Pipe,[Text.Encoding]::UTF8,$false,4096,$true)
         Invoke-ProbeCore $session hello @{protocolVersion=1;client='ui-bench-shutdown'} | Out-Null
     }
-    try { Stop-ProbeCore $session } finally { Restore-RealProfileGuard $guard (Join-Path $out 'profile-audit.json') }
+        Stop-ProbeCore $session
+    } finally { Restore-RealProfileGuard $guard (Join-Path $out 'profile-audit.json') }
 }

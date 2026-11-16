@@ -65,7 +65,12 @@ try
             ui.CloseMainWindow();
             if (!ui.WaitForExit(10000)) throw new InvalidOperationException("UI parked instead of exiting; use a warm-session benchmark for this UI build.");
         }
-        finally { ui?.Dispose(); }
+        finally
+        {
+            // A future parked UI makes this cold-process benchmark fail explicitly;
+            // still release only the process observed for this launch.
+            if (ui is not null) { if (!ui.HasExited) { ui.Kill(); ui.WaitForExit(5000); } ui.Dispose(); }
+        }
         await Task.Delay(1200);
     }
     // Receive the last real-time ETW buffer before selecting original event timestamps.

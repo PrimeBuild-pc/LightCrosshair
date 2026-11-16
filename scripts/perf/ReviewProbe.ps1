@@ -26,6 +26,7 @@ if (!('PerfNative' -as [type])) {
     Add-Type -TypeDefinition (($source -split "Add-Type @'", 2)[1] -split "'@", 2)[0]
 }
 function Start-ProbeCore([string]$Executable, [string]$Root, [switch]$ProductionPipe) {
+    $app = $null; $pipe = $null
     $previousRoot = $env:LIGHTCROSSHAIR_DATA_ROOT; $previousInstance = $env:LIGHTCROSSHAIR_TEST_INSTANCE
     try {
         $env:LIGHTCROSSHAIR_DATA_ROOT = Join-Path $Root 'v2'
