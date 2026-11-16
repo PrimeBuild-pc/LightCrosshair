@@ -8,7 +8,8 @@ namespace LightCrosshair;
 internal static class Program
 {
     private static readonly object LogGate = new();
-    internal static string DataRoot => Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LightCrosshair", "v2");
+    internal static readonly AsyncLocal<string?> ScopedDataRoot = new();
+    internal static string DataRoot => ScopedDataRoot.Value ?? Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LightCrosshair", "v2");
     // Opt-in test isolation for concurrent worktrees. Normal launches keep the exact contract names.
     private static readonly string TestSuffix = TestInstanceSuffix();
     internal static string PipeName => ContractInfo.PipeName(Process.GetCurrentProcess().SessionId) + TestSuffix;
