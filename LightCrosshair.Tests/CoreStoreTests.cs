@@ -16,6 +16,34 @@ public sealed class CoreStoreTests : IDisposable
     public CoreStoreTests() => Directory.CreateDirectory(_root);
     public void Dispose() => Directory.Delete(_root, true);
 
+    [Theory]
+    [InlineData("v1.9-disabled-working", true, true, false)]
+    [InlineData("v1.9-enabled-working", true, true, true)]
+    [InlineData("v1.9-disabled-working", false, true, true)]
+    [InlineData("v1.9-enabled-working", false, true, false)]
+    [InlineData("v1.9-disabled-working", true, false, false)]
+    [InlineData("v1.9-enabled-working", true, false, false)]
+    public async Task ActiveLegacyMasterSwitchChangesGlobalVisibilityWithoutHidingLayers(string fixture, bool hasWorkingCopy, bool overlayVisible, bool expectedVisible)
+    {
+        foreach (string file in Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Fixtures", fixture)))
+            File.Copy(file, Path.Combine(_root, Path.GetFileName(file)));
+        if (!hasWorkingCopy) File.Delete(Path.Combine(_root, "current_state.json"));
+        if (!overlayVisible) await File.WriteAllTextAsync(Path.Combine(_root, "prefs.json"), """{"LastProfileId":"default-immutable","OverlayVisible":false}""");
+        var store = new CoreStore(V2);
+        var document = await store.LoadAsync(_root);
+        Assert.Null(store.LoadError);
+        Assert.Equal(2, document.Crosshairs.Count);
+        Assert.Equal("default-immutable", document.Settings.DefaultCrosshairId);
+        Assert.Equal(expectedVisible, document.Settings.CrosshairVisible);
+        Assert.All(document.Crosshairs, design => Assert.All(design.Layers, layer => Assert.True(layer.Visible)));
+        if (hasWorkingCopy) Assert.Equal(2, document.Crosshairs.Single(d => d.Id == "default-immutable").Layers.Count);
+        document.Settings.CrosshairVisible = true;
+        await store.SaveAsync(document);
+        var restarted = await new CoreStore(V2).LoadAsync(_root);
+        Assert.True(restarted.Settings.CrosshairVisible);
+        Assert.All(restarted.Crosshairs, design => Assert.All(design.Layers, layer => Assert.True(layer.Visible)));
+    }
+
     [Fact]
     public async Task UnreadableLegacyFileUsesTemporaryDefaultsWithoutWritingAStoreAndRetriesOnRestart()
     {
@@ -205,7 +233,7 @@ public sealed class CoreStoreTests : IDisposable
         Assert.Equal(0, x.Layers[0].Gap); Assert.Equal(14, x.Layers[0].Length);
         var ring = LegacyMigration.Convert(new() { Name = "Ring", EnumShape = CrosshairShape.Circle, Size = 20, Thickness = 4 });
         Assert.Equal(24, ring.Layers[0].Length);
-        Assert.All(LegacyMigration.Convert(new() { EnableCustomCrosshair = false }).Layers, layer => Assert.False(layer.Visible));
+        Assert.All(LegacyMigration.Convert(new() { EnableCustomCrosshair = false }).Layers, layer => Assert.True(layer.Visible));
     }
     [Fact]
     public async Task AStoreThatCannotFitInASnapshotIsRejectedBeforeReplacingTheLastGoodFile()

@@ -1,0 +1,12 @@
+{
+  "CurrentProfile": {
+    "Id": "working::0123456789abcdef0123456789abcdef",
+    "SourceProfileId": "default-immutable",
+    "Name": "Default edited",
+    "SchemaVersion": 6,
+    "Shape": "CircleDot",
+    "EnumShape": "Custom",
+    "Size": 32,
+    "EnableCustomCrosshair": true
+  }
+}

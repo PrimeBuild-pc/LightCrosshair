@@ -3,6 +3,7 @@ param(
     [ValidateRange(1, 100)][int]$SettingsCycles = 20,
     [string]$DiagnosticsTools,
     [switch]$ProfileHeap,
+    [switch]$AllowUiPlacementBackup,
     [int]$WarmupSeconds = 10,
     [string]$OutputDirectory = "$PSScriptRoot/results",
     [switch]$SkipBuild,
@@ -12,6 +13,7 @@ param(
     [string]$Executable
 )
 $ErrorActionPreference = 'Stop'
+. "$PSScriptRoot/ProfileGuard.ps1"
 if ($ProfileHeap -and !$DiagnosticsTools) { throw '-ProfileHeap requires -DiagnosticsTools' }
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 if (!$Executable -and !$SkipBuild -and !$Legacy) {
@@ -38,8 +40,8 @@ if (!$Isolated -and !$SkipSettings -and !$Legacy) {
     $placementSource = Join-Path $repo 'LightCrosshair.UI/Services/WindowPlacementStore.cs'
     if (Test-Path -LiteralPath $placementSource) {
         $placement = Get-Content -LiteralPath $placementSource -Raw
-        if ($placement.Contains('SpecialFolder.ApplicationData') -and !$placement.Contains('LIGHTCROSSHAIR_DATA_ROOT')) {
-            throw 'UI placement ignores LIGHTCROSSHAIR_DATA_ROOT and would write the real profile. The UI owner must isolate WindowPlacementStore before further real-UI measurements. Use -SkipSettings for Core-only measurements.'
+        if ($placement.Contains('SpecialFolder.ApplicationData') -and !$placement.Contains('LIGHTCROSSHAIR_DATA_ROOT') -and !$AllowUiPlacementBackup) {
+            throw 'UI placement ignores LIGHTCROSSHAIR_DATA_ROOT. Use -SkipSettings, or -AllowUiPlacementBackup only when the placement-only exception is authorized; every real file path/hash is verified after restoration.'
         }
     }
 }
@@ -77,12 +79,13 @@ public static class PerfNative {
 '@
 New-Item -ItemType Directory -Force $OutputDirectory | Out-Null
 $watch = [Diagnostics.Stopwatch]::StartNew()
-$app = Start-Process -FilePath $Executable -PassThru -WindowStyle Hidden
-$counterProcess = $null
-if ($DiagnosticsTools) {
-    $counterProcess = Start-Process -FilePath (Join-Path $DiagnosticsTools 'dotnet-counters.exe') -ArgumentList @('collect', '--process-id', $app.Id, '--counters', 'System.Runtime', '--refresh-interval', '1', '--format', 'csv', '--output', ([IO.Path]::GetFullPath("$OutputDirectory/runtime.csv")), '--duration', '00:05:00') -WindowStyle Hidden -PassThru
-}
+$app = $null; $counterProcess = $null; $profileGuard = $null
 try {
+    if ($AllowUiPlacementBackup -and !$SkipSettings) { $profileGuard = Start-RealProfileGuard (Join-Path $OutputDirectory 'profile-backup') }
+    $app = Start-Process -FilePath $Executable -PassThru -WindowStyle Hidden
+    if ($DiagnosticsTools) {
+        $counterProcess = Start-Process -FilePath (Join-Path $DiagnosticsTools 'dotnet-counters.exe') -ArgumentList @('collect', '--process-id', $app.Id, '--counters', 'System.Runtime', '--refresh-interval', '1', '--format', 'csv', '--output', ([IO.Path]::GetFullPath("$OutputDirectory/runtime.csv")), '--duration', '00:05:00') -WindowStyle Hidden -PassThru
+    }
     $window = [IntPtr]::Zero
     while ($watch.Elapsed.TotalSeconds -lt 15 -and $window -eq [IntPtr]::Zero) {
         if ($app.HasExited) { throw 'App exited before creating its window' }
@@ -205,10 +208,17 @@ try {
     $summary | ConvertTo-Json
 }
 finally {
-    if (!$app.HasExited) {
+    # On a failed cycle the UI may still be running. Finish its placement writes
+    # before restoring the sole authorized real-profile exception.
+    if ($ui -and !$ui.HasExited) {
+        [void]$ui.CloseMainWindow()
+        if (!$ui.WaitForExit(5000)) { $ui.Kill(); $ui.WaitForExit() }
+    }
+    if ($app -and !$app.HasExited) {
         [void][PerfNative]::PostMessage($window, 0x10, [IntPtr]::Zero, [IntPtr]::Zero)
         if (!$app.WaitForExit(5000)) { $app.Kill() }
     }
     if ($counterProcess) { if (!$counterProcess.HasExited) { $counterProcess.Kill() }; $counterProcess.Dispose() }
-    $app.Dispose()
+    if ($app) { $app.Dispose() }
+    Restore-RealProfileGuard $profileGuard (Join-Path $OutputDirectory 'real-profile-verification.json')
 }

@@ -74,6 +74,8 @@ internal static class LegacyMigration
             store.Crosshairs = [Convert(new() { Name = "Migrated crosshair", Shape = config.CrosshairStyle, EnumShape = ShapeNormalizer.ToEnum(config.CrosshairStyle), Size = config.CrosshairSize, Thickness = config.CrosshairThickness, OuterColor = config.CrosshairColor, AntiAlias = config.AntiAlias })];
             store.Settings.DefaultCrosshairId = store.Crosshairs[0].Id;
         }
+        // v1's master switch belongs to the active application state, not its layers.
+        var activeProfile = converted.FirstOrDefault(pair => pair.Value.Id == store.Settings.DefaultCrosshairId).Key;
         if (current?.CurrentProfile is { } active)
         {
             try
@@ -85,11 +87,12 @@ internal static class LegacyMigration
                 else store.Crosshairs.Add(design);
                 store.Settings.DefaultCrosshairId = design.Id;
                 store.Settings.HideDuringScreenRecording = active.HideDuringScreenRecording;
+                activeProfile = active;
             }
             catch (Exception ex) when (ex is CoreException or ArgumentException or NullReferenceException)
             { Program.LogError(ex, "Skip invalid legacy working copy", Path.GetDirectoryName(imagesDirectory)); }
         }
-        store.Settings.CrosshairVisible = prefs?.OverlayVisible ?? config?.Visible ?? true;
+        store.Settings.CrosshairVisible = (prefs?.OverlayVisible ?? config?.Visible ?? true) && (activeProfile?.EnableCustomCrosshair ?? true);
         if (config is not null)
         {
             var s = store.Settings;
@@ -154,8 +157,6 @@ internal static class LegacyMigration
             shape = p.EnumShape == CrosshairShape.Custom ? "Cross" : p.EnumShape.ToString();
             Add(shape, p.Size, p.Thickness, p.GapSize, p.OuterColor.A > 0 ? p.OuterColor : p.InnerColor, p.OutlineEnabled || shape is "CrossOutlined" or "CircleOutlined" or "GapCross");
         }
-        // v1's master design switch becomes ordinary editable layer visibility.
-        if (!p.EnableCustomCrosshair) foreach (var layer in design.Layers) layer.Visible = false;
         return design;
         void Add(string kind, int size, int thickness, int gap, Color color, bool outline)
         {
