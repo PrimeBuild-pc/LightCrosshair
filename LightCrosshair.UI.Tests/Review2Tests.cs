@@ -62,8 +62,8 @@ public class Review2Tests
             var window = new Window
             {
                 Content = page,
-                Width = 1200,
-                Height = 1000,
+                Width = 1180,
+                Height = 652,
                 WindowStyle = WindowStyle.None,
                 ShowInTaskbar = false,
             };
@@ -72,12 +72,20 @@ public class Review2Tests
             {
                 Settle(page);
                 var scroll = (ScrollViewer)page.FindName("PreviewScroll")!;
-                AssertFits(scroll, page, studio, 1);
-                AssertFits(scroll, page, studio, 2);
-                studio.SetZoomCommand.Execute("4");
-                Settle(page);
+                AssertBarsFollowExtent(scroll, page, studio, 1);
+                AssertBarsFollowExtent(scroll, page, studio, 2);
+                Assert.True(scroll.ExtentHeight > scroll.ViewportHeight);
+                Assert.Equal(Visibility.Visible, scroll.ComputedVerticalScrollBarVisibility);
+                Assert.NotEqual(Visibility.Visible, scroll.ComputedHorizontalScrollBarVisibility);
+                AssertBarsFollowExtent(scroll, page, studio, 4);
                 Assert.Equal(Visibility.Visible, scroll.ComputedVerticalScrollBarVisibility);
                 Assert.Equal(Visibility.Visible, scroll.ComputedHorizontalScrollBarVisibility);
+
+                window.Height = 900;
+                AssertBarsFollowExtent(scroll, page, studio, 2);
+                Assert.True(scroll.ExtentHeight <= scroll.ViewportHeight + 1);
+                Assert.NotEqual(Visibility.Visible, scroll.ComputedVerticalScrollBarVisibility);
+                Assert.NotEqual(Visibility.Visible, scroll.ComputedHorizontalScrollBarVisibility);
 
                 Assert.False(studio.AllLayersHidden);
                 foreach (var row in studio.Rows.ToList()) studio.ToggleLayerCommand.Execute(row);
@@ -93,16 +101,19 @@ public class Review2Tests
         });
     }
 
-    private static void AssertFits(ScrollViewer scroll, StudioPage page, StudioViewModel studio, int zoom)
+    private static void AssertBarsFollowExtent(ScrollViewer scroll, StudioPage page, StudioViewModel studio, int zoom)
     {
         studio.SetZoomCommand.Execute(zoom.ToString());
         Settle(page);
-        Assert.NotEqual(Visibility.Visible, scroll.ComputedVerticalScrollBarVisibility);
-        Assert.NotEqual(Visibility.Visible, scroll.ComputedHorizontalScrollBarVisibility);
+        var detail = $"zoom {zoom} viewport {scroll.ViewportWidth:0}x{scroll.ViewportHeight:0} extent {scroll.ExtentWidth:0}x{scroll.ExtentHeight:0}";
+        var vertical = scroll.ExtentHeight > scroll.ViewportHeight + 1;
+        var horizontal = scroll.ExtentWidth > scroll.ViewportWidth + 1;
+        Assert.True((scroll.ComputedVerticalScrollBarVisibility == Visibility.Visible) == vertical, detail);
+        Assert.True((scroll.ComputedHorizontalScrollBarVisibility == Visibility.Visible) == horizontal, detail);
         var image = Find<Image>(scroll).Single();
         var center = image.TranslatePoint(new Point(image.ActualWidth / 2, image.ActualHeight / 2), scroll);
-        Assert.InRange(Math.Abs(center.X - scroll.ActualWidth / 2), 0, 2);
-        Assert.InRange(Math.Abs(center.Y - scroll.ActualHeight / 2), 0, 2);
+        if (!horizontal) Assert.InRange(Math.Abs(center.X - scroll.ViewportWidth / 2), 0, 2);
+        if (!vertical) Assert.InRange(Math.Abs(center.Y - scroll.ViewportHeight / 2), 0, 2);
     }
 
     private static void Settle(FrameworkElement element)

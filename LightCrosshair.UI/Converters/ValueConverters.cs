@@ -123,17 +123,13 @@ public sealed class HexBrushConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
-public sealed class MaxDoubleConverter : IMultiValueConverter
+public sealed class CenterOffsetConverter : IMultiValueConverter
 {
     public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        var max = 0d;
-        foreach (var value in values)
-        {
-            if (value is double number && !double.IsNaN(number) && !double.IsInfinity(number))
-                max = Math.Max(max, number);
-        }
-        return max;
+        var viewport = values.Length > 0 && values[0] is double available && !double.IsNaN(available) && !double.IsInfinity(available) ? available : 0;
+        var content = values.Length > 1 && values[1] is double size && !double.IsNaN(size) && !double.IsInfinity(size) ? size : 0;
+        return Math.Max(0, (viewport - content) / 2);
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
