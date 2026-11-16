@@ -17,6 +17,7 @@
     <ProjectReference Include="..\LightCrosshair\LightCrosshair.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
     <Compile Remove="obj_tmp\**\*.cs" />
     <Compile Remove="bin_tmp\**\*.cs" />
     <None Remove="obj_tmp\**" />

@@ -48,4 +48,5 @@
   <data name="HookRegistrationFailed" xml:space="preserve">
     <value>Windows не удалось зарегистрировать перехватчик ввода.</value>
   </data>
+  <data name="LoadFailed" xml:space="preserve"><value>Не удалось загрузить библиотеку. LightCrosshair использует временные настройки; ваши файлы не изменены. Перезапустите для повтора.</value></data>
 </root>

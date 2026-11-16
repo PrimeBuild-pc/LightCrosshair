@@ -14,6 +14,15 @@ namespace LightCrosshair.Tests;
 public class PipeServerTests
 {
     [Fact]
+    public async Task DisposalCompletesPendingConnectionAndRemainsSafeAfterCompletion()
+    {
+        var server = new PipeServer("lc2-dispose-" + Guid.NewGuid().ToString("N"), _ => Task.FromResult<object?>(null), () => Task.CompletedTask);
+        server.Dispose();
+        await server.Completion.WaitAsync(TimeSpan.FromSeconds(5));
+        server.Dispose();
+    }
+
+    [Fact]
     public void EnvelopeRoundTripUsesContractJson()
     {
         var request = new IpcEnvelope { Id = 12, Method = IpcMethods.Hello, Payload = PipeServer.Element(new HelloRequest { Client = "test" }) };

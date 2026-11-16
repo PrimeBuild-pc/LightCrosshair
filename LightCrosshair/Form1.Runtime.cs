@@ -52,7 +52,7 @@ internal sealed partial class Form1
         Runtime.ActiveGameProfileId = _context.Game?.Id;
         Runtime.ActiveCrosshairId = _cycledId is not null && Document.Crosshairs.Any(d => d.Id == _cycledId) ? _cycledId : _context.CrosshairId;
         Runtime.Monitors = Screen.AllScreens.Select(s => new MonitorInfo { DeviceName = s.DeviceName, FriendlyName = s.DeviceName, IsPrimary = s.Primary, Width = s.Bounds.Width, Height = s.Bounds.Height }).ToList();
-        var colors = _context.Game?.DisplayColors;
+        var colors = _context.DisplayColors;
         string colorsKey = System.Text.Json.JsonSerializer.Serialize(colors, ContractJson.Options);
         if (_colorsKey != colorsKey) { _colorsKey = colorsKey; _ = _colors.SetAsync(colors); }
         _fps.Configure(_context.FpsEnabled, _foregroundPid, Document.Settings.FpsOverlay, Document.Settings.MonitorDeviceName);

@@ -45,6 +45,7 @@ internal static partial class Validation
             if (!ids.Add(layer.Id)) throw Invalid("Duplicate layer id.");
             layer.Name = (layer.Name ?? "").Trim();
             layer.Name = layer.Name[..Math.Min(48, layer.Name.Length)];
+            if (layer.FillColor is not null) layer.FillColor = Color(layer.FillColor);
             layer.Color = Color(layer.Color); layer.OutlineColor = Color(layer.OutlineColor);
             layer.Opacity = Range(layer.Opacity, 0, 1); layer.Rotation = Range(layer.Rotation, -36000, 36000) % 360;
             layer.ImageScale = Range(layer.ImageScale, .1, 4);

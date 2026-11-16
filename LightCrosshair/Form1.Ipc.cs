@@ -17,7 +17,7 @@ internal sealed partial class Form1
     {
         _pipe = new(Program.PipeName,
             request => OnUiAsync(() => HandleRequestAsync(request)),
-            () => OnUiAsync(() => { EndPreview(); return Task.FromResult<object?>(null); }));
+            () => OnUiAsync(() => { EndPreview(); SetInputCapture(false); return Task.FromResult<object?>(null); }));
         RuntimeUpdated += QueueRuntimeEvent;
     }
     private Task<object?> OnUiAsync(Func<Task<object?>> action)
@@ -95,6 +95,7 @@ internal sealed partial class Form1
         if (_closing) throw new CoreException(IpcErrorCodes.Internal, "Core is stopping.");
         switch (request.Method)
         {
+            case IpcMethods.SetInputCapture: SetInputCapture(Payload<InputCaptureRequest>(request).Active); return null;
             case IpcMethods.GetSnapshot: return Snapshot();
             case IpcMethods.SaveCrosshair:
                 var design = Validation.Design(Payload<CrosshairDesign>(request), Store.ImagesDirectory);

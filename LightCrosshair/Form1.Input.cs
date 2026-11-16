@@ -6,6 +6,24 @@ namespace LightCrosshair;
 
 internal sealed partial class Form1
 {
+    private readonly InputCapture _capture = new();
+    private System.Windows.Forms.Timer? _captureTimer;
+    private void SetInputCapture(bool active)
+    {
+        _capture.Set(active);
+        _captureTimer?.Stop();
+        if (active)
+        {
+            if (_captureTimer is null)
+            {
+                _captureTimer = new() { Interval = InputCapture.TimeoutMilliseconds };
+                _captureTimer.Tick += (_, _) => SetInputCapture(false);
+            }
+            _captureTimer.Start();
+        }
+        else { _captureTimer?.Dispose(); _captureTimer = null; }
+        _bindingsKey = null; ConfigureInput(); RefreshOverlay(); QueueRuntimeEvent();
+    }
     private VisibilityInputHook? _input;
     private List<BoundAction> _bindings = [];
     private readonly Dictionary<int, VisibilityBindingState> _bindingStates = new();
@@ -16,6 +34,13 @@ internal sealed partial class Form1
     private void ConfigureInput()
     {
         if (_context is null) return;
+        if (_capture.Active)
+        {
+            HotkeyManager.Instance.UnregisterAll();
+            _input?.Configure([], false);
+            _bindings.Clear(); _bindingStates.Clear(); _holdOverride = null;
+            return;
+        }
         var bindings = InputBindings.Resolve(Document.Settings, _context);
         string key = Document.Settings.Language + JsonSerializer.Serialize(bindings.Select(b => new { b.Action, b.Input }), ContractJson.Options);
         if (_bindingsKey == key) return;
@@ -58,8 +83,12 @@ internal sealed partial class Form1
     }
     protected override void WndProc(ref Message m)
     {
-        if (m.Msg == 0x8066) { m.Result = (IntPtr)(_pipe?.IsConnected == true ? 1 : 0); return; }
-        if (m.Msg == 0x8067) { m.Result = (IntPtr)((_fps.Enabled ? 1 : 0) + (_recordingTimer?.Enabled == true ? 1 : 0)); return; }
+        if (Program.PerfProbesEnabled)
+        {
+            if (m.Msg == 0x8066) { m.Result = (IntPtr)(_pipe?.IsConnected == true ? 1 : 0); return; }
+            if (m.Msg == 0x8067) { m.Result = (IntPtr)((_fps.Enabled ? 1 : 0) + (_recordingTimer?.Enabled == true ? 1 : 0)); return; }
+        }
+        if (_capture.Active && m.Msg is 0x312 or VisibilityInputHook.InputMessage or VisibilityInputHook.ResetMessage) return;
         if (m.Msg == 0x312)
         {
             int id = (int)m.WParam;
@@ -93,8 +122,7 @@ internal sealed partial class Form1
     }
     private async Task RunInputActionAsync(int id)
     {
-        if (_closing) return;
-        // CONTRACT-REQUEST: Suspend actions during binding capture. The protocol has no capture lifecycle message.
+        if (_closing || _capture.Active) return;
         try
         {
             switch (id)

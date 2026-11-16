@@ -17,7 +17,7 @@ internal sealed class LayerRenderer(string imagesDirectory)
         RectangleF total = RectangleF.Empty;
         foreach (var layer in design.Layers.Where(l => l.Visible && l.Opacity > 0))
         {
-            using var path = Geometry(layer);
+            using var path = Geometry(layer, layer.FillColor is not null);
             if (path.PointCount == 0) continue;
             var bounds = path.GetBounds();
             int padding = (layer.Outline ? (int)Math.Ceiling(layer.OutlineThickness * Math.Sqrt(2)) : 0) + (design.AntiAlias ? 1 : 0);
@@ -54,14 +54,20 @@ internal sealed class LayerRenderer(string imagesDirectory)
                 else
                 {
                     using var path = Geometry(layer);
-                    if (path.PointCount == 0) continue;
-                    if (layer.Outline)
+                    if (layer.FillColor is not null && layer.Kind is LayerKind.Box or LayerKind.Ring)
+                    {
+                        using var interior = Geometry(layer, true);
+                        using var fill = new SolidBrush(ColorTranslator.FromHtml(layer.FillColor));
+                        g.FillPath(fill, interior);
+                    }
+                    if (path.PointCount == 0 && layer.FillColor is null) continue;
+                    if (layer.Outline && path.PointCount > 0)
                     {
                         using var pen = new Pen(ColorTranslator.FromHtml(layer.OutlineColor), layer.OutlineThickness * 2) { LineJoin = LineJoin.Miter };
                         g.DrawPath(pen, path);
                     }
                     using var brush = new SolidBrush(ColorTranslator.FromHtml(layer.Color));
-                    g.FillPath(brush, path);
+                    if (path.PointCount > 0) g.FillPath(brush, path);
                 }
             }
             using var attributes = new ImageAttributes();
@@ -92,7 +98,7 @@ internal sealed class LayerRenderer(string imagesDirectory)
         g.DrawImage(image, rect);
         g.Restore(state);
     }
-    internal GraphicsPath Geometry(CrosshairLayer layer)
+    internal GraphicsPath Geometry(CrosshairLayer layer, bool filled = false)
     {
         var path = new GraphicsPath(FillMode.Winding);
         int length = layer.Length, t = layer.Thickness, start = StrokeStart(t), gap = layer.Gap;
@@ -115,15 +121,15 @@ internal sealed class LayerRenderer(string imagesDirectory)
             case LayerKind.Ring:
                 path.FillMode = FillMode.Alternate;
                 path.AddEllipse(StrokeStart(length), StrokeStart(length), length, length);
-                if (length > 2 * t) path.AddEllipse(StrokeStart(length) + t, StrokeStart(length) + t, length - 2 * t, length - 2 * t);
+                if (!filled && length > 2 * t) path.AddEllipse(StrokeStart(length) + t, StrokeStart(length) + t, length - 2 * t, length - 2 * t);
                 break;
             case LayerKind.Box:
                 int pos = StrokeStart(length), stroke = Math.Min(t, (length + 1) / 2);
-                if (gap == 0)
+                if (filled || gap == 0)
                 {
                     path.FillMode = FillMode.Alternate;
                     path.AddRectangle(new Rectangle(pos, pos, length, length));
-                    if (length > 2 * stroke) path.AddRectangle(new Rectangle(pos + stroke, pos + stroke, length - 2 * stroke, length - 2 * stroke));
+                    if (!filled && length > 2 * stroke) path.AddRectangle(new Rectangle(pos + stroke, pos + stroke, length - 2 * stroke, length - 2 * stroke));
                 }
                 else
                 {

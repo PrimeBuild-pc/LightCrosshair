@@ -48,4 +48,5 @@
   <data name="HookRegistrationFailed" xml:space="preserve">
     <value>Windows no ha podido registrar un enlace de entrada.</value>
   </data>
+  <data name="LoadFailed" xml:space="preserve"><value>No se pudo cargar la biblioteca. LightCrosshair usa valores temporales; tus archivos no han cambiado. Reinicia para reintentar.</value></data>
 </root>

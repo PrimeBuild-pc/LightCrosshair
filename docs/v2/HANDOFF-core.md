@@ -2,17 +2,19 @@
 
 Branch: `v2-core`, worktree: `../LightCrosshair-core`. Started from the reviewer’s committed plan/contract at 72a3ed8; the requested worktree did not yet exist. No branch switch, merge, rebase, push or publication. Contracts, solution, UI source and the other planning documents are unchanged.
 
+Round 1 history follows; the **Review 1** section supersedes resolved deferrals and records this round's final validation (224 Core + 17 UI tests).
+
 ## Status per milestone
 
 | Milestone | Status |
 |---|---|
 | C0 | Baseline committed as 2189a6c before production edits. Untouched v1.9: Release build, zero warnings/errors, 283 passing tests. Five requested v1 settings toggles were not verified; see BASELINE.md. |
 | C1 | .NET 10 Core/tests, contract reference, no WPF dependency. Removed in-process settings and the excluded FPS/diagnostics/update functionality. Tray remains available when the UI executable is absent. |
-| C2 | Atomic, durable, debounced single-writer store; hourly backups, retention, recovery; read-only v1 migration, including every shape/composite, active state, bindings and settings. Disabled saved color values and v1 driver-only cap adoption have the deferrals below. |
+| C2 | Atomic, durable, debounced single-writer store; hourly backups, retention, recovery; read-only v1 migration, including every shape/composite, active state, bindings and settings. Disabled saved color values are preserved (Review 1); v1 driver-only cap adoption remains deferred. |
 | C3 | Shared Arms/Dot/Ring/Box/Image renderer and premultiplied DIB/UpdateLayeredWindow overlay. Pixel convention, bounds, outlines, rotations, images and determinism tested. No crosshair redraw timer. |
 | C4 | Event-driven foreground contexts, default/game visibility, color recovery journal, FPS overrides, visibility overrides, 53 local suggestions and NVIDIA cap save/delete. Actual driver feature probing and v1 cap adoption deferred. |
 | C5 | Same-user asynchronous pipe, bounded strict UTF-8, handshake, all IpcMethods, responses/events, UI launch/focus/close and transient preview lifecycle. |
-| C6 | All four actions support keyboard/mouse; visibility supports holds; wheel toggles; context cycling, registration errors and conflicts. Hook health uses raw-input activity rather than a watchdog timer. Capture suspension needs the contract request below. |
+| C6 | All four actions support keyboard/mouse; visibility supports holds; wheel toggles; context cycling, registration errors and conflicts. Hook health uses raw-input activity rather than a watchdog timer. Capture suspension is implemented in Review 1. |
 | C7 | 30 original presets, share codes, bounded inflate, validated PNG import and JSON import/export with embedded images. |
 | C8 | Six Core locales with complete-key tests, autorun setting, .NET 10 CI/packaging/installer/templates and v2 public docs. Both architectures publish. |
 | C9 | Release solution build: zero warnings/errors; 215 tests pass. Published IPC and real-UI smoke checks pass. Performance measured below. Hardware checks and the explicitly unmet/deferred budgets remain review items. |
@@ -25,7 +27,7 @@ Shutdown waits for an in-flight store mutation instead of overwriting it with an
 - Driver color transactions run serially in the background. Crosshair changes happen immediately; potentially slow vendor calls cannot be promised within the 50 ms foreground budget.
 - Library JSON is capped at 7 MiB compact (with a separate 32 MiB file ceiling), reserving room for RuntimeState inside the 8 MiB pipe limit. An oversized save fails before replacing the last good store.
 - `LIGHTCROSSHAIR_DATA_ROOT` redirects the whole v2 store/log/journal for tests. Optional `LIGHTCROSSHAIR_TEST_INSTANCE=<up to 32 ASCII alphanumerics>` appends `.test.<id>` to pipe/mutex names. Normal launches use the exact contract names. This is needed because other worktrees in the same Windows session can otherwise connect to, modify or exit a benchmark Core. Isolated perf fixtures unbind live system shortcuts and do not launch the UI.
-- Original rounded line caps and some old outline/radius behavior are approximated by editable integer-pixel layers. Base T/X continuity and pen-centered ring/box size are preserved. Filled legacy boxes use up to two fill layers beneath the border, including 256 px fills.
+- Original rounded line caps and some old outline/radius behavior are approximated by editable integer-pixel layers. Base T/X continuity and pen-centered ring/box size are preserved. Filled legacy boxes/rings now use the accepted FillColor field (Review 1), including 256 px fills.
 - No Core NuGet dependencies were added. TraceEvent and NvAPIWrapper.Net remain from v1 and are used by the retained features.
 
 ## How to build, run, test, measure
@@ -34,7 +36,7 @@ From this worktree:
 
 ```powershell
 dotnet build -c Release
-dotnet test LightCrosshair.Tests/LightCrosshair.Tests.csproj -c Release
+dotnet test -c Release
 pwsh scripts/validate-release-preflight.ps1 -CoreOnly
 pwsh scripts/build-release.ps1 -UiProject ../LightCrosshair-ui/LightCrosshair.UI/LightCrosshair.UI.csproj
 pwsh scripts/perf/smoke.ps1 -Isolated
@@ -77,7 +79,6 @@ Live read-only probes found no PresentationFramework/PresentationCore loaded in 
 
 - **C4 deferred:** capabilities currently reflect detected vendor rather than successful per-feature driver probes. Operations still fail explicitly on unsupported hardware. NVIDIA hardware was unavailable for an actual probe/cap/vibrance test; no driver-write success is claimed.
 - **C2/C4 deferred:** pre-existing v1 NVIDIA FPS caps live in the driver, with no ownership marker in v1 JSON. They are left untouched rather than adopted and later cleared without validated ownership. New v2 managed caps have save/delete behavior.
-- **C2 deferred:** disabled v1 display-color values remain in untouched originals and `backups/migration`, but are not retained as editable disabled values in GameProfile; see the contract request.
 - Actual AMD/NVIDIA color changes, forced-kill recovery on hardware, HDR switching, elevated-game behavior, mixed-DPI/hot-plug and ARM64 execution remain manual checks. Runtime monitor DPI metadata currently defaults to 100%; physical-pixel rendering/display-change handling is implemented.
 - Recording detection uses recorder-process presence at a two-second interval, not observation of actual capture.
 - Input-hook callbacks were reviewed to avoid allocation/I/O; their <1 ms latency was not measured under game input load.
@@ -93,48 +94,46 @@ Manual smoke evidence and repeat steps:
 5. Run five programmatic OpenSettings hotkey open/close cycles; verified five real UI process exits in two runs.
 6. On appropriate hardware, repeat with a configured game, every binding mode, FPS on/off, color apply/leave, forced termination/restart, monitor unplug/DPI changes and installer upgrade/uninstall. These hardware/clean-system steps are **not verified here**.
 
-## Contract change requests
+## Contract change requests from round 1
 
-### Filled boxes
+All three additions (FillColor, DisplayColorsEnabled, setInputCapture) were accepted in the merged contract and are implemented in Review 1 below. No contract or UI files were edited by Core in this round.
 
-Why: a single Box layer has no independent fill; migration needs extra editable layers.
+## Review 1
 
-Proposed optional C# addition to CrosshairLayer:
+- C-1: Remap invalid legacy IDs consistently across designs/default/game links; merge a v1.9 `working::<32 hex>` into `SourceProfileId` before validating v2 identity; skip/log individual invalid profiles. Exact JSON fixture and regression tests pass; published x64 Core starts from a copied fixture and returns one edited source/default via IPC (`scripts/perf/migration-smoke.ps1`).
+- C-2: Failed load/migration keeps Core and IPC running with editable in-memory defaults; saves/shutdown cannot create `store.json`, allowing retry next launch. One localized tray notification is logged; errors include type, message and stack. Exclusive legacy-file lock regression and published `shutdown-smoke.ps1` verify survival, one notification, unchanged v1, no marker and graceful exit; all 218 Core + 17 UI tests pass.
+- C-3 (partially fixed; final acceptance deferred): Remove duplicate IPC JSON/string buffers, finish/dispose connection writers and CTS, release saved store bytes, reuse the foreground process-path buffer, dispose launched Process handles and disable Release tiered compilation while retaining ReadyToRun. Twenty real-UI cycles improve five-cycle growth from +6.94 to +2.81 MiB, with +0.80 MiB residual drift from cycle 5 to 20. Heap/counter evidence and limits are below. A fully isolated repeat and strict flat-trend acceptance are deferred until the UI owner fixes its hard-coded placement path; Core cannot edit that file under this round's ownership.
+- C-4: Every Core test gets an async-context data/log root under a unique temporary directory, plus a safe per-run fallback for discovery/constructors. A guard writes both default log and store, asserts the per-test path and excludes production AppData. Full Release build has 0 warnings/errors; 219 Core + 17 UI tests pass without external environment setup.
+- C-5: All five diagnostic window probes (0x8064–0x8067, 0x8069) are gated by Debug or an explicit valid `LIGHTCROSSHAIR_TEST_INSTANCE`; production names expose none. Release build: 0 warnings/errors; 219 Core + 17 UI tests pass. `probe-smoke.ps1` verifies all production responses are zero and the test-instance magic is enabled.
+- C-6: The 30 presets now rotate through white, green, yellow, cyan, magenta and red (five designs per color), retaining outlined variants for contrast. Stable preset identities/tags are unchanged. Release build: 0 warnings/errors; 219 Core + 17 UI tests pass.
+- C-7: Implement accepted Box/Ring FillColor in shared rendering, validation/share round-trip and single-layer v1 migration; retain disabled display values and honor DisplayColorsEnabled in game rules; suspend/unregister all hotkeys/hooks during a renewable input-capture lease. Unit tests cover pixels/opacity, invalid fill, share, migration, rules and lease boundaries; published `input-capture-smoke.ps1` verifies all actions, false/disconnect, renewal and actual 60-second expiry. Release: 0 warnings/errors; 223 Core + 17 UI tests pass.
 
-```csharp
-public string? FillColor { get; set; } // null = unfilled
-```
+### Review 1 performance evidence and remaining limit
 
-Workaround: `// CONTRACT-REQUEST: Filled boxes` in LegacyMigration adds one or two nested thick boxes beneath the border. It covers sizes through 256 px within the current layer/stroke limits.
+Same Windows/CPU/runtime as the round-1 table. Both compared runs used the merged real UI next to published x64 Core, production pipe names (no `-Isolated`), a fresh temporary Core data root, 10 s warmup, 60 s idle sampling and 20 verified UI open/close/process-exit cycles. The harness waits for the UI window plus pipe occupancy/handshake and 200 ms settling. Baseline package: code through d9d99a7; final package: all Review 1 changes. No other Core/UI was running at the start of either run.
 
-### Suspend actions during binding capture
+| Metric (MiB unless stated) | Before | After |
+|---|---:|---:|
+| Idle private, 60 s average | 13.88 | 13.39 |
+| Idle CPU, percent of one core | 0.0256 | 0.0000 (sampling resolution) |
+| Private before UI cycles | 13.78 | 13.30 |
+| Private after cycle 5 | 20.72 | 16.11 |
+| Private after cycle 20 | 27.89 | 16.91 |
+| Increase after 5 cycles (budget +3) | +6.94 | +2.81 |
+| Increase from cycle 5 to 20 | +7.17 | +0.80 |
+| Process handles, cycle 5 / 20 | 510 / 526 | 496 / 502 |
+| UI cold window + connection + settling, ms | 895.9 | 915.4 |
 
-Why: Core cannot know when the UI is capturing a replacement binding. Existing global actions, including OpenSettings, can fire during capture; v1 could suspend them in-process.
+Final per-cycle private values: 15.16, 15.73, 15.91, 15.99, 16.11, 15.51, 15.69, 15.82, 15.94, 16.08, 15.62, 15.76, 15.88, 15.89, 16.04, 16.23, 16.54, 16.66, 16.79, 16.91. The five-cycle budget passes in this sample; +0.80 MiB residual growth is not claimed as an exactly flat private-memory trend. Window/connection time does not establish interactive readiness.
 
-Proposed C# additions:
+**Isolation limitation found after these runs:** UI `WindowPlacementStore.FilePath` uses the real roaming `LightCrosshair/v2/ui-placement.json`, ignoring `LIGHTCROSSHAIR_DATA_ROOT`; UI closing/exit calls Save. Those UI runs could therefore read/overwrite real window placement. Core store, migration, logs and color journal used temporary roots throughout. The real placement file was not read, deleted or restored after discovering this (its original value was not captured). No further real-UI runs were made. `measure.ps1` now refuses real-UI cycles while that known hard-coded source path remains, rather than silently repeating this breach. The UI owner must route placement through the supplied data root, then repeat the final acceptance run. The numbers above are diagnostic evidence, not a claim that the entire UI run met the requested isolation rule.
 
-```csharp
-// IpcMethods
-public const string SetInputCapture = "setInputCapture";
-// Payload
-public sealed class InputCaptureRequest
-{
-    public bool Active { get; set; }
-}
-```
+Profiling used local dotnet-gcdump/dotnet-counters 10.0.750501, System.Runtime counters, and heap dumps after cycles 5 and 20. Before changes, the real-UI profiling run had 1,888,595 -> 1,891,249 live heap bytes (+2,654), despite growing private commitment. Both dumps had one PipeServer, two CTS and two Bitmap objects; no surviving per-connection reader/channel/MemoryStream accumulation appeared. This does not support a managed per-session object leak in those suspects. It also does not fully attribute native/runtime commitment.
 
-Behavior: transient suppression of registered actions/hooks, reset on disconnect; UI captures locally.
+After discovering the UI isolation issue, the separate `connection-profile.ps1` safely exercised 20 Core-only IPC connections and 600 preset PNG renders, without starting UI. Live heap was 1,727,709 -> 1,676,123 bytes, with the same stable PipeServer/CTS/Bitmap counts. This is a Core connection/render stress check, **not** a replacement for the deferred real-UI profiling repeat. Heap collection forces GC and adds diagnostic overhead; instrumented private/CPU values are excluded from budget comparisons. The tool warned that .NET 10 uses lossy EventPipe buffering; no completeness guarantee is asserted.
 
-Workaround: the marked comment in RunInputActionAsync records that no capture lifecycle message exists. Actions remain active; no unreliable focus-based guess is used.
+An experimental GCConserveMemory=9 run did not improve private growth and was discarded; it is not shipped. Disabling tiered compilation reduced the five-cycle increase in a controlled comparison, and the foreground callback was allocating a fresh 32,768-character buffer on every window change. Release now retains ReadyToRun without tiered recompilation, and reuses a 260-character path buffer, expanding only for long paths. This is workload-specific tuning, not a GC-on-disconnect workaround. Runtime behavior is documented by [Microsoft's compilation settings](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/compilation).
 
-### Preserve disabled display color profiles
+Local raw evidence (ignored): `scripts/perf/results-review-before-verified`, `results-review-final`, `results-review-profile-before`, `results-review-connections-after`, `results-review-final-idle`. A final safe isolated 60 s Core-only run measured 14.65 MiB private, 0.0000% CPU at sampling resolution, zero redraws/repeating application timers and no WPF. Final published smoke: render median/P95 1.370/1.629 ms; preview median/P95 0.872/1.093 ms. `probe-smoke.ps1` passes for normal and test-instance launches. Full solution Release build: zero warnings/errors, 224 Core + 17 UI tests pass.
 
-Why: v1 can retain saved color values with its enable switch off. A nullable DisplayColors currently represents off and cannot also retain those values.
-
-Proposed optional addition to GameProfile:
-
-```csharp
-public bool DisplayColorsEnabled { get; set; } = true;
-```
-
-Workaround: the marked migration branch uses null to preserve disabled behavior; source values remain recoverable from v1 and its migration backup. Backfill them before final release if the contract is extended.
+`TODO.md` is unchanged as explicitly required by the ownership boundary. Its Core milestones remain implemented, and its existing NVIDIA feature-probe/adoption deferral remains open. Reviewer-owned contract-answer/integration checkboxes should be reconciled with the already merged v2; this round does not edit that reviewer-owned file.

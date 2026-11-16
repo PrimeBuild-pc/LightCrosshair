@@ -49,7 +49,13 @@ internal sealed partial class Form1 : LayeredWindow
             _ready = true; Runtime.ActiveCrosshairId = Document.Settings.DefaultCrosshairId;
             InitializeRuntime();
             InitializePipe();
-            if (Store.Recovered) _tray.ShowBalloonTip(3000, "LightCrosshair", TextFor("Recovered"), ToolTipIcon.Info);
+            if (Store.LoadError is not null)
+            {
+                string message = TextFor("LoadFailed");
+                _tray.ShowBalloonTip(5000, "LightCrosshair", message, ToolTipIcon.Warning);
+                Program.WriteLog("Load failure notification: " + message);
+            }
+            else if (Store.Recovered) _tray.ShowBalloonTip(3000, "LightCrosshair", TextFor("Recovered"), ToolTipIcon.Info);
         }
         catch (Exception ex) { Program.LogError(ex, "Load store"); Close(); }
     }
@@ -92,7 +98,7 @@ internal sealed partial class Form1 : LayeredWindow
                     start.ArgumentList.Add("--page"); start.ArgumentList.Add(navigate.Page);
                     if (navigate.SuggestProcess is not null) { start.ArgumentList.Add("--suggest"); start.ArgumentList.Add(navigate.SuggestProcess); }
                 }
-                Process.Start(start);
+                using var launched = Process.Start(start);
             }
             else _tray.ShowBalloonTip(3000, "LightCrosshair", TextFor("MissingUi"), ToolTipIcon.Info);
         }
@@ -111,6 +117,7 @@ internal sealed partial class Form1 : LayeredWindow
         {
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemDisplayChanged;
             _previewTimeout?.Cancel(); _previewTimeout?.Dispose(); _pipe?.Dispose();
+            _captureTimer?.Dispose();
             _recordingTimer?.Dispose(); _input?.Dispose(); HotkeyManager.Instance.UnregisterAll();
             _foreground?.Dispose(); _fps.Dispose();
             _tray.Visible = false; _tray.ContextMenuStrip?.Dispose(); _tray.Icon?.Dispose(); _tray.Dispose();

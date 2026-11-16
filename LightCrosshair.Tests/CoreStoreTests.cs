@@ -17,6 +17,62 @@ public sealed class CoreStoreTests : IDisposable
     public void Dispose() => Directory.Delete(_root, true);
 
     [Fact]
+    public async Task UnreadableLegacyFileUsesTemporaryDefaultsWithoutWritingAStoreAndRetriesOnRestart()
+    {
+        string legacy = Path.Combine(_root, "profiles.json");
+        await File.WriteAllTextAsync(legacy, "[]");
+        var store = new CoreStore(V2);
+        using (var locked = new FileStream(legacy, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            var defaults = await store.LoadAsync(_root);
+            Assert.IsType<IOException>(store.LoadError);
+            Assert.Single(defaults.Crosshairs);
+            await store.SaveAsync(defaults);
+            Assert.False(File.Exists(Path.Combine(V2, "store.json")));
+            string log = await File.ReadAllTextAsync(Path.Combine(V2, "logs", "core.log"));
+            Assert.Contains(store.LoadError.Message, log);
+            Assert.Contains("System.IO.IOException", log);
+            Assert.Contains("at LightCrosshair.ProfileStore.LoadAsync", log);
+        }
+        Assert.Null((await Restart()).LoadError);
+        Assert.True(File.Exists(Path.Combine(V2, "store.json")));
+        async Task<CoreStore> Restart() { var next = new CoreStore(V2); await next.LoadAsync(_root); return next; }
+    }
+
+    [Fact]
+    public async Task RealV19WorkingCopyMergesIntoItsSourceWithoutAddingADesign()
+    {
+        foreach (string file in Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Fixtures", "v1.9-working")))
+            File.Copy(file, Path.Combine(_root, Path.GetFileName(file)));
+        var document = await new CoreStore(V2).LoadAsync(_root);
+        var design = Assert.Single(document.Crosshairs);
+        Assert.Equal("default-immutable", design.Id);
+        Assert.Equal("Default edited", design.Name);
+        Assert.Equal(20, Assert.Single(design.Layers).Length);
+        Assert.Equal(design.Id, document.Settings.DefaultCrosshairId);
+        Assert.Single((await new CoreStore(V2).LoadAsync(_root)).Crosshairs);
+    }
+
+    [Fact]
+    public async Task InvalidLegacyIdsKeepDefaultWorkingCopyAndGameLinksWhileBadProfilesAreSkipped()
+    {
+        await File.WriteAllTextAsync(Path.Combine(_root, "profiles.json"), """
+            [{"Id":"old/id","Name":"Valid","SchemaVersion":6,"DisplayTargetProcessName":"game.exe"},
+             {"Id":"bad","Name":"Invalid shape","EnumShape":999}, {"Id":"invalid-payload","Size":"broken"}, null]
+            """);
+        await File.WriteAllTextAsync(Path.Combine(_root, "prefs.json"), """{"LastProfileId":"old/id"}""");
+        await File.WriteAllTextAsync(Path.Combine(_root, "current_state.json"), """
+            {"CurrentProfile":{"Id":"working::0123456789abcdef0123456789abcdef","SourceProfileId":"old/id","Name":"Edited"}}
+            """);
+        var document = await new CoreStore(V2).LoadAsync(_root);
+        var design = Assert.Single(document.Crosshairs);
+        Assert.Equal("Edited", design.Name);
+        Assert.Equal(design.Id, Validation.Id(design.Id));
+        Assert.Equal(design.Id, document.Settings.DefaultCrosshairId);
+        Assert.Equal(design.Id, Assert.Single(document.GameProfiles).CrosshairId);
+    }
+
+    [Fact]
     public async Task RoundTripCoalescesAndRecoversPreviousStore()
     {
         var store = new CoreStore(V2);
@@ -169,7 +225,7 @@ public sealed class CoreStoreTests : IDisposable
     public void LargeLegacyBoxFillCoversItsCenterWithinContractLayerAndStrokeLimits()
     {
         var design = LegacyMigration.Convert(new() { EnumShape = CrosshairShape.Box, Shape = "Box", Size = 256, FillColor = System.Drawing.Color.Blue, OuterColor = System.Drawing.Color.Green });
-        Assert.Equal(3, design.Layers.Count); Assert.All(design.Layers, l => Assert.InRange(l.Thickness, 1, 64));
+        Assert.Single(design.Layers); Assert.Equal("#0000FF", design.Layers[0].FillColor); Assert.All(design.Layers, l => Assert.InRange(l.Thickness, 1, 64));
         using var bitmap = new LayerRenderer(V2).Render(design, 320);
         Assert.Equal(System.Drawing.Color.Blue.ToArgb(), bitmap.GetPixel(160, 160).ToArgb());
         Assert.Equal(System.Drawing.Color.Blue.ToArgb(), bitmap.GetPixel(240, 160).ToArgb());

@@ -16,7 +16,18 @@ internal sealed class CoreStore(string directory)
     private string StorePath => Path.Combine(DirectoryPath, "store.json");
     public bool Recovered { get; private set; }
 
+    public Exception? LoadError { get; private set; }
     public async Task<StoreDocument> LoadAsync(string? legacyDirectory = null)
+    {
+        try { return await LoadPersistentAsync(legacyDirectory).ConfigureAwait(false); }
+        catch (Exception ex)
+        {
+            LoadError = ex;
+            Program.LogError(ex, "Load store; using temporary defaults", DirectoryPath);
+            return LegacyMigration.Defaults();
+        }
+    }
+    private async Task<StoreDocument> LoadPersistentAsync(string? legacyDirectory)
     {
         Directory.CreateDirectory(ImagesDirectory);
         Directory.CreateDirectory(Path.Combine(DirectoryPath, "backups"));
@@ -52,6 +63,7 @@ internal sealed class CoreStore(string directory)
         if (JsonSerializer.SerializeToUtf8Bytes(valid, ContractJson.Options).Length > 7 * 1024 * 1024) throw Validation.Invalid("Library exceeds the transport limit.");
         byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(valid, ContractJson.IndentedOptions);
         if (bytes.Length > 32 * 1024 * 1024) throw Validation.Invalid("Library exceeds the storage limit.");
+        if (LoadError is not null) return Task.CompletedTask;
         lock (_pendingGate)
         {
             _pending = bytes; _revision++;
@@ -87,7 +99,7 @@ internal sealed class CoreStore(string directory)
                 lock (_pendingGate)
                 {
                     if (revision != _revision) continue;
-                    _pendingWrite = null; return;
+                    _pending = null; _pendingWrite = null; return;
                 }
             }
         }

@@ -48,4 +48,5 @@
   <data name="HookRegistrationFailed" xml:space="preserve">
     <value>Windows が入力フックを登録できませんでした。</value>
   </data>
+  <data name="LoadFailed" xml:space="preserve"><value>ライブラリを読み込めませんでした。一時的な初期設定で動作しています。元のファイルは変更されていません。再起動して再試行してください。</value></data>
 </root>

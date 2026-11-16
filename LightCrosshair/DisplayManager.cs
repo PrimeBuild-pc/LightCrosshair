@@ -12,6 +12,7 @@ internal sealed class DisplayManager : IDisposable
     private readonly Action<string?, int> _changed;
     private readonly HashSet<string> _fallbackLogged = new();
     private readonly IntPtr _hook;
+    private readonly StringBuilder _path = new(260);
     public DisplayManager(Action<string?, int> changed)
     {
         _changed = changed;
@@ -31,8 +32,14 @@ internal sealed class DisplayManager : IDisposable
         {
             if (process != IntPtr.Zero)
             {
-                var path = new StringBuilder(32768); int size = path.Capacity;
-                if (QueryFullProcessImageName(process, 0, path, ref size)) name = Path.GetFileName(path.ToString()).ToLowerInvariant();
+                _path.Clear(); int size = _path.Capacity;
+                bool found = QueryFullProcessImageName(process, 0, _path, ref size);
+                if (!found && Marshal.GetLastWin32Error() == 122) // ERROR_INSUFFICIENT_BUFFER: uncommon long path.
+                {
+                    _path.EnsureCapacity(32768); size = _path.Capacity;
+                    found = QueryFullProcessImageName(process, 0, _path, ref size);
+                }
+                if (found) name = Path.GetFileName(_path.ToString()).ToLowerInvariant();
             }
         }
         finally { if (process != IntPtr.Zero) CloseHandle(process); }

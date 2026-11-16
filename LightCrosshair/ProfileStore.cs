@@ -30,7 +30,7 @@ namespace LightCrosshair
             List<CrosshairProfile>? list = null;
             try
             {
-                list = JsonSerializer.Deserialize<List<CrosshairProfile>>(json, JsonOpts);
+                list = DeserializeProfiles(json);
             }
             catch (Exception ex)
             {
@@ -44,7 +44,7 @@ namespace LightCrosshair
                         try
                         {
                             json = await File.ReadAllTextAsync(bak).ConfigureAwait(false);
-                            list = JsonSerializer.Deserialize<List<CrosshairProfile>>(json, JsonOpts);
+                            list = DeserializeProfiles(json);
                         }
                         catch (Exception backupEx) { Program.LogError(backupEx, "ProfileStore: backup load parse"); }
                     }
@@ -52,6 +52,7 @@ namespace LightCrosshair
                 list ??= new();
             }
 
+            list?.RemoveAll(p => p is null);
             foreach (var p in list ?? new List<CrosshairProfile>())
             {
                 // v6 only adds an optional binding. Do not rerun legacy color/shape migrations on v5 profiles.
@@ -120,6 +121,25 @@ namespace LightCrosshair
                 }
             }
             return list ?? new List<CrosshairProfile>();
+        }
+
+        private static List<CrosshairProfile> DeserializeProfiles(string json)
+        {
+            using var document = JsonDocument.Parse(json, new() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
+            if (document.RootElement.ValueKind == JsonValueKind.Null) return new();
+            if (document.RootElement.ValueKind != JsonValueKind.Array) throw new JsonException("Expected legacy profile array.");
+            var profiles = new List<CrosshairProfile>();
+            foreach (var entry in document.RootElement.EnumerateArray())
+            {
+                try
+                {
+                    var profile = entry.Deserialize<CrosshairProfile>(JsonOpts);
+                    if (profile is null) throw new JsonException("Null legacy profile.");
+                    profiles.Add(profile);
+                }
+                catch (JsonException ex) { Program.LogError(ex, "Skip invalid legacy profile"); }
+            }
+            return profiles;
         }
 
         public static async Task SaveAtomicAsync(IEnumerable<CrosshairProfile> profiles, string? path = null)

@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
@@ -36,7 +37,7 @@ internal sealed class PipeServer : IDisposable
     private readonly Func<IpcEnvelope, Task<object?>> _dispatch;
     private readonly Func<Task> _disconnected;
     private readonly CancellationTokenSource _stop = new();
-    private Channel<IpcEnvelope>? _outbound;
+    private Channel<byte[]>? _outbound;
     private CancellationTokenSource? _connection;
     private int _connected;
     public bool IsConnected => Volatile.Read(ref _connected) != 0;
@@ -44,14 +45,14 @@ internal sealed class PipeServer : IDisposable
     public PipeServer(string name, Func<IpcEnvelope, Task<object?>> dispatch, Func<Task> disconnected)
     {
         _name = name; _dispatch = dispatch; _disconnected = disconnected;
-        Completion = Task.Run(RunAsync);
+        Completion = Task.Run(async () => { try { await RunAsync().ConfigureAwait(false); } finally { _stop.Dispose(); } });
     }
     public void Publish(string method, object? payload)
     {
         if (!IsConnected) return;
-        var envelope = new IpcEnvelope { Kind = IpcKinds.Event, Id = 0, Method = method, Payload = Element(payload) };
+        byte[] frame = Frame(new() { Kind = IpcKinds.Event, Id = 0, Method = method }, payload);
         var queue = Volatile.Read(ref _outbound);
-        if (queue is not null && !queue.Writer.TryWrite(envelope)) _connection?.Cancel();
+        if (queue is not null && !queue.Writer.TryWrite(frame)) Cancel(_connection);
     }
     internal static JsonElement? Element(object? value) => value is null ? null : JsonSerializer.SerializeToElement(value, ContractJson.Options);
     private async Task RunAsync()
@@ -64,12 +65,15 @@ internal sealed class PipeServer : IDisposable
                 await pipe.WaitForConnectionAsync(_stop.Token).ConfigureAwait(false);
                 using var connection = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
                 _connection = connection;
-                var outbound = Channel.CreateBounded<IpcEnvelope>(new BoundedChannelOptions(64) { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
+                var outbound = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(64) { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
                 Volatile.Write(ref _outbound, outbound);
                 Task write = WriteAsync(pipe, outbound.Reader, connection);
                 try { await ReadAsync(pipe, outbound.Writer, connection.Token).ConfigureAwait(false); }
-                finally { outbound.Writer.TryComplete(); connection.Cancel(); }
-                try { await write.ConfigureAwait(false); } catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException) { }
+                finally
+                {
+                    outbound.Writer.TryComplete(); connection.Cancel();
+                    try { await write.ConfigureAwait(false); } catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException) { }
+                }
             }
             catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException or JsonException or InvalidDataException or DecoderFallbackException)
             { if (!_stop.IsCancellationRequested) Program.WriteLog("IPC connection ended"); }
@@ -81,21 +85,19 @@ internal sealed class PipeServer : IDisposable
             }
         }
     }
-    private static async Task WriteAsync(Stream stream, ChannelReader<IpcEnvelope> queue, CancellationTokenSource connection)
+    private static async Task WriteAsync(Stream stream, ChannelReader<byte[]> queue, CancellationTokenSource connection)
     {
         try
         {
-            await foreach (var message in queue.ReadAllAsync(connection.Token).ConfigureAwait(false))
+            await foreach (byte[] bytes in queue.ReadAllAsync(connection.Token).ConfigureAwait(false))
             {
-                byte[] bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message, ContractJson.Options) + "\n");
-                if (bytes.Length > BoundedLineReader.MaxLineBytes + 1) throw new InvalidDataException("Response too large.");
                 await stream.WriteAsync(bytes, connection.Token).ConfigureAwait(false);
                 await stream.FlushAsync(connection.Token).ConfigureAwait(false);
             }
         }
         finally { connection.Cancel(); }
     }
-    private async Task ReadAsync(Stream stream, ChannelWriter<IpcEnvelope> outbound, CancellationToken token)
+    private async Task ReadAsync(Stream stream, ChannelWriter<byte[]> outbound, CancellationToken token)
     {
         var reader = new BoundedLineReader(stream);
         bool hello = false;
@@ -106,10 +108,10 @@ internal sealed class PipeServer : IDisposable
             IpcEnvelope request = JsonSerializer.Deserialize<IpcEnvelope>(line, ContractJson.Options) ?? throw new InvalidDataException();
             var response = new IpcEnvelope { Kind = IpcKinds.Response, Id = request.Id };
             bool close = false;
+            object? result = null;
             try
             {
                 if (request.Kind != IpcKinds.Request || request.Id <= 0 || string.IsNullOrEmpty(request.Method) || request.Method.Length > 64) throw new CoreException(IpcErrorCodes.BadRequest, "Invalid request envelope.");
-                object? result;
                 if (!hello)
                 {
                     close = true;
@@ -125,7 +127,6 @@ internal sealed class PipeServer : IDisposable
                 }
                 else if (request.Method == IpcMethods.Hello) throw new CoreException(IpcErrorCodes.BadRequest, "Already initialized.");
                 else result = await _dispatch(request).ConfigureAwait(false);
-                response.Payload = Element(result);
             }
             catch (CoreException ex) { response.Ok = false; response.Error = new() { Code = ex.Code, Message = ex.Message }; }
             catch (Exception ex) when (ex is JsonException or ArgumentException or InvalidOperationException or NullReferenceException)
@@ -135,11 +136,35 @@ internal sealed class PipeServer : IDisposable
             if (close)
             {
                 // A mismatch response must reach the client before this stream is closed.
-                byte[] bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(response, ContractJson.Options) + "\n");
+                byte[] bytes = Frame(response, result);
                 await stream.WriteAsync(bytes, token).ConfigureAwait(false); await stream.FlushAsync(token).ConfigureAwait(false); return;
             }
-            await outbound.WriteAsync(response, token).ConfigureAwait(false);
+            await outbound.WriteAsync(Frame(response, result), token).ConfigureAwait(false);
         }
     }
-    public void Dispose() { _stop.Cancel(); _connection?.Cancel(); }
+    private static byte[] Frame(IpcEnvelope envelope, object? payload)
+    {
+        // Serialize once to UTF-8. Avoid a payload JsonDocument plus a full UTF-16
+        // envelope string for every render/snapshot response.
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("kind", envelope.Kind); writer.WriteNumber("id", envelope.Id);
+            if (envelope.Method is not null) writer.WriteString("method", envelope.Method);
+            if (envelope.Kind == IpcKinds.Response) writer.WriteBoolean("ok", envelope.Ok);
+            if (payload is not null) { writer.WritePropertyName("payload"); JsonSerializer.Serialize(writer, payload, ContractJson.Options); }
+            if (envelope.Error is not null) { writer.WritePropertyName("error"); JsonSerializer.Serialize(writer, envelope.Error, ContractJson.Options); }
+            writer.WriteEndObject();
+        }
+        if (buffer.WrittenCount > BoundedLineReader.MaxLineBytes) throw new InvalidDataException("Response too large.");
+        buffer.GetSpan(1)[0] = (byte)'\n'; buffer.Advance(1);
+        return buffer.WrittenSpan.ToArray();
+    }
+    private static void Cancel(CancellationTokenSource? source)
+    {
+        try { source?.Cancel(); }
+        catch (ObjectDisposedException) { } // A simultaneous disconnect already completed it.
+    }
+    public void Dispose() { Cancel(_stop); Cancel(_connection); }
 }

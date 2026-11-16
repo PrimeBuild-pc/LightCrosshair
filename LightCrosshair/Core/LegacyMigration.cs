@@ -25,10 +25,31 @@ internal static class LegacyMigration
             try { config = CrosshairConfig.DeserializeSettings(await File.ReadAllTextAsync(configPath).ConfigureAwait(false)); }
             catch (JsonException) { Program.WriteLog("Legacy settings invalid"); }
         }
-        if (profiles.Count > 0)
+        var ids = new Dictionary<string, string>(StringComparer.Ordinal);
+        string MapId(string? old)
         {
-            store.Crosshairs = profiles.Select(Convert).ToList();
-            foreach (var profile in profiles.Where(p => !string.IsNullOrWhiteSpace(p.DisplayTargetProcessName)))
+            old ??= "";
+            if (ids.TryGetValue(old, out var mapped)) return mapped;
+            try { mapped = Validation.Id(old); }
+            catch (CoreException) { mapped = Guid.NewGuid().ToString("N"); }
+            return ids[old] = mapped;
+        }
+        var converted = new Dictionary<CrosshairProfile, CrosshairDesign>();
+        foreach (var profile in profiles)
+        {
+            try
+            {
+                var design = Validation.Design(Convert(profile, MapId(profile.Id)), imagesDirectory);
+                if (converted.Values.Any(d => d.Id == design.Id)) continue;
+                converted.Add(profile, design);
+            }
+            catch (Exception ex) when (ex is CoreException or ArgumentException or NullReferenceException)
+            { Program.LogError(ex, "Skip invalid legacy profile", Path.GetDirectoryName(imagesDirectory)); }
+        }
+        if (converted.Count > 0)
+        {
+            store.Crosshairs = converted.Values.ToList();
+            foreach (var profile in converted.Keys.Where(p => !string.IsNullOrWhiteSpace(p.DisplayTargetProcessName)))
             {
                 try
                 {
@@ -37,16 +58,16 @@ internal static class LegacyMigration
                     if (store.GameProfiles.Any(g => g.ProcessName == process)) continue;
                     store.GameProfiles.Add(Validation.Game(new()
                     {
-                        Name = profile.Name, ProcessName = process, CrosshairId = store.Crosshairs[profiles.IndexOf(profile)].Id,
+                        Name = profile.Name, ProcessName = process, CrosshairId = converted[profile].Id,
                         VisibilityBinding = profile.VisibilityBinding is { IsValid: true } b ? Binding(b) : null,
-                        // CONTRACT-REQUEST: Preserve disabled display color profiles. Raw values remain in the migration backup.
-                        DisplayColors = profile.HasDisplayColorProfile && profile.DisplayEnableGammaOverride ? new()
+                        DisplayColorsEnabled = profile.DisplayEnableGammaOverride,
+                        DisplayColors = profile.HasDisplayColorProfile ? new()
                         { Gamma = profile.DisplayGammaValue, Contrast = profile.DisplayContrastValue, Brightness = profile.DisplayBrightnessValue, Vibrance = profile.DisplayVibranceValue } : null
                     }, store));
                 }
                 catch (CoreException) { Program.WriteLog("Legacy game profile invalid"); }
             }
-            store.Settings.DefaultCrosshairId = store.Crosshairs.FirstOrDefault(d => d.Id == prefs?.LastProfileId)?.Id ?? store.Crosshairs[0].Id;
+            store.Settings.DefaultCrosshairId = store.Crosshairs.FirstOrDefault(d => d.Id == MapId(prefs?.LastProfileId))?.Id ?? store.Crosshairs[0].Id;
         }
         else if (config is not null)
         {
@@ -55,13 +76,18 @@ internal static class LegacyMigration
         }
         if (current?.CurrentProfile is { } active)
         {
-            var design = Convert(active);
-            string source = string.IsNullOrWhiteSpace(active.SourceProfileId) ? active.Id : active.SourceProfileId;
-            int index = store.Crosshairs.FindIndex(d => d.Id == source);
-            if (index >= 0) { design.Id = source; store.Crosshairs[index] = design; }
-            else store.Crosshairs.Add(design);
-            store.Settings.DefaultCrosshairId = design.Id;
-            store.Settings.HideDuringScreenRecording = active.HideDuringScreenRecording;
+            try
+            {
+                string source = MapId(string.IsNullOrWhiteSpace(active.SourceProfileId) ? active.Id : active.SourceProfileId);
+                var design = Validation.Design(Convert(active, source), imagesDirectory);
+                int index = store.Crosshairs.FindIndex(d => d.Id == source);
+                if (index >= 0) store.Crosshairs[index] = design;
+                else store.Crosshairs.Add(design);
+                store.Settings.DefaultCrosshairId = design.Id;
+                store.Settings.HideDuringScreenRecording = active.HideDuringScreenRecording;
+            }
+            catch (Exception ex) when (ex is CoreException or ArgumentException or NullReferenceException)
+            { Program.LogError(ex, "Skip invalid legacy working copy", Path.GetDirectoryName(imagesDirectory)); }
         }
         store.Settings.CrosshairVisible = prefs?.OverlayVisible ?? config?.Visible ?? true;
         if (config is not null)
@@ -107,9 +133,15 @@ internal static class LegacyMigration
         var p = value.Split(',');
         return p.Length == 3 && p.All(x => byte.TryParse(x, out _)) ? $"#{byte.Parse(p[0]):X2}{byte.Parse(p[1]):X2}{byte.Parse(p[2]):X2}" : fallback;
     }
-    public static CrosshairDesign Convert(CrosshairProfile p)
+    private static string LegacyId(string? id)
     {
-        var design = new CrosshairDesign { Id = Validation.Id(p.Id), Name = string.IsNullOrWhiteSpace(p.Name) ? "Migrated crosshair" : Validation.Name(p.Name), AntiAlias = p.AntiAlias };
+        try { return Validation.Id(id!); }
+        catch (CoreException) { return Guid.NewGuid().ToString("N"); }
+    }
+    public static CrosshairDesign Convert(CrosshairProfile p, string? mappedId = null)
+    {
+        if (!Enum.IsDefined(p.EnumShape)) throw Validation.Invalid("Unknown legacy shape.");
+        var design = new CrosshairDesign { Id = mappedId ?? LegacyId(p.Id), Name = string.IsNullOrWhiteSpace(p.Name) ? "Migrated crosshair" : Validation.Name(p.Name), AntiAlias = p.AntiAlias };
         string shape = p.Shape;
         bool composite = shape is "CircleDot" or "CircleCross" or "CirclePlus" or "CircleX" or "CrossDot";
         if (shape is "CircleDot" or "CircleCross" or "CirclePlus" or "CircleX" or "CrossDot")
@@ -143,19 +175,8 @@ internal static class LegacyMigration
                 Rotation = kind == "X" ? 45 : 0, Color = $"#{color.R:X2}{color.G:X2}{color.B:X2}", Opacity = color.A / 255.0,
                 Outline = outline, OutlineThickness = Math.Clamp(thickness / 2, 1, 8), OutlineColor = $"#{p.EdgeColor.R:X2}{p.EdgeColor.G:X2}{p.EdgeColor.B:X2}"
             });
-            if (kind == "Box" && p.FillColor.A > 0)
-            {
-                // CONTRACT-REQUEST: Filled boxes. At most two nested boxes cover a 256 px
-                // fill without exceeding the contract's 64 px maximum stroke width.
-                var fills = new List<CrosshairLayer>();
-                for (int side = Math.Clamp(size, 1, 256); side > 0;)
-                {
-                    int stroke = Math.Min(64, (side + 1) / 2);
-                    fills.Add(new() { Name = "Fill", Kind = LayerKind.Box, Length = side, Thickness = stroke, Gap = 0, Color = $"#{p.FillColor.R:X2}{p.FillColor.G:X2}{p.FillColor.B:X2}", Opacity = p.FillColor.A / 255.0 });
-                    side -= 2 * stroke;
-                }
-                design.Layers.InsertRange(design.Layers.Count - 1, fills);
-            }
+            if (kind is "Box" or "Circle" or "CircleOutlined" && p.FillColor.A > 0)
+                design.Layers[^1].FillColor = $"#{p.FillColor.R:X2}{p.FillColor.G:X2}{p.FillColor.B:X2}";
         }
     }
 }

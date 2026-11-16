@@ -48,4 +48,5 @@
   <data name="HookRegistrationFailed" xml:space="preserve">
     <value>Windows 无法注册输入钩子。</value>
   </data>
+  <data name="LoadFailed" xml:space="preserve"><value>无法加载库。LightCrosshair 正在使用临时默认值，原文件未更改。请重启以重试。</value></data>
 </root>

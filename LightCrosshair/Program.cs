@@ -8,9 +8,21 @@ namespace LightCrosshair;
 internal static class Program
 {
     private static readonly object LogGate = new();
-    internal static string DataRoot => Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LightCrosshair", "v2");
+    internal static readonly AsyncLocal<string?> ScopedDataRoot = new();
+    internal static string DataRoot => ScopedDataRoot.Value ?? Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LightCrosshair", "v2");
     // Opt-in test isolation for concurrent worktrees. Normal launches keep the exact contract names.
     private static readonly string TestSuffix = TestInstanceSuffix();
+    internal static bool PerfProbesEnabled
+    {
+        get
+        {
+#if DEBUG
+            return true;
+#else
+            return TestSuffix.Length != 0;
+#endif
+        }
+    }
     internal static string PipeName => ContractInfo.PipeName(Process.GetCurrentProcess().SessionId) + TestSuffix;
     private static string TestInstanceSuffix()
     {
@@ -41,7 +53,7 @@ internal static class Program
         catch (Exception ex) { LogError(ex, "Startup"); return 1; }
     }
 
-    public static void LogError(Exception ex, string context, string? root = null) => WriteLog($"{context}: {ex.GetType().Name}", root);
+    public static void LogError(Exception ex, string context, string? root = null) => WriteLog($"{context}: {ex}", root);
     public static void LogDebug(string message, string? context = null) { if (DebugLoggingEnabled) WriteLog(context ?? "Debug"); }
     // Legacy driver diagnostics may contain paths. Log the operation only.
     public static void LogLifecycle(string message, string? context = null) => WriteLog(context ?? "Lifecycle");

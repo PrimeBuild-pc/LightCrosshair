@@ -33,6 +33,9 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
     <Optimize>true</Optimize>
+    <!-- The resident overlay has no sustained compute loop; keep ReadyToRun code
+         instead of accumulating tiered JIT/profile data across short UI sessions. -->
+    <TieredCompilation>false</TieredCompilation>
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
     <DefineConstants>RELEASE</DefineConstants>
