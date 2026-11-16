@@ -123,6 +123,23 @@ public sealed class HexBrushConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+public sealed class MaxDoubleConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+    {
+        var max = 0d;
+        foreach (var value in values)
+        {
+            if (value is double number && !double.IsNaN(number) && !double.IsInfinity(number))
+                max = Math.Max(max, number);
+        }
+        return max;
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 public sealed class ZoomConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

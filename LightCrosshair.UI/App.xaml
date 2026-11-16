@@ -17,6 +17,7 @@
       <conv:Base64ImageConverter x:Key="Png"/>
       <conv:HexBrushConverter x:Key="HexBrush"/>
       <conv:ZoomConverter x:Key="Zoom"/>
+      <conv:MaxDoubleConverter x:Key="MaxSize"/>
       <conv:StatusBrushConverter x:Key="StatusBrush"/>
       <conv:EqualsParameterConverter x:Key="Eq"/>
       <conv:KeyToTextConverter x:Key="KeyText"/>

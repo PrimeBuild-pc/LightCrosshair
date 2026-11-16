@@ -59,6 +59,7 @@
   <data name="Studio_Name" xml:space="preserve"><value>Name</value></data>
   <data name="Studio_SaveAs" xml:space="preserve"><value>Save as new</value></data>
   <data name="Studio_Live" xml:space="preserve"><value>Live in game</value></data>
+  <data name="Studio_AllHidden" xml:space="preserve"><value>All layers are hidden</value></data>
   <data name="Studio_Undo" xml:space="preserve"><value>Undo</value></data>
   <data name="Studio_Redo" xml:space="preserve"><value>Redo</value></data>
   <data name="Studio_CopyCode" xml:space="preserve"><value>Copy share code</value></data>
