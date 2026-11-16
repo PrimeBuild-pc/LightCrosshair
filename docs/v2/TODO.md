@@ -60,36 +60,36 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 
 ## Cursor — UI, branch `v2-ui`
 ### U0 Foundation
-- [ ] `LightCrosshair.UI` (WPF, `net10.0-windows`, MVVM with CommunityToolkit.Mvvm) and `LightCrosshair.UI.Tests` (xUnit); reference `LightCrosshair.Contracts`
-- [ ] Theme: `Tokens.xaml` + control styles per DESIGN.md
-- [ ] Localization: resx for 6 languages, runtime language switch, key-completeness test
+- [x] `LightCrosshair.UI` (WPF, `net10.0-windows`, MVVM with CommunityToolkit.Mvvm) and `LightCrosshair.UI.Tests` (xUnit); reference `LightCrosshair.Contracts`
+- [x] Theme: `Tokens.xaml` + control styles per DESIGN.md
+- [x] Localization: resx for 6 languages, runtime language switch, key-completeness test
 ### U1 Core client
-- [ ] Pipe client per CONTRACT.md §2 (NDJSON, request/response correlation, events, reconnect, start Core if missing)
-- [ ] `--fake-core` in-memory implementation of the same interface for development and tests (renders simple previews itself only in fake mode)
-- [ ] Command line `--page`, `--suggest`; single instance; `focusRequested` / `closeRequested`
+- [x] Pipe client per CONTRACT.md §2 (NDJSON, request/response correlation, events, reconnect, start Core if missing)
+- [x] `--fake-core` in-memory implementation of the same interface for development and tests (renders simple previews itself only in fake mode)
+- [x] Command line `--page`, `--suggest`; single instance; `focusRequested` / `closeRequested`
 ### U2 Shell
-- [ ] Custom chrome window, sidebar navigation, visibility switch, Core status, window placement memory
+- [x] Custom chrome window, sidebar navigation, visibility switch, Core status, window placement memory
 ### U3 Studio
-- [ ] Preview via `render`, zoom 1x/2x/4x, backgrounds, pixel grid
-- [ ] Layers: add (by kind), duplicate, reorder by drag and keyboard, hide, delete, max 8
-- [ ] Inspector per kind; slider + numeric field pairs; color field
-- [ ] Undo/redo (Ctrl+Z / Ctrl+Y), unsaved-changes guard, Save / Save as new
-- [ ] Live in game (`preview`, throttled ≤ 30/s, final value always sent)
-- [ ] Share code copy/paste; PNG import → Image layer
+- [x] Preview via `render`, zoom 1x/2x/4x, backgrounds, pixel grid
+- [x] Layers: add (by kind), duplicate, reorder by drag and keyboard, hide, delete, max 8
+- [x] Inspector per kind; slider + numeric field pairs; color field
+- [x] Undo/redo (Ctrl+Z / Ctrl+Y), unsaved-changes guard, Save / Save as new
+- [x] Live in game (`preview`, throttled ≤ 30/s, final value always sent)
+- [x] Share code copy/paste; PNG import → Image layer
 ### U4 Library
-- [ ] Presets + my crosshairs grid with thumbnails (cached), favorites, tag filter, search
-- [ ] Apply as default, edit / edit a copy, duplicate, delete with confirmation, export/import file
+- [x] Presets + my crosshairs grid with thumbnails (cached), favorites, tag filter, search
+- [x] Apply as default, edit / edit a copy, duplicate, delete with confirmation, export/import file
 ### U5 Games
-- [ ] Profile list + detail panel per DESIGN.md; enable switch
-- [ ] Add from running processes or .exe browse; suggestion banner (accept / not now / never)
-- [ ] Display colors, NVIDIA cap, FPS overlay override, visibility override; unsupported features explained inline
+- [x] Profile list + detail panel per DESIGN.md; enable switch
+- [x] Add from running processes or .exe browse; suggestion banner (accept / not now / never)
+- [x] Display colors, NVIDIA cap, FPS overlay override, visibility override; unsupported features explained inline
 ### U6 Hotkeys
-- [ ] Binding capture (keys, mouse buttons, wheel, modifiers, modes, wheel = toggle only), conflicts, Core errors inline
+- [x] Binding capture (keys, mouse buttons, wheel, modifiers, modes, wheel = toggle only), conflicts, Core errors inline
 ### U7 Settings
-- [ ] Display, behavior, FPS overlay, language, updates (port v1 update check + its tests), about, exit
+- [x] Display, behavior, FPS overlay, language, updates (port v1 update check + its tests), about, exit
 ### U8 Finish
-- [ ] Keyboard navigation and automation names everywhere
-- [ ] ViewModel tests against the fake core (Studio edit/undo, games rules, hotkeys conflicts, settings)
-- [ ] Measure UI cold start and memory, record in handoff
-- [ ] Dev flag `--fake-core --screenshots <dir>`: renders every page (and Studio with a 3-layer design) to PNG at 1180×740 and exits
-- [ ] `docs/v2/HANDOFF-ui.md` complete, with the screenshot command and output
+- [x] Keyboard navigation and automation names everywhere
+- [x] ViewModel tests against the fake core (Studio edit/undo, games rules, hotkeys conflicts, settings)
+- [x] Measure UI cold start and memory, record in handoff
+- [x] Dev flag `--fake-core --screenshots <dir>`: renders every page (and Studio with a 3-layer design) to PNG at 1180×740 and exits
+- [x] `docs/v2/HANDOFF-ui.md` complete, with the screenshot command and output

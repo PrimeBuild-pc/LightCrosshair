@@ -1,0 +1,97 @@
+<UserControl x:Class="LightCrosshair.UI.Views.LibraryPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:LightCrosshair.UI.Localization"
+             xmlns:controls="clr-namespace:LightCrosshair.UI.Controls">
+  <UserControl.Resources>
+    <DataTemplate x:Key="Card">
+      <Border Width="120" Height="156" Margin="4" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" controls:ThumbLoader.Card="{Binding}">
+        <DockPanel Margin="8">
+          <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+            <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="{x:Static loc:Icons.Star}" Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" Visibility="{Binding IsPreset, Converter={StaticResource VisInv}}" AutomationProperties.Name="{loc:Tr Library_Favorite}"/>
+            <TextBlock Text="{Binding Design.Name}" TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"/>
+          </DockPanel>
+          <Image Source="{Binding Png, Converter={StaticResource Png}}" Height="96" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform"/>
+        </DockPanel>
+      </Border>
+    </DataTemplate>
+  </UserControl.Resources>
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top">
+      <DockPanel Margin="0,0,0,12">
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+          <Button Content="{loc:Tr Library_ImportFile}" Command="{Binding ImportFileCommand}" Margin="0,0,8,0" AutomationProperties.Name="{loc:Tr Library_ImportFile}"/>
+          <Button Content="{loc:Tr Library_PasteCode}" Command="{Binding PasteCodeCommand}" AutomationProperties.Name="{loc:Tr Library_PasteCode}"/>
+        </StackPanel>
+        <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:Tr Library_Search}" MinHeight="32"/>
+      </DockPanel>
+      <ItemsControl ItemsSource="{Binding TagKeys}" Margin="0,0,0,12">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Button Margin="0,0,8,8" Command="{Binding DataContext.SetTagCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"
+                    AutomationProperties.Name="{Binding Converter={StaticResource KeyTextSingle}}">
+              <Button.Content>
+                <TextBlock>
+                  <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource KeyText}">
+                      <Binding Source="{x:Static loc:Loc.Instance}" Path="Version"/>
+                      <Binding Path="."/>
+                    </MultiBinding>
+                  </TextBlock.Text>
+                </TextBlock>
+              </Button.Content>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBlock Style="{StaticResource WarningText}" Text="{Binding Error}" Visibility="{Binding Error, Converter={StaticResource NullVis}}"/>
+    </StackPanel>
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="180"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Library_Mine}"/>
+      <ListBox x:Name="MineList" Grid.Row="1" ItemsSource="{Binding Mine}" ItemTemplate="{StaticResource Card}" BorderThickness="0" Background="Transparent"
+               ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True"
+               AutomationProperties.Name="{loc:Tr Library_Mine}">
+        <ListBox.ItemsPanel>
+          <ItemsPanelTemplate>
+            <controls:UniformWrapPanel ItemWidth="128" ItemHeight="168"/>
+          </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
+        <ListBox.Template>
+          <ControlTemplate TargetType="ListBox">
+            <ScrollViewer CanContentScroll="True" Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <ItemsPresenter/>
+            </ScrollViewer>
+          </ControlTemplate>
+        </ListBox.Template>
+      </ListBox>
+      <TextBlock Grid.Row="2" Style="{StaticResource SectionTitle}" Text="{loc:Tr Library_Presets}"/>
+      <ListBox x:Name="PresetList" Grid.Row="3" ItemsSource="{Binding Presets}" ItemTemplate="{StaticResource Card}" BorderThickness="0" Background="Transparent"
+               ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True"
+               AutomationProperties.Name="{loc:Tr Library_Presets}">
+        <ListBox.ItemsPanel>
+          <ItemsPanelTemplate>
+            <controls:UniformWrapPanel ItemWidth="128" ItemHeight="168"/>
+          </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
+        <ListBox.Template>
+          <ControlTemplate TargetType="ListBox">
+            <ScrollViewer CanContentScroll="True" Focusable="False" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <ItemsPresenter/>
+            </ScrollViewer>
+          </ControlTemplate>
+        </ListBox.Template>
+      </ListBox>
+    </Grid>
+  </DockPanel>
+</UserControl>

@@ -1,0 +1,84 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Color x:Key="Bg">#0E0F11</Color>
+  <Color x:Key="Surface">#16181B</Color>
+  <Color x:Key="SurfaceRaised">#1D2024</Color>
+  <Color x:Key="Border">#26292E</Color>
+  <Color x:Key="BorderStrong">#33373D</Color>
+  <Color x:Key="TextPrimary">#E8EAED</Color>
+  <Color x:Key="TextSecondary">#9AA0A6</Color>
+  <Color x:Key="TextDisabled">#5F6368</Color>
+  <Color x:Key="Accent">#3DDC97</Color>
+  <Color x:Key="AccentHover">#5BE6AA</Color>
+  <Color x:Key="AccentPressed">#2FBF80</Color>
+  <Color x:Key="OnAccent">#0E0F11</Color>
+  <Color x:Key="AccentSubtle">#1F3DDC97</Color>
+  <Color x:Key="Danger">#F26D6D</Color>
+  <Color x:Key="Warning">#E8B04B</Color>
+  <Color x:Key="Scrim">#B30E0F11</Color>
+  <Color x:Key="CheckerLight">#2A2D32</Color>
+  <Color x:Key="CheckerDark">#1A1C20</Color>
+
+  <SolidColorBrush x:Key="BgBrush" Color="{StaticResource Bg}"/>
+  <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource Surface}"/>
+  <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="{StaticResource SurfaceRaised}"/>
+  <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource Border}"/>
+  <SolidColorBrush x:Key="BorderStrongBrush" Color="{StaticResource BorderStrong}"/>
+  <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimary}"/>
+  <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondary}"/>
+  <SolidColorBrush x:Key="TextDisabledBrush" Color="{StaticResource TextDisabled}"/>
+  <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource Accent}"/>
+  <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHover}"/>
+  <SolidColorBrush x:Key="AccentPressedBrush" Color="{StaticResource AccentPressed}"/>
+  <SolidColorBrush x:Key="OnAccentBrush" Color="{StaticResource OnAccent}"/>
+  <SolidColorBrush x:Key="AccentSubtleBrush" Color="{StaticResource AccentSubtle}"/>
+  <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource Danger}"/>
+  <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource Warning}"/>
+  <SolidColorBrush x:Key="ScrimBrush" Color="{StaticResource Scrim}"/>
+
+  <FontFamily x:Key="UiFont">Segoe UI Variable, Segoe UI, Microsoft YaHei UI, Yu Gothic UI</FontFamily>
+  <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+  <Thickness x:Key="Space4">4</Thickness>
+  <Thickness x:Key="Space8">8</Thickness>
+  <Thickness x:Key="Space12">12</Thickness>
+  <Thickness x:Key="Space16">16</Thickness>
+  <Thickness x:Key="Space24">24</Thickness>
+  <Thickness x:Key="Space32">32</Thickness>
+  <CornerRadius x:Key="RadiusControl">6</CornerRadius>
+  <CornerRadius x:Key="RadiusPanel">8</CornerRadius>
+  <Style x:Key="PageTitle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="20"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+  </Style>
+  <Style x:Key="SectionTitle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    <Setter Property="Margin" Value="0,8,0,8"/>
+  </Style>
+  <Style x:Key="BodyText" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    <Setter Property="TextWrapping" Value="Wrap"/>
+  </Style>
+  <Style x:Key="LabelText" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="12"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    <Setter Property="TextWrapping" Value="Wrap"/>
+  </Style>
+  <Style x:Key="ValueText" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="13"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    <Setter Property="Typography.NumeralAlignment" Value="Tabular"/>
+  </Style>
+  <Style x:Key="DangerText" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+  </Style>
+  <Style x:Key="WarningText" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
+    <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+  </Style>
+
+</ResourceDictionary>
