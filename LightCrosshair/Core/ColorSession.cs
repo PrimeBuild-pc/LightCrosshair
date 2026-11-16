@@ -38,12 +38,15 @@ namespace Core
     // survives a killed process, and is removed only when every restoration succeeds.
     internal sealed class ColorSession(string directory, Func<IGpuColorManager>? create = null, Func<NvidiaHelperRequest, NvidiaHelperResponse>? helper = null)
     {
-        public event Action<bool>? Failed;
+        public event Action<long, string?>? StatusChanged;
+        internal long Revision => Volatile.Read(ref _revision);
         private Task _tail = Task.CompletedTask;
         private long _revision;
         private readonly object _gate = new();
         private IGpuColorManager? _manager;
         private ColorRecoverySnapshot? _original;
+        private string? _lastFailure;
+        private sealed class BackendFailure(string code, string message) : Exception(message) { internal string Code { get; } = code; }
         private readonly Func<IGpuColorManager> _create = create ?? GpuColorManagerFactory.CreateDefault;
         private readonly Func<NvidiaHelperRequest, NvidiaHelperResponse> _helper = helper ?? (request => new NvidiaHelperProcessClient().Run(request));
         private string Marker => Path.Combine(directory, "colors-applied.json");
@@ -56,36 +59,45 @@ namespace Core
                 return _tail = _tail.ContinueWith(_ =>
                 {
                     // A slow vendor call must not leave a backlog of obsolete game colors.
-                    if (revision == Volatile.Read(ref _revision)) Transition(copy);
+                    if (revision == Volatile.Read(ref _revision)) Transition(copy, revision);
                 }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             }
         }
         public Task RecoverAsync() => SetAsync(null);
-        private void Transition(DisplayColorSettings? colors)
+        private void Notify(long revision, string? code)
+        { if (revision == Revision) StatusChanged?.Invoke(revision, code); }
+        private void Transition(DisplayColorSettings? colors, long revision, bool rollback = false)
         {
+            bool restoring = colors is null;
             try
             {
                 if (File.Exists(Marker))
                 {
+                    restoring = true;
                     _manager ??= _create();
                     _original ??= JsonSerializer.Deserialize<ColorRecoverySnapshot>(File.ReadAllText(Marker), ContractJson.Options) ?? throw new InvalidDataException();
                     if (_original.Vendor != _manager.Vendor.ToString()) throw new InvalidOperationException("Recovery adapter changed");
                     _manager.LoadRecovery(_original);
-                    bool gammaOk = _manager.TryRestore(out _);
+                    bool gammaOk = _manager.TryRestore(out string? restoreError);
                     bool vibranceOk = _original.NvidiaVibranceState is { } raw
                         ? _helper(new() { Operation = NvidiaHelperOperations.RestoreVibrance, VibranceState = raw }).Success
                         : !_original.NvidiaVibrance.HasValue || _helper(NvidiaHelperRequest.SetVibrance(_original.NvidiaVibrance.Value)).Success;
-                    if (!gammaOk || !vibranceOk) throw new InvalidOperationException("Color restoration failed");
+                    if (!gammaOk || !vibranceOk) throw new BackendFailure("restore_failed", $"{_manager.BackendName}: Color restoration failed: {restoreError ?? "gamma restored"}; NVIDIA vibrance restored={vibranceOk}");
                     File.Delete(Marker); _original = null; _manager = null;
                 }
-                if (colors is null) return;
+                if (colors is null)
+                {
+                    if (!rollback) { _lastFailure = null; Notify(revision, null); }
+                    return;
+                }
+                restoring = false;
                 _manager = _create();
-                if (!_manager.TryCaptureOriginalState(out _)) throw new InvalidOperationException("Color baseline unavailable");
+                if (!_manager.TryCaptureOriginalState(out string? captureError)) throw new BackendFailure("unsupported", $"{_manager.BackendName}: Color baseline unavailable: {captureError ?? "driver returned no details"}");
                 _original = _manager.CaptureRecovery(); _original.Vendor = _manager.Vendor.ToString();
                 if (colors.NvidiaDigitalVibrance.HasValue)
                 {
                     var baseline = _helper(new() { Operation = NvidiaHelperOperations.GetVibrance });
-                    if (!baseline.Success || baseline.VibranceState is null) throw new InvalidOperationException("Vibrance baseline unavailable");
+                    if (!baseline.Success || baseline.VibranceState is null) throw new BackendFailure("unsupported", "NVIDIA vibrance baseline unavailable");
                     _original.NvidiaVibranceState = baseline.VibranceState;
                 }
                 Directory.CreateDirectory(directory);
@@ -105,19 +117,22 @@ namespace Core
                 };
                 try
                 {
-                    if (!_manager.TryApply(new(colors.Gamma, colors.Contrast, colors.Brightness, colors.Vibrance), out _))
-                        throw new InvalidOperationException("Color apply failed");
+                    if (!_manager.TryApply(new(colors.Gamma, colors.Contrast, colors.Brightness, colors.Vibrance), out string? applyError))
+                        throw new BackendFailure("unsupported", $"{_manager.BackendName}: Color apply failed: {applyError ?? "driver refused the request without details"}");
                     if (colors.NvidiaDigitalVibrance.HasValue && !_helper(NvidiaHelperRequest.SetVibrance(colors.NvidiaDigitalVibrance.Value)).Success)
-                        throw new InvalidOperationException("Vibrance apply failed");
+                        throw new BackendFailure("unsupported", "NVIDIA vibrance apply failed");
                 }
                 finally { ColorWriteGuard.BeforeWrite = null; }
+                _lastFailure = null; Notify(revision, null);
             }
             catch (Exception ex)
             {
-                Program.LogError(ex, "Display color transaction", directory);
-                Failed?.Invoke(colors is null || File.Exists(Marker));
+                string code = restoring ? "restore_failed" : ex is BackendFailure backend ? backend.Code : "apply_failed";
+                string signature = code + ":" + ex.Message;
+                if (_lastFailure != signature) { Program.LogError(ex, "Display color transaction (" + code + ")", directory); _lastFailure = signature; }
+                Notify(revision, code);
                 // Partial apply must immediately try to restore. Leave the marker on failure.
-                if (colors is not null && File.Exists(Marker)) Transition(null);
+                if (colors is not null && !restoring && File.Exists(Marker)) Transition(null, revision, rollback: true);
             }
         }
     }

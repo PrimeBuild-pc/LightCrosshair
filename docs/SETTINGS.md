@@ -1,12 +1,12 @@
 # Settings guide — LightCrosshair 2.0
 
-Open settings from the tray or with Alt+L. Closing this window ends the settings process; the Core and overlay remain running. **Exit LightCrosshair** on the Settings page stops both processes and restores display colors.
+Open settings from the tray or with Alt+L. Closing this window leaves the Core and overlay running. **Exit LightCrosshair** on the Settings page stops both processes and restores display colors.
 
 ## Visibility and saving
 
 **Show crosshair** in the sidebar is the global visibility switch. Layer visibility is independent: a design with every layer hidden draws nothing even when the global switch is on. Hold bindings and configured-game rules can also affect whether the overlay is shown.
 
-Studio and game-profile edits have explicit **Save** actions. Settings and global hotkey changes save automatically; errors are shown in the UI. **Apply as default** in Library saves the fallback crosshair. Cycling with hotkeys changes the current context's selection without replacing that default.
+Studio and game-profile edits have explicit **Save** actions. Settings and global hotkey changes save automatically; errors are shown in the UI. Using a saved crosshair or cycling saves the selection into the active configured game profile. With no configured game active, it replaces the default crosshair.
 
 ## Studio
 
@@ -44,9 +44,11 @@ PNG import accepts a PNG file up to 2 MiB and 512 pixels on either side. It is c
 
 ## Library and sharing
 
-**My crosshairs** contains saved designs; **Presets** contains 30 bundled designs. Search by name and use tag filters to narrow the lists. Presets are read-only: edit a copy or duplicate one to save your own version. Favorites apply to saved designs and determine the next/previous hotkey order; without favorites, those hotkeys cycle all saved designs.
+**My crosshairs** contains saved designs; **Presets** is a gallery of 30 bundled designs. Search by name and use tag filters to narrow the lists. Click a preset to **Use** it: accept or change the suggested name and press Enter to save and activate your copy; Esc cancels. The bundled original stays unchanged. If a copy of that preset already exists, you can reuse it.
 
-The card action menu provides Edit/Edit a copy, Duplicate and, for saved designs, Apply as default, Export and Delete. A crosshair used as the default or assigned to a game cannot be deleted until its assignments are changed.
+Click a saved crosshair to use it in the current context; the active design is marked **In use**. Choose Edit, or double-click, to open Studio. The saved-card menu offers Use, Edit, Duplicate, Favorite, Export and Delete. A crosshair used as the default or assigned to a game cannot be deleted until its assignments are changed.
+
+Next/previous hotkeys cycle favorites only when at least two exist. With zero or one favorite, they cycle all saved crosshairs. The order matches Library (most recently updated first); gallery presets are included only after a copy is saved. Cycling persists into the active enabled game profile or, outside a configured game, the default. Leaving a game restores the default selection without losing that game's saved choice.
 
 - Copy/paste an `LC2:` share code for a vector design. Image layers cannot be included in share codes.
 - Export `.lcx.json` files to include PNG images with the selected designs; import them from Library.
@@ -69,7 +71,9 @@ Select a profile to edit its name and crosshair, then Save. The list's enable sw
 | NVIDIA Digital Vibrance | Optional driver adjustment, 0–100, when supported |
 | NVIDIA FPS cap | Optional per-app driver cap; slider range 30–480 FPS |
 
-Display colors affect the display, not just the crosshair. Leaving a game restores default crosshair rules and the original display colors; working in LightCrosshair settings preserves the current game context. Unsupported driver controls are disabled with an explanation. NVIDIA features are **not yet verified on NVIDIA hardware**.
+Display colors affect the display, not just the crosshair. Leaving a game restores default crosshair rules and the original display colors; working in LightCrosshair settings preserves the current game context. Driver-specific controls depend on the available hardware and display mode. NVIDIA features are **not yet verified on NVIDIA hardware**.
+
+AMD brightness, contrast and vibrance can work even when the display's gamma-ramp API is unavailable. Gamma 100 is neutral and preserves the existing calibration; a non-neutral gamma can be unsupported on that driver/output. Apply failures are reported through the current game context and logged with the vendor's reason. A later successful apply or leaving the game clears the apply error. A failed restoration keeps its recovery journal so it can be retried.
 
 A driver cap is written when the profile is saved and persists in the driver's application profile. Turning off the profile's foreground enable switch does not clear that cap: switch off the cap and Save, or delete the managed profile, to remove it. Old driver caps that were never managed by 2.0 are left untouched.
 
@@ -80,11 +84,11 @@ Known-game suggestions offer **Create**, **Not now** and **Never for this game**
 | Default | Action |
 |---|---|
 | Alt+X | Toggle crosshair visibility |
-| Alt+C | Next favorite, or next saved design when there are no favorites |
-| Alt+V | Previous favorite, or previous saved design when there are no favorites |
+| Alt+C | Next favorite when at least two exist; otherwise next saved crosshair |
+| Alt+V | Previous favorite when at least two exist; otherwise previous saved crosshair |
 | Alt+L | Open or close settings |
 
-Click a capture field and press the desired key or mouse button; Esc cancels. Keyboard keys, Middle click, Right click, Mouse4, Mouse5, Wheel up and Wheel down can use Alt, Ctrl, Shift and Win modifiers. **Clear** removes a binding.
+Click a capture field and press the desired keyboard key; Esc cancels. For a mouse binding, use the explicit picker for Middle click, Right click, Mouse4, Mouse5, Wheel up or Wheel down, then choose the Alt, Ctrl, Shift or Win modifiers alongside it. Mouse input can also be captured while the capture field is active. **Clear** removes a binding.
 
 Visibility supports Toggle, Hold to hide and Hold to show. Other actions and all wheel bindings use Toggle. Releasing a hold restores the underlying visibility state. Core actions are paused during binding capture and resume when it ends. Input still reaches other applications; a bound mouse button keeps its normal game behavior.
 
@@ -94,7 +98,7 @@ Conflicts and Core registration failures appear under the affected action. Choos
 
 ### Display
 
-Choose the overlay monitor; the primary monitor is the default and fallback when the selected display is unavailable. **Offset X / Y** moves the whole crosshair from that monitor's center in physical pixels; the editor exposes −200 to +200 px. Positive X moves right and positive Y moves down. The position diagram and numeric fields describe the same offset.
+Choose the overlay monitor by model name, for example **DELL S2721DGF · Display1**. The model comes from Windows display configuration; an adapter description is used when the model is unavailable. The primary monitor is the default and fallback when the selected display is unavailable. **Offset X / Y** moves the whole crosshair from that monitor's center in physical pixels; the editor exposes −200 to +200 px. Positive X moves right and positive Y moves down. The position diagram and numeric fields describe the same offset.
 
 ### Behavior
 
@@ -107,7 +111,7 @@ Choose the overlay monitor; the primary monitor is the default and fallback when
 
 ### FPS overlay
 
-Enable the optional FPS overlay globally, or override it per game. Capture starts/stops with the effective setting. It shows FPS with optional frametime and 1% low values for the foreground process. A dash means no recent samples; permissions and presentation paths can prevent data. These are present-event measurements, not a frame-generation detector.
+Enable the optional FPS overlay globally, or override it per game. Capture starts/stops with the effective setting. It shows FPS with optional frametime and 1% low values for the foreground process, keeping separate swapchains independent. After two seconds without frames, “–” appears with a localized reason, such as no recent frames or unavailable capture permissions. Failed capture sessions retry while enabled. These are external ETW present-event measurements, not a frame-generation detector; no RTSS or game hook is required.
 
 | Control | Effect |
 |---|---|

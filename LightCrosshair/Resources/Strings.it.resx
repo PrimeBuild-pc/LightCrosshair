@@ -49,4 +49,8 @@
     <value>Windows non ha potuto registrare un hook di input.</value>
   </data>
   <data name="LoadFailed" xml:space="preserve"><value>Impossibile caricare la libreria. LightCrosshair usa valori predefiniti temporanei; i file non sono stati modificati. Riavvia per riprovare.</value></data>
+  <data name="FpsNoFrames" xml:space="preserve"><value>Nessun frame negli ultimi 2 s</value></data>
+  <data name="FpsAccessDenied" xml:space="preserve"><value>Servono permessi per gli FPS</value></data>
+  <data name="FpsUnavailable" xml:space="preserve"><value>Acquisizione FPS non disponibile</value></data>
+  <data name="FpsNoForeground" xml:space="preserve"><value>Porta un gioco in primo piano</value></data>
 </root>

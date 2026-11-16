@@ -49,4 +49,8 @@
     <value>Windows 无法注册输入钩子。</value>
   </data>
   <data name="LoadFailed" xml:space="preserve"><value>无法加载库。LightCrosshair 正在使用临时默认值，原文件未更改。请重启以重试。</value></data>
+  <data name="FpsNoFrames" xml:space="preserve"><value>最近2秒没有帧数据</value></data>
+  <data name="FpsAccessDenied" xml:space="preserve"><value>获取FPS需要权限</value></data>
+  <data name="FpsUnavailable" xml:space="preserve"><value>无法获取FPS</value></data>
+  <data name="FpsNoForeground" xml:space="preserve"><value>请将游戏窗口置于前台</value></data>
 </root>

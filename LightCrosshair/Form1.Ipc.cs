@@ -9,6 +9,7 @@ namespace LightCrosshair;
 internal sealed partial class Form1
 {
     private PipeServer? _pipe;
+    private readonly RenderWorker _renders = new();
     private readonly SemaphoreSlim _mutations = new(1, 1);
     private CancellationTokenSource? _previewTimeout;
     private bool _runtimePending;
@@ -17,7 +18,7 @@ internal sealed partial class Form1
     {
         _pipe = new(Program.PipeName,
             request => OnUiAsync(() => HandleRequestAsync(request)),
-            () => OnUiAsync(() => { EndPreview(); SetInputCapture(false); return Task.FromResult<object?>(null); }));
+            () => OnUiAsync(() => { _renders.DropPending(); EndPreview(); SetInputCapture(false); return Task.FromResult<object?>(null); }));
         RuntimeUpdated += QueueRuntimeEvent;
     }
     private Task<object?> OnUiAsync(Func<Task<object?>> action)
@@ -165,13 +166,15 @@ internal sealed partial class Form1
                 render.Design = Validation.Design(render.Design, Store.ImagesDirectory);
                 render.CanvasSize = Math.Clamp(render.CanvasSize, 16, 512);
                 if (render.Background is not null) render.Background = Validation.Color(render.Background);
-                // Rasterization and PNG compression run off the overlay thread.
-                return await Task.Run(() =>
+                // One lazy below-normal worker owns IPC raster/PNG work. Pending
+                // thumbnails are discarded when their connection or window is gone.
+                var connection = _pipe;
+                return await _renders.Enqueue(() =>
                 {
                     using var bitmap = Renderer.Render(render.Design, render.CanvasSize, render.Background);
                     using var png = new MemoryStream(); bitmap.Save(png, ImageFormat.Png);
                     return new RenderResponse { PngBase64 = Convert.ToBase64String(png.ToArray()) };
-                });
+                }, connection?.ConnectionToken ?? CancellationToken.None, () => connection?.IsConnected == true && !UiLaunch.IsParked(connection.ClientProcessId));
             case IpcMethods.ListProcesses:
                 return await Task.Run(() =>
                 {

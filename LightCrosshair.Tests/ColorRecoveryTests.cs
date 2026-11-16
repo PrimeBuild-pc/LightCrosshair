@@ -14,6 +14,60 @@ public sealed class ColorRecoveryTests : IDisposable
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "lc2-colors-" + Guid.NewGuid().ToString("N"));
     public void Dispose() { if (Directory.Exists(_directory)) Directory.Delete(_directory, true); }
     [Fact]
+    public async Task RefusedDriverApplyReportsUnsupportedOnceAndRollbackKeepsTheErrorUntilSuccessOrLeave()
+    {
+        var fake = new FakeColors { ApplySucceeds = false, ApplyError = "ADL_Display_Color_Set returned -3 (not supported)" };
+        var session = new ColorSession(_directory, () => fake);
+        var statuses = new System.Collections.Generic.List<string?>();
+        session.StatusChanged += (_, code) => statuses.Add(code);
+        await session.SetAsync(new() { Gamma = 115 });
+        Assert.Equal(new[] { "unsupported" }, statuses);
+        Assert.Equal(1, fake.Restores);
+        Assert.False(File.Exists(Path.Combine(_directory, "colors-applied.json")));
+        await session.SetAsync(new() { Gamma = 115 });
+        string log = File.ReadAllText(Path.Combine(_directory, "logs", "core.log"));
+        Assert.Contains(fake.ApplyError, log);
+        Assert.Single(log.Split('\n'), line => line.Contains("Display color transaction"));
+        Assert.Equal("unsupported", statuses.Last());
+        fake.ApplySucceeds = true;
+        await session.SetAsync(new()); Assert.Null(statuses.Last());
+        fake.ApplySucceeds = false;
+        await session.SetAsync(new()); Assert.Equal("unsupported", statuses.Last());
+        await session.SetAsync(null); Assert.Null(statuses.Last());
+    }
+    [Fact]
+    public async Task ObsoleteHardwareCompletionCannotPublishAnErrorIntoTheNextContext()
+    {
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var fake = new FakeColors { ApplySucceeds = false, BeforeApply = () => { entered.SetResult(); release.Task.GetAwaiter().GetResult(); } };
+        var session = new ColorSession(_directory, () => fake);
+        var statuses = new System.Collections.Generic.List<string?>();
+        session.StatusChanged += (_, code) => statuses.Add(code);
+        Task apply = session.SetAsync(new()); await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Task leave = session.SetAsync(null); release.SetResult(); await Task.WhenAll(apply, leave);
+        Assert.Single(statuses); Assert.Null(statuses[0]);
+    }
+    [Fact]
+    public async Task RestoreFailurePreservesItsPhaseAndVendorMessage()
+    {
+        var fake = new FakeColors(); var session = new ColorSession(_directory, () => fake);
+        string? status = null; session.StatusChanged += (_, code) => status = code;
+        await session.SetAsync(new()); fake.RestoreSucceeds = false;
+        await session.SetAsync(null);
+        Assert.Equal("restore_failed", status);
+        Assert.Contains("ADL restore returned -3", File.ReadAllText(Path.Combine(_directory, "logs", "core.log")));
+        Assert.True(File.Exists(Path.Combine(_directory, "colors-applied.json")));
+        fake.RestoreSucceeds = true; await session.SetAsync(null); Assert.Null(status);
+    }
+    [Fact]
+    public void LifecycleLogRetainsTheOperationMessage()
+    {
+        Program.LogLifecycle("ADL baseline captured for 12 channels.", "AmdAdlColorManager");
+        string log = File.ReadAllText(Path.Combine(Program.DataRoot, "logs", "core.log"));
+        Assert.Contains("AmdAdlColorManager: ADL baseline captured for 12 channels.", log);
+    }
+    [Fact]
     public async Task BaselineIsDurableBeforeApplyAndNextProcessRestoresIt()
     {
         string marker = Path.Combine(_directory, "colors-applied.json");
@@ -71,11 +125,11 @@ public sealed class ColorRecoveryTests : IDisposable
     {
         public string BackendName => "Fake"; public GpuVendor Vendor => GpuVendor.Unknown;
         public string AdapterDescription => "Fake"; public bool IsVendorDriverPath => false; public string StatusMessage => "";
-        public Action? BeforeApply; public bool RestoreSucceeds = true; public int Applies, Restores;
+        public Action? BeforeApply; public bool RestoreSucceeds = true, ApplySucceeds = true; public string? ApplyError; public int Applies, Restores;
         public ColorRecoverySnapshot? Loaded;
         public bool TryCaptureOriginalState(out string? error) { error = null; return true; }
-        public bool TryApply(ColorAdjustment adjustment, out string? error) { ColorWriteGuard.BeforeWrite?.Invoke(); BeforeApply?.Invoke(); Applies++; error = null; return true; }
-        public bool TryRestore(out string? error) { Restores++; error = null; return RestoreSucceeds; }
+        public bool TryApply(ColorAdjustment adjustment, out string? error) { ColorWriteGuard.BeforeWrite?.Invoke(); BeforeApply?.Invoke(); Applies++; error = ApplyError; return ApplySucceeds; }
+        public bool TryRestore(out string? error) { Restores++; error = RestoreSucceeds ? null : "ADL restore returned -3"; return RestoreSucceeds; }
         public ColorRecoverySnapshot CaptureRecovery() => new() { Global = new() { Red = new ushort[256], Green = new ushort[256], Blue = new ushort[256] } };
         public void LoadRecovery(ColorRecoverySnapshot snapshot) => Loaded = snapshot;
     }

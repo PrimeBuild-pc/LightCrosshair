@@ -7,6 +7,8 @@
 - Crosshair Studio with up to eight editable Arms, Dot, Ring, Box or PNG Image layers, fills for rings/boxes, outlines, opacity, rotation and position controls.
 - Shared editor/overlay rendering, live in-game preview, undo/redo and layer reordering.
 - A local library with 30 original presets, favorites, search and tag filters.
+- Direct gallery preset use with a named saved copy, and saved-card selection for the active game or default.
+- Monitor model names with an adapter-description fallback, and explicit mouse-button/wheel choices beside keyboard capture.
 - `LC2:` vector share codes and `.lcx.json` import/export with embedded images.
 - Executable-based game profiles for crosshairs, display colors, visibility bindings and FPS overlay overrides, with local game suggestions.
 - A v2 data store with atomic saves, automatic backups, corrupt-file recovery and a display-color recovery journal.
@@ -21,6 +23,11 @@
 - Keep the optional FPS overlay focused on FPS, frametime and 1% low; capture runs only while enabled.
 - Provide Studio, Library, Games, Hotkeys and Settings in English, Italian, Spanish, Simplified Chinese, Russian and Japanese.
 - Bound transient rendering allocations so repeated Library sessions reach a stable Core memory footprint.
+- Cycle favorites when at least two exist, otherwise all saved crosshairs in Library order; persist the selection into the active game profile or default.
+- Decode DXGI/D3D9 present events without requiring registered ETW payload decoders, include MPO presents, track swapchains independently and retry failed capture sessions. Show a localized reason after two seconds without frames and stop native sessions when disabled.
+- Launch settings below normal CPU priority with low I/O priority during games/fullscreen foreground windows; queue IPC thumbnails on one below-normal worker and discard obsolete queued work.
+- Focus a parked connected settings process instead of closing it or launching a replacement.
+- Preserve AMD calibration at neutral gamma without requiring a Win32 gamma ramp; report display-color failures, retain vendor details once, and clear the apply error on success or leaving the game.
 
 ### Removed
 

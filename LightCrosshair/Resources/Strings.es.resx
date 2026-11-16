@@ -49,4 +49,8 @@
     <value>Windows no ha podido registrar un enlace de entrada.</value>
   </data>
   <data name="LoadFailed" xml:space="preserve"><value>No se pudo cargar la biblioteca. LightCrosshair usa valores temporales; tus archivos no han cambiado. Reinicia para reintentar.</value></data>
+  <data name="FpsNoFrames" xml:space="preserve"><value>Sin fotogramas en los últimos 2 s</value></data>
+  <data name="FpsAccessDenied" xml:space="preserve"><value>La captura FPS necesita permisos</value></data>
+  <data name="FpsUnavailable" xml:space="preserve"><value>Captura FPS no disponible</value></data>
+  <data name="FpsNoForeground" xml:space="preserve"><value>Enfoca la ventana de un juego</value></data>
 </root>

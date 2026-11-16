@@ -41,13 +41,14 @@ The [Chocolatey package page](https://community.chocolatey.org/packages/lightcro
 
 - Up to eight editable layers: arms, dots, rings, boxes, corner brackets and PNG images, with position, rotation, opacity and outlines. Rings and boxes can have a separate fill.
 - Shared rendering for the editor and overlay, live in-game preview, undo/redo and pixel-based geometry.
-- A local library with 30 original presets, favorites, search and tag filters.
+- A local gallery with 30 original presets: choose one, name the saved copy and use it immediately. Saved crosshairs support favorites, search and tag filters.
+- Next/previous cycling uses favorites when at least two exist, otherwise all saved crosshairs, and saves the choice for the active game or as the default.
 - `LC2:` share codes for vector designs and `.lcx.json` import/export with embedded images.
 - Game profiles for crosshairs, display colors, visibility bindings and FPS overlay overrides. Optional suggestions for recognized games.
 - Software gamma, contrast, brightness and vibrance; AMD color support; NVIDIA Digital Vibrance and per-app driver FPS caps on supported hardware.
 - Optional FPS, frametime and 1% low overlay, captured only while enabled.
-- Keyboard and mouse bindings with modifiers; Toggle, Hold to hide and Hold to show for visibility.
-- Monitor selection, position offsets, startup with Windows, automatic backups and display-color recovery after a crash.
+- Keyboard and explicit mouse-button/wheel bindings with modifiers; Toggle, Hold to hide and Hold to show for visibility.
+- Monitor selection by model name, position offsets, startup with Windows, automatic backups and display-color recovery after a crash.
 - English, Italian, Spanish, Simplified Chinese, Russian and Japanese.
 
 ## Upgrading from 1.9
@@ -73,18 +74,19 @@ Charts use decimal MB and CPU as a percentage of one logical core; a sampled zer
 | Binding | Action |
 |---|---|
 | Alt+X | Show or hide the crosshair |
-| Alt+C | Next favorite; all saved designs if none are favorites |
-| Alt+V | Previous favorite; all saved designs if none are favorites |
+| Alt+C | Next favorite when at least two exist; otherwise next saved crosshair |
+| Alt+V | Previous favorite when at least two exist; otherwise previous saved crosshair |
 | Alt+L | Open or close settings |
 
-Bindings can be changed or cleared in Hotkeys. Input continues to reach the game; conflicts and registration failures are shown in the UI.
+Cycling follows Library order and saves the selection into the active configured game profile, or the default when no configured game is active. Presets enter the cycle after you save a copy. Bindings can be changed or cleared in Hotkeys, including explicit mouse-button and wheel choices. Input continues to reach the game; conflicts and registration failures are shown in the UI.
 
 ## Limitations and safety
 
 - Use windowed or borderless mode. Exclusive fullscreen can hide ordinary desktop overlays.
 - No game injection, game-memory access, screen capture or kernel driver is used. Check the rules of each game and anti-cheat system; this does not guarantee permission or compatibility.
 - NVIDIA Digital Vibrance and per-app FPS caps are **not yet verified on NVIDIA hardware**.
-- Display-color support depends on the driver and display mode. FPS telemetry can be unavailable because of permissions or the game's presentation path; it is not a frame-generation detector.
+- Display-color support depends on the driver and display mode; a failure is reported and logged. On AMD, neutral gamma preserves the existing calibration without requiring a gamma-ramp API.
+- FPS telemetry uses external ETW present events and is not a frame-generation detector. After two seconds without frames, the overlay shows “–” and a localized reason; permissions or the game's presentation path can prevent capture.
 - Recording detection checks for recorder processes. It can hide the crosshair while the recorder is open but not recording.
 
 ## Documentation

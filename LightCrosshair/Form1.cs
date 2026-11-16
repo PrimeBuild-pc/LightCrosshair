@@ -28,10 +28,16 @@ internal sealed partial class Form1 : LayeredWindow
         menu.Items.Add(CoreStrings.Get("auto", "Exit"), null, (_, _) => Close());
         _tray = new() { Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? SystemIcons.Application, Text = "LightCrosshair", ContextMenuStrip = menu, Visible = true };
         _tray.DoubleClick += (_, _) => OpenSettings();
-        _colors.Failed += restore =>
+        _colors.StatusChanged += (revision, code) =>
         {
             if (IsDisposed || !IsHandleCreated) return;
-            try { BeginInvoke(new Action(() => { if (!IsDisposed) _tray.ShowBalloonTip(5000, "LightCrosshair", TextFor(restore ? "ColorsRestoreFailed" : "ColorsApplyFailed"), ToolTipIcon.Warning); })); }
+            try { BeginInvoke(new Action(() =>
+            {
+                if (IsDisposed || revision != _colors.Revision) return;
+                bool notify = code is not null && Runtime.DisplayColorsError != code;
+                Runtime.DisplayColorsError = code; QueueRuntimeEvent();
+                if (notify) _tray.ShowBalloonTip(5000, "LightCrosshair", TextFor(code == "restore_failed" ? "ColorsRestoreFailed" : "ColorsApplyFailed"), ToolTipIcon.Warning);
+            })); }
             catch (InvalidOperationException) { }
         };
         _tray.BalloonTipClicked += (_, _) => OpenSettings(Runtime.PendingSuggestion is null ? null : new() { Page = UiPages.Games, SuggestProcess = Runtime.PendingSuggestion.ProcessName });
@@ -61,7 +67,7 @@ internal sealed partial class Form1 : LayeredWindow
     }
     private void SystemDisplayChanged(object? sender, EventArgs e)
     { if (!IsDisposed && IsHandleCreated) BeginInvoke(OnDisplayChanged); }
-    private void OnDisplayChanged() { _renderKey = null; RefreshContext(); }
+    private void OnDisplayChanged() { _renderKey = null; Runtime.Monitors.Clear(); RefreshContext(); }
     internal void RefreshOverlay()
     {
         if (!_ready || IsDisposed) return;
@@ -92,13 +98,13 @@ internal sealed partial class Form1 : LayeredWindow
         {
             if (File.Exists(path))
             {
-                var start = new ProcessStartInfo(path) { UseShellExecute = true };
+                var start = new ProcessStartInfo(path) { UseShellExecute = false };
                 if (navigate is not null)
                 {
                     start.ArgumentList.Add("--page"); start.ArgumentList.Add(navigate.Page);
                     if (navigate.SuggestProcess is not null) { start.ArgumentList.Add("--suggest"); start.ArgumentList.Add(navigate.SuggestProcess); }
                 }
-                using var launched = Process.Start(start);
+                UiLaunch.Start(start, UiLaunch.ReducePriority(_context?.Game is not null, UiLaunch.ForegroundIsFullscreen()));
             }
             else _tray.ShowBalloonTip(3000, "LightCrosshair", TextFor("MissingUi"), ToolTipIcon.Info);
         }
@@ -117,6 +123,7 @@ internal sealed partial class Form1 : LayeredWindow
         {
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemDisplayChanged;
             _previewTimeout?.Cancel(); _previewTimeout?.Dispose(); _pipe?.Dispose();
+            _renders.Dispose();
             _captureTimer?.Dispose();
             _recordingTimer?.Dispose(); _input?.Dispose(); HotkeyManager.Instance.UnregisterAll();
             _foreground?.Dispose(); _fps.Dispose();

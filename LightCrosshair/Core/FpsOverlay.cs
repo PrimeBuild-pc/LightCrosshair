@@ -5,30 +5,48 @@ namespace LightCrosshair.Core;
 internal sealed class FpsOverlay : IDisposable
 {
     private readonly SystemFpsMonitor _capture = new();
-    private readonly LayeredWindow _window = new() { Text = "LightCrosshair FPS" };
+    private readonly FpsWindow _window;
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 250 };
     private FpsOverlaySettings _settings = new();
     private string? _monitor;
     private string? _last;
+    private string _language = "auto";
     internal bool Enabled => _timer.Enabled;
-    internal FpsOverlay() => _timer.Tick += (_, _) => Draw();
-    public void Configure(bool enabled, int pid, FpsOverlaySettings settings, string? crosshairMonitor)
+    internal FpsOverlay()
+    {
+        _window = new(_capture) { Text = "LightCrosshair FPS" };
+        _timer.Tick += (_, _) => Draw();
+    }
+    private sealed class FpsWindow(SystemFpsMonitor capture) : LayeredWindow
+    {
+        protected override void WndProc(ref Message m)
+        {
+            // External swapchain probe: numeric telemetry without screen capture.
+            if (Program.PerfProbesEnabled && m.Msg == 0x806A)
+            { m.Result = (IntPtr)(int)(capture.Snapshot().Fps * 100); return; }
+            if (Program.PerfProbesEnabled && m.Msg == 0x806B)
+            { m.Result = (IntPtr)(capture.Snapshot().HasData ? 0 : 1); return; }
+            base.WndProc(ref m);
+        }
+    }
+    public void Configure(bool enabled, int pid, FpsOverlaySettings settings, string? crosshairMonitor, string language = "auto")
     {
         if (!enabled)
         {
-            _timer.Stop(); _window.Hide(); _ = _capture.StopAsync(); _last = null; return;
+            _ = StopAsync(); return;
         }
-        _settings = settings; _monitor = settings.MonitorDeviceName ?? crosshairMonitor;
+        _settings = settings; _monitor = settings.MonitorDeviceName ?? crosshairMonitor; _language = language;
         _capture.Start(pid); _last = null; _timer.Start(); Draw(); _window.ReinforceTopmost();
     }
     private void Draw()
     {
         var sample = _capture.Snapshot();
-        string text = sample.HasData ? $"{sample.Fps:F0} FPS" : "— FPS";
-        if (_settings.ShowFrametime) text += sample.HasData ? $"\n{sample.Frametime:F1} ms" : "\n— ms";
-        if (_settings.Show1PercentLow) text += sample.HasData ? $"\n1% {sample.OnePercentLow:F0}" : "\n1% —";
+        string text = sample.HasData ? $"{sample.Fps:F0} FPS" : "– FPS";
+        if (_settings.ShowFrametime) text += sample.HasData ? $"\n{sample.Frametime:F1} ms" : "\n– ms";
+        if (_settings.Show1PercentLow) text += sample.HasData ? $"\n1% {sample.OnePercentLow:F0}" : "\n1% –";
+        if (!sample.HasData) text += "\n" + CoreStrings.Get(_language, sample.Reason ?? "FpsNoFrames");
         Rectangle monitor = OverlayMonitorSelector.ResolveBounds(_monitor);
-        var bounds = new Rectangle(monitor.Left + _settings.OffsetX, monitor.Top + _settings.OffsetY, (int)(180 * _settings.Scale), (int)(80 * _settings.Scale));
+        var bounds = new Rectangle(monitor.Left + _settings.OffsetX, monitor.Top + _settings.OffsetY, (int)(270 * _settings.Scale), (int)(90 * _settings.Scale));
         string key = text + bounds + _settings.TextColor + _settings.BackgroundColor + _settings.BackgroundOpacity;
         if (key == _last) return;
         _window.Present(bounds, g =>
@@ -36,9 +54,12 @@ internal sealed class FpsOverlay : IDisposable
             g.Clear(Color.FromArgb((int)(_settings.BackgroundOpacity * 255), ColorTranslator.FromHtml(_settings.BackgroundColor)));
             using var font = new Font("Segoe UI", (float)(12 * _settings.Scale), FontStyle.Regular, GraphicsUnit.Pixel);
             using var brush = new SolidBrush(ColorTranslator.FromHtml(_settings.TextColor));
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
             g.DrawString(text, font, brush, 5, 5);
         });
+        _window.AccessibleName = text;
         if (!_window.Visible) _window.Show(); _last = key;
     }
+    internal Task StopAsync() { _timer.Stop(); _window.Hide(); _last = null; return _capture.StopAsync(); }
     public void Dispose() { _timer.Dispose(); _ = _capture.StopAsync(); _window.Dispose(); }
 }

@@ -1170,6 +1170,10 @@ namespace LightCrosshair
             {
                 _lastAppliedViaDriverPath = true;
 
+                // A neutral gamma must preserve the existing calibration and needs
+                // no Win32 gamma support. Some modern AMD outputs expose ADL color
+                // controls but reject gamma ramps entirely.
+                if (adjustment.Gamma == 100) { error = null; return true; }
                 // ADL natively lacks Gamma handling via this API; it only sets brightness/contrast/saturation.
                 // We MUST delegate the Gamma curve to the Win32 fall-back to actually apply the Gamma value.
                 // We pass standard neutral values (100, 100, 50) so we don't multiply the already applied ADL values.
@@ -1180,7 +1184,7 @@ namespace LightCrosshair
                 }
                 else
                 {
-                    Program.LogDebug($"AMD ADL applied brightness/contrast/saturation, but the Win32 fallback for Gamma failed: {win32GammaError}", nameof(AmdColorManager));
+                    // The transaction owner logs the returned vendor error once.
                     error = $"AMD driver path OK, but Win32 Gamma fallback failed: {win32GammaError}";
                     return false;
                 }
@@ -1211,10 +1215,11 @@ namespace LightCrosshair
 
         public override bool TryRestore(out string? error)
         {
-            bool adl = !_adlColorManager.HasCapturedOriginalState || _adlColorManager.TryRestore(out _);
-            bool gamma = !_win32FallbackPathTouched || Fallback.TryRestore(out _);
+            string? adlError = null, gammaError = null;
+            bool adl = !_adlColorManager.HasCapturedOriginalState || _adlColorManager.TryRestore(out adlError);
+            bool gamma = !_win32FallbackPathTouched || Fallback.TryRestore(out gammaError);
             if (gamma) _win32FallbackPathTouched = false;
-            error = adl && gamma ? null : "Original display colors could not be fully restored.";
+            error = adl && gamma ? null : $"Original display colors could not be fully restored. ADL: {adlError ?? "OK"}; gamma: {gammaError ?? "OK"}";
             return adl && gamma;
         }
 

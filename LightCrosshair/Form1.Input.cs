@@ -129,13 +129,10 @@ internal sealed partial class Form1
             {
                 case 9000: await ToggleVisibilityAsync(); break;
                 case 9001: case 9002:
-                    var designs = Document.Crosshairs.Where(d => d.Favorite).ToList();
-                    if (designs.Count == 0) designs = Document.Crosshairs;
-                    int index = designs.FindIndex(d => d.Id == Runtime.ActiveCrosshairId);
-                    index = (index + (id == 9001 ? 1 : -1) + designs.Count) % designs.Count;
-                    _cycledId = designs[index].Id; RefreshContext(); break;
+                    await MutateAsync(next => Task.FromResult<object?>(CrosshairCycling.Apply(next, Runtime.ActiveCrosshairId, Runtime.ActiveGameProfileId, id == 9001)));
+                    break;
                 case 9003:
-                    if (_pipe?.IsConnected == true) _pipe.Publish(IpcEvents.CloseRequested, null); else OpenSettings();
+                    if (_pipe?.IsConnected == true && !UiLaunch.IsParked(_pipe.ClientProcessId)) _pipe.Publish(IpcEvents.CloseRequested, null); else OpenSettings();
                     break;
             }
         }
