@@ -51,7 +51,8 @@ internal sealed partial class Form1
         _context = GameRules.Evaluate(Document, _contextProcess);
         Runtime.ActiveGameProfileId = _context.Game?.Id;
         Runtime.ActiveCrosshairId = _context.CrosshairId;
-        Runtime.Monitors = Screen.AllScreens.Select(s => new MonitorInfo { DeviceName = s.DeviceName, FriendlyName = s.DeviceName, IsPrimary = s.Primary, Width = s.Bounds.Width, Height = s.Bounds.Height }).ToList();
+        if (Runtime.Monitors.Count == 0)
+            Runtime.Monitors = MonitorNames.Populate(Screen.AllScreens.Select(s => new MonitorInfo { DeviceName = s.DeviceName, IsPrimary = s.Primary, Width = s.Bounds.Width, Height = s.Bounds.Height }));
         var colors = _context.DisplayColors;
         string colorsKey = System.Text.Json.JsonSerializer.Serialize(colors, ContractJson.Options);
         if (_colorsKey != colorsKey) { _colorsKey = colorsKey; _ = _colors.SetAsync(colors); }

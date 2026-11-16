@@ -61,7 +61,7 @@ internal sealed partial class Form1 : LayeredWindow
     }
     private void SystemDisplayChanged(object? sender, EventArgs e)
     { if (!IsDisposed && IsHandleCreated) BeginInvoke(OnDisplayChanged); }
-    private void OnDisplayChanged() { _renderKey = null; RefreshContext(); }
+    private void OnDisplayChanged() { _renderKey = null; Runtime.Monitors.Clear(); RefreshContext(); }
     internal void RefreshOverlay()
     {
         if (!_ready || IsDisposed) return;
