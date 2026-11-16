@@ -77,13 +77,13 @@ internal sealed class VisibilityInputHook : IDisposable
     {
         if (_wantMouse && _mouseHook == IntPtr.Zero)
         {
-            _mouseHealth = new();
+            _mouseHealth = new(); _mouseHealth.HookCalled(Environment.TickCount64);
             _mouseHook = SetWindowsHookEx(14, _mouseProc, GetModuleHandle(null), 0);
             if (_mouseHook == IntPtr.Zero) ReportError("Mouse hook registration failed.");
         }
         if (_wantKeyboard && _keyboardHook == IntPtr.Zero)
         {
-            _keyboardHealth = new();
+            _keyboardHealth = new(); _keyboardHealth.HookCalled(Environment.TickCount64);
             _keyboardHook = SetWindowsHookEx(13, _keyboardProc, GetModuleHandle(null), 0);
             if (_keyboardHook == IntPtr.Zero) ReportError("Keyboard hook registration failed.");
         }

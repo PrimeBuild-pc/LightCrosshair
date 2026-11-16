@@ -1,4 +1,4 @@
-param([string]$Executable="$PSScriptRoot/../../releases/LightCrosshair-v2.0.0-win-x64/LightCrosshair.exe")
+param([string]$Executable="$PSScriptRoot/../../releases/LightCrosshair-v2.0.0-win-x64/LightCrosshair.exe", [int]$IdleBeforePressSeconds = 0)
 . "$PSScriptRoot/ReviewProbe.ps1"
 $root=Join-Path ([IO.Path]::GetTempPath()) ('lc-final-hold-'+[guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $root | Out-Null
@@ -7,7 +7,7 @@ $cursor=[ReviewNative+Point]::new();[void][ReviewNative]::GetCursorPos([ref]$cur
 function Assert-Hold([bool]$visible) {
     $deadline=[DateTime]::UtcNow.AddSeconds(3)
     do { $snapshot=Invoke-ProbeCore $session getSnapshot; if($snapshot.runtime.crosshairShown -eq $visible){return $snapshot};Start-Sleep -Milliseconds 20 } while([DateTime]::UtcNow -lt $deadline)
-    throw "Hold visibility did not become $visible"
+    throw "Hold visibility did not become $visible; root=$root, foreground=$([ReviewNative]::GetForegroundWindow()), expected=$handle; runtime=$($snapshot.runtime | ConvertTo-Json -Compress -Depth 10)"
 }
 try {
     $session=Start-ProbeCore $Executable $root
@@ -21,6 +21,7 @@ try {
     while(!(Test-Path -LiteralPath $ready) -and [DateTime]::UtcNow -lt $deadline){Start-Sleep -Milliseconds 25}
     $handle=[IntPtr][long]((Get-Content $ready).Split(',')[1])
     if([ReviewNative]::GetForegroundWindow() -ne $handle){throw '3D probe must be foreground for the real button test'}
+    if ($IdleBeforePressSeconds -gt 0) { Start-Sleep -Seconds $IdleBeforePressSeconds }
     [void][ReviewNative]::SetCursorPos(500,400)
     $window=[PerfNative]::Find($session.App.Id,$false)
     Start-Sleep -Milliseconds 200
