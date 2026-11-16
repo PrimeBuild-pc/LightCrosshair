@@ -1,8 +1,9 @@
 using Microsoft.Diagnostics.Tracing.Session;
+using LightCrosshair.Core;
 
 namespace LightCrosshair;
 
-internal readonly record struct FpsSample(bool HasData, double Fps, double Frametime, double OnePercentLow);
+internal readonly record struct FpsSample(bool HasData, double Fps, double Frametime, double OnePercentLow, string? Reason = null);
 
 internal sealed class FpsBuffer
 {
@@ -23,56 +24,108 @@ internal sealed class FpsBuffer
     }
 }
 
-// The v1 ETW Present-start parser, reduced to the three metrics retained in v2.
-// No ETW session, worker, poll, retry loop or timer exists while disabled.
+// Keep the v1 DXGI/D3D9 sources and retry a failed session while enabled. No kernel
+// provider, injection or RTSS dependency is needed for DX11/DX12 presentation rates.
+// Disabled means no session, worker, retry loop or timer.
 internal sealed class SystemFpsMonitor
 {
     private readonly object _gate = new();
-    private readonly FpsBuffer _buffer = new();
+    private readonly FpsPresentTracker _presents = new();
+    private readonly Action<Action<int, ulong, DateTime>, CancellationToken> _capture;
+    private readonly Func<DateTime> _now;
     private CancellationTokenSource? _stop;
     private Task _worker = Task.CompletedTask;
     private int _pid;
-    private DateTime _last;
+    private long _generation;
+    private string? _failure;
     private static readonly Guid Dxgi = new("CA11C036-0102-4A2D-A6AD-F03CFED5D3C9"), D3D9 = new("783ACA0A-FA53-4457-BB8E-11327BDDE440");
+    internal SystemFpsMonitor(Action<Action<int, ulong, DateTime>, CancellationToken>? capture = null, Func<DateTime>? now = null)
+    { _capture = capture ?? Capture; _now = now ?? (() => DateTime.Now); }
     public void Start(int pid)
     {
         lock (_gate)
         {
-            if (_pid != pid) { _pid = pid; _last = default; _buffer.Clear(); }
+            if (_pid != pid) { _pid = pid; _presents.Clear(); }
             if (_stop is not null) return;
-            _stop = new(); var token = _stop.Token;
-            _worker = Task.Run(() => Capture(token), token);
+            _stop = new(); var stop = _stop; var previous = _worker; long generation = ++_generation;
+            _failure = null;
+            _worker = Task.Run(async () =>
+            {
+                // Serialize stop/start: an old session must finish before its replacement.
+                await previous.ConfigureAwait(false);
+                try { await RunAsync(generation, stop.Token).ConfigureAwait(false); }
+                finally { stop.Dispose(); }
+            });
         }
     }
-    private void Capture(CancellationToken token)
+    private async Task RunAsync(long generation, CancellationToken token)
     {
-        try
+        string? logged = null;
+        while (!token.IsCancellationRequested)
         {
-            using var session = new TraceEventSession($"LightCrosshair.Fps.{Environment.ProcessId}.{Guid.NewGuid():N}") { StopOnDispose = true };
-            using var registration = token.Register(() => { try { session.Source.StopProcessing(); } catch (ObjectDisposedException) { } });
-            if (token.IsCancellationRequested) return;
-            session.EnableProvider(Dxgi); session.EnableProvider(D3D9);
-            session.Source.Dynamic.All += data =>
+            try
             {
-                if (token.IsCancellationRequested || !((data.ProviderGuid == Dxgi && (int)data.ID == 42) || (data.ProviderGuid == D3D9 && (int)data.ID == 1))) return;
+                _capture((pid, swapchain, time) =>
+                {
+                    lock (_gate)
+                    {
+                        if (generation != _generation || token.IsCancellationRequested || pid <= 0 || pid != _pid) return;
+                        _presents.Present(swapchain, time); _failure = null;
+                    }
+                }, token);
+            }
+            catch (Exception ex)
+            {
+                if (token.IsCancellationRequested) return;
+                string signature = ex.GetType().Name + ": " + ex.Message;
+                if (signature != logged) { Program.LogError(ex, "FPS ETW capture failed; retrying in 5 seconds"); logged = signature; }
                 lock (_gate)
                 {
-                    if (data.ProcessID != _pid) return;
-                    if (_last != default) _buffer.Add((data.TimeStamp - _last).TotalMilliseconds);
-                    _last = data.TimeStamp;
+                    if (generation == _generation) _failure = ex is UnauthorizedAccessException ? "FpsAccessDenied" : "FpsUnavailable";
                 }
-            };
-            session.Source.Process();
+            }
+            try { await Task.Delay(TimeSpan.FromSeconds(5), token).ConfigureAwait(false); }
+            catch (OperationCanceledException) { return; }
         }
-        catch (Exception ex) { if (!token.IsCancellationRequested) Program.LogError(ex, "FPS capture unavailable"); }
     }
-    public FpsSample Snapshot() { lock (_gate) return DateTime.Now - _last > TimeSpan.FromSeconds(2) ? default : _buffer.Snapshot(); }
-    public Task StopAsync()
+    private static void Capture(Action<int, ulong, DateTime> present, CancellationToken token)
+    {
+        if (token.IsCancellationRequested) return;
+        using var session = new TraceEventSession($"LightCrosshair.Fps.{Environment.ProcessId}.{Guid.NewGuid():N}") { StopOnDispose = true };
+        session.EnableProvider(Dxgi); session.EnableProvider(D3D9);
+        using var registration = token.Register(() => { try { session.Source.StopProcessing(); } catch (ObjectDisposedException) { } });
+        if (token.IsCancellationRequested) return;
+        session.Source.Dynamic.All += data =>
+        {
+            if (token.IsCancellationRequested || !IsPresentStart(data.ProviderGuid, (int)data.ID)) return;
+            // DXGI_PRESENT_TEST does not present a frame. MPO uses a separate event pair.
+            int flagsIndex = data.PayloadIndex("Flags");
+            if (flagsIndex >= 0 && (Convert.ToUInt32(data.PayloadValue(flagsIndex)) & 1) != 0) return;
+            int chainIndex = data.PayloadIndex(data.ProviderGuid == Dxgi ? "pIDXGISwapChain" : "pSwapchain");
+            ulong swapchain = chainIndex < 0 ? 0 : Convert.ToUInt64(data.PayloadValue(chainIndex));
+            present(data.ProcessID, swapchain, data.TimeStamp);
+        };
+        session.Source.Process();
+    }
+    internal static bool IsPresentStart(Guid provider, int id) => (provider == Dxgi && id is 42 or 55) || (provider == D3D9 && id == 1);
+    public FpsSample Snapshot()
     {
         lock (_gate)
         {
-            _stop?.Cancel(); _stop?.Dispose(); _stop = null; _last = default; _buffer.Clear();
-            return _worker;
+            var sample = _presents.Snapshot(_now());
+            return sample.HasData ? sample : new(false, 0, 0, 0, _pid <= 0 ? "FpsNoForeground" : _failure ?? "FpsNoFrames");
         }
+    }
+    public Task StopAsync()
+    {
+        CancellationTokenSource? stop; Task worker;
+        lock (_gate)
+        {
+            stop = _stop; _stop = null; ++_generation; _presents.Clear(); _failure = null;
+            worker = _worker;
+        }
+        // Cancellation may invoke ETW callbacks; never call it while holding _gate.
+        stop?.Cancel();
+        return worker;
     }
 }

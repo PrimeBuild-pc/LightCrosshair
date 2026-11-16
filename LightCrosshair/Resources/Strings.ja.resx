@@ -49,4 +49,8 @@
     <value>Windows が入力フックを登録できませんでした。</value>
   </data>
   <data name="LoadFailed" xml:space="preserve"><value>ライブラリを読み込めませんでした。一時的な初期設定で動作しています。元のファイルは変更されていません。再起動して再試行してください。</value></data>
+  <data name="FpsNoFrames" xml:space="preserve"><value>2秒間フレームがありません</value></data>
+  <data name="FpsAccessDenied" xml:space="preserve"><value>FPS取得に権限が必要です</value></data>
+  <data name="FpsUnavailable" xml:space="preserve"><value>FPSを取得できません</value></data>
+  <data name="FpsNoForeground" xml:space="preserve"><value>ゲームを前面に表示してください</value></data>
 </root>

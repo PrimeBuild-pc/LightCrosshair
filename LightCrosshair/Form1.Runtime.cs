@@ -55,7 +55,7 @@ internal sealed partial class Form1
         var colors = _context.DisplayColors;
         string colorsKey = System.Text.Json.JsonSerializer.Serialize(colors, ContractJson.Options);
         if (_colorsKey != colorsKey) { _colorsKey = colorsKey; _ = _colors.SetAsync(colors); }
-        _fps.Configure(_context.FpsEnabled, _foregroundPid, Document.Settings.FpsOverlay, Document.Settings.MonitorDeviceName);
+        _fps.Configure(_context.FpsEnabled, _foregroundPid, Document.Settings.FpsOverlay, Document.Settings.MonitorDeviceName, Document.Settings.Language);
         ConfigureInput(); ConfigureRecording(); UpdateTrayText();
         RefreshOverlay(); RuntimeUpdated?.Invoke();
     }
@@ -83,7 +83,7 @@ internal sealed partial class Form1
         if (_closing) return;
         _closing = true; _foreground?.Dispose(); _foreground = null;
         _pipe?.Publish(IpcEvents.CloseRequested, null);
-        _fps.Configure(false, 0, Document.Settings.FpsOverlay, null);
+        await _fps.StopAsync();
         Task restoreColors = _colors.SetAsync(null);
         // Never turn a failed migration/load into a successful default-store marker.
         await _mutations.WaitAsync();

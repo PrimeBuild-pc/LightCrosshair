@@ -49,4 +49,8 @@
     <value>Windows не удалось зарегистрировать перехватчик ввода.</value>
   </data>
   <data name="LoadFailed" xml:space="preserve"><value>Не удалось загрузить библиотеку. LightCrosshair использует временные настройки; ваши файлы не изменены. Перезапустите для повтора.</value></data>
+  <data name="FpsNoFrames" xml:space="preserve"><value>Нет кадров за последние 2 с</value></data>
+  <data name="FpsAccessDenied" xml:space="preserve"><value>Для FPS нужны права доступа</value></data>
+  <data name="FpsUnavailable" xml:space="preserve"><value>Захват FPS недоступен</value></data>
+  <data name="FpsNoForeground" xml:space="preserve"><value>Переключитесь на окно игры</value></data>
 </root>
