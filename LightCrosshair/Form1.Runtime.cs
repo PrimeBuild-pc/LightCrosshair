@@ -10,7 +10,7 @@ internal sealed partial class Form1
     private readonly FpsOverlay _fps = new();
     private DisplayManager? _foreground;
     private GameContext? _context;
-    private string? _contextProcess, _cycledId, _colorsKey;
+    private string? _contextProcess, _colorsKey;
     private int _foregroundPid;
     private bool? _holdOverride;
     private readonly HashSet<string> _suggested = new();
@@ -34,7 +34,7 @@ internal sealed partial class Form1
         if (IsDisposed || _closing) return;
         Runtime.ForegroundProcess = process;
         if (process == "lightcrosshair.ui.exe") { RuntimeUpdated?.Invoke(); return; }
-        if (process != _contextProcess) { _cycledId = null; _holdOverride = null; }
+        if (process != _contextProcess) _holdOverride = null;
         _contextProcess = process; _foregroundPid = pid;
         RefreshContext();
         if (process is not null && Document.Settings.SuggestKnownGames && KnownGames.Entries.TryGetValue(process, out string? name) &&
@@ -50,7 +50,7 @@ internal sealed partial class Form1
         if (!_ready || _closing) return;
         _context = GameRules.Evaluate(Document, _contextProcess);
         Runtime.ActiveGameProfileId = _context.Game?.Id;
-        Runtime.ActiveCrosshairId = _cycledId is not null && Document.Crosshairs.Any(d => d.Id == _cycledId) ? _cycledId : _context.CrosshairId;
+        Runtime.ActiveCrosshairId = _context.CrosshairId;
         Runtime.Monitors = Screen.AllScreens.Select(s => new MonitorInfo { DeviceName = s.DeviceName, FriendlyName = s.DeviceName, IsPrimary = s.Primary, Width = s.Bounds.Width, Height = s.Bounds.Height }).ToList();
         var colors = _context.DisplayColors;
         string colorsKey = System.Text.Json.JsonSerializer.Serialize(colors, ContractJson.Options);
