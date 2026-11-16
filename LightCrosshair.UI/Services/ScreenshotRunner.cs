@@ -65,7 +65,7 @@ public static class ScreenshotRunner
     /// <summary>Hides a row that crosses the window edge so the capture ends on a whole control.</summary>
     private static bool HideCutRows(Window window)
     {
-        var limit = window.ActualHeight - 2;
+        var limit = window.ActualHeight - 12;
         return HideCutRows(window, window, limit);
     }
 
@@ -79,7 +79,8 @@ public static class ScreenshotRunner
             {
                 if (panel.Children[i] is not FrameworkElement child || child.ActualHeight is < 8 or > 220 || !child.IsVisible) continue;
                 var origin = child.TransformToAncestor(window).Transform(new System.Windows.Point(0, 0));
-                if (origin.Y < limit && origin.Y + child.ActualHeight > limit)
+                var bottom = origin.Y + child.ActualHeight + child.Margin.Bottom;
+                if (origin.Y < limit && bottom > limit)
                 {
                     cut = i;
                     if (i > 0 && panel.Children[i - 1] is System.Windows.Controls.TextBlock heading && heading.ActualHeight < 64)

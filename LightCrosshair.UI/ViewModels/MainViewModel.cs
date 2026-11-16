@@ -23,6 +23,7 @@ public sealed partial class MainViewModel : ObservableObject
         Games = new GamesViewModel(core, ui);
         Hotkeys = new HotkeysViewModel(core, ui);
         Settings = new SettingsViewModel(core, ui);
+        Library.GameCrosshairChanged = Games.NoteExternalCrosshair;
         Games.NoteLaunchSuggest(options.Suggest);
         Page = options.Page;
         _core.StateChanged += (_, state) =>
@@ -38,6 +39,8 @@ public sealed partial class MainViewModel : ObservableObject
         _core.RuntimeChanged += (_, runtime) =>
         {
             Hotkeys.ApplyRuntime(runtime);
+            Games.ApplyRuntime(runtime);
+            Library.NoteActive(string.IsNullOrEmpty(runtime.ActiveCrosshairId) ? _core.Snapshot?.Store.Settings.DefaultCrosshairId : runtime.ActiveCrosshairId);
             if (_core.Snapshot != null && (runtime.PendingSuggestion != null || Games.Suggestion != null))
                 Games.Apply(_core.Snapshot);
         };
@@ -100,6 +103,23 @@ public sealed partial class MainViewModel : ObservableObject
 
     public event EventHandler? ActivateRequested;
     public event EventHandler? CloseRequested;
+    public bool AllowExit { get; set; }
+
+    public void Park()
+    {
+        _ = Studio.LeaveAsync();
+        Library.ReleaseCaches();
+        SetMinimized(true);
+        ProcessDuty.Apply(ParkPolicy.Priority(parked: true, gameForeground: false));
+        ProcessDuty.TrimWorkingSet();
+        OpenTiming.NoteParkedMemory();
+    }
+
+    public void Wake()
+    {
+        SetMinimized(false);
+        ProcessDuty.Apply(ParkPolicy.Priority(parked: false, ParkPolicy.GameIsForeground(_core.Snapshot)));
+    }
 
     public async Task StartAsync()
     {
@@ -107,7 +127,10 @@ public sealed partial class MainViewModel : ObservableObject
         LinkState = _core.State;
         if (_core.Snapshot != null) ApplySnapshot(_core.Snapshot);
         if (LinkState == CoreLinkState.Connected)
+        {
             await Library.LoadPresetsAsync().ConfigureAwait(true);
+            Games.SetPresetPicks(Library.AllPresets);
+        }
         if (Page == UiPages.Studio) Studio.Enter();
         OnPropertyChanged(nameof(ShowBlock));
         OnPropertyChanged(nameof(CanRetry));

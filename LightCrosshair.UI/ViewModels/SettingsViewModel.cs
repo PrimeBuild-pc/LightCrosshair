@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using LightCrosshair.UI.Core;
 using LightCrosshair.UI.Localization;
 using LightCrosshair.UI.Services;
+using LightCrosshair.UI;
 
 namespace LightCrosshair.UI.ViewModels;
 
@@ -165,6 +166,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         try { await _core.QuitAsync().ConfigureAwait(true); }
         catch (CoreException ex) { Error = ErrorText.For(ex.Code); return; }
         catch (Exception) { Error = ErrorText.For(null); return; }
+        if (System.Windows.Application.Current?.MainWindow is MainWindow window)
+            window.AllowClose();
         System.Windows.Application.Current?.Shutdown();
     }
 
@@ -214,12 +217,26 @@ public sealed partial class SettingsViewModel : ObservableObject
     private void RebuildMonitorChoices()
     {
         MonitorChoices.Clear();
-        foreach (var monitor in Monitors)
-            MonitorChoices.Add(new MonitorChoice { DeviceName = monitor.DeviceName, Label = monitor.FriendlyName });
+        for (var i = 0; i < Monitors.Count; i++)
+        {
+            var monitor = Monitors[i];
+            MonitorChoices.Add(new MonitorChoice
+            {
+                DeviceName = monitor.DeviceName,
+                Label = MonitorLabels.Format(monitor.FriendlyName, MonitorLabels.Number(monitor.DeviceName, i), monitor.IsPrimary),
+            });
+        }
         FpsMonitorChoices.Clear();
         FpsMonitorChoices.Add(new MonitorChoice { DeviceName = "", Label = Loc.Instance["Settings_SameMonitor"] });
-        foreach (var monitor in Monitors)
-            FpsMonitorChoices.Add(new MonitorChoice { DeviceName = monitor.DeviceName, Label = monitor.FriendlyName });
+        for (var i = 0; i < Monitors.Count; i++)
+        {
+            var monitor = Monitors[i];
+            FpsMonitorChoices.Add(new MonitorChoice
+            {
+                DeviceName = monitor.DeviceName,
+                Label = MonitorLabels.Format(monitor.FriendlyName, MonitorLabels.Number(monitor.DeviceName, i), monitor.IsPrimary),
+            });
+        }
     }
 
     private void NotifyAll()

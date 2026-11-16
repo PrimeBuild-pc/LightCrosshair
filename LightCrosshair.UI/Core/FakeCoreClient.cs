@@ -52,8 +52,8 @@ public sealed class FakeCoreClient : ICoreClient
             },
             Monitors =
             [
-                new MonitorInfo { DeviceName = @"\\.\DISPLAY1", FriendlyName = "Primary", IsPrimary = true, Width = 1920, Height = 1080, DpiScalePercent = 100 },
-                new MonitorInfo { DeviceName = @"\\.\DISPLAY2", FriendlyName = "Side", IsPrimary = false, Width = 2560, Height = 1440, DpiScalePercent = 150 },
+                new MonitorInfo { DeviceName = @"\\.\DISPLAY1", FriendlyName = "DELL S2721DGF", IsPrimary = true, Width = 1920, Height = 1080, DpiScalePercent = 100 },
+                new MonitorInfo { DeviceName = @"\\.\DISPLAY2", FriendlyName = "LG 27GN800-B", IsPrimary = false, Width = 2560, Height = 1440, DpiScalePercent = 150 },
             ],
         };
     }
@@ -131,6 +131,8 @@ public sealed class FakeCoreClient : ICoreClient
             var index = _store.GameProfiles.FindIndex(item => item.Id == saved.Id);
             if (index >= 0) _store.GameProfiles[index] = saved;
             else _store.GameProfiles.Add(saved);
+            if (_runtime.ActiveGameProfileId == saved.Id)
+                _runtime.ActiveCrosshairId = saved.CrosshairId;
             Publish();
             return Task.FromResult(JsonClone.Clone(saved));
         }
@@ -155,6 +157,8 @@ public sealed class FakeCoreClient : ICoreClient
             var saved = Normalize(JsonClone.Clone(settings));
             _store.Settings = saved;
             _runtime.CrosshairShown = saved.CrosshairVisible && !saved.ShowOnlyInConfiguredGames;
+            if (string.IsNullOrEmpty(_runtime.ActiveGameProfileId))
+                _runtime.ActiveCrosshairId = saved.DefaultCrosshairId;
             Publish();
             return Task.FromResult(JsonClone.Clone(saved));
         }

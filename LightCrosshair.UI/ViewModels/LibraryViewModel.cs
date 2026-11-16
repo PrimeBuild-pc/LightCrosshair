@@ -24,7 +24,16 @@ public sealed partial class LibraryCard : ObservableObject
 
     public override string ToString() => Design.Name;
     [ObservableProperty] private string? _png;
+    [ObservableProperty] private bool _inUse;
+    [ObservableProperty] private bool _renaming;
+    [ObservableProperty] private string _renameText = "";
     public string SectionKey => IsPreset ? "Library_Presets" : "Library_Mine";
+
+    public void BeginRename()
+    {
+        RenameText = Design.Name;
+        Renaming = true;
+    }
 }
 
 public sealed partial class LibraryViewModel : ObservableObject
@@ -54,6 +63,16 @@ public sealed partial class LibraryViewModel : ObservableObject
     [ObservableProperty] private string _tagKey = "Library_TagAll";
     [ObservableProperty] private string _error = "";
     [ObservableProperty] private string _defaultCrosshairId = "";
+    [ObservableProperty] private bool _useOpen;
+    [ObservableProperty] private string _useName = "";
+    [ObservableProperty] private bool _showUseName = true;
+    [ObservableProperty] private bool _showUseExisting;
+    private LibraryCard? _useCard;
+    private CrosshairDesign? _existingCopy;
+    private string? _gameProfileId;
+
+    public IReadOnlyList<LibraryCard> AllPresets => _presets;
+    public Action<string, string>? GameCrosshairChanged { get; set; }
 
     partial void OnSearchChanged(string value) => ApplyFilter();
     partial void OnTagKeyChanged(string value) => ApplyFilter();
@@ -75,13 +94,31 @@ public sealed partial class LibraryViewModel : ObservableObject
     public void Apply(Snapshot snapshot)
     {
         DefaultCrosshairId = snapshot.Store.Settings.DefaultCrosshairId;
+        var active = snapshot.Runtime.ActiveCrosshairId;
+        if (string.IsNullOrEmpty(active)) active = snapshot.Store.Settings.DefaultCrosshairId;
         _mine.Clear();
         foreach (var design in snapshot.Store.Crosshairs.OrderByDescending(item => item.UpdatedAt))
-            _mine.Add(new LibraryCard(design, false, InferTags(design)));
+        {
+            var card = new LibraryCard(design, false, InferTags(design)) { InUse = design.Id == active };
+            _mine.Add(card);
+        }
         ApplyFilter();
     }
 
     public void SetMinimized(bool minimized) => _minimized = minimized;
+
+    public void NoteActive(string? id)
+    {
+        foreach (var card in _mine)
+            card.InUse = card.Design.Id == id;
+    }
+
+    public void ReleaseCaches()
+    {
+        _thumbs.Clear();
+        foreach (var card in _mine.Concat(_presets)) card.Png = null;
+        _minimized = true;
+    }
 
     public async Task LoadThumbAsync(LibraryCard? card)
     {
@@ -103,7 +140,77 @@ public sealed partial class LibraryViewModel : ObservableObject
     private async Task ApplyDefaultAsync(LibraryCard? card)
     {
         if (card == null || card.IsPreset) return;
-        await MutateSettingsAsync(settings => settings.DefaultCrosshairId = card.Design.Id).ConfigureAwait(true);
+        await ActivateAsync(card.Design.Id, null).ConfigureAwait(true);
+    }
+
+    public void BeginUse(LibraryCard card, string? gameProfileId)
+    {
+        if (!card.IsPreset) return;
+        _useCard = card;
+        _gameProfileId = gameProfileId;
+        _existingCopy = _mine.Select(item => item.Design).FirstOrDefault(item => item.SourcePresetId == card.Design.Id);
+        UseName = card.Design.Name;
+        ShowUseExisting = _existingCopy != null;
+        ShowUseName = _existingCopy == null;
+        UseOpen = true;
+    }
+
+    [RelayCommand]
+    private void SaveAnotherCopy()
+    {
+        if (_useCard == null) return;
+        ShowUseExisting = false;
+        ShowUseName = true;
+        UseName = _useCard.Design.Name;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmUseAsync()
+    {
+        if (_useCard == null) return;
+        if (ShowUseExisting && _existingCopy != null)
+        {
+            await ActivateAsync(_existingCopy.Id, _gameProfileId).ConfigureAwait(true);
+            CloseUse();
+            return;
+        }
+        var name = (UseName ?? "").Trim();
+        if (name.Length == 0) return;
+        if (name.Length > 48) name = name[..48];
+        var copy = JsonClone.Clone(_useCard.Design);
+        copy.Id = Guid.NewGuid().ToString("N");
+        copy.SourcePresetId = _useCard.Design.Id;
+        copy.Name = name;
+        copy.Favorite = false;
+        copy.UpdatedAt = DateTimeOffset.UtcNow;
+        if (!await SaveDesignAsync(copy).ConfigureAwait(true)) return;
+        await ActivateAsync(copy.Id, _gameProfileId).ConfigureAwait(true);
+        CloseUse();
+    }
+
+    [RelayCommand]
+    private void CancelUse() => CloseUse();
+
+    private void CloseUse()
+    {
+        UseOpen = false;
+        _useCard = null;
+        _existingCopy = null;
+        _gameProfileId = null;
+    }
+
+    [RelayCommand]
+    private async Task CommitRenameAsync(LibraryCard? card)
+    {
+        if (card == null || card.IsPreset) return;
+        var name = (card.RenameText ?? "").Trim();
+        card.Renaming = false;
+        if (name.Length == 0 || name == card.Design.Name) return;
+        if (name.Length > 48) name = name[..48];
+        var copy = JsonClone.Clone(card.Design);
+        copy.Name = name;
+        copy.UpdatedAt = DateTimeOffset.UtcNow;
+        await SaveDesignAsync(copy).ConfigureAwait(true);
     }
 
     [RelayCommand]
@@ -199,11 +306,34 @@ public sealed partial class LibraryViewModel : ObservableObject
         catch (Exception) { Error = ErrorText.For(null); }
     }
 
-    private async Task SaveDesignAsync(CrosshairDesign design)
+    private async Task<bool> SaveDesignAsync(CrosshairDesign design)
     {
-        try { await _core.SaveCrosshairAsync(design).ConfigureAwait(true); }
+        try
+        {
+            await _core.SaveCrosshairAsync(design).ConfigureAwait(true);
+            return true;
+        }
         catch (CoreException ex) { Error = ErrorText.For(ex.Code); }
         catch (Exception) { Error = ErrorText.For(null); }
+        return false;
+    }
+
+    private async Task ActivateAsync(string id, string? gameProfileId)
+    {
+        if (!string.IsNullOrEmpty(gameProfileId))
+        {
+            var snapshot = _core.Snapshot;
+            var profile = snapshot?.Store.GameProfiles.FirstOrDefault(item => item.Id == gameProfileId);
+            if (profile == null) return;
+            var copy = JsonClone.Clone(profile);
+            copy.CrosshairId = id;
+            try { await _core.SaveGameProfileAsync(copy).ConfigureAwait(true); }
+            catch (CoreException ex) { Error = ErrorText.For(ex.Code); return; }
+            catch (Exception) { Error = ErrorText.For(null); return; }
+            GameCrosshairChanged?.Invoke(gameProfileId, id);
+            return;
+        }
+        await MutateSettingsAsync(settings => settings.DefaultCrosshairId = id).ConfigureAwait(true);
     }
 
     private async Task MutateSettingsAsync(Action<AppSettings> change)
@@ -272,5 +402,11 @@ public sealed class ThumbnailCache
             _png.Remove(oldest);
         }
         return png;
+    }
+
+    public void Clear()
+    {
+        _png.Clear();
+        _order.Clear();
     }
 }

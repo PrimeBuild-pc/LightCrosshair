@@ -5,25 +5,43 @@
              xmlns:controls="clr-namespace:LightCrosshair.UI.Controls">
   <UserControl.Resources>
     <DataTemplate x:Key="Card">
-      <Border Width="120" Height="156" Margin="8" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" controls:ThumbLoader.Card="{Binding}">
+      <Border Width="120" Height="156" Margin="8" Background="{DynamicResource SurfaceBrush}" BorderThickness="1" CornerRadius="8" controls:ThumbLoader.Card="{Binding}">
+        <Border.Style>
+          <Style TargetType="Border">
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding InUse}" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </Border.Style>
         <DockPanel Margin="8">
-          <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
-            <Button DockPanel.Dock="Right" Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" Visibility="{Binding IsPreset, Converter={StaticResource VisInv}}" AutomationProperties.Name="{loc:Tr Library_Favorite}">
-              <Button.Style>
-                <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
-                  <Setter Property="Content" Value="{x:Static loc:Icons.Star}"/>
-                  <Style.Triggers>
-                    <DataTrigger Binding="{Binding Design.Favorite}" Value="True">
-                      <Setter Property="Content" Value="{x:Static loc:Icons.StarFilled}"/>
-                      <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
-                    </DataTrigger>
-                  </Style.Triggers>
-                </Style>
-              </Button.Style>
-            </Button>
-            <TextBlock Text="{Binding Design.Name}" TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"/>
-          </DockPanel>
-          <Image Source="{Binding Png, Converter={StaticResource Png}, ConverterParameter=96}" Height="96" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform"/>
+          <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+            <TextBlock Text="{Binding Design.Name}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" FontSize="12" Visibility="{Binding Renaming, Converter={StaticResource VisInv}}"/>
+            <TextBox Text="{Binding RenameText, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding Renaming, Converter={StaticResource Vis}}" KeyDown="OnRenameKey" LostFocus="OnRenameLost" AutomationProperties.Name="{loc:Tr Library_Rename}"/>
+            <DockPanel Margin="0,2,0,0">
+              <Button DockPanel.Dock="Right" Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" Visibility="{Binding IsPreset, Converter={StaticResource VisInv}}" AutomationProperties.Name="{loc:Tr Library_Favorite}">
+                <Button.Style>
+                  <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                    <Setter Property="Content" Value="{x:Static loc:Icons.Star}"/>
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding Design.Favorite}" Value="True">
+                        <Setter Property="Content" Value="{x:Static loc:Icons.StarFilled}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </Button.Style>
+              </Button>
+              <Button DockPanel.Dock="Right" Content="{x:Static loc:Icons.Edit}" FontFamily="{DynamicResource IconFont}" Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" Visibility="{Binding IsPreset, Converter={StaticResource VisInv}}" AutomationProperties.Name="{loc:Tr Edit}" Style="{StaticResource IconButton}"/>
+              <TextBlock Text="{loc:Tr Library_InUse}" Foreground="{DynamicResource AccentBrush}" FontSize="11" VerticalAlignment="Center" Visibility="{Binding InUse, Converter={StaticResource Vis}}"/>
+            </DockPanel>
+          </StackPanel>
+          <Grid Height="72">
+            <Border Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="4" Visibility="{Binding Png, Converter={StaticResource NullVisInv}}"/>
+            <Image Source="{Binding Png, Converter={StaticResource Png}, ConverterParameter=96}" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform" Visibility="{Binding Png, Converter={StaticResource NullVis}}"/>
+          </Grid>
         </DockPanel>
       </Border>
     </DataTemplate>

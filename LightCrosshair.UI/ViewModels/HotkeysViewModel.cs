@@ -19,6 +19,8 @@ public sealed partial class HotkeyRow : ObservableObject
     [ObservableProperty] private bool _capturing;
 
     public void RefreshText() => Display = HotkeyRules.Format(Binding);
+    public string MouseKey => HotkeyRules.IsMouse(Binding.Key) ? Binding.Key : "";
+    partial void OnBindingChanged(InputBinding value) => OnPropertyChanged(nameof(MouseKey));
 
     public override string ToString() => Loc.Instance[LabelKey];
 }
@@ -48,10 +50,16 @@ public sealed partial class HotkeysViewModel : ObservableObject
             new HotkeyRow { Action = "PreviousCrosshair", LabelKey = "Hotkeys_Previous" },
             new HotkeyRow { Action = "OpenSettings", LabelKey = "Hotkeys_OpenSettings" },
         ];
-        Loc.Instance.Changed += (_, _) => { foreach (var row in Rows) row.RefreshText(); };
+        RebuildMouseChoices();
+        Loc.Instance.Changed += (_, _) =>
+        {
+            RebuildMouseChoices();
+            foreach (var row in Rows) row.RefreshText();
+        };
     }
 
     public IReadOnlyList<HotkeyRow> Rows { get; }
+    public IReadOnlyList<MouseButtonChoice> MouseChoices { get; private set; } = [];
 
     [ObservableProperty] private string _error = "";
 
@@ -112,6 +120,31 @@ public sealed partial class HotkeysViewModel : ObservableObject
         row.Warning = "";
         row.RefreshText();
         await SaveAsync().ConfigureAwait(true);
+    }
+
+    [RelayCommand]
+    private Task SetMouseAsync(MousePick? pick)
+    {
+        if (pick == null || string.IsNullOrEmpty(pick.Key)) return Task.CompletedTask;
+        var row = Rows.First(item => item.Action == pick.Action);
+        var binding = HotkeyRules.Copy(row.Binding);
+        binding.Key = pick.Key;
+        return CommitAsync(new HotkeyCommit { Action = pick.Action, Binding = binding });
+    }
+
+    private void RebuildMouseChoices()
+    {
+        MouseChoices =
+        [
+            new MouseButtonChoice("", Loc.Instance["Hotkeys_MouseButton"]),
+            new MouseButtonChoice("MiddleClick", Loc.Instance["Key_MiddleClick"]),
+            new MouseButtonChoice("RightClick", Loc.Instance["Key_RightClick"]),
+            new MouseButtonChoice("Mouse4", Loc.Instance["Key_Mouse4"]),
+            new MouseButtonChoice("Mouse5", Loc.Instance["Key_Mouse5"]),
+            new MouseButtonChoice("WheelUp", Loc.Instance["Key_WheelUp"]),
+            new MouseButtonChoice("WheelDown", Loc.Instance["Key_WheelDown"]),
+        ];
+        OnPropertyChanged(nameof(MouseChoices));
     }
 
     [RelayCommand]
@@ -218,6 +251,14 @@ public sealed class ModeChange
 {
     public required string Action { get; init; }
     public BindingMode Mode { get; init; }
+}
+
+public sealed record MouseButtonChoice(string Key, string Label);
+
+public sealed class MousePick
+{
+    public required string Action { get; init; }
+    public required string Key { get; init; }
 }
 
 internal static class HotkeyProbe

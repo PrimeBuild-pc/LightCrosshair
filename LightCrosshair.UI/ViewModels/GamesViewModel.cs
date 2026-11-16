@@ -19,6 +19,7 @@ public sealed partial class GamesViewModel : ObservableObject
 
     public ObservableCollection<GameProfile> Profiles { get; } = new();
     public ObservableCollection<CrosshairDesign> Crosshairs { get; } = new();
+    public ObservableCollection<LibraryCard> PresetPicks { get; } = new();
     public ObservableCollection<ProcessEntry> Processes { get; } = new();
 
     [ObservableProperty] private GameProfile? _selected;
@@ -31,6 +32,7 @@ public sealed partial class GamesViewModel : ObservableObject
     [ObservableProperty] private bool _useCap;
     [ObservableProperty] private bool _customVisibility;
     [ObservableProperty] private string _fpsMode = "follow";
+    [ObservableProperty] private string _displayColorsMessage = "";
 
     public bool GammaSupported => Gpu.SoftwareGamma;
     public bool NvidiaColorSupported => Gpu.NvidiaDigitalVibrance;
@@ -39,7 +41,17 @@ public sealed partial class GamesViewModel : ObservableObject
     public string Name { get => _working.Name; set { _working.Name = value; Touch(); } }
     public string ProcessName => _working.ProcessName;
     public bool Enabled { get => _working.Enabled; set { _working.Enabled = value; Touch(); } }
-    public string CrosshairId { get => _working.CrosshairId; set { _working.CrosshairId = value; Touch(); } }
+    public string CrosshairId
+    {
+        get => _working.CrosshairId;
+        set
+        {
+            if (_suspend || _working.CrosshairId == value) return;
+            _working.CrosshairId = value ?? "";
+            Touch();
+            _ = PersistCrosshairAsync(Selected?.Id, _working.CrosshairId);
+        }
+    }
     public int Gamma { get => _working.DisplayColors?.Gamma ?? 100; set { Colors().Gamma = value; Touch(); } }
     public int Contrast { get => _working.DisplayColors?.Contrast ?? 100; set { Colors().Contrast = value; Touch(); } }
     public int Brightness { get => _working.DisplayColors?.Brightness ?? 100; set { Colors().Brightness = value; Touch(); } }
@@ -75,6 +87,31 @@ public sealed partial class GamesViewModel : ObservableObject
         Loc.Instance.Changed += (_, _) => OnPropertyChanged(nameof(SuggestionText));
     }
 
+    public void ApplyRuntime(RuntimeState runtime) => DisplayColorsMessage = DisplayColorText.For(runtime.DisplayColorsError);
+
+    public void SetPresetPicks(IEnumerable<LibraryCard> presets)
+    {
+        PresetPicks.Clear();
+        foreach (var preset in presets)
+            PresetPicks.Add(preset);
+    }
+
+    public void NoteExternalCrosshair(string profileId, string crosshairId)
+    {
+        if (Selected?.Id != profileId) return;
+        _suspend = true;
+        _working.CrosshairId = crosshairId;
+        OnPropertyChanged(nameof(CrosshairId));
+        _suspend = false;
+        var previous = SavedProfile();
+        if (previous != null)
+        {
+            previous.CrosshairId = crosshairId;
+            _savedJson = JsonClone.Text(previous);
+        }
+        Touch();
+    }
+
     public void NoteLaunchSuggest(string? process)
     {
         _launchSuggest = string.IsNullOrWhiteSpace(process) ? null : process.Trim().ToLowerInvariant();
@@ -98,6 +135,7 @@ public sealed partial class GamesViewModel : ObservableObject
         if (pending == null && _launchSuggest != null && !_notNow.Contains(_launchSuggest))
             pending = new GameSuggestion { ProcessName = _launchSuggest, DisplayName = _launchSuggest };
         Suggestion = pending;
+        DisplayColorsMessage = DisplayColorText.For(snapshot.Runtime.DisplayColorsError);
 
         if (Selected != null)
         {
@@ -320,6 +358,33 @@ public sealed partial class GamesViewModel : ObservableObject
         }
         catch (CoreException ex) { Error = ErrorText.For(ex.Code); }
         catch (Exception) { Error = ErrorText.For(null); }
+    }
+
+    private async Task PersistCrosshairAsync(string? profileId, string crosshairId)
+    {
+        if (string.IsNullOrEmpty(profileId)) return;
+        var profile = SavedProfile();
+        if (profile == null || profile.Id != profileId) return;
+        profile.CrosshairId = crosshairId;
+        try
+        {
+            var saved = await _core.SaveGameProfileAsync(profile).ConfigureAwait(true);
+            if (Selected?.Id != profileId) return;
+            var baseline = SavedProfile();
+            if (baseline == null) return;
+            baseline.CrosshairId = saved.CrosshairId;
+            _savedJson = JsonClone.Text(baseline);
+            Touch();
+        }
+        catch (CoreException ex) { Error = ErrorText.For(ex.Code); }
+        catch (Exception) { Error = ErrorText.For(null); }
+    }
+
+    private GameProfile? SavedProfile()
+    {
+        if (string.IsNullOrEmpty(_savedJson)) return null;
+        var profile = System.Text.Json.JsonSerializer.Deserialize<GameProfile>(_savedJson, ContractJson.Options);
+        return profile == null ? null : JsonClone.Clone(profile);
     }
 
     private DisplayColorSettings Colors() => _working.DisplayColors ??= new DisplayColorSettings();

@@ -180,7 +180,7 @@
   <data name="Games_ProfileName" xml:space="preserve"><value>Profile name</value></data>
   <data name="Games_CapValue" xml:space="preserve"><value>Cap</value></data>
   <data name="Games_Delete" xml:space="preserve"><value>Delete profile</value></data>
-  <data name="Hotkeys_Help" xml:space="preserve"><value>Click a shortcut, then press a key or mouse button. Esc cancels. The wheel only toggles.</value></data>
+  <data name="Hotkeys_Help" xml:space="preserve"><value>Click a shortcut, then press a key or a mouse button</value></data>
   <data name="Hotkeys_ToggleVisibility" xml:space="preserve"><value>Show or hide crosshair</value></data>
   <data name="Hotkeys_Next" xml:space="preserve"><value>Next crosshair</value></data>
   <data name="Hotkeys_Previous" xml:space="preserve"><value>Previous crosshair</value></data>
@@ -208,7 +208,7 @@
   <data name="Key_Win" xml:space="preserve"><value>Win</value></data>
   <data name="Settings_Display" xml:space="preserve"><value>Display</value></data>
   <data name="Settings_Monitor" xml:space="preserve"><value>Monitor</value></data>
-  <data name="Settings_Primary" xml:space="preserve"><value>Primary monitor</value></data>
+  <data name="Settings_Primary" xml:space="preserve"><value>Primary</value></data>
   <data name="Settings_Position" xml:space="preserve"><value>Position</value></data>
   <data name="Settings_OffsetX" xml:space="preserve"><value>Horizontal offset</value></data>
   <data name="Settings_OffsetY" xml:space="preserve"><value>Vertical offset</value></data>
@@ -262,4 +262,18 @@
   <data name="Boot_Connecting" xml:space="preserve"><value>Connecting to LightCrosshair</value></data>
   <data name="Color_Presets" xml:space="preserve"><value>Preset colors</value></data>
   <data name="Common_More" xml:space="preserve"><value>More</value></data>
+  <data name="Library_UseTitle" xml:space="preserve"><value>Use this crosshair</value></data>
+  <data name="Library_AlreadySaved" xml:space="preserve"><value>Already in My crosshairs</value></data>
+  <data name="Library_Use" xml:space="preserve"><value>Use</value></data>
+  <data name="Library_UseExisting" xml:space="preserve"><value>Use existing</value></data>
+  <data name="Library_SaveCopy" xml:space="preserve"><value>Save another copy</value></data>
+  <data name="Library_InUse" xml:space="preserve"><value>In use</value></data>
+  <data name="Library_UseMenu" xml:space="preserve"><value>Use…</value></data>
+  <data name="Library_Rename" xml:space="preserve"><value>Rename</value></data>
+  <data name="Hotkeys_MouseButton" xml:space="preserve"><value>Mouse button</value></data>
+  <data name="Settings_MonitorName" xml:space="preserve"><value>{0} · Display {1}</value></data>
+  <data name="Games_UsePreset" xml:space="preserve"><value>Use a preset</value></data>
+  <data name="Games_ColorApplyFailed" xml:space="preserve"><value>The display colors could not be applied. The graphics driver refused the change.</value></data>
+  <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>The previous display colors could not be restored.</value></data>
+  <data name="Games_ColorUnsupported" xml:space="preserve"><value>This display does not support color adjustments.</value></data>
 </root>

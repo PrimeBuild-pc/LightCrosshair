@@ -1,14 +1,22 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Threading;
 using LightCrosshair.UI.Localization;
 using LightCrosshair.UI.Services;
 using LightCrosshair.UI.ViewModels;
+using LightCrosshair.UI.Views;
 
 namespace LightCrosshair.UI;
 
 public partial class MainWindow : Window
 {
+    private DispatcherTimer? _parkTimer;
+    internal TimeSpan ParkDuration { get; set; } = ParkPolicy.Duration;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -25,13 +33,30 @@ public partial class MainWindow : Window
             {
                 viewModel.ActivateRequested += (_, _) =>
                 {
+                    var requested = Environment.TickCount64;
+                    if (!IsVisible) Show();
                     if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+                    Wake();
                     Activate();
+                    Dispatcher.BeginInvoke(DispatcherPriority.Render, () => OpenTiming.NoteWake(requested));
                 };
-                viewModel.CloseRequested += (_, _) => Close();
+                viewModel.CloseRequested += (_, _) =>
+                {
+                    viewModel.AllowExit = true;
+                    Close();
+                };
             }
         };
-        Closing += (_, _) => WindowPlacementStore.Save(this);
+        Activated += (_, _) =>
+        {
+            if (IsVisible) Wake();
+        };
+        ContentRendered += (_, _) => OpenTiming.NoteFirstFrame();
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible) FindChild<LibraryPage>(this)?.ReloadVisible();
+        };
+        Closing += OnClosing;
         SourceInitialized += (_, _) =>
         {
             var source = (HwndSource?)PresentationSource.FromVisual(this);
@@ -45,6 +70,99 @@ public partial class MainWindow : Window
         WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
     private void OnCloseClick(object sender, RoutedEventArgs e) => Close();
+
+    public void ShowUsePopup(FrameworkElement anchor) => UsePopup.PlacementTarget = anchor;
+
+    public void AllowClose()
+    {
+        if (DataContext is MainViewModel viewModel) viewModel.AllowExit = true;
+    }
+
+    private void OnUseOpened(object sender, EventArgs e)
+    {
+        if (DataContext is MainViewModel viewModel && viewModel.Library.ShowUseName)
+        {
+            UseNameBox.Focus();
+            UseNameBox.SelectAll();
+        }
+        else if (UsePopup.Child is UIElement child)
+            child.Focus();
+    }
+
+    private void OnUseKey(object sender, KeyEventArgs e)
+    {
+        if (DataContext is not MainViewModel viewModel) return;
+        if (e.Key == Key.Escape)
+        {
+            viewModel.Library.CancelUseCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter)
+        {
+            viewModel.Library.ConfirmUseCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        WindowPlacementStore.Save(this);
+        if (DataContext is not MainViewModel viewModel || viewModel.AllowExit || Application.Current?.MainWindow != this) return;
+        e.Cancel = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+        {
+            if (!IsVisible) return;
+            Hide();
+            _parkTimer?.Stop();
+            viewModel.Park();
+            _parkTimer = new DispatcherTimer { Interval = ParkDuration };
+            _parkTimer.Tick += (_, _) =>
+            {
+                _parkTimer?.Stop();
+                viewModel.AllowExit = true;
+                Close();
+            };
+            _parkTimer.Start();
+            if (Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_TIMING") == "1")
+                ScheduleTimingWake();
+        });
+    }
+
+    private void ScheduleTimingWake()
+    {
+        var wake = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        wake.Tick += (_, _) =>
+        {
+            wake.Stop();
+            var requested = Environment.TickCount64;
+            if (!IsVisible) Show();
+            if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+            Wake();
+            Activate();
+            _ = Dispatcher.BeginInvoke(DispatcherPriority.Render, () => OpenTiming.NoteWake(requested));
+        };
+        wake.Start();
+    }
+
+    private void Wake()
+    {
+        _parkTimer?.Stop();
+        if (DataContext is MainViewModel viewModel)
+            viewModel.Wake();
+    }
+
+    private static T? FindChild<T>(DependencyObject root) where T : DependencyObject
+    {
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T found) return found;
+            var nested = FindChild<T>(child);
+            if (nested != null) return nested;
+        }
+        return null;
+    }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
