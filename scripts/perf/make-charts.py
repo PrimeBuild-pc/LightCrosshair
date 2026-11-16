@@ -45,6 +45,8 @@ def machine(run):
 def save(fig, output, name, preview):
     fig.savefig(output / name, format="svg", facecolor=BG,
                 metadata={"Date": None, "Creator": "LightCrosshair performance charts"})
+    svg_path = output / name
+    svg_path.write_text("\n".join(line.rstrip() for line in svg_path.read_text(encoding="utf-8").splitlines()) + "\n", encoding="utf-8")
     if preview:
         preview.mkdir(parents=True, exist_ok=True)
         fig.savefig(preview / name.replace(".svg", ".png"), dpi=140, facecolor=BG)

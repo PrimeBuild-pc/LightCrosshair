@@ -65,7 +65,10 @@ public static class OpenTiming
         if (Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_TIMING") != "1") return;
         try
         {
-            File.AppendAllText(Path.Combine(Path.GetTempPath(), "lc-ui-timing.txt"), name + " " + value + Environment.NewLine);
+            var directory = Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT");
+            if (string.IsNullOrEmpty(directory)) return;
+            Directory.CreateDirectory(directory);
+            File.AppendAllText(Path.Combine(directory, "ui-timing.txt"), name + " " + value + Environment.NewLine);
         }
         catch (Exception) { }
     }

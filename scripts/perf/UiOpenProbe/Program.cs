@@ -6,11 +6,12 @@ using System.Text;
 using Microsoft.Diagnostics.Tracing.Session;
 
 // External observer: first WPF UCE Present-end timestamp, never HWND creation time.
-if (args.Length != 5) throw new ArgumentException("core-pid probe-hwnd cycles output.csv stage");
+if (args.Length is not (5 or 6)) throw new ArgumentException("core-pid probe-hwnd cycles output.csv stage");
 using var core = Process.GetProcessById(int.Parse(args[0], CultureInfo.InvariantCulture));
 IntPtr foreground = new(long.Parse(args[1], CultureInfo.InvariantCulture));
 int cycles = int.Parse(args[2], CultureInfo.InvariantCulture);
 string output = args[3], stage = args[4];
+bool warm = args.Length == 6 && args[5] == "warm";
 if (Process.GetProcessesByName("LightCrosshair.UI").Length != 0) throw new InvalidOperationException("Close other LightCrosshair UI processes first.");
 IntPtr coreWindow = Native.Find(core.Id, "LightCrosshair Core");
 if (coreWindow == IntPtr.Zero) throw new InvalidOperationException("Core window missing.");
@@ -63,13 +64,19 @@ try
             rows.Add((cycle, ui?.Id ?? 0, start, visible, core.TotalProcessorTime.TotalMilliseconds - cpu, elapsed.Elapsed.TotalMilliseconds, priority, io));
             if (ui is null) throw new InvalidOperationException("UI did not launch.");
             ui.CloseMainWindow();
-            if (!ui.WaitForExit(10000)) throw new InvalidOperationException("UI parked instead of exiting; use a warm-session benchmark for this UI build.");
+            if (warm)
+            {
+                var deadline = Stopwatch.StartNew();
+                while (Native.IsWindowVisible(Native.Find(ui.Id, "LightCrosshair")) && deadline.ElapsedMilliseconds < 5000) await Task.Delay(10);
+                if (ui.HasExited || Native.IsWindowVisible(Native.Find(ui.Id, "LightCrosshair"))) throw new InvalidOperationException("UI did not park.");
+            }
+            else if (!ui.WaitForExit(10000)) throw new InvalidOperationException("UI parked instead of exiting; use warm mode.");
         }
         finally
         {
             // A future parked UI makes this cold-process benchmark fail explicitly;
             // still release only the process observed for this launch.
-            if (ui is not null) { if (!ui.HasExited) { ui.Kill(); ui.WaitForExit(5000); } ui.Dispose(); }
+            if (ui is not null) { if (!warm && !ui.HasExited) { ui.Kill(); ui.WaitForExit(5000); } ui.Dispose(); }
         }
         await Task.Delay(1200);
     }
@@ -82,13 +89,18 @@ try
     {
         DateTime first = records.Where(p => p.Pid == row.Pid && p.Time >= row.Start).Select(p => p.Time).DefaultIfEmpty().Min();
         double frame = first == default ? double.NaN : (first - row.Start).TotalMilliseconds;
-        writer.WriteLine(FormattableString.Invariant($"{stage},{row.Cycle},{row.Pid},{frame:F3},{row.VisibleMs:F3},{row.CpuMs:F3},{row.IntervalMs:F3},{100 * row.CpuMs / row.IntervalMs:F3},{row.Priority},{row.Io}"));
+        writer.WriteLine(FormattableString.Invariant($"{(warm ? (row.Cycle == 1 ? "cold" : "warm") : stage)},{row.Cycle},{row.Pid},{frame:F3},{row.VisibleMs:F3},{row.CpuMs:F3},{row.IntervalMs:F3},{100 * row.CpuMs / row.IntervalMs:F3},{row.Priority},{row.Io}"));
         Console.WriteLine(FormattableString.Invariant($"{stage} {row.Cycle}: first Present {frame:F1} ms; Core {row.CpuMs:F3} CPU ms / {row.IntervalMs:F0} ms; launch {row.Priority}, I/O {row.Io}"));
     }
     File.WriteAllLines(output + ".events.csv", new[] { "WpfEventId,Count" }.Concat(observed.OrderBy(p => p.Key).Select(p => $"{p.Key},{p.Value}")));
     if (rows.Any(row => !records.Any(p => p.Pid == row.Pid && p.Time >= row.Start))) throw new InvalidOperationException("No UI presentation event captured; do not substitute window visibility for first frame.");
 }
-finally { trace.Stop(); trace.Source.StopProcessing(); await capture; }
+finally
+{
+    foreach (int pid in rows.Select(r => r.Pid).Distinct())
+        try { using var owned = Process.GetProcessById(pid); if (!owned.HasExited) { owned.Kill(); await owned.WaitForExitAsync(); } } catch (ArgumentException) { }
+    trace.Stop(); trace.Source.StopProcessing(); await capture;
+}
 
 static class Native
 {

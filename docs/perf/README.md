@@ -6,7 +6,7 @@ These are measurements of local Release x64 pre-release builds on Windows 11 bui
 
 | File | Contents | Original local source |
 |---|---|---|
-| [idle-samples.csv](idle-samples.csv) | All idle private-byte and CPU samples for 1.9 and 2.0 | `scripts/perf/results-v1/idle.csv`, `scripts/perf/results-review2-idle/idle.csv` |
+| [idle-samples.csv](idle-samples.csv) | All idle private-byte and CPU samples for 1.9 and 2.0 | `scripts/perf/results-v1/idle.csv`, `scripts/perf/results-final/idle-final/idle.csv` |
 | [library-soak.csv](library-soak.csv) | Initial memory and every session in the before/after Library soak; original MiB and converted MB | `scripts/perf/results-library-50-before/summary.json`, `scripts/perf/results-library-50-final/summary.json` |
 | [ui-cycles.csv](ui-cycles.csv) | Initial memory and verified UI open/close cycles on the default page | `scripts/perf/results-review-final/summary.json` |
 | [runs.csv](runs.csv) | Machine, builds, dates, timing, methods and source paths | Original run summaries and Core handoff |
@@ -29,7 +29,19 @@ The separate [FPS matrix](review3-fps.csv), [UI-open samples](review3-ui-open.cs
 - The DX12 probe records QPC intervals around its own vsynced clear/Present/fence loop; summaries exclude the first 360 frames. This is a light hardware-swapchain workload, not displayed-frame pacing in a heavy game. All launches require a verified foreground 3D window. Earlier hidden-window runs were discarded.
 - `display-colors-smoke.ps1` compares complete backend snapshots before/after the isolated Core applies/restores a game profile. Only counts and statuses are tracked; original channel values and local logs remain private. AMD gamma 100 now avoids an unnecessary unsupported gamma-ramp path; gamma 115 is refused by this machine's gamma-capture path and reports `unsupported` once. Every run restores the original snapshot exactly.
 
-The [Core handoff](../v2/HANDOFF-core.md#review-3) records the full methods, before/after values and limitations. Fortnite/EAC itself was not retested. The unchanged UI still exceeds the cold 300 ms goal, and its parking/early-paint work must be integrated before testing the warm goal. The UI-open and hidden-window tests also compare all real profile file paths/SHA256 hashes, backing up/restoring only the explicitly permitted window-placement file. No real store, profiles or logs are changed.
+The [Core handoff](../v2/HANDOFF-core.md#review-3) records the full methods, before/after values and limitations. Fortnite/EAC itself was not retested. The Review 3 UI exceeded the cold 300 ms goal and did not yet include parking; the final measurements below test the integrated lifecycle. The UI-open and hidden-window tests also compare all real profile file paths/SHA256 hashes, backing up/restoring only the explicitly permitted window-placement file. No real store, profiles or logs are changed.
+
+## Final release checks
+
+[Final UI cycles](final-ui-cycles.csv) verify twenty real open/window-close/park cycles with `measure.ps1` (Core 767c3b1); private memory is explicitly MiB in that CSV. The five-second pre-cycle sample is a lifecycle sanity check, not the idle chart source.
+
+[Final idle counters](final-idle.csv) are recorded separately from the raw idle samples; the idle chart now uses this final Core run.
+
+The Final round supersedes Review 3's gamma limitation and warm-start deferral. The native GDI probe found that generic desktop contexts fail while named display contexts work on both monitors. The fixed path reads and writes named outputs and journals their individual originals. [Gamma contexts](final-gamma-contexts.csv) compare STA/MTA readback; [color readbacks](final-color-readback.csv) record global, slider preview, release, disconnect, crash recovery and exit. Full original snapshots matched exactly after restoration, including both RGB ramps and all ADL channels. All final tests use temporary data roots; none uses the real app-data directory or its former placement exception.
+
+[Final FPS matrix](final-fps.csv) covers DX11/DX12 windowed/borderless numbers and expiry. [Graph cadence](final-fps-graph.csv) records stable zero redraws with graph off, bounded graph redraws, and zero timers with FPS disabled. The light DX12 probe is not Fortnite/EAC or a representative heavy-game benchmark.
+
+[Final UI-open samples](final-ui-open.csv) contain one cold launch and twenty reopens of the same parked real UI process while a visible hardware DX12 borderless probe remains active. The observer starts at the Core OpenSettings message and uses the first WPF UCE Present-end event timestamp (11035), not window creation or an internal dispatcher callback. Core CPU covers the following two seconds and retains the CPU counter's quantization. Source: `results-final/warm-ui/ui.csv`, Core 3b2af18, UI 3b2af18 plus removal of the diagnostic automatic wake. Run `pwsh scripts/perf/ui-game-bench.ps1 -Warm -Cycles 21` against a combined publish. The historical Library chart still describes its recorded pre-parking builds; it does not claim to measure the new parking lifecycle.
 
 ## Regenerate
 
