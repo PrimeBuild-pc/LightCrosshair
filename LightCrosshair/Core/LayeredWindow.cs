@@ -49,6 +49,10 @@ internal class LayeredWindow : Form
     public void ReinforceTopmost() => SetWindowPos(Handle, new IntPtr(-1), 0, 0, 0, 0, 0x1 | 0x2 | 0x10);
     protected override void WndProc(ref Message m)
     {
+        // Read-only local perf probes; no polling is scheduled inside the application.
+        if (m.Msg == 0x8064) { m.Result = (IntPtr)RedrawCount; return; }
+        if (m.Msg == 0x8065) { m.Result = (IntPtr)(AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name is "PresentationFramework" or "PresentationCore") ? 1 : 0); return; }
+        if (m.Msg == 0x8069) { m.Result = (IntPtr)0x4C433230; return; }
         if (m.Msg == 0x84) { m.Result = new IntPtr(-1); return; } // HTTRANSPARENT
         if (m.Msg == 0x21) { m.Result = new IntPtr(3); return; } // MA_NOACTIVATE
         base.WndProc(ref m);

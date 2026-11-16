@@ -98,6 +98,7 @@ namespace LightCrosshair.GpuDriver
                 NvidiaHelperOperations.SetVibrance =>
                     RunVibranceApply(service, request),
                 NvidiaHelperOperations.GetVibrance => ReadVibrance(service),
+                NvidiaHelperOperations.RestoreVibrance => NvidiaHelperResponse.FromBoolean(service.RestoreVibranceState(request.VibranceState!), "Vibrance restore"),
                 _ => NvidiaHelperResponse.Error("Unknown NVIDIA helper operation.")
             };
         }
@@ -114,8 +115,8 @@ namespace LightCrosshair.GpuDriver
 
         private static NvidiaHelperResponse ReadVibrance(NvidiaDriverService service)
         {
-            bool ok = service.TryGetNvidiaVibrance(out int value, out _);
-            return new() { Success = ok, Vibrance = ok ? value : null };
+            var state = service.CaptureVibranceState();
+            return new() { Success = state is not null, VibranceState = state };
         }
 
         private static NvidiaHelperResponse RunFpsCapClear(NvidiaDriverService service, NvidiaHelperRequest request)

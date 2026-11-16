@@ -62,10 +62,10 @@ internal static class LegacyMigration
             store.Settings.DefaultCrosshairId = design.Id;
             store.Settings.HideDuringScreenRecording = active.HideDuringScreenRecording;
         }
+        store.Settings.CrosshairVisible = prefs?.OverlayVisible ?? config?.Visible ?? true;
         if (config is not null)
         {
             var s = store.Settings;
-            s.CrosshairVisible = prefs?.OverlayVisible ?? config.Visible;
             s.MonitorDeviceName = CrosshairConfig.ResolveMonitorDeviceName(config.CrosshairMonitorDeviceName, config.OverlayMonitorDeviceName);
             s.Hotkeys.ToggleVisibility = Binding(config.ResolveVisibilityBinding());
             s.Hotkeys.NextCrosshair = Key(config.CycleProfileHotkeyKey, config.CycleProfileHotkeyUseAlt, config.CycleProfileHotkeyUseControl, config.CycleProfileHotkeyUseShift, config.CycleProfileHotkeyUseWin);
@@ -110,6 +110,7 @@ internal static class LegacyMigration
     {
         var design = new CrosshairDesign { Id = Validation.Id(p.Id), Name = string.IsNullOrWhiteSpace(p.Name) ? "Migrated crosshair" : Validation.Name(p.Name), AntiAlias = p.AntiAlias };
         string shape = p.Shape;
+        bool composite = shape is "CircleDot" or "CircleCross" or "CirclePlus" or "CircleX" or "CrossDot";
         if (shape is "CircleDot" or "CircleCross" or "CirclePlus" or "CircleX" or "CrossDot")
         {
             Add(shape == "CrossDot" ? "Cross" : "Circle", p.Size, p.Thickness, p.GapSize, p.EdgeColor.A > 0 ? p.EdgeColor : p.OuterColor, false);
@@ -120,16 +121,23 @@ internal static class LegacyMigration
             shape = p.EnumShape == CrosshairShape.Custom ? "Cross" : p.EnumShape.ToString();
             Add(shape, p.Size, p.Thickness, p.GapSize, p.OuterColor.A > 0 ? p.OuterColor : p.InnerColor, p.OutlineEnabled || shape is "CrossOutlined" or "CircleOutlined" or "GapCross");
         }
+        // v1's master design switch becomes ordinary editable layer visibility.
+        if (!p.EnableCustomCrosshair) foreach (var layer in design.Layers) layer.Visible = false;
         return design;
         void Add(string kind, int size, int thickness, int gap, Color color, bool outline)
         {
             bool arms = kind is "Cross" or "CrossOutlined" or "GapCross" or "T" or "X";
             int radius = Math.Max(1, (int)Math.Round(size / 2.0));
+            // Base T and X ignored the gap in v1; composite arms used it.
+            if (!composite && kind is "T" or "X") gap = 0;
+            if (kind == "X") radius = Math.Max(1, (int)Math.Round(radius * Math.Sqrt(2)));
+            // Old rings/boxes used a pen centered on Size; the new model uses outer size.
+            int diameter = kind is "Circle" or "CircleOutlined" or "Box" ? size + Math.Max(1, thickness) : size;
             gap = Math.Clamp(gap, 0, Math.Max(0, radius - 1));
             design.Layers.Add(new()
             {
                 Name = kind, Kind = kind switch { "Dot" => LayerKind.Dot, "Circle" or "CircleOutlined" => LayerKind.Ring, "Box" => LayerKind.Box, _ => LayerKind.Arms },
-                Length = Math.Clamp(arms ? radius - gap : size, 1, 256), Thickness = Math.Clamp(p.EdgeThickness > 0 && !arms ? p.EdgeThickness : thickness, 1, 64),
+                Length = Math.Clamp(arms ? radius - gap : diameter, 1, 256), Thickness = Math.Clamp(p.EdgeThickness > 0 && !arms ? p.EdgeThickness : thickness, 1, 64),
                 Gap = arms ? gap : 0, Arms = kind == "T" ? ArmMask.Left | ArmMask.Right | ArmMask.Bottom : ArmMask.All,
                 Rotation = kind == "X" ? 45 : 0, Color = $"#{color.R:X2}{color.G:X2}{color.B:X2}", Opacity = color.A / 255.0,
                 Outline = outline, OutlineThickness = Math.Clamp(thickness / 2, 1, 8), OutlineColor = $"#{p.EdgeColor.R:X2}{p.EdgeColor.G:X2}{p.EdgeColor.B:X2}"

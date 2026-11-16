@@ -600,18 +600,10 @@ namespace LightCrosshair
                 try
                 {
                     var failedEntries = new List<string>();
-                    var unsupportedKeys = new List<ChannelKey>();
                     foreach (var kvp in _originalValues)
                     {
                         Core.ColorWriteGuard.BeforeWrite?.Invoke();
-                    Core.ColorWriteGuard.BeforeWrite?.Invoke();
-            int setResult = _displayColorSet!(context, kvp.Key.AdapterIndex, kvp.Key.DisplayIndex, kvp.Key.ColorType, kvp.Value);
-                        if (setResult == ADL_ERR_NOT_SUPPORTED)
-                        {
-                            unsupportedKeys.Add(kvp.Key);
-                            continue;
-                        }
-
+                        int setResult = _displayColorSet!(context, kvp.Key.AdapterIndex, kvp.Key.DisplayIndex, kvp.Key.ColorType, kvp.Value);
                         if (setResult != ADL_OK)
                         {
                             if (failedEntries.Count < 8)
@@ -619,13 +611,6 @@ namespace LightCrosshair
                                 failedEntries.Add($"adapter={kvp.Key.AdapterIndex},display={kvp.Key.DisplayIndex},type={kvp.Key.ColorType},result={setResult}");
                             }
                         }
-                    }
-
-                    foreach (var key in unsupportedKeys)
-                    {
-                        _originalValues.Remove(key);
-                        var displayChannel = new DisplayChannel(key.AdapterIndex, key.DisplayIndex, ResolveChannelNameByType(key.ColorType));
-                        MarkWriteRejected(displayChannel, key.ColorType);
                     }
 
                     if (failedEntries.Count > 0)
@@ -736,7 +721,7 @@ namespace LightCrosshair
                 }
 
                 Core.ColorWriteGuard.BeforeWrite?.Invoke();
-            int setResult = _displayColorSet!(context, adapterIndex, displayIndex, snapshot.ColorType, mapped);
+                int setResult = _displayColorSet!(context, adapterIndex, displayIndex, snapshot.ColorType, mapped);
                 if (setResult == ADL_OK)
                 {
                     return true;

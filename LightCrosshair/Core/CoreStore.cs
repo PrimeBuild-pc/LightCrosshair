@@ -96,7 +96,9 @@ internal sealed class CoreStore(string directory)
         Directory.CreateDirectory(backups);
         var existing = Directory.GetFiles(backups, "store-*.json").OrderByDescending(Path.GetFileName).ToArray();
         if (existing.Length > 0 && now - File.GetLastWriteTimeUtc(existing[0]) < TimeSpan.FromHours(1)) return;
-        File.Copy(StorePath, Path.Combine(backups, $"store-{now:yyyyMMdd-HHmmss-fffffff}.json"));
+        string backup = Path.Combine(backups, $"store-{now:yyyyMMdd-HHmmss-fffffff}.json");
+        File.Copy(StorePath, backup);
+        File.SetLastWriteTimeUtc(backup, now.UtcDateTime);
         _lastBackup = now;
         foreach (var old in Directory.GetFiles(backups, "store-*.json").OrderByDescending(Path.GetFileName).Skip(10)) File.Delete(old);
     }

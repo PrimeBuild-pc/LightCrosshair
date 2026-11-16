@@ -36,6 +36,7 @@ internal static partial class Validation
         if (design is null || design.Layers is null || design.Layers.Count > ContractInfo.MaxLayers) throw Invalid("Invalid layer count.");
         design = Copy(design);
         design.Id = Id(design.Id); design.Name = Name(design.Name);
+        if (design.SourcePresetId is not null) design.SourcePresetId = Id(design.SourcePresetId);
         var ids = new HashSet<string>();
         foreach (var layer in design.Layers)
         {
@@ -111,6 +112,7 @@ internal static partial class Validation
             store.GameProfiles.Select(g => g.Id).Distinct().Count() != store.GameProfiles.Count) throw Invalid("Duplicate id.");
         store.Settings = Settings(store.Settings, store.Crosshairs);
         store.GameProfiles = store.GameProfiles.Select(g => Game(g, store)).ToList();
+        if (store.GameProfiles.Select(g => g.ProcessName).Distinct(StringComparer.OrdinalIgnoreCase).Count() != store.GameProfiles.Count) throw Invalid("Duplicate process.");
         return store;
     }
     [GeneratedRegex("^#[0-9a-fA-F]{6}$", RegexOptions.CultureInvariant)] private static partial Regex ColorPattern();

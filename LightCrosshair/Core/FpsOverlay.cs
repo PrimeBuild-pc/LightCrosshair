@@ -10,6 +10,7 @@ internal sealed class FpsOverlay : IDisposable
     private FpsOverlaySettings _settings = new();
     private string? _monitor;
     private string? _last;
+    internal bool Enabled => _timer.Enabled;
     internal FpsOverlay() => _timer.Tick += (_, _) => Draw();
     public void Configure(bool enabled, int pid, FpsOverlaySettings settings, string? crosshairMonitor)
     {

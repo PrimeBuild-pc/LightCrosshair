@@ -25,6 +25,7 @@ public sealed class ColorRecoverySnapshot
     public Dictionary<string, RampSnapshot> Displays { get; set; } = new();
     public List<AmdChannelSnapshot> AmdChannels { get; set; } = [];
     public int? NvidiaVibrance { get; set; }
+    public NvidiaVibranceState? NvidiaVibranceState { get; set; }
 }
 
 namespace Core
@@ -35,7 +36,7 @@ namespace Core
     }
     // The durable marker IS the original state. It is flushed before the first write,
     // survives a killed process, and is removed only when every restoration succeeds.
-    internal sealed class ColorSession(string directory, Func<IGpuColorManager>? create = null)
+    internal sealed class ColorSession(string directory, Func<IGpuColorManager>? create = null, Func<NvidiaHelperRequest, NvidiaHelperResponse>? helper = null)
     {
         public event Action<bool>? Failed;
         private Task _tail = Task.CompletedTask;
@@ -43,6 +44,7 @@ namespace Core
         private IGpuColorManager? _manager;
         private ColorRecoverySnapshot? _original;
         private readonly Func<IGpuColorManager> _create = create ?? GpuColorManagerFactory.CreateDefault;
+        private readonly Func<NvidiaHelperRequest, NvidiaHelperResponse> _helper = helper ?? (request => new NvidiaHelperProcessClient().Run(request));
         private string Marker => Path.Combine(directory, "colors-applied.json");
         public Task SetAsync(DisplayColorSettings? colors)
         {
@@ -61,7 +63,9 @@ namespace Core
                     if (_original.Vendor != _manager.Vendor.ToString()) throw new InvalidOperationException("Recovery adapter changed");
                     _manager.LoadRecovery(_original);
                     bool gammaOk = _manager.TryRestore(out _);
-                    bool vibranceOk = !_original.NvidiaVibrance.HasValue || new NvidiaHelperProcessClient().Run(NvidiaHelperRequest.SetVibrance(_original.NvidiaVibrance.Value)).Success;
+                    bool vibranceOk = _original.NvidiaVibranceState is { } raw
+                        ? _helper(new() { Operation = NvidiaHelperOperations.RestoreVibrance, VibranceState = raw }).Success
+                        : !_original.NvidiaVibrance.HasValue || _helper(NvidiaHelperRequest.SetVibrance(_original.NvidiaVibrance.Value)).Success;
                     if (!gammaOk || !vibranceOk) throw new InvalidOperationException("Color restoration failed");
                     File.Delete(Marker); _original = null; _manager = null;
                 }
@@ -71,9 +75,9 @@ namespace Core
                 _original = _manager.CaptureRecovery(); _original.Vendor = _manager.Vendor.ToString();
                 if (colors.NvidiaDigitalVibrance.HasValue)
                 {
-                    var baseline = new NvidiaHelperProcessClient().Run(new() { Operation = NvidiaHelperOperations.GetVibrance });
-                    if (!baseline.Success || !baseline.Vibrance.HasValue) throw new InvalidOperationException("Vibrance baseline unavailable");
-                    _original.NvidiaVibrance = baseline.Vibrance;
+                    var baseline = _helper(new() { Operation = NvidiaHelperOperations.GetVibrance });
+                    if (!baseline.Success || baseline.VibranceState is null) throw new InvalidOperationException("Vibrance baseline unavailable");
+                    _original.NvidiaVibranceState = baseline.VibranceState;
                 }
                 Directory.CreateDirectory(directory);
                 string temp = Marker + ".tmp";
@@ -85,7 +89,7 @@ namespace Core
                     // Some legacy backends capture extra endpoints lazily. Refresh the journal
                     // immediately before each hardware write, including those extra baselines.
                     var updated = _manager.CaptureRecovery();
-                    updated.Vendor = _original.Vendor; updated.NvidiaVibrance = _original.NvidiaVibrance;
+                    updated.Vendor = _original.Vendor; updated.NvidiaVibrance = _original.NvidiaVibrance; updated.NvidiaVibranceState = _original.NvidiaVibranceState;
                     using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
                     { JsonSerializer.Serialize(stream, updated, ContractJson.Options); stream.Flush(true); }
                     File.Move(temp, Marker, true); _original = updated;
@@ -94,7 +98,7 @@ namespace Core
                 {
                     if (!_manager.TryApply(new(colors.Gamma, colors.Contrast, colors.Brightness, colors.Vibrance), out _))
                         throw new InvalidOperationException("Color apply failed");
-                    if (colors.NvidiaDigitalVibrance.HasValue && !new NvidiaHelperProcessClient().Run(NvidiaHelperRequest.SetVibrance(colors.NvidiaDigitalVibrance.Value)).Success)
+                    if (colors.NvidiaDigitalVibrance.HasValue && !_helper(NvidiaHelperRequest.SetVibrance(colors.NvidiaDigitalVibrance.Value)).Success)
                         throw new InvalidOperationException("Vibrance apply failed");
                 }
                 finally { ColorWriteGuard.BeforeWrite = null; }

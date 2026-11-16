@@ -58,6 +58,8 @@ internal sealed partial class Form1
     }
     protected override void WndProc(ref Message m)
     {
+        if (m.Msg == 0x8066) { m.Result = (IntPtr)(_pipe?.IsConnected == true ? 1 : 0); return; }
+        if (m.Msg == 0x8067) { m.Result = (IntPtr)((_fps.Enabled ? 1 : 0) + (_recordingTimer?.Enabled == true ? 1 : 0)); return; }
         if (m.Msg == 0x312)
         {
             int id = (int)m.WParam;

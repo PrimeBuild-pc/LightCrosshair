@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using LightCrosshair.Core;
 using LightCrosshair.Contracts;
+using LightCrosshair.GpuDriver;
 using Xunit;
 
 namespace LightCrosshair.Tests;
@@ -32,6 +33,22 @@ public sealed class ColorRecoveryTests : IDisposable
         await session.SetAsync(new() { Gamma = 140 });
         Assert.Equal(1, fake.Applies); Assert.True(File.Exists(Path.Combine(_directory, "colors-applied.json")));
         fake.RestoreSucceeds = true; await session.SetAsync(null);
+        Assert.False(File.Exists(Path.Combine(_directory, "colors-applied.json")));
+    }
+    [Fact]
+    public async Task VibranceRecoveryKeepsExactDriverUnitsInsteadOfRoundingToPercent()
+    {
+        var baseline = new NvidiaVibranceState("display", 543);
+        NvidiaVibranceState? restored = null;
+        NvidiaHelperResponse Helper(NvidiaHelperRequest request)
+        {
+            if (request.Operation == NvidiaHelperOperations.GetVibrance) return new() { Success = true, VibranceState = baseline };
+            if (request.Operation == NvidiaHelperOperations.RestoreVibrance) restored = request.VibranceState;
+            return new() { Success = true };
+        }
+        await new ColorSession(_directory, () => new FakeColors(), Helper).SetAsync(new() { NvidiaDigitalVibrance = 75 });
+        await new ColorSession(_directory, () => new FakeColors(), Helper).RecoverAsync();
+        Assert.Equal(baseline, restored);
         Assert.False(File.Exists(Path.Combine(_directory, "colors-applied.json")));
     }
     private sealed class FakeColors : IGpuColorManager

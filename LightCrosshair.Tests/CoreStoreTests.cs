@@ -115,4 +115,40 @@ public sealed class CoreStoreTests : IDisposable
         var d = Validation.Design(new() { Name = " x ", Layers = [new() { Length = -10, Opacity = 99 }] }, V2);
         Assert.Equal("x", d.Name); Assert.Equal(1, d.Layers[0].Length); Assert.Equal(1, d.Layers[0].Opacity);
     }
+    [Fact]
+    public void ProcessUniquenessIsCheckedAfterNormalizingEveryProfile()
+    {
+        var store = LegacyMigration.Defaults();
+        store.GameProfiles = [new() { Name = "One", ProcessName = "Game.EXE", CrosshairId = store.Settings.DefaultCrosshairId },
+            new() { Name = "Two", ProcessName = "GAME.EXE", CrosshairId = store.Settings.DefaultCrosshairId }];
+        Assert.Throws<CoreException>(() => Validation.Store(store, V2));
+    }
+    [Fact]
+    public async Task HourlyBackupTimestampDoesNotInheritAnOldStoreTimestamp()
+    {
+        var store = new CoreStore(V2); var doc = await store.LoadAsync(_root);
+        File.SetLastWriteTimeUtc(Path.Combine(V2, "store.json"), DateTime.UtcNow.AddDays(-3));
+        doc.Crosshairs[0].Name = "Changed"; await store.SaveAsync(doc);
+        var restarted = new CoreStore(V2); doc = await restarted.LoadAsync(_root);
+        doc.Crosshairs[0].Name = "Changed again"; await restarted.SaveAsync(doc);
+        Assert.Single(Directory.GetFiles(Path.Combine(V2, "backups"), "store-*.json"));
+    }
+    [Fact]
+    public async Task VisibilityPreferenceMigratesEvenWithoutGlobalConfig()
+    {
+        await File.WriteAllTextAsync(Path.Combine(_root, "prefs.json"), "{\"OverlayVisible\":false}");
+        var document = await new CoreStore(V2).LoadAsync(_root);
+        Assert.False(document.Settings.CrosshairVisible);
+    }
+    [Fact]
+    public void LegacyContinuousTAndXAndPenCenteredRingPreserveTheirGeometry()
+    {
+        var t = LegacyMigration.Convert(new() { Name = "T", EnumShape = CrosshairShape.T, Size = 20, GapSize = 8 });
+        Assert.Equal(0, t.Layers[0].Gap); Assert.Equal(10, t.Layers[0].Length);
+        var x = LegacyMigration.Convert(new() { Name = "X", EnumShape = CrosshairShape.X, Size = 20, GapSize = 8 });
+        Assert.Equal(0, x.Layers[0].Gap); Assert.Equal(14, x.Layers[0].Length);
+        var ring = LegacyMigration.Convert(new() { Name = "Ring", EnumShape = CrosshairShape.Circle, Size = 20, Thickness = 4 });
+        Assert.Equal(24, ring.Layers[0].Length);
+        Assert.All(LegacyMigration.Convert(new() { EnableCustomCrosshair = false }).Layers, layer => Assert.False(layer.Visible));
+    }
 }

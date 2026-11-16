@@ -73,4 +73,12 @@ public class LayerRendererTests
         }
         finally { Directory.Delete(directory, true); }
     }
+    [Fact]
+    public void ThickRotatedOutlinesStayInsideTheOverlayDib()
+    {
+        var d = new CrosshairDesign { AntiAlias = false, Layers = [new() { Length = 20, Thickness = 12, Rotation = 45, Outline = true, OutlineThickness = 8 }] };
+        var bounds = _renderer.Bounds(d); using var b = _renderer.Render(d, 128);
+        for (int y = 0; y < 128; y++) for (int x = 0; x < 128; x++)
+            if (b.GetPixel(x, y).A > 0) Assert.True(bounds.Contains(x - 64, y - 64));
+    }
 }

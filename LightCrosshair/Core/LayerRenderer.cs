@@ -20,7 +20,7 @@ internal sealed class LayerRenderer(string imagesDirectory)
             using var path = Geometry(layer);
             if (path.PointCount == 0) continue;
             var bounds = path.GetBounds();
-            int padding = (layer.Outline ? layer.OutlineThickness : 0) + (design.AntiAlias ? 1 : 0);
+            int padding = (layer.Outline ? (int)Math.Ceiling(layer.OutlineThickness * Math.Sqrt(2)) : 0) + (design.AntiAlias ? 1 : 0);
             bounds.Inflate(padding, padding);
             total = total.IsEmpty ? bounds : RectangleF.Union(total, bounds);
         }
@@ -155,7 +155,7 @@ internal sealed class LayerRenderer(string imagesDirectory)
         transform.Translate(layer.OffsetX, layer.OffsetY);
         if (!quarter || layer.Kind == LayerKind.Image) transform.RotateAt((float)layer.Rotation, new(.5f, .5f));
         path.Transform(transform);
-        if (quarter && path.PointCount > 0)
+        if (quarter && layer.Kind == LayerKind.Image && path.PointCount > 0)
         {
             // GDI+ matrices can yield -6.0000005 for an exact quarter turn.
             // Snap these coordinates before floor/ceiling so the DIB stays tightly sized.

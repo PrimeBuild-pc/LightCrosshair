@@ -53,15 +53,24 @@ internal sealed partial class Form1
         if (request.Payload is not { ValueKind: JsonValueKind.Object } element) throw new CoreException(IpcErrorCodes.BadRequest, "Payload required.");
         return element.Deserialize<T>(ContractJson.Options) ?? throw new CoreException(IpcErrorCodes.BadRequest, "Payload required.");
     }
-    private async Task<object?> MutateAsync(Func<StoreDocument, Task<object?>> change)
+    private async Task<object?> MutateAsync(Func<StoreDocument, Task<object?>> change, bool resetInput = false, Func<Task>? rollback = null)
     {
         await _mutations.WaitAsync();
         try
         {
             var next = Validation.Copy(Document);
             object? result = await change(next);
-            await Store.SaveAsync(next);
-            Document = next; RefreshContext();
+            try { await Store.SaveAsync(next); }
+            catch
+            {
+                if (rollback is not null)
+                    try { await rollback(); }
+                    catch (Exception ex) { Program.LogError(ex, "Rollback driver cap"); }
+                throw;
+            }
+            Document = next;
+            if (resetInput) _bindingsKey = null;
+            RefreshContext();
             _pipe?.Publish(IpcEvents.SnapshotChanged, Snapshot());
             return result;
         }
@@ -105,36 +114,41 @@ internal sealed partial class Form1
                     return Task.FromResult<object?>(null);
                 });
             case IpcMethods.SaveGameProfile:
+                GameProfile? appliedOld = null, appliedNext = null;
                 return await MutateAsync(async next =>
                 {
                     var game = Validation.Game(Payload<GameProfile>(request), next);
                     var old = next.GameProfiles.FirstOrDefault(g => g.Id == game.Id);
                     await ApplyDriverCapAsync(old, game);
+                    appliedOld = old; appliedNext = game;
                     next.GameProfiles.RemoveAll(g => g.Id == game.Id); next.GameProfiles.Add(game);
                     return game;
-                });
+                }, resetInput: true, rollback: () => ApplyDriverCapAsync(appliedNext, appliedOld));
             case IpcMethods.DeleteGameProfile:
+                GameProfile? deletedGame = null;
                 return await MutateAsync(async next =>
                 {
                     string gameId = Payload<IdRequest>(request).Id;
                     var old = next.GameProfiles.FirstOrDefault(g => g.Id == gameId) ?? throw new CoreException(IpcErrorCodes.NotFound, "Game profile not found.");
-                    await ApplyDriverCapAsync(old, null); next.GameProfiles.Remove(old); return null;
-                });
+                    await ApplyDriverCapAsync(old, null); deletedGame = old; next.GameProfiles.Remove(old); return null;
+                }, resetInput: true, rollback: () => ApplyDriverCapAsync(null, deletedGame));
             case IpcMethods.SaveSettings:
                 var previousSettings = Validation.Copy(Document.Settings);
+                bool startupTouched = false;
                 object? savedSettings;
                 try
                 {
                     savedSettings = await MutateAsync(next =>
                     {
                         next.Settings = Validation.Settings(Payload<AppSettings>(request), next.Crosshairs);
-                        if (next.Settings.StartWithWindows != previousSettings.StartWithWindows) StartupRegistration.Apply(next.Settings.StartWithWindows);
+                        if (next.Settings.StartWithWindows != previousSettings.StartWithWindows)
+                        { startupTouched = true; StartupRegistration.Apply(next.Settings.StartWithWindows); }
                         return Task.FromResult<object?>(next.Settings);
-                    });
+                    }, resetInput: true);
                 }
                 catch
                 {
-                    try { StartupRegistration.Apply(previousSettings.StartWithWindows); }
+                    try { if (startupTouched) StartupRegistration.Apply(previousSettings.StartWithWindows); }
                     catch (Exception ex) { Program.LogError(ex, "Restore autostart registration"); }
                     throw;
                 }

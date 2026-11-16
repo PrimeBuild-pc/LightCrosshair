@@ -4,7 +4,7 @@
 
 - C0 complete: baseline committed before production edits (2189a6c). Settings-cycle verification and ten-minute baseline remain unmeasured; see BASELINE.md.
 - C1 platform build complete: .NET 10, WinForms tray bootstrap, no WPF reference. Removed legacy settings, frame-cap assistant, detailed FPS, RTSS, heuristics, diagnostics and update checking, with their feature-specific tests. Driver/color compatibility APIs are frozen; remaining legacy config fields are migration data only.
-- C2–C9 in progress.
+- C2–C9 verification in progress. Published IPC smoke passes (50 render/preview pairs, sharing/import/export, game CRUD and preview disconnect). Review fixed backup timestamps across restarts, case-normalized process uniqueness, continuous v1 T/X and pen-centered ring migration, exact NVIDIA raw vibrance recovery, thick rotated outline bounds, registration retry and side-effect rollback on persistence failure. 211 tests pass.
 
 ## Deviations from PLAN/CONTRACT and why
 
