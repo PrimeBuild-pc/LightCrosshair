@@ -43,7 +43,13 @@ internal static class PresetCatalog
         void Add(string name, List<CrosshairLayer> layers, params string[] tags)
         {
             string id = "preset-" + name.ToLowerInvariant().Replace(' ', '-');
-            for (int i = 0; i < layers.Count; i++) { layers[i].Id = id + "-" + i; layers[i].Name = layers[i].Kind.ToString(); }
+            string[] palette = ["#FFFFFF", "#00FF00", "#FFFF00", "#00FFFF", "#FF00FF", "#FF0000"];
+            string color = palette[presets.Count % palette.Length];
+            for (int i = 0; i < layers.Count; i++)
+            {
+                layers[i].Id = id + "-" + i; layers[i].Name = layers[i].Kind.ToString();
+                layers[i].Color = color;
+            }
             presets.Add(new() { Design = new() { Id = id, Name = name, AntiAlias = false, SourcePresetId = id, UpdatedAt = default, Layers = layers }, Tags = tags.ToList() });
         }
     }
