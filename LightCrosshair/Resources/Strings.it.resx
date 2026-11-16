@@ -48,4 +48,5 @@
   <data name="HookRegistrationFailed" xml:space="preserve">
     <value>Windows non ha potuto registrare un hook di input.</value>
   </data>
+  <data name="LoadFailed" xml:space="preserve"><value>Impossibile caricare la libreria. LightCrosshair usa valori predefiniti temporanei; i file non sono stati modificati. Riavvia per riprovare.</value></data>
 </root>

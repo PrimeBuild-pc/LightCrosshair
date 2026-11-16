@@ -142,3 +142,4 @@ Workaround: the marked migration branch uses null to preserve disabled behavior;
 ## Review 1
 
 - C-1: Remap invalid legacy IDs consistently across designs/default/game links; merge a v1.9 `working::<32 hex>` into `SourceProfileId` before validating v2 identity; skip/log individual invalid profiles. Exact JSON fixture and regression tests pass; published x64 Core starts from a copied fixture and returns one edited source/default via IPC (`scripts/perf/migration-smoke.ps1`).
+- C-2: Failed load/migration keeps Core and IPC running with editable in-memory defaults; saves/shutdown cannot create `store.json`, allowing retry next launch. One localized tray notification is logged; errors include type, message and stack. Exclusive legacy-file lock regression and published `shutdown-smoke.ps1` verify survival, one notification, unchanged v1, no marker and graceful exit; all 218 Core + 17 UI tests pass.

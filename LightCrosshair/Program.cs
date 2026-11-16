@@ -41,7 +41,7 @@ internal static class Program
         catch (Exception ex) { LogError(ex, "Startup"); return 1; }
     }
 
-    public static void LogError(Exception ex, string context, string? root = null) => WriteLog($"{context}: {ex.GetType().Name}", root);
+    public static void LogError(Exception ex, string context, string? root = null) => WriteLog($"{context}: {ex}", root);
     public static void LogDebug(string message, string? context = null) { if (DebugLoggingEnabled) WriteLog(context ?? "Debug"); }
     // Legacy driver diagnostics may contain paths. Log the operation only.
     public static void LogLifecycle(string message, string? context = null) => WriteLog(context ?? "Lifecycle");

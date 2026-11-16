@@ -49,7 +49,13 @@ internal sealed partial class Form1 : LayeredWindow
             _ready = true; Runtime.ActiveCrosshairId = Document.Settings.DefaultCrosshairId;
             InitializeRuntime();
             InitializePipe();
-            if (Store.Recovered) _tray.ShowBalloonTip(3000, "LightCrosshair", TextFor("Recovered"), ToolTipIcon.Info);
+            if (Store.LoadError is not null)
+            {
+                string message = TextFor("LoadFailed");
+                _tray.ShowBalloonTip(5000, "LightCrosshair", message, ToolTipIcon.Warning);
+                Program.WriteLog("Load failure notification: " + message);
+            }
+            else if (Store.Recovered) _tray.ShowBalloonTip(3000, "LightCrosshair", TextFor("Recovered"), ToolTipIcon.Info);
         }
         catch (Exception ex) { Program.LogError(ex, "Load store"); Close(); }
     }

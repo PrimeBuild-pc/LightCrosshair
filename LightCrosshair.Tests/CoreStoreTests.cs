@@ -17,6 +17,29 @@ public sealed class CoreStoreTests : IDisposable
     public void Dispose() => Directory.Delete(_root, true);
 
     [Fact]
+    public async Task UnreadableLegacyFileUsesTemporaryDefaultsWithoutWritingAStoreAndRetriesOnRestart()
+    {
+        string legacy = Path.Combine(_root, "profiles.json");
+        await File.WriteAllTextAsync(legacy, "[]");
+        var store = new CoreStore(V2);
+        using (var locked = new FileStream(legacy, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            var defaults = await store.LoadAsync(_root);
+            Assert.IsType<IOException>(store.LoadError);
+            Assert.Single(defaults.Crosshairs);
+            await store.SaveAsync(defaults);
+            Assert.False(File.Exists(Path.Combine(V2, "store.json")));
+            string log = await File.ReadAllTextAsync(Path.Combine(V2, "logs", "core.log"));
+            Assert.Contains(store.LoadError.Message, log);
+            Assert.Contains("System.IO.IOException", log);
+            Assert.Contains("at LightCrosshair.ProfileStore.LoadAsync", log);
+        }
+        Assert.Null((await Restart()).LoadError);
+        Assert.True(File.Exists(Path.Combine(V2, "store.json")));
+        async Task<CoreStore> Restart() { var next = new CoreStore(V2); await next.LoadAsync(_root); return next; }
+    }
+
+    [Fact]
     public async Task RealV19WorkingCopyMergesIntoItsSourceWithoutAddingADesign()
     {
         foreach (string file in Directory.GetFiles(Path.Combine(AppContext.BaseDirectory, "Fixtures", "v1.9-working")))

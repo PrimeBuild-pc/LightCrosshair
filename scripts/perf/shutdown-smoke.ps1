@@ -11,17 +11,14 @@ try {
         New-Item -ItemType Directory -Path $root | Out-Null
         $env:LIGHTCROSSHAIR_DATA_ROOT = Join-Path $root 'v2'
         $env:LIGHTCROSSHAIR_TEST_INSTANCE = [Guid]::NewGuid().ToString('N')
-        if ($brokenMigration) { [IO.File]::WriteAllText((Join-Path $root 'profiles.json'), '[{"Id":"bad/id","Name":"Invalid identity"}]') }
+        $locked = $null
+        if ($brokenMigration) {
+            [IO.File]::WriteAllText((Join-Path $root 'profiles.json'), '[]')
+            $locked = [IO.File]::Open((Join-Path $root 'profiles.json'), [IO.FileMode]::Open, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
+        }
         $app = Start-Process -FilePath ([IO.Path]::GetFullPath($Executable)) -PassThru -WindowStyle Hidden
         $pipe = $null; $reader = $null
         try {
-            if ($brokenMigration) {
-                if (!$app.WaitForExit(10000)) { throw 'Broken migration did not stop cleanly' }
-                if (Test-Path -LiteralPath (Join-Path $root 'v2/store.json')) { throw 'Failed migration wrote a default store marker' }
-                if ([IO.File]::ReadAllText((Join-Path $root 'profiles.json')) -ne '[{"Id":"bad/id","Name":"Invalid identity"}]') { throw 'Migration changed v1 data' }
-                Write-Host 'PASS: failed migration preserves v1 and does not create store.json'
-                continue
-            }
             $pipe = [IO.Pipes.NamedPipeClientStream]::new('.', "LightCrosshair.v2.$($app.SessionId).test.$env:LIGHTCROSSHAIR_TEST_INSTANCE", [IO.Pipes.PipeDirection]::InOut, [IO.Pipes.PipeOptions]::Asynchronous)
             $pipe.Connect(5000)
             $reader = [IO.StreamReader]::new($pipe, [Text.Encoding]::UTF8, $false, 4096, $true)
@@ -40,6 +37,23 @@ try {
             }
             Send-Case hello @{protocolVersion=1;client='shutdown-smoke'}; Read-Case | Out-Null
             Send-Case getSnapshot $null; $snapshot = Read-Case
+            if ($brokenMigration) {
+                if ($app.HasExited -or $snapshot.store.crosshairs.Count -ne 1) { throw 'Load failure did not keep Core running with defaults' }
+                $design = $snapshot.store.crosshairs[0]; $design.name = 'Temporary edit'
+                Send-Case saveCrosshair $design; Read-Case | Out-Null
+                Send-Case getSnapshot $null; $temporary = Read-Case
+                if ($temporary.store.crosshairs[0].name -ne 'Temporary edit') { throw 'Temporary library is not usable' }
+                Send-Case quit $null; Read-Case | Out-Null
+                if (!$app.WaitForExit(10000)) { throw 'Fallback Core did not exit' }
+                if (Test-Path -LiteralPath (Join-Path $root 'v2/store.json')) { throw 'Failed load wrote a default store marker' }
+                $log = [IO.File]::ReadAllText((Join-Path $root 'v2/logs/core.log'))
+                if ([regex]::Matches($log, 'Load failure notification:').Count -ne 1) { throw 'Expected exactly one load-failure notification' }
+                if ($log -notmatch 'System.IO.IOException:' -or $log -notmatch 'at LightCrosshair.ProfileStore.LoadAsync') { throw 'Missing exception message or stack' }
+                $locked.Dispose(); $locked = $null
+                if ([IO.File]::ReadAllText((Join-Path $root 'profiles.json')) -ne '[]') { throw 'Migration changed v1 data' }
+                Write-Host "PASS: published Core survives an unreadable legacy file, supports temporary edits, notifies once, logs details and writes no store ($root)"
+                continue
+            }
             $design = $snapshot.store.crosshairs[0]; $design.name = 'Shutdown race'
             Send-Case saveCrosshair $design
             # Close during the 300 ms persistence debounce, without waiting for the response.
@@ -52,6 +66,7 @@ try {
             Write-Host 'PASS: shutdown preserves a save already in flight'
         }
         finally {
+            if ($locked) { $locked.Dispose() }
             if ($reader) { $reader.Dispose() }
             if ($pipe) { $pipe.Dispose() }
             if (!$app.HasExited) { $app.Kill() }
