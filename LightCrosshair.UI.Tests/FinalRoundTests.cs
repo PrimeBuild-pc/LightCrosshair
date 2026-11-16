@@ -9,6 +9,29 @@ namespace LightCrosshair.UI.Tests;
 public class FinalRoundTests
 {
     [Fact]
+    public async Task WhileHeldHasItsOwnRowAndGamesKeepFollowOffAndOwnDistinct()
+    {
+        var core = new FakeCoreClient(new InlineMarshaler()); await core.ConnectAsync();
+        var hotkeys = new HotkeysViewModel(core, new FakeUi()); hotkeys.Apply(core.Snapshot!);
+        var row = hotkeys.Rows.Single(item => item.Action == "HoldVisibility");
+        Assert.Equal("", row.Binding.Key); Assert.True(row.HoldOnly);
+        Assert.DoesNotContain(row.MouseChoices, choice => HotkeyRules.IsWheel(choice.Key));
+        await hotkeys.SetMouseCommand.ExecuteAsync(new MousePick { Action = "HoldVisibility", Key = "RightClick" });
+        Assert.Equal("RightClick", core.Snapshot!.Store.Settings.Hotkeys.HoldVisibility.Key);
+        Assert.Equal(BindingMode.HoldToHide, core.Snapshot.Store.Settings.Hotkeys.HoldVisibility.Mode);
+        Assert.Equal("X", core.Snapshot.Store.Settings.Hotkeys.ToggleVisibility.Key);
+        var games = new GamesViewModel(core, new FakeUi()); games.Apply(core.Snapshot);
+        Assert.Equal("follow", games.HoldPolicy);
+        games.HoldPolicy = "off"; await games.SaveCommand.ExecuteAsync(null);
+        Assert.Equal("", core.Snapshot.Store.GameProfiles[0].HoldVisibility!.Key);
+        games.HoldPolicy = "custom"; games.HoldMouseKey = "Mouse5"; games.HoldMode = BindingMode.HoldToShow;
+        await games.SaveCommand.ExecuteAsync(null);
+        Assert.Equal("Mouse5", core.Snapshot.Store.GameProfiles[0].HoldVisibility!.Key);
+        Assert.Equal(BindingMode.HoldToShow, core.Snapshot.Store.GameProfiles[0].HoldVisibility!.Mode);
+        games.HoldPolicy = "follow"; await games.SaveCommand.ExecuteAsync(null);
+        Assert.Null(core.Snapshot.Store.GameProfiles[0].HoldVisibility);
+    }
+    [Fact]
     public async Task PresetPopupUsesTheCurrentGameWhileExplicitDefaultLeavesThatGameAlone()
     {
         var core = new FakeCoreClient(new InlineMarshaler()); await core.ConnectAsync();

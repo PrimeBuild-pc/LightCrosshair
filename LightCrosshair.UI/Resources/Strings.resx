@@ -279,4 +279,9 @@
   <data name="Library_SetDefaultAll" xml:space="preserve"><value>Set as default for all apps</value></data>
   <data name="Library_Default" xml:space="preserve"><value>Default</value></data>
   <data name="Library_InUseGame" xml:space="preserve"><value>In use · {0}</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>While held</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Choose a key or mouse button for a hold binding.</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>While held in this game</value></data>
+  <data name="Games_HoldOff" xml:space="preserve"><value>Off in this game</value></data>
+  <data name="Games_HoldOwn" xml:space="preserve"><value>Own binding</value></data>
 </root>

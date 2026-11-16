@@ -279,4 +279,9 @@
   <data name="Library_SetDefaultAll" xml:space="preserve"><value>设为所有应用的默认准星</value></data>
   <data name="Library_Default" xml:space="preserve"><value>默认</value></data>
   <data name="Library_InUseGame" xml:space="preserve"><value>使用中 · {0}</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>按住时</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>请选择可按住的按键或鼠标按钮。</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>此游戏中按住时</value></data>
+  <data name="Games_HoldOff" xml:space="preserve"><value>在此游戏中禁用</value></data>
+  <data name="Games_HoldOwn" xml:space="preserve"><value>独立绑定</value></data>
 </root>

@@ -279,4 +279,9 @@
   <data name="Library_SetDefaultAll" xml:space="preserve"><value>По умолчанию для всех приложений</value></data>
   <data name="Library_Default" xml:space="preserve"><value>По умолчанию</value></data>
   <data name="Library_InUseGame" xml:space="preserve"><value>Используется · {0}</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>При удержании</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Выберите клавишу или кнопку мыши для удержания.</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>При удержании в этой игре</value></data>
+  <data name="Games_HoldOff" xml:space="preserve"><value>Выключено в этой игре</value></data>
+  <data name="Games_HoldOwn" xml:space="preserve"><value>Своя комбинация</value></data>
 </root>

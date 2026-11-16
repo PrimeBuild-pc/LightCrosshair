@@ -11,11 +11,14 @@
 #include <vector>
 using Microsoft::WRL::ComPtr;
 static unsigned long long frames;
+static unsigned rightClicks;
 static void check(HRESULT hr) { if (FAILED(hr)) throw hr; }
 static LRESULT CALLBACK windowProc(HWND h, UINT msg, WPARAM w, LPARAM l) {
     if (msg == WM_CLOSE || (msg == WM_KEYDOWN && w == VK_ESCAPE)) { DestroyWindow(h); return 0; }
     if (msg == WM_DESTROY) { PostQuitMessage(0); return 0; }
     if (msg == WM_APP + 100) return static_cast<LRESULT>(frames);
+    if (msg == WM_RBUTTONDOWN) { ++rightClicks; return 0; }
+    if (msg == WM_APP + 102) return static_cast<LRESULT>(rightClicks);
     // Explicit focus-change test: the foreground probe transfers activation to
     // another test window, avoiding background callers' foreground-lock race.
     if (msg == WM_APP + 101 && GetForegroundWindow() == h) return SetForegroundWindow(reinterpret_cast<HWND>(w));

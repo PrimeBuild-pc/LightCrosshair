@@ -265,4 +265,4 @@ Final integration: publish Core and UI together again; the published IPC/library
 ## Final round
 
 - 1 — Use targets the active runtime game for saved cards and preset copies; the explicit all-apps default command keeps the game assignment. Cards label the active game/default in six languages. The original VM regression failed before the fix; two VM tests and a Core context test pass. Release: zero warnings/errors, 272 Core + 42 UI tests green. Native UI verification follows in the final integration pass.
-
+- 2 — Add independent While held bindings, per-game follow/off/own policies, six-language controls and hold-mode validation. Hold overrides never save visibility, release on focus/capture and stay blocked until release; v1 hold modes migrate separately while Toggle remains Alt+X. Eight Core state/migration cases and a VM policy test pass. The published DX12 probe verifies real right-button hold/release, click pass-through, no snapshot write, UI-capture reset and hook removal for game-off. Release: zero warnings/errors, 280 Core + 43 UI tests green.

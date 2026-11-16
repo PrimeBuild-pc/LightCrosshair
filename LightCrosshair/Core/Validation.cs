@@ -81,6 +81,7 @@ internal static partial class Validation
         settings.Hotkeys.NextCrosshair = Binding(settings.Hotkeys.NextCrosshair, false);
         settings.Hotkeys.PreviousCrosshair = Binding(settings.Hotkeys.PreviousCrosshair, false);
         settings.Hotkeys.OpenSettings = Binding(settings.Hotkeys.OpenSettings, false);
+        settings.Hotkeys.HoldVisibility = HoldBinding(settings.Hotkeys.HoldVisibility);
         var fps = settings.FpsOverlay;
         fps.Scale = Range(fps.Scale, .5, 3); fps.BackgroundOpacity = Range(fps.BackgroundOpacity, 0, 1);
         fps.TextColor = Color(fps.TextColor); fps.BackgroundColor = Color(fps.BackgroundColor);
@@ -89,12 +90,20 @@ internal static partial class Validation
         if (settings.MonitorDeviceName?.Length > 128 || fps.MonitorDeviceName?.Length > 128) throw Invalid("Invalid monitor.");
         return settings;
     }
+    internal static InputBinding HoldBinding(InputBinding? binding)
+    {
+        var result = Binding(binding);
+        if (result.Key.Length == 0) result.Mode = Contracts.BindingMode.HoldToHide;
+        if (result.Mode == Contracts.BindingMode.Toggle || result.Key is "WheelUp" or "WheelDown") throw Invalid("While held requires a key or button in a hold mode.");
+        return result;
+    }
     public static GameProfile Game(GameProfile? game, StoreDocument store)
     {
         if (game is null || !store.Crosshairs.Any(d => d.Id == game.CrosshairId)) throw Invalid("Crosshair not found.");
         game = Copy(game); game.Id = Id(game.Id); game.Name = Name(game.Name); game.ProcessName = ProcessName(game.ProcessName);
         if (store.GameProfiles.Any(g => g.Id != game.Id && g.ProcessName == game.ProcessName)) throw Invalid("Duplicate process.");
         if (game.VisibilityBinding is not null) game.VisibilityBinding = Binding(game.VisibilityBinding);
+        if (game.HoldVisibility is not null) game.HoldVisibility = HoldBinding(game.HoldVisibility);
         if (game.NvidiaFpsCap.HasValue) game.NvidiaFpsCap = Math.Clamp(game.NvidiaFpsCap.Value, 20, 1000);
         if (game.DisplayColors is { } c)
         {

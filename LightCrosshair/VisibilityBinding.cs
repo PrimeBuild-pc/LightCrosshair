@@ -63,8 +63,10 @@ public sealed record VisibilityBinding
 internal sealed class VisibilityBindingState
 {
     private bool _down;
+    private bool _blocked;
     public bool? Override { get; private set; }
-    public void Reset() { _down = false; Override = null; }
+    public void Reset() { _down = false; _blocked = false; Override = null; }
+    public void CancelUntilRelease(bool held = false) { _blocked |= _down || held; _down = false; Override = null; }
 
     public bool Process(VisibilityBinding binding, BindingInput input, int key, int modifiers, bool down)
     {
@@ -79,6 +81,7 @@ internal sealed class VisibilityBindingState
             if ((binding.Modifiers & modifiers) != binding.Modifiers) Override = null;
             return false;
         }
+        if (_blocked) return false;
         if (!trigger || _down) return false;
         _down = !binding.IsWheel;
         if (!binding.Matches(input, key, modifiers)) return false;

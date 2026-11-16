@@ -60,6 +60,7 @@ public static class HotkeyRules
         yield return ("NextCrosshair", hotkeys.NextCrosshair);
         yield return ("PreviousCrosshair", hotkeys.PreviousCrosshair);
         yield return ("OpenSettings", hotkeys.OpenSettings);
+        yield return ("HoldVisibility", hotkeys.HoldVisibility);
         foreach (var item in gameOverrides)
             yield return item;
     }

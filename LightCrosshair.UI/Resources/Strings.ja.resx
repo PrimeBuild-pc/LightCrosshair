@@ -279,4 +279,9 @@
   <data name="Library_SetDefaultAll" xml:space="preserve"><value>すべてのアプリの既定に設定</value></data>
   <data name="Library_Default" xml:space="preserve"><value>既定</value></data>
   <data name="Library_InUseGame" xml:space="preserve"><value>使用中 · {0}</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>押している間</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>保持するキーまたはマウスボタンを選択してください。</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>このゲームで押している間</value></data>
+  <data name="Games_HoldOff" xml:space="preserve"><value>このゲームでは無効</value></data>
+  <data name="Games_HoldOwn" xml:space="preserve"><value>独自の割り当て</value></data>
 </root>

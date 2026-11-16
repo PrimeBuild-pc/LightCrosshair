@@ -5,6 +5,14 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 public static class ReviewNative {
+    [StructLayout(LayoutKind.Sequential)] public struct Point { public int X,Y; }
+    [StructLayout(LayoutKind.Sequential)] struct MouseInput { public int X,Y; public uint Data,Flags,Time; public UIntPtr Extra; }
+    [StructLayout(LayoutKind.Explicit)] struct InputUnion { [FieldOffset(0)] public MouseInput Mouse; }
+    [StructLayout(LayoutKind.Sequential)] struct Input { public uint Type; public InputUnion Data; }
+    [DllImport("user32.dll")] public static extern bool GetCursorPos(out Point point);
+    [DllImport("user32.dll")] public static extern bool SetCursorPos(int x,int y);
+    [DllImport("user32.dll", SetLastError=true)] static extern uint SendInput(uint count, Input[] inputs, int size);
+    public static void RightButton(bool down) { var input=new Input {Data=new InputUnion {Mouse=new MouseInput {Flags=down?8u:16u}}}; if(SendInput(1,new[]{input},Marshal.SizeOf<Input>())!=1) throw new System.ComponentModel.Win32Exception(); }
     delegate bool EnumProc(IntPtr h, IntPtr p);
     [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc callback, IntPtr param);
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);

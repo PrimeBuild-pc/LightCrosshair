@@ -59,7 +59,8 @@ internal static class LegacyMigration
                     store.GameProfiles.Add(Validation.Game(new()
                     {
                         Name = profile.Name, ProcessName = process, CrosshairId = converted[profile].Id,
-                        VisibilityBinding = profile.VisibilityBinding is { IsValid: true } b ? Binding(b) : null,
+                        VisibilityBinding = profile.VisibilityBinding is { IsValid: true, Mode: BindingMode.Toggle } b ? Binding(b) : null,
+                        HoldVisibility = profile.VisibilityBinding is { IsValid: true } held && held.Mode != BindingMode.Toggle ? Binding(held) : null,
                         DisplayColorsEnabled = profile.DisplayEnableGammaOverride,
                         DisplayColors = profile.HasDisplayColorProfile ? new()
                         { Gamma = profile.DisplayGammaValue, Contrast = profile.DisplayContrastValue, Brightness = profile.DisplayBrightnessValue, Vibrance = profile.DisplayVibranceValue } : null
@@ -97,7 +98,9 @@ internal static class LegacyMigration
         {
             var s = store.Settings;
             s.MonitorDeviceName = CrosshairConfig.ResolveMonitorDeviceName(config.CrosshairMonitorDeviceName, config.OverlayMonitorDeviceName);
-            s.Hotkeys.ToggleVisibility = Binding(config.ResolveVisibilityBinding());
+            var visibility = Binding(config.ResolveVisibilityBinding());
+            if (visibility.Mode == Contracts.BindingMode.Toggle) s.Hotkeys.ToggleVisibility = visibility;
+            else s.Hotkeys.HoldVisibility = visibility;
             s.Hotkeys.NextCrosshair = Key(config.CycleProfileHotkeyKey, config.CycleProfileHotkeyUseAlt, config.CycleProfileHotkeyUseControl, config.CycleProfileHotkeyUseShift, config.CycleProfileHotkeyUseWin);
             s.Hotkeys.PreviousCrosshair = Key(config.CycleProfilePrevHotkeyKey, config.CycleProfilePrevHotkeyUseAlt, config.CycleProfilePrevHotkeyUseControl, config.CycleProfilePrevHotkeyUseShift, config.CycleProfilePrevHotkeyUseWin);
             s.Hotkeys.OpenSettings = Key(config.SettingsWindowHotkeyKey, config.SettingsWindowHotkeyUseAlt, config.SettingsWindowHotkeyUseControl, config.SettingsWindowHotkeyUseShift, config.SettingsWindowHotkeyUseWin);

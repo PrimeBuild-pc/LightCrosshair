@@ -22,6 +22,12 @@ internal sealed class VisibilityInputHook : IDisposable
     private bool _wantMouse, _wantKeyboard;
     private volatile bool _disposed;
     internal int Generation { get; private set; }
+    internal int ActiveHookMask => (Volatile.Read(ref _mouseHook) != IntPtr.Zero ? 1 : 0) | (Volatile.Read(ref _keyboardHook) != IntPtr.Zero ? 2 : 0);
+    internal static bool IsTriggerHeld(VisibilityBinding binding)
+    {
+        int key = binding.Input switch { BindingInput.Keyboard => binding.Key, BindingInput.RightClick => 2, BindingInput.MiddleClick => 4, BindingInput.Mouse4 => 5, BindingInput.Mouse5 => 6, _ => 0 };
+        return key != 0 && (GetAsyncKeyState(key) & 0x8000) != 0;
+    }
 
     public VisibilityInputHook(IntPtr target)
     {

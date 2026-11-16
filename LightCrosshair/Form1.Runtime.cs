@@ -32,8 +32,9 @@ internal sealed partial class Form1
     private void OnForeground(string? process, int pid)
     {
         if (IsDisposed || _closing) return;
+        ReleaseHolds();
         Runtime.ForegroundProcess = process;
-        if (process == "lightcrosshair.ui.exe") { RuntimeUpdated?.Invoke(); return; }
+        if (process == "lightcrosshair.ui.exe") { RefreshOverlay(); RuntimeUpdated?.Invoke(); return; }
         if (process != _contextProcess) _holdOverride = null;
         _contextProcess = process; _foregroundPid = pid;
         RefreshContext();

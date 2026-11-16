@@ -279,4 +279,9 @@
   <data name="Library_SetDefaultAll" xml:space="preserve"><value>Establecer como predeterminado para todas las apps</value></data>
   <data name="Library_Default" xml:space="preserve"><value>Predeterminado</value></data>
   <data name="Library_InUseGame" xml:space="preserve"><value>En uso · {0}</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>Mientras se mantiene</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Elige una tecla o botón para mantener pulsado.</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>Mientras se mantiene en este juego</value></data>
+  <data name="Games_HoldOff" xml:space="preserve"><value>Desactivado en este juego</value></data>
+  <data name="Games_HoldOwn" xml:space="preserve"><value>Atajo propio</value></data>
 </root>

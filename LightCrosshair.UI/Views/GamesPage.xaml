@@ -91,6 +91,25 @@
               <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToShow}" Content="{loc:Tr Hotkeys_HoldShow}"/>
             </ComboBox>
           </StackPanel>
+          <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Hotkeys_WhileHeld}"/>
+          <ComboBox SelectedValue="{Binding HoldPolicy}" SelectedValuePath="Tag" Margin="0,0,0,8" AutomationProperties.Name="{loc:Tr Games_HoldPolicy}">
+            <ComboBoxItem Tag="follow" Content="{loc:Tr Games_FollowGlobal}"/>
+            <ComboBoxItem Tag="off" Content="{loc:Tr Games_HoldOff}"/>
+            <ComboBoxItem Tag="custom" Content="{loc:Tr Games_HoldOwn}"/>
+          </ComboBox>
+          <StackPanel Visibility="{Binding HasOwnHold, Converter={StaticResource Vis}}" Margin="0,0,0,12">
+            <controls:BindingCaptureBox Binding="{Binding HoldBinding}" Prompt="{loc:Tr Hotkeys_Press}" CapturedCommand="{Binding CommitHoldCommand}" CaptureChangedCommand="{Binding SetCaptureCommand}" CommandParameter="HoldVisibility"/>
+            <ComboBox SelectedValue="{Binding HoldMouseKey}" SelectedValuePath="Tag" Margin="0,8,0,0" AutomationProperties.Name="{loc:Tr Hotkeys_MouseButton}">
+              <ComboBoxItem Tag="RightClick" Content="{loc:Tr Key_RightClick}"/>
+              <ComboBoxItem Tag="MiddleClick" Content="{loc:Tr Key_MiddleClick}"/>
+              <ComboBoxItem Tag="Mouse4" Content="{loc:Tr Key_Mouse4}"/>
+              <ComboBoxItem Tag="Mouse5" Content="{loc:Tr Key_Mouse5}"/>
+            </ComboBox>
+            <ComboBox SelectedValue="{Binding HoldMode}" SelectedValuePath="Tag" Margin="0,8,0,0" AutomationProperties.Name="{loc:Tr Hotkeys_Mode}">
+              <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToHide}" Content="{loc:Tr Hotkeys_HoldHide}"/>
+              <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToShow}" Content="{loc:Tr Hotkeys_HoldShow}"/>
+            </ComboBox>
+          </StackPanel>
           <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Games_FpsOverlay}"/>
           <ComboBox SelectedValue="{Binding FpsMode}" SelectedValuePath="Tag" Margin="0,0,0,12" AutomationProperties.Name="{loc:Tr Games_FpsOverlay}">
             <ComboBoxItem Tag="follow" Content="{loc:Tr Games_FollowGlobal}"/>
