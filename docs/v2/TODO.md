@@ -2,6 +2,8 @@
 
 Check items off in your own branch as you finish them. Scope and rules: [PLAN.md](PLAN.md).
 
+> **Open before release:** see [OPEN-ITEMS.md](OPEN-ITEMS.md) (7 items from the 2026-11-16 in-game test).
+
 ## Claude — branch `v2`
 - [x] Decisions, plan, design system, contract docs
 - [x] `LightCrosshair.Contracts` project (types, IPC envelope, JSON options)
