@@ -16,6 +16,9 @@ static LRESULT CALLBACK windowProc(HWND h, UINT msg, WPARAM w, LPARAM l) {
     if (msg == WM_CLOSE || (msg == WM_KEYDOWN && w == VK_ESCAPE)) { DestroyWindow(h); return 0; }
     if (msg == WM_DESTROY) { PostQuitMessage(0); return 0; }
     if (msg == WM_APP + 100) return static_cast<LRESULT>(frames);
+    // Explicit focus-change test: the foreground probe transfers activation to
+    // another test window, avoiding background callers' foreground-lock race.
+    if (msg == WM_APP + 101 && GetForegroundWindow() == h) return SetForegroundWindow(reinterpret_cast<HWND>(w));
     return DefWindowProcW(h, msg, w, l);
 }
 int wmain(int argc, wchar_t** argv) {
@@ -42,7 +45,9 @@ int wmain(int argc, wchar_t** argv) {
         window = CreateWindowW(cls.lpszClassName, api == 11 ? L"LightCrosshair DX11 probe" : L"LightCrosshair DX12 probe", borderless ? WS_POPUP : WS_OVERLAPPEDWINDOW,
             bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top, nullptr, nullptr, instance, nullptr);
         if (!window) throw HRESULT_FROM_WIN32(GetLastError());
-        ShowWindow(window, SW_SHOW); SetForegroundWindow(window);
+        // The launcher hides the console. Its startup show flag may override the
+        // first ShowWindow call; the interactive probe itself must be visible.
+        ShowWindow(window, SW_SHOW); ShowWindow(window, SW_SHOW); SetForegroundWindow(window);
         RECT client{}; GetClientRect(window, &client);
         ComPtr<IDXGIFactory4> factory; check(CreateDXGIFactory1(IID_PPV_ARGS(&factory)));
         ComPtr<ID3D11Device> device11; ComPtr<ID3D11DeviceContext> context11; ComPtr<ID3D11RenderTargetView> target11;
@@ -74,7 +79,7 @@ int wmain(int argc, wchar_t** argv) {
         check(initial.As(&swapchain)); factory->MakeWindowAssociation(window, DXGI_MWA_NO_ALT_ENTER);
         LARGE_INTEGER frequency{}, start{}, last{}; QueryPerformanceFrequency(&frequency); QueryPerformanceCounter(&start); last = start;
         std::vector<double> intervals; intervals.reserve(static_cast<size_t>(seconds) * 1000);
-        if (!ready.empty()) { FILE* file{}; if (_wfopen_s(&file, ready.c_str(), L"w") == 0) { fprintf(file, "%lu,%llu\n", GetCurrentProcessId(), reinterpret_cast<unsigned long long>(window)); fclose(file); } }
+        if (!ready.empty()) { FILE* file{}; if (_wfopen_s(&file, ready.c_str(), L"w") == 0) { fprintf(file, "%lu,%llu,%lld,%lld\n", GetCurrentProcessId(), reinterpret_cast<unsigned long long>(window), start.QuadPart, frequency.QuadPart); fclose(file); } }
         MSG msg{}; bool running = true;
         while (running) {
             while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) { if (msg.message == WM_QUIT) running = false; TranslateMessage(&msg); DispatchMessageW(&msg); }

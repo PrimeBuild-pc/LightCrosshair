@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.Threading;
 using System.Threading.Tasks;
 using LightCrosshair.Core;
@@ -8,6 +9,18 @@ namespace LightCrosshair.Tests;
 
 public class FpsCaptureTests
 {
+    [Theory]
+    [InlineData(4, true, 0, true)] [InlineData(8, true, 0, true)]
+    [InlineData(8, true, 1, false)] [InlineData(8, false, 1, true)]
+    public void RawPresentPrefixWorksWithoutInstalledManifest(int pointer, bool dxgi, int flags, bool expected)
+    {
+        byte[] payload = new byte[pointer + 8];
+        BinaryPrimitives.WriteUInt32LittleEndian(payload, 0x12345678);
+        BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(pointer), flags);
+        Assert.Equal(expected, SystemFpsMonitor.TryReadPresent(dxgi, pointer, payload, out ulong chain));
+        Assert.Equal(0x12345678UL, chain);
+        Assert.False(SystemFpsMonitor.TryReadPresent(dxgi, pointer, payload.AsSpan(0, pointer), out _));
+    }
     [Fact]
     public void SeparateSwapchainsNeverDoubleCountAndDisappearAfterTwoSeconds()
     {

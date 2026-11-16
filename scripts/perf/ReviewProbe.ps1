@@ -12,7 +12,10 @@ public static class ReviewNative {
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int show);
     [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr h, uint relation);
+    [DllImport("user32.dll")] static extern IntPtr SendMessageTimeout(IntPtr h, uint message, IntPtr w, IntPtr l, uint flags, uint timeout, out IntPtr result);
+    public static bool TransferProbeFocus(IntPtr from, IntPtr to) { SendMessageTimeout(from,0x8065,to,IntPtr.Zero,2,1000,out var result); return result!=IntPtr.Zero; }
     public static IntPtr Find(int pid, string title) { IntPtr result=IntPtr.Zero; EnumWindows((h,p)=> { GetWindowThreadProcessId(h,out uint id); var text=new StringBuilder(256); GetWindowText(h,text,256); if(id==pid && text.ToString()==title) result=h; return true; },IntPtr.Zero); return result; }
     public static bool Above(IntPtr overlay, IntPtr other) { for(var h=GetWindow(other,3);h!=IntPtr.Zero;h=GetWindow(h,3)) if(h==overlay) return true; return false; }
 }
@@ -22,15 +25,17 @@ if (!('PerfNative' -as [type])) {
     $source = Get-Content -LiteralPath "$PSScriptRoot/measure.ps1" -Raw
     Add-Type -TypeDefinition (($source -split "Add-Type @'", 2)[1] -split "'@", 2)[0]
 }
-function Start-ProbeCore([string]$Executable, [string]$Root) {
+function Start-ProbeCore([string]$Executable, [string]$Root, [switch]$ProductionPipe) {
     $previousRoot = $env:LIGHTCROSSHAIR_DATA_ROOT; $previousInstance = $env:LIGHTCROSSHAIR_TEST_INSTANCE
     try {
         $env:LIGHTCROSSHAIR_DATA_ROOT = Join-Path $Root 'v2'
-        $env:LIGHTCROSSHAIR_TEST_INSTANCE = [Guid]::NewGuid().ToString('N')
+        if ($ProductionPipe -and (Get-Process LightCrosshair -ErrorAction SilentlyContinue)) { throw 'Close other Core instances before a production-pipe UI benchmark' }
+        $env:LIGHTCROSSHAIR_TEST_INSTANCE = if ($ProductionPipe) { '' } else { [Guid]::NewGuid().ToString('N') }
         $app = Start-Process -FilePath ([IO.Path]::GetFullPath($Executable)) -PassThru -WindowStyle Hidden
-        $pipe = [IO.Pipes.NamedPipeClientStream]::new('.', "LightCrosshair.v2.$($app.SessionId).test.$env:LIGHTCROSSHAIR_TEST_INSTANCE", [IO.Pipes.PipeDirection]::InOut, [IO.Pipes.PipeOptions]::Asynchronous)
+        $pipeName = "LightCrosshair.v2.$($app.SessionId)" + $(if (!$ProductionPipe) { ".test.$env:LIGHTCROSSHAIR_TEST_INSTANCE" })
+        $pipe = [IO.Pipes.NamedPipeClientStream]::new('.', $pipeName, [IO.Pipes.PipeDirection]::InOut, [IO.Pipes.PipeOptions]::Asynchronous)
         $pipe.Connect(10000)
-        return @{ App=$app; Pipe=$pipe; Reader=[IO.StreamReader]::new($pipe, [Text.Encoding]::UTF8, $false, 4096, $true); Id=0; Events=[Collections.Generic.List[object]]::new(); Root=$env:LIGHTCROSSHAIR_DATA_ROOT; Instance=$env:LIGHTCROSSHAIR_TEST_INSTANCE }
+        return @{ App=$app; Pipe=$pipe; PipeName=$pipeName; Reader=[IO.StreamReader]::new($pipe, [Text.Encoding]::UTF8, $false, 4096, $true); Id=0; Events=[Collections.Generic.List[object]]::new(); Root=$env:LIGHTCROSSHAIR_DATA_ROOT; Instance=$env:LIGHTCROSSHAIR_TEST_INSTANCE }
     } catch {
         if ($pipe) { $pipe.Dispose() }; if ($app) { if (!$app.HasExited) { $app.Kill() }; $app.Dispose() }; throw
     } finally { $env:LIGHTCROSSHAIR_DATA_ROOT = $previousRoot; $env:LIGHTCROSSHAIR_TEST_INSTANCE = $previousInstance }

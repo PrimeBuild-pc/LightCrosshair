@@ -21,13 +21,14 @@ try {
         $frames = Join-Path $out "$name-frames.csv"
         $arguments = "--api $api --seconds 8 --pause-after 5 --output `"$frames`" --ready `"$ready`""
         if ($borderless) { $arguments += ' --borderless' }
-        $probeProcess = Start-Process -FilePath ([IO.Path]::GetFullPath($Probe)) -ArgumentList $arguments -PassThru -WindowStyle Hidden
+        $probeProcess = Start-Process -FilePath ([IO.Path]::GetFullPath($Probe)) -ArgumentList $arguments -PassThru -WindowStyle Normal
         $deadline = [DateTime]::UtcNow.AddSeconds(5)
         while (!(Test-Path -LiteralPath $ready) -and [DateTime]::UtcNow -lt $deadline -and !$probeProcess.HasExited) { Start-Sleep -Milliseconds 25 }
         if (!(Test-Path -LiteralPath $ready)) { throw "$name did not initialize" }
         $handle = [IntPtr][long]((Get-Content -LiteralPath $ready).Split(',')[1])
         [void][ReviewNative]::SetForegroundWindow($handle)
         Start-Sleep -Seconds 3
+        if (![ReviewNative]::IsWindowVisible($handle) -or [ReviewNative]::GetForegroundWindow() -ne $handle) { throw '3D window is not visible and foreground; this FPS run is invalid' }
         $snapshot = Invoke-ProbeCore $session getSnapshot
         $window = [ReviewNative]::Find($session.App.Id, 'LightCrosshair FPS')
         $fps = [PerfNative]::Query($window, 0x806A) / 100.0

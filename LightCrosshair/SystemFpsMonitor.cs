@@ -1,5 +1,6 @@
 using Microsoft.Diagnostics.Tracing.Session;
 using LightCrosshair.Core;
+using System.Buffers.Binary;
 
 namespace LightCrosshair;
 
@@ -93,21 +94,30 @@ internal sealed class SystemFpsMonitor
         if (token.IsCancellationRequested) return;
         using var session = new TraceEventSession($"LightCrosshair.Fps.{Environment.ProcessId}.{Guid.NewGuid():N}") { StopOnDispose = true };
         session.EnableProvider(Dxgi); session.EnableProvider(D3D9);
-        using var registration = token.Register(() => { try { session.Source.StopProcessing(); } catch (ObjectDisposedException) { } });
+        // StopProcessing alone may leave ProcessTrace blocked on a quiet real-time
+        // stream. Stopping the session releases it even after the game has exited.
+        using var registration = token.Register(() => { try { session.Stop(); session.Source.StopProcessing(); } catch (ObjectDisposedException) { } });
         if (token.IsCancellationRequested) return;
-        session.Source.Dynamic.All += data =>
+        // Dynamic.All silently omits events without a registered payload decoder.
+        // Present telemetry only needs the stable header and the SDK's pointer /
+        // flags prefix, so also consume providers/versions without local manifests.
+        session.Source.AllEvents += data =>
         {
             if (token.IsCancellationRequested || !IsPresentStart(data.ProviderGuid, (int)data.ID)) return;
-            // DXGI_PRESENT_TEST does not present a frame. MPO uses a separate event pair.
-            int flagsIndex = data.PayloadIndex("Flags");
-            if (flagsIndex >= 0 && (Convert.ToUInt32(data.PayloadValue(flagsIndex)) & 1) != 0) return;
-            int chainIndex = data.PayloadIndex(data.ProviderGuid == Dxgi ? "pIDXGISwapChain" : "pSwapchain");
-            ulong swapchain = chainIndex < 0 ? 0 : Convert.ToUInt64(data.PayloadValue(chainIndex));
+            if (!TryReadPresent(data.ProviderGuid == Dxgi, data.PointerSize, data.EventData(), out ulong swapchain)) return;
             present(data.ProcessID, swapchain, data.TimeStamp);
         };
         session.Source.Process();
     }
     internal static bool IsPresentStart(Guid provider, int id) => (provider == Dxgi && id is 42 or 55) || (provider == D3D9 && id == 1);
+    internal static bool TryReadPresent(bool dxgi, int pointerSize, ReadOnlySpan<byte> payload, out ulong swapchain)
+    {
+        swapchain = 0;
+        if (pointerSize is not (4 or 8) || payload.Length < pointerSize + 4) return false;
+        swapchain = pointerSize == 8 ? BinaryPrimitives.ReadUInt64LittleEndian(payload) : BinaryPrimitives.ReadUInt32LittleEndian(payload);
+        // D3D9 flag 1 means DONOTWAIT, not DXGI_PRESENT_TEST.
+        return !dxgi || (BinaryPrimitives.ReadUInt32LittleEndian(payload[pointerSize..]) & 1) == 0;
+    }
     public FpsSample Snapshot()
     {
         lock (_gate)
@@ -116,7 +126,7 @@ internal sealed class SystemFpsMonitor
             return sample.HasData ? sample : new(false, 0, 0, 0, _pid <= 0 ? "FpsNoForeground" : _failure ?? "FpsNoFrames");
         }
     }
-    public Task StopAsync()
+    public async Task StopAsync()
     {
         CancellationTokenSource? stop; Task worker;
         lock (_gate)
@@ -125,7 +135,7 @@ internal sealed class SystemFpsMonitor
             worker = _worker;
         }
         // Cancellation may invoke ETW callbacks; never call it while holding _gate.
-        stop?.Cancel();
-        return worker;
+        if (stop is not null) await stop.CancelAsync().ConfigureAwait(false);
+        await worker.ConfigureAwait(false);
     }
 }
