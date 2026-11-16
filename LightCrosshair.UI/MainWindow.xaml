@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:loc="clr-namespace:LightCrosshair.UI.Localization"
+        xmlns:controls="clr-namespace:LightCrosshair.UI.Controls"
         Title="{loc:Tr AppName}"
         Icon="assets/icon.ico"
         WindowStyle="None"
@@ -63,7 +64,7 @@
             </StackPanel>
           </StackPanel>
           <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="16,16,12,8">
-            <Image Source="pack://application:,,,/assets/icon.ico" Width="20" Height="20" RenderOptions.BitmapScalingMode="HighQuality"/>
+            <controls:CrispIcon VerticalAlignment="Center" AutomationProperties.Name="{loc:Tr AppName}"/>
             <TextBlock Text="{loc:Tr AppName}" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="14"/>
           </StackPanel>
           <StackPanel Margin="8,8,8,0">
