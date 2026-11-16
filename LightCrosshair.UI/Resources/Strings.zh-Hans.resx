@@ -59,6 +59,7 @@
   <data name="Studio_Name" xml:space="preserve"><value>名称</value></data>
   <data name="Studio_SaveAs" xml:space="preserve"><value>另存为新准星</value></data>
   <data name="Studio_Live" xml:space="preserve"><value>游戏内实时预览</value></data>
+  <data name="Studio_AllHidden" xml:space="preserve"><value>所有图层都已隐藏</value></data>
   <data name="Studio_Undo" xml:space="preserve"><value>撤销</value></data>
   <data name="Studio_Redo" xml:space="preserve"><value>重做</value></data>
   <data name="Studio_CopyCode" xml:space="preserve"><value>复制分享码</value></data>

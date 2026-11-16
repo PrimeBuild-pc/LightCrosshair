@@ -65,8 +65,24 @@
       <Grid>
         <Border Background="{StaticResource CheckerBrush}" CornerRadius="8" Visibility="{Binding CheckerPreview, Converter={StaticResource Vis}}"/>
         <Border Background="{Binding PreviewFill, Converter={StaticResource HexBrush}}" CornerRadius="8" Visibility="{Binding CheckerPreview, Converter={StaticResource VisInv}}"/>
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="Transparent">
-          <Grid Width="{Binding Zoom, Converter={StaticResource Zoom}, ConverterParameter=256}" Height="{Binding Zoom, Converter={StaticResource Zoom}, ConverterParameter=256}" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <ScrollViewer x:Name="PreviewScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="Transparent">
+          <Grid Width="{Binding Zoom, Converter={StaticResource Zoom}, ConverterParameter=256}" Height="{Binding Zoom, Converter={StaticResource Zoom}, ConverterParameter=256}" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Grid.RenderTransform>
+              <TranslateTransform>
+                <TranslateTransform.X>
+                  <MultiBinding Converter="{StaticResource CenterOffset}">
+                    <Binding ElementName="PreviewScroll" Path="ViewportWidth"/>
+                    <Binding Path="Zoom" Converter="{StaticResource Zoom}" ConverterParameter="256"/>
+                  </MultiBinding>
+                </TranslateTransform.X>
+                <TranslateTransform.Y>
+                  <MultiBinding Converter="{StaticResource CenterOffset}">
+                    <Binding ElementName="PreviewScroll" Path="ViewportHeight"/>
+                    <Binding Path="Zoom" Converter="{StaticResource Zoom}" ConverterParameter="256"/>
+                  </MultiBinding>
+                </TranslateTransform.Y>
+              </TranslateTransform>
+            </Grid.RenderTransform>
             <Image Source="{Binding PreviewPng, Converter={StaticResource Png}, ConverterParameter=256}" Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
             <Rectangle IsHitTestVisible="False" Visibility="{Binding ShowPixelGrid, Converter={StaticResource Vis}}">
               <Rectangle.Fill>
@@ -89,6 +105,9 @@
             </Rectangle>
           </Grid>
         </ScrollViewer>
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="6" Padding="12,8" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Visibility="{Binding AllLayersHidden, Converter={StaticResource Vis}}">
+          <TextBlock Style="{StaticResource BodyText}" Text="{loc:Tr Studio_AllHidden}" AutomationProperties.Name="{loc:Tr Studio_AllHidden}"/>
+        </Border>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8">
           <Button Content="{loc:Tr Studio_Zoom1}" Command="{Binding SetZoomCommand}" CommandParameter="1" Margin="0,0,4,0" AutomationProperties.Name="{loc:Tr Studio_Zoom1}"/>
           <Button Content="{loc:Tr Studio_Zoom2}" Command="{Binding SetZoomCommand}" CommandParameter="2" Margin="0,0,4,0" AutomationProperties.Name="{loc:Tr Studio_Zoom2}"/>

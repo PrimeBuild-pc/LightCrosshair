@@ -26,7 +26,7 @@ Nothing in U0–U8 is deferred.
 - Display-color sliders and the NVIDIA cap value stay hidden until that switch is on. Turning colors off sets `DisplayColorsEnabled` to false and keeps the stored values. Unsupported GPU features stay visible as disabled controls with the reason beside them.
 - The fake renderer draws image layers as a colored square. It does not decode the PNG. The real client always calls `render`.
 - Share-code encode/decode exists only inside the fake, so paste/copy works without Core. The pipe client calls `encodeShareCode` / `decodeShareCode`.
-- Window placement is `%AppData%\LightCrosshair\v2\ui-placement.json`. It is not part of `store.json`.
+- Window placement is `%AppData%\LightCrosshair\v2\ui-placement.json`, or `ui-placement.json` inside `LIGHTCROSSHAIR_DATA_ROOT` when that variable is set. It is not part of `store.json`.
 - The NVIDIA cap editor uses 30..480 and defaults to 144 when the switch is turned on. The contract does not document that range.
 - The left mouse button is not a bindable trigger, matching v1.9. Wheel bindings are Toggle only.
 - The layer list shows the topmost layer first (the last entry in `Layers`).
@@ -82,7 +82,7 @@ UI cold start is under the 1.5 s budget. The private-memory number is the WPF pr
 - The pipe client is tested against a local stub server (hello first, out-of-order responses, timeout, oversized line). A published Core and UI in one folder, with `LIGHTCROSSHAIR_DATA_ROOT` pointed at a temp directory, connect and render Studio and Library.
 - Library card menus are opened from code (right click, or the menu key / Shift+F10 on the selected card) so the virtualizing panel does not rebuild a menu during measure.
 - Thumbnail automation names on tag chips do not refresh when the language changes. The visible chip text does.
-- Screenshot runs still write `ui-placement.json` when the window closes.
+- Screenshot runs still write `ui-placement.json` when the window closes. Set `LIGHTCROSSHAIR_DATA_ROOT` so that write stays out of the real profile.
 - Fake image-layer previews are placeholders. A real PNG shows up only after Core renders it.
 
 ## Review 1
@@ -100,6 +100,12 @@ UI cold start is under the 1.5 s budget. The private-memory number is the WPF pr
 - U-11: Ring and Box have a fill color, the display-color switch keeps its values through `DisplayColorsEnabled`, and binding capture calls `setInputCapture` true, renews it every 30 s, and sends false on finish, Esc, page leave, and window deactivation. Covered by the fill, games, and input-capture tests.
 - U-12: Added tests for the unsaved navigation guard, settings debounce, input capture, fill, and item names. Release `LightCrosshair.sln` builds with 0 warnings; 215 Core and 22 UI tests passed.
 - U-13: `383c1db` was committed with the repository identity and has no `Co-authored-by` trailer.
+
+## Review 2
+
+- U-14: The preview scrollbar stays `Auto`, and the zoomed image is the scroll extent, centered while it fits. Against the real Core at 1180×900, 1× and 2× had no preview scrollbar and 4× had both. `PreviewScrollsOnlyWhenZoomExceedsTheArea` also checks a short window, where 2× shows only the vertical bar.
+- U-15: The preview shows "All layers are hidden" when every layer is hidden, with the same string in all six languages. Confirmed on the real Core after hiding the only layer of Classic Cross.
+- U-16: `ui-placement.json` is stored under `LIGHTCROSSHAIR_DATA_ROOT` when that variable is set. `PlacementFileFollowsTheDataRoot` writes a temp root and does not touch the roaming file. The real Core run saved the window rectangle in the temp root, and the roaming file's timestamp did not change.
 
 ## Contract change requests
 

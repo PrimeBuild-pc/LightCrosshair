@@ -14,9 +14,16 @@ public sealed class WindowPlacement
 
 public static class WindowPlacementStore
 {
-    private static string FilePath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "LightCrosshair", "v2", "ui-placement.json");
+    internal static string FilePath
+    {
+        get
+        {
+            var root = Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT");
+            if (string.IsNullOrWhiteSpace(root))
+                root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LightCrosshair", "v2");
+            return Path.Combine(root, "ui-placement.json");
+        }
+    }
 
     public static WindowPlacement? Load()
     {

@@ -59,6 +59,7 @@
   <data name="Studio_Name" xml:space="preserve"><value>名前</value></data>
   <data name="Studio_SaveAs" xml:space="preserve"><value>新規として保存</value></data>
   <data name="Studio_Live" xml:space="preserve"><value>ゲームに反映</value></data>
+  <data name="Studio_AllHidden" xml:space="preserve"><value>すべてのレイヤーが非表示です</value></data>
   <data name="Studio_Undo" xml:space="preserve"><value>元に戻す</value></data>
   <data name="Studio_Redo" xml:space="preserve"><value>やり直す</value></data>
   <data name="Studio_CopyCode" xml:space="preserve"><value>共有コードをコピー</value></data>

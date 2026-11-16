@@ -213,6 +213,8 @@ public sealed partial class StudioViewModel : ObservableObject
 
     public bool CheckerPreview => Background == "checker";
 
+    public bool AllLayersHidden => Rows.Count > 0 && Rows.All(row => !row.Layer.Visible);
+
     public string PreviewFill => Background switch
     {
         "mid" => "#808080",
@@ -717,6 +719,7 @@ public sealed partial class StudioViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowFill));
         OnPropertyChanged(nameof(LengthLabelKey));
         OnPropertyChanged(nameof(CanAddLayer));
+        OnPropertyChanged(nameof(AllLayersHidden));
         NotifyUndo();
     }
 

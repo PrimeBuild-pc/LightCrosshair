@@ -59,6 +59,7 @@
   <data name="Studio_Name" xml:space="preserve"><value>Имя</value></data>
   <data name="Studio_SaveAs" xml:space="preserve"><value>Сохранить как новый</value></data>
   <data name="Studio_Live" xml:space="preserve"><value>Показ в игре</value></data>
+  <data name="Studio_AllHidden" xml:space="preserve"><value>Все слои скрыты</value></data>
   <data name="Studio_Undo" xml:space="preserve"><value>Отменить</value></data>
   <data name="Studio_Redo" xml:space="preserve"><value>Повторить</value></data>
   <data name="Studio_CopyCode" xml:space="preserve"><value>Копировать код</value></data>
