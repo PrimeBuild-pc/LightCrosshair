@@ -63,6 +63,11 @@
 
   <ItemGroup><ProjectReference Include="..\LightCrosshair.Contracts\LightCrosshair.Contracts.csproj" /></ItemGroup>
 
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <!-- Bound transient render garbage without limiting the live heap or forcing a GC on UI exit. -->
+    <RuntimeHostConfigurationOption Include="System.GC.Gen0MaxBudget" Value="4194304" />
+  </ItemGroup>
+
   <!-- Exclude removed legacy files -->
   <ItemGroup>
     <Compile Remove="ProfileForm.cs" />

@@ -141,3 +141,42 @@ Local raw evidence (ignored): `scripts/perf/results-review-before-verified`, `re
 ## Review 2
 
 - C-8: Migrate the active v1 EnableCustomCrosshair switch into global Settings.CrosshairVisible, using the working copy when valid and the selected saved profile otherwise; ignore the flag on inactive profiles and keep every migrated layer visible. Opposite saved/working-copy JSON fixtures and six regression cases cover precedence, fallback and an already hidden overlay. Published x64 Core starts on copies of both fixtures; the Show crosshair settings mutation makes Runtime.CrosshairShown and the native overlay window visible and records a presented frame. Whole-solution Release: 0 warnings/errors; 230 Core + 22 UI tests pass.
+- C-9: Complete a before/after 50-session real-UI Library soak, waiting for all 31 successful thumbnail replies in every session (1,550 per run). Bound Release Core's Gen 0 allocation budget to 4 MiB so short-lived render/IPC garbage is collected naturally instead of accumulating across idle gaps. Private memory now plateaus at 17.63–18.08 MiB over the last 20 sessions, ending at 18.078 MiB versus 51.191 before; five-session increase is +2.457 MiB. No forced GC or cached/fake render shortcuts were used in the curve. The authorized placement-only backup/restore exception is guarded by a full real-profile file-list/SHA256 comparison: all 9 files, including restored placement, are identical before/after. Full Release build has 0 warnings/errors; 230 Core + 22 UI tests pass.
+
+### Review 2 Library soak
+
+2026-11-16, same Windows 11 / Ryzen 7 5800X3D / .NET 10.0.14 machine as above. The baseline is commit 27884be (C-8 applied, no GC budget override); the final package adds only the Release Core `System.GC.Gen0MaxBudget=4194304` setting. The original GDI+ renderer and PNG encoder remain in use. No UI, contracts or solution source was edited.
+
+| Session | Before (MiB) | After (MiB) |
+|---|---:|---:|
+| 0 | 13.727 | 13.680 |
+| 1 | 15.641 | 15.668 |
+| 5 | 17.008 | 16.137 |
+| 10 | 20.891 | 17.488 |
+| 15 | 24.344 | 17.711 |
+| 20 | 28.938 | 17.633 |
+| 25 | 31.902 | 17.723 |
+| 30 | 36.090 | 17.984 |
+| 35 | 39.902 | 18.055 |
+| 40 | 43.051 | 18.062 |
+| 45 | 47.555 | 18.078 |
+| 50 | 51.191 | 18.078 |
+
+Full 50-point before/after curve: [review2-library-soak.csv](../../scripts/perf/baselines/review2-library-soak.csv). Final sessions 31–50 range from 17.633 to 18.078 MiB (mean 17.980); the endpoint at session 50 is 18.078. GDI handles remain 24, USER handles settle at 27, process handles fall from 402 to 397, and Core's test-only assembly probe reports no WPF. The five-cycle increase falls from +3.281 to +2.457 MiB. These values are after each UI process exits and Core settles for 500 ms, rather than measurements of the UI process.
+
+The baseline's final diagnostic heap is only 1,752,473 live bytes despite 51.191 MiB private commitment. A follow-up counter sample showed growing allocated heap and zero Gen 0/1/2 collections in its interval. This points to delayed collection of transient allocations, not a surviving per-session object graph. An alternative PNG encoder and GCConserveMemory experiment did not fix the curve and were removed. The final fix caps the allocation budget for generation 0, **not** the live heap or allowed library size; no heap hard limit, GC-on-disconnect, background cleanup timer, or render cache was added. This CLR tuning key is defined in the [.NET 10 runtime configuration source](https://github.com/dotnet/runtime/blob/v10.0.0/src/coreclr/gc/gcconfig.h); remeasure after runtime upgrades. The tradeoff is more natural collections while the UI renders thumbnails. Published IPC smoke still measures render median/P95 1.306/1.855 ms and preview 0.894/1.041 ms.
+
+The harness starts `LightCrosshair.UI.exe --page library` 50 times against one continuously running Core. Core uses an isolated test pipe; an external same-user relay exposes the production pipe to the unchanged UI, forwards the original requests/responses, and counts successful 96px PNG replies by design id. It injects no requests and does not alter response payloads. Accessibility scrolls the Presets list so offscreen cards load too; after all 31 thumbnails are returned, the harness allows 500 ms for WPF to paint, closes the real UI window, verifies process exit and waits another 500 ms before sampling Core. The total ready time includes scrolling and automation; it is not a UI cold-interactive latency measurement. A final gcdump is collected only **after** all 50 samples and therefore cannot flatten the reported curve; its live heap is 1,567,377 bytes. The diagnostic tool's .NET 10 lossy-buffering warning still applies.
+
+Reproduce after publishing Core and UI together:
+
+```powershell
+pwsh scripts/perf/library-soak.ps1 -Sessions 50 -AllowUiPlacementBackup
+pwsh scripts/perf/profile-guard-smoke.ps1
+```
+
+`LIGHTCROSSHAIR_DATA_ROOT` points to a fresh temporary directory throughout. Under the user's explicit exception, only the real `ui-placement.json` may be used: it is copied before launching either process, restored byte-for-byte after both processes stop (or removed if originally absent), and every file path/hash under real `%AppData%\LightCrosshair` is compared with the original manifest. Both complete 50-session runs passed: 9 files before/after, no added/removed/changed files and placement restored. Store, profiles and logs stayed unchanged. `measure.ps1` also accepts the same opt-in `-AllowUiPlacementBackup` with identical protection; its one-session integration check passed. Guard smoke covers existing placement (including BOM/newlines), missing placement, an empty profile and detection of an unrelated file change, all in synthetic temporary roots.
+
+Raw ignored evidence: `scripts/perf/results-library-50-before/`, `results-library-50-final/` (CSV, summary, final heap, plot and real-profile verification manifest). All temporary Core/UI processes have been closed. Review 1's memory deferral is superseded by this larger Library soak under the authorized placement exception; U-16 remains the UI owner's source change.
+
+Final safe isolated idle regression (10 s warmup + 60 s sample): 14.69 MiB private, 0.0000% CPU at sampling resolution, zero redraws/repeating application timers and no WPF. The full solution Release build and all 230 Core + 22 UI tests pass with the shipped configuration.
