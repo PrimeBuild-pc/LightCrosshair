@@ -1,0 +1,19 @@
+[
+  {
+    "Id": "default-immutable",
+    "Name": "Default",
+    "SchemaVersion": 6,
+    "Shape": "Cross",
+    "EnumShape": "Cross",
+    "Size": 20,
+    "EnableCustomCrosshair": true
+  },
+  {
+    "Id": "inactive-off",
+    "Name": "Inactive off",
+    "SchemaVersion": 6,
+    "Shape": "Cross",
+    "EnumShape": "Cross",
+    "EnableCustomCrosshair": false
+  }
+]
