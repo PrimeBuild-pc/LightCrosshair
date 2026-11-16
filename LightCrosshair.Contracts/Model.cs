@@ -115,6 +115,8 @@ public sealed class HotkeySettings
     public InputBinding PreviousCrosshair { get; set; } = new() { Key = "V", Modifiers = KeyModifiers.Alt };
     /// <summary>Opens the UI, or closes it when already open.</summary>
     public InputBinding OpenSettings { get; set; } = new() { Key = "L", Modifiers = KeyModifiers.Alt };
+    /// <summary>Optional "while held" visibility, e.g. RightClick + HoldToHide to hide the crosshair while aiming. Mode must be HoldToHide or HoldToShow. Empty Key = unbound (default).</summary>
+    public InputBinding HoldVisibility { get; set; } = new() { Key = "", Mode = BindingMode.HoldToHide };
 }
 
 public sealed class FpsOverlaySettings
@@ -129,6 +131,8 @@ public sealed class FpsOverlaySettings
     public double Scale { get; set; } = 1.0;
     public bool ShowFrametime { get; set; } = true;
     public bool Show1PercentLow { get; set; } = true;
+    /// <summary>Small frametime graph (last ~2 s). Off by default; only this option makes the overlay redraw continuously.</summary>
+    public bool ShowFrametimeGraph { get; set; }
     public string TextColor { get; set; } = "#FFFFFF";
     public string BackgroundColor { get; set; } = "#000000";
     public double BackgroundOpacity { get; set; } = 0.5;
@@ -165,6 +169,8 @@ public sealed class GameProfile
     public bool? FpsOverlay { get; set; }
     /// <summary>Null = use the global ToggleVisibility binding.</summary>
     public InputBinding? VisibilityBinding { get; set; }
+    /// <summary>Null = use the global HoldVisibility binding; a binding with empty Key = no hold binding in this game.</summary>
+    public InputBinding? HoldVisibility { get; set; }
 }
 
 public sealed class AppSettings
@@ -183,6 +189,9 @@ public sealed class AppSettings
     public int OffsetY { get; set; }
     public HotkeySettings Hotkeys { get; set; } = new();
     public FpsOverlaySettings FpsOverlay { get; set; } = new();
+    /// <summary>Display colors applied everywhere a game profile doesn't set its own (v1 parity). Values kept while disabled.</summary>
+    public DisplayColorSettings? DisplayColors { get; set; }
+    public bool DisplayColorsEnabled { get; set; }
     public bool SuggestKnownGames { get; set; } = true;
     /// <summary>Process names the user said "no" to.</summary>
     public List<string> DismissedSuggestions { get; set; } = [];

@@ -87,6 +87,9 @@ public static class IpcMethods
     /// <summary>InputCaptureRequest -> null. While Active, Core suspends every hotkey and hook action so the UI can capture a new binding. Reset on disconnect and after 60 s without a renewal.</summary>
     public const string SetInputCapture = "setInputCapture";
 
+    /// <summary>DisplayColorsPreviewRequest -> null. Applies colors live while the user drags sliders; Colors = null ends the preview and restores the context's colors. Ends on disconnect and when the UI parks.</summary>
+    public const string PreviewDisplayColors = "previewDisplayColors";
+
     /// <summary>null -> null. Exits Core (and therefore the app).</summary>
     public const string Quit = "quit";
 }
@@ -149,6 +152,11 @@ public sealed class ExportRequest
 {
     public string Path { get; set; } = "";
     public List<string> CrosshairIds { get; set; } = [];
+}
+
+public sealed class DisplayColorsPreviewRequest
+{
+    public DisplayColorSettings? Colors { get; set; }
 }
 
 public sealed class InputCaptureRequest
