@@ -30,8 +30,8 @@ Nothing in U0–U8 is deferred.
 - The NVIDIA cap editor uses 30..480 and defaults to 144 when the switch is turned on. The contract does not document that range.
 - The left mouse button is not a bindable trigger, matching v1.9. Wheel bindings are Toggle only.
 - The layer list shows the topmost layer first (the last entry in `Layers`).
-- Studio preview asks Core for a transparent 256 px render and draws it centered. The chosen background fills the whole preview; the checker brush is used only for Checker. Default zoom is 2×. Zoom scales the bitmap with nearest-neighbor. The pixel grid appears only at 4×.
-- The window, taskbar, and sidebar mark use `LightCrosshair/assets/icon.ico`, copied into the UI project.
+- Studio preview asks Core for a transparent 256 px render and draws it centered. The chosen background fills the whole preview; the checker brush is used only for Checker. Default zoom is Fit: the largest integer zoom whose render fits the preview, recomputed when the preview area changes. 1×, 2×, and 4× stay available. Zoom scales the bitmap with nearest-neighbor. The pixel grid appears only at 4×.
+- The window and taskbar use `LightCrosshair/assets/icon.ico`, copied into the UI project. The sidebar mark draws the frame that matches the current DPI, with nearest-neighbor.
 - "Not now" on a suggestion is remembered for this UI session only. "Never" calls `dismissSuggestion`.
 
 ## How to build, run, test, screenshot
@@ -55,13 +55,13 @@ dotnet run --project LightCrosshair.UI/LightCrosshair.UI.csproj -c Release -- --
 
 Other flags: `--page studio|library|games|hotkeys|settings`, `--suggest "Name|game.exe"`. A second instance exits. Close the window and the process exits. Core owns the tray.
 
-Screenshots (not committed; write them outside the repo):
+Readme screenshots, committed at `docs/images/`:
 
 ```powershell
-dotnet run --project LightCrosshair.UI/LightCrosshair.UI.csproj -c Release -- --fake-core --screenshots $env:TEMP\lc-ui-shots
+dotnet run --project LightCrosshair.UI/LightCrosshair.UI.csproj -c Release -- --fake-core --screenshots docs/images
 ```
 
-That writes `studio.png`, `library.png`, `games.png`, `hotkeys.png`, and `settings.png` at 1180×740 and exits. Studio is the Classic design (cross, dot, ring). The games page includes a sample suggestion banner.
+That writes `ui-studio.png`, `ui-library.png`, `ui-games.png`, `ui-hotkeys.png`, and `ui-settings.png` at 1180×740 and exits. `--screenshots` loads a separate fake seed and leaves the default fake store unchanged.
 
 Release build of `LightCrosshair.sln`: 0 warnings, 0 errors. Tests: 215 Core and 22 UI passed, 0 failed.
 
@@ -106,6 +106,12 @@ UI cold start is under the 1.5 s budget. The private-memory number is the WPF pr
 - U-14: The preview scrollbar stays `Auto`, and the zoomed image is the scroll extent, centered while it fits. Against the real Core at 1180×900, 1× and 2× had no preview scrollbar and 4× had both. `PreviewScrollsOnlyWhenZoomExceedsTheArea` also checks a short window, where 2× shows only the vertical bar.
 - U-15: The preview shows "All layers are hidden" when every layer is hidden, with the same string in all six languages. Confirmed on the real Core after hiding the only layer of Classic Cross.
 - U-16: `ui-placement.json` is stored under `LIGHTCROSSHAIR_DATA_ROOT` when that variable is set. `PlacementFileFollowsTheDataRoot` writes a temp root and does not touch the roaming file. The real Core run saved the window rectangle in the temp root, and the roaming file's timestamp did not change.
+
+## Review 3
+
+- U-17: Fit is the default zoom. It is the largest integer zoom whose 256 px render fits the preview, and it is recomputed when the preview area changes. 1×, 2×, and 4× still pin the zoom. `FitStaysInsideThePreviewAtTheReviewSizes` opens the window at 1000×640, 1180×740, and maximized: Fit stays selected, the zoom matches the area, and the preview scrollbars stay off.
+- U-18: The sidebar mark uses the hard-edged icon frame closest to 20 px at the current DPI (20, 24, 32, or 40) and draws it one bitmap pixel per device pixel with nearest-neighbor. `SidebarMarkUsesTheDpiFrameAndHardEdges` checks 100% and 150%: every pixel is transparent or the icon red.
+- Readme shots: `docs/images/ui-studio.png`, `ui-library.png`, `ui-games.png`, `ui-hotkeys.png`, and `ui-settings.png` are 1180×740 captures from `--screenshots` against the separate fake seed. Studio shows the outlined cross, green dot, and ring at Fit; Library shows four crosshairs with two favorites above the presets; Games has Counter-Strike 2 selected and VALORANT, with no suggestion; Hotkeys adds Hold to show on Mouse 5; Settings shows the top of the page in English. Each file is under 50 KB. Release `LightCrosshair.sln`: 0 warnings, 230 Core tests and 28 UI tests passed.
 
 ## Contract change requests
 

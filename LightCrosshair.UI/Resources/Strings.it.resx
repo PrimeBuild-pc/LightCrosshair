@@ -64,6 +64,7 @@
   <data name="Studio_Redo" xml:space="preserve"><value>Ripeti</value></data>
   <data name="Studio_CopyCode" xml:space="preserve"><value>Copia codice</value></data>
   <data name="Studio_PasteCode" xml:space="preserve"><value>Incolla codice</value></data>
+  <data name="Studio_ZoomFit" xml:space="preserve"><value>Adatta</value></data>
   <data name="Studio_Zoom1" xml:space="preserve"><value>1×</value></data>
   <data name="Studio_Zoom2" xml:space="preserve"><value>2×</value></data>
   <data name="Studio_Zoom4" xml:space="preserve"><value>4×</value></data>

@@ -23,8 +23,11 @@ public static class ScreenshotRunner
             await PumpAsync().ConfigureAwait(true);
             if (page == "studio")
             {
+                var seen = viewModel.Studio.PreviewPng;
+                viewModel.Studio.SetBackgroundCommand.Execute("mid");
                 var start = DateTime.UtcNow;
-                while (viewModel.Studio.PreviewPng == null && DateTime.UtcNow - start < TimeSpan.FromSeconds(3))
+                while ((viewModel.Studio.PreviewPng == null || ReferenceEquals(viewModel.Studio.PreviewPng, seen))
+                    && DateTime.UtcNow - start < TimeSpan.FromSeconds(3))
                     await PumpAsync().ConfigureAwait(true);
             }
             if (page == "library")
@@ -37,8 +40,69 @@ public static class ScreenshotRunner
                     await PumpAsync().ConfigureAwait(true);
                 }
             }
-            Save(window, Path.Combine(directory, page + ".png"));
+            HideScrollBars(window);
+            for (var pass = 0; pass < 6 && HideCutRows(window); pass++)
+                window.UpdateLayout();
+            Save(window, Path.Combine(directory, "ui-" + page + ".png"));
         }
+    }
+
+    private static void HideScrollBars(DependencyObject root)
+    {
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is System.Windows.Controls.ScrollViewer viewer)
+            {
+                viewer.HorizontalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Hidden;
+                viewer.VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Hidden;
+            }
+            HideScrollBars(child);
+        }
+    }
+
+    /// <summary>Hides a row that crosses the window edge so the capture ends on a whole control.</summary>
+    private static bool HideCutRows(Window window)
+    {
+        var limit = window.ActualHeight - 2;
+        return HideCutRows(window, window, limit);
+    }
+
+    private static bool HideCutRows(Window window, DependencyObject root, double limit)
+    {
+        var hid = false;
+        if (root is System.Windows.Controls.Panel panel)
+        {
+            var cut = -1;
+            for (var i = 0; i < panel.Children.Count; i++)
+            {
+                if (panel.Children[i] is not FrameworkElement child || child.ActualHeight is < 8 or > 220 || !child.IsVisible) continue;
+                var origin = child.TransformToAncestor(window).Transform(new System.Windows.Point(0, 0));
+                if (origin.Y < limit && origin.Y + child.ActualHeight > limit)
+                {
+                    cut = i;
+                    if (i > 0 && panel.Children[i - 1] is System.Windows.Controls.TextBlock heading && heading.ActualHeight < 64)
+                        cut = i - 1;
+                    break;
+                }
+            }
+            if (cut >= 0)
+            {
+                for (var i = cut; i < panel.Children.Count; i++)
+                {
+                    if (panel.Children[i] is UIElement child && child.Visibility != Visibility.Collapsed)
+                    {
+                        child.Visibility = Visibility.Collapsed;
+                        hid = true;
+                    }
+                }
+            }
+        }
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+            hid |= HideCutRows(window, VisualTreeHelper.GetChild(root, i), limit);
+        return hid;
     }
 
     private static void Save(Window window, string path)

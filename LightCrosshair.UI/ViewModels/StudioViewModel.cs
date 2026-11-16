@@ -65,7 +65,10 @@ public sealed partial class StudioViewModel : ObservableObject
     [ObservableProperty] private bool _isDirty;
     [ObservableProperty] private string _error = "";
     [ObservableProperty] private string? _previewPng;
-    [ObservableProperty] private int _zoom = 2;
+    [ObservableProperty] private int _zoom = 1;
+    [ObservableProperty] private string _zoomMode = "fit";
+    private double _previewWidth;
+    private double _previewHeight;
     [ObservableProperty] private string _background = "dark";
     [ObservableProperty] private string _customBackground = "#3A3D42";
     [ObservableProperty] private bool _isMinimized;
@@ -444,11 +447,40 @@ public sealed partial class StudioViewModel : ObservableObject
         catch (Exception) { Error = ErrorText.For(null); }
     }
 
+    public void SetPreviewSize(double width, double height)
+    {
+        _previewWidth = width;
+        _previewHeight = height;
+        if (ZoomMode == "fit") ApplyFit();
+    }
+
+    public static int FitZoom(double width, double height)
+    {
+        if (width < 1 || height < 1) return 1;
+        var limit = Math.Min(width, height);
+        return Math.Max(1, (int)Math.Floor(limit / 256d));
+    }
+
     [RelayCommand]
     private void SetZoom(string? zoom)
     {
+        if (string.Equals(zoom, "fit", StringComparison.OrdinalIgnoreCase))
+        {
+            ZoomMode = "fit";
+            ApplyFit();
+            return;
+        }
         if (int.TryParse(zoom, out var value) && value is 1 or 2 or 4)
+        {
+            ZoomMode = value.ToString();
             Zoom = value;
+        }
+    }
+
+    private void ApplyFit()
+    {
+        var zoom = FitZoom(_previewWidth, _previewHeight);
+        if (Zoom != zoom) Zoom = zoom;
     }
 
     [RelayCommand]

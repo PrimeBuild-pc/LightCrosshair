@@ -26,9 +26,9 @@ public partial class App : Application
         }
 
         var ui = new AppUi(new DispatcherMarshaler());
-        ICoreClient core = options.FakeCore
-            ? new FakeCoreClient(new DispatcherMarshaler())
-            : new PipeCoreClient(new PipeCoreClientOptions { Marshaler = new DispatcherMarshaler() });
+        FakeCoreClient? fake = options.FakeCore ? new FakeCoreClient(new DispatcherMarshaler()) : null;
+        if (fake != null && options.ScreenshotsDirectory != null) fake.UseReadmeSeed();
+        ICoreClient core = fake != null ? fake : new PipeCoreClient(new PipeCoreClientOptions { Marshaler = new DispatcherMarshaler() });
         var viewModel = new MainViewModel(core, ui, options);
         var window = new MainWindow { DataContext = viewModel };
         MainWindow = window;
@@ -40,11 +40,6 @@ public partial class App : Application
         await viewModel.StartAsync().ConfigureAwait(true);
         if (options.ScreenshotsDirectory != null)
         {
-            if (core is FakeCoreClient fake)
-            {
-                fake.SetSuggestion(new GameSuggestion { ProcessName = "samplegame2.exe", DisplayName = "Sample Game" });
-                if (fake.Snapshot != null) viewModel.Games.Apply(fake.Snapshot);
-            }
             await ScreenshotRunner.CaptureAsync(window, viewModel, options.ScreenshotsDirectory).ConfigureAwait(true);
             Shutdown(0);
         }
