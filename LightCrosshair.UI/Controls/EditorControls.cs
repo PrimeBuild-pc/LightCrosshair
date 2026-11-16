@@ -231,11 +231,18 @@ public class BindingCaptureBox : Border
         {
             if (_window != null) _window.Deactivated -= OnWindowDeactivated;
             _window = null;
+            Loc.Instance.Changed -= OnLocChanged;
             EndCapture();
         };
         _renew.Tick += (_, _) => NotifyCapture(true);
         LocChanged();
-        Loc.Instance.Changed += (_, _) => Refresh();
+        Loc.Instance.Changed += OnLocChanged;
+    }
+
+    private void OnLocChanged(object? sender, EventArgs e)
+    {
+        if (Dispatcher.CheckAccess()) Refresh();
+        else Dispatcher.BeginInvoke(Refresh);
     }
 
     public LightCrosshair.Contracts.InputBinding? Binding { get => (LightCrosshair.Contracts.InputBinding?)GetValue(BindingProperty); set => SetValue(BindingProperty, value); }

@@ -40,13 +40,15 @@ public static class ProcessDuty
 
 public static class OpenTiming
 {
-    private static readonly long Started = Environment.TickCount64;
+    private static long _started = Environment.TickCount64;
     private static int _coldReported;
+
+    public static void MarkStart() => _started = Environment.TickCount64;
 
     public static void NoteFirstFrame()
     {
         if (Interlocked.Exchange(ref _coldReported, 1) != 0) return;
-        Write("cold", Environment.TickCount64 - Started);
+        Write("cold", Environment.TickCount64 - _started);
     }
 
     public static void NoteWake(long requestedAt) => Write("wake", Environment.TickCount64 - requestedAt);
