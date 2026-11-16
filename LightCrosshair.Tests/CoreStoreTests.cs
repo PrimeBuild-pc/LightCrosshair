@@ -151,4 +151,27 @@ public sealed class CoreStoreTests : IDisposable
         Assert.Equal(24, ring.Layers[0].Length);
         Assert.All(LegacyMigration.Convert(new() { EnableCustomCrosshair = false }).Layers, layer => Assert.False(layer.Visible));
     }
+    [Fact]
+    public async Task AStoreThatCannotFitInASnapshotIsRejectedBeforeReplacingTheLastGoodFile()
+    {
+        var store = new CoreStore(V2); var document = await store.LoadAsync(_root);
+        string previous = await File.ReadAllTextAsync(Path.Combine(V2, "store.json"));
+        document.Crosshairs = Enumerable.Range(0, 3000).Select(i => new CrosshairDesign
+        {
+            Id = i.ToString(), Name = new string('n', 48),
+            Layers = Enumerable.Range(0, 8).Select(j => new CrosshairLayer { Id = j.ToString(), Name = new string('l', 48) }).ToList()
+        }).ToList();
+        document.Settings.DefaultCrosshairId = "0";
+        await Assert.ThrowsAsync<CoreException>(() => store.SaveAsync(document));
+        Assert.Equal(previous, await File.ReadAllTextAsync(Path.Combine(V2, "store.json")));
+    }
+    [Fact]
+    public void LargeLegacyBoxFillCoversItsCenterWithinContractLayerAndStrokeLimits()
+    {
+        var design = LegacyMigration.Convert(new() { EnumShape = CrosshairShape.Box, Shape = "Box", Size = 256, FillColor = System.Drawing.Color.Blue, OuterColor = System.Drawing.Color.Green });
+        Assert.Equal(3, design.Layers.Count); Assert.All(design.Layers, l => Assert.InRange(l.Thickness, 1, 64));
+        using var bitmap = new LayerRenderer(V2).Render(design, 320);
+        Assert.Equal(System.Drawing.Color.Blue.ToArgb(), bitmap.GetPixel(160, 160).ToArgb());
+        Assert.Equal(System.Drawing.Color.Blue.ToArgb(), bitmap.GetPixel(240, 160).ToArgb());
+    }
 }

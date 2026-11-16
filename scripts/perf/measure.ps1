@@ -5,6 +5,7 @@ param(
     [switch]$SkipBuild,
     [switch]$SkipSettings,
     [switch]$Legacy,
+    [switch]$Isolated,
     [string]$Executable
 )
 $ErrorActionPreference = 'Stop'
@@ -17,7 +18,19 @@ if (!$Executable) {
     $Executable = (Get-ChildItem "$repo/LightCrosshair/bin/Release" -Recurse -Filter LightCrosshair.exe |
         Where-Object FullName -NotMatch 'publish' | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
 }
-if (Get-Process LightCrosshair -ErrorAction SilentlyContinue) { throw 'Close the existing LightCrosshair process before measuring' }
+if (!$Isolated) {
+    $existingMutex = $null
+    if ($Legacy -and (Get-Process LightCrosshair -ErrorAction SilentlyContinue)) { throw 'Close the existing v1 process before measuring' }
+    if ([Threading.Mutex]::TryOpenExisting('Local\LightCrosshair.Core', [ref]$existingMutex)) {
+        $existingMutex.Dispose(); throw 'Close the existing production Core before measuring, or use -Isolated -SkipSettings'
+    }
+}
+if (!$Isolated -and !$SkipSettings -and (Get-Process 'LightCrosshair.UI' -ErrorAction SilentlyContinue)) { throw 'An existing UI process would interfere with lifecycle measurements' }
+if ($Isolated) {
+    $SkipSettings = $true
+    $env:LIGHTCROSSHAIR_TEST_INSTANCE = [Guid]::NewGuid().ToString('N')
+    if (!$env:LIGHTCROSSHAIR_DATA_ROOT) { $env:LIGHTCROSSHAIR_DATA_ROOT = Join-Path ([IO.Path]::GetTempPath()) ("lc2-perf-$env:LIGHTCROSSHAIR_TEST_INSTANCE/v2") }
+}
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -49,6 +62,31 @@ try {
     }
     $startupMs = $watch.Elapsed.TotalMilliseconds
     if ($window -eq [IntPtr]::Zero) { throw 'No Core window detected' }
+    if ($Isolated) {
+        # Release live system shortcuts so another worktree can be tested concurrently.
+        $fixturePipe = [IO.Pipes.NamedPipeClientStream]::new('.', "LightCrosshair.v2.$($app.SessionId).test.$env:LIGHTCROSSHAIR_TEST_INSTANCE", [IO.Pipes.PipeDirection]::InOut, [IO.Pipes.PipeOptions]::Asynchronous)
+        $fixturePipe.Connect(5000)
+        $fixtureReader = [IO.StreamReader]::new($fixturePipe, [Text.Encoding]::UTF8, $false, 4096, $true)
+        $script:fixtureId = 0
+        function Invoke-PerfFixture([string]$method, $payload) {
+            $script:fixtureId++
+            $json = @{kind='req';id=$script:fixtureId;method=$method;payload=$payload} | ConvertTo-Json -Depth 32 -Compress
+            $bytes = [Text.Encoding]::UTF8.GetBytes($json + "`n")
+            $fixturePipe.Write($bytes, 0, $bytes.Length); $fixturePipe.Flush()
+            do {
+                $response = $fixtureReader.ReadLineAsync().WaitAsync([TimeSpan]::FromSeconds(5)).GetAwaiter().GetResult() | ConvertFrom-Json -Depth 32
+            } until ($response.kind -eq 'res' -and $response.id -eq $script:fixtureId)
+            if (!$response.ok) { throw "Fixture setup failed: $($response.error.code)" }
+            return $response.payload
+        }
+        try {
+            Invoke-PerfFixture hello @{protocolVersion=1;client='perf-fixture'} | Out-Null
+            $fixture = Invoke-PerfFixture getSnapshot $null
+            foreach ($action in @('toggleVisibility','nextCrosshair','previousCrosshair','openSettings')) { $fixture.store.settings.hotkeys.$action.key='' }
+            Invoke-PerfFixture saveSettings $fixture.store.settings | Out-Null
+        }
+        finally { $fixtureReader.Dispose(); $fixturePipe.Dispose() }
+    }
     Start-Sleep -Seconds $WarmupSeconds
     $hasProbes = [PerfNative]::Query($window, 0x8069) -eq 0x4C433230
     $redrawsBefore = if ($hasProbes) { [PerfNative]::Query($window, 0x8064) } else { $null }
@@ -58,6 +96,7 @@ try {
     $previousTime = $watch.Elapsed.TotalMilliseconds
     for ($i = 0; $i -lt $Seconds; $i++) {
         Start-Sleep -Seconds 1
+        if ($app.HasExited) { throw 'Core exited during the idle interval; this run is invalid' }
         $app.Refresh()
         $now = $watch.Elapsed.TotalMilliseconds
         $cpu = $app.TotalProcessorTime.TotalMilliseconds
@@ -70,13 +109,17 @@ try {
         $previousCpu = $cpu; $previousTime = $now
     }
     $before = $app.PrivateMemorySize64
+    if ($app.HasExited -or ($hasProbes -and [PerfNative]::Query($window, 0x8069) -ne 0x4C433230)) { throw 'Core window changed or exited; this run is invalid' }
     $redrawsAfter = if ($hasProbes) { [PerfNative]::Query($window, 0x8064) } else { $null }
     $activeTimers = if ($hasProbes) { [PerfNative]::Query($window, 0x8067) } else { $null }
     $settingsCycles = 0
     $verifiedCycles = 0
+    $cyclePrivateMB = @()
+    $coldUiWindowMs = $null
     $uiPath = Join-Path (Split-Path -Parent $Executable) 'LightCrosshair.UI.exe'
     if (!$SkipSettings -and (Test-Path -LiteralPath $uiPath)) {
         for ($cycle = 0; $cycle -lt 5; $cycle++) {
+            $uiWatch = [Diagnostics.Stopwatch]::StartNew()
             [void][PerfNative]::PostMessage($window, 0x312, [IntPtr]9003, [IntPtr]::Zero)
             $deadline = [DateTime]::UtcNow.AddSeconds(8)
             $ui = $null
@@ -86,9 +129,11 @@ try {
                 $opened = $ui -and $ui.MainWindowHandle -ne [IntPtr]::Zero -and (!$hasProbes -or [PerfNative]::Query($window, 0x8066) -eq 1)
             } until ($opened -or [DateTime]::UtcNow -gt $deadline)
             if (!$opened) { break }
+            if ($cycle -eq 0) { $coldUiWindowMs = [math]::Round($uiWatch.Elapsed.TotalMilliseconds, 1) }
             [void][PerfNative]::PostMessage($window, 0x312, [IntPtr]9003, [IntPtr]::Zero)
             $closed = $ui.WaitForExit(8000)
             $settingsCycles++
+            $app.Refresh(); $cyclePrivateMB += [math]::Round($app.PrivateMemorySize64 / 1MB, 2)
             if ($closed) { $verifiedCycles++ } else { break }
         }
     }
@@ -97,6 +142,7 @@ try {
         MeasuredAt = (Get-Date).ToUniversalTime().ToString('O'); Executable = $Executable
         OS = [Environment]::OSVersion.VersionString; Cpu = (Get-CimInstance Win32_Processor).Name
         LogicalProcessors = [Environment]::ProcessorCount; StartupWindowMs = [math]::Round($startupMs, 1)
+        Isolated = $Isolated.IsPresent
         WarmupSeconds = $WarmupSeconds; IdleSeconds = $Seconds
         PrivateMB = [math]::Round(($samples | Measure-Object PrivateBytes -Average).Average / 1MB, 2)
         WorkingSetMB = [math]::Round(($samples | Measure-Object WorkingSet -Average).Average / 1MB, 2)
@@ -105,6 +151,8 @@ try {
         SettingsCyclesRequested = $settingsCycles
         SettingsCyclesVerified = $verifiedCycles -eq 5
         VerifiedSettingsCycles = $verifiedCycles
+        SettingsColdWindowMs = $coldUiWindowMs
+        PrivateAfterEachSettingsCycleMB = $cyclePrivateMB
         SettingsPrivateDeltaMB = [math]::Round(($app.PrivateMemorySize64 - $before) / 1MB, 2)
         RedrawsPerSecond = if ($hasProbes) { ($redrawsAfter - $redrawsBefore) / $Seconds } else { $null }
         ActiveRepeatingTimers = $activeTimers

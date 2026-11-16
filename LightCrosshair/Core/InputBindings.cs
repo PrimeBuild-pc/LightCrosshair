@@ -14,7 +14,7 @@ internal static class InputBindings
     internal static List<BoundAction> Resolve(AppSettings settings, GameContext context)
     {
         var actions = new List<BoundAction>();
-        Add(context.Game is null ? "ToggleVisibility" : "GameProfile:" + context.Game.Id, context.Binding, 9000);
+        Add(context.Game?.VisibilityBinding is null ? "ToggleVisibility" : "GameProfile:" + context.Game.Id, context.Binding, 9000);
         Add("NextCrosshair", settings.Hotkeys.NextCrosshair, 9001);
         Add("PreviousCrosshair", settings.Hotkeys.PreviousCrosshair, 9002);
         Add("OpenSettings", settings.Hotkeys.OpenSettings, 9003);

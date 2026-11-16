@@ -40,6 +40,7 @@ namespace Core
     {
         public event Action<bool>? Failed;
         private Task _tail = Task.CompletedTask;
+        private long _revision;
         private readonly object _gate = new();
         private IGpuColorManager? _manager;
         private ColorRecoverySnapshot? _original;
@@ -49,7 +50,15 @@ namespace Core
         public Task SetAsync(DisplayColorSettings? colors)
         {
             var copy = colors is null ? null : Validation.Copy(colors);
-            lock (_gate) return _tail = _tail.ContinueWith(_ => Transition(copy), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            lock (_gate)
+            {
+                long revision = ++_revision;
+                return _tail = _tail.ContinueWith(_ =>
+                {
+                    // A slow vendor call must not leave a backlog of obsolete game colors.
+                    if (revision == Volatile.Read(ref _revision)) Transition(copy);
+                }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            }
         }
         public Task RecoverAsync() => SetAsync(null);
         private void Transition(DisplayColorSettings? colors)

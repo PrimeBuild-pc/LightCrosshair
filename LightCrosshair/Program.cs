@@ -1,4 +1,6 @@
 using LightCrosshair.GpuDriver;
+using LightCrosshair.Contracts;
+using System.Diagnostics;
 using System.Text;
 
 namespace LightCrosshair;
@@ -7,13 +9,23 @@ internal static class Program
 {
     private static readonly object LogGate = new();
     internal static string DataRoot => Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LightCrosshair", "v2");
+    // Opt-in test isolation for concurrent worktrees. Normal launches keep the exact contract names.
+    private static readonly string TestSuffix = TestInstanceSuffix();
+    internal static string PipeName => ContractInfo.PipeName(Process.GetCurrentProcess().SessionId) + TestSuffix;
+    private static string TestInstanceSuffix()
+    {
+        string? value = Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_TEST_INSTANCE");
+        if (string.IsNullOrEmpty(value)) return "";
+        if (value.Length > 32 || value.Any(c => !char.IsAsciiLetterOrDigit(c))) throw new InvalidOperationException("Invalid test instance.");
+        return ".test." + value;
+    }
     public static bool DebugLoggingEnabled { get; set; } = Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DEBUG_LOG") == "1";
 
     [STAThread]
     private static int Main(string[] args)
     {
         if (NvidiaHelperHost.IsHelperInvocation(args)) return NvidiaHelperHost.Run(args);
-        using var mutex = new Mutex(true, @"Local\LightCrosshair.Core", out bool created);
+        using var mutex = new Mutex(true, @"Local\LightCrosshair.Core" + TestSuffix, out bool created);
         if (!created) return 0;
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         Application.EnableVisualStyles();

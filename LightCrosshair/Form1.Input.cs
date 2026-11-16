@@ -85,13 +85,16 @@ internal sealed partial class Form1
             foreach (var state in _bindingStates.Values) state.Reset(); _holdOverride = null;
             if (_input?.Error is { } error)
                 foreach (var action in _bindings.Where(a => a.Binding.Input != BindingInput.Keyboard || a.Binding.Mode != BindingMode.Toggle))
-                    Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = TextFor("HookRegistrationFailed") });
+                    if (!Runtime.HotkeyErrors.Any(e => e.Action == action.Action && e.Message == TextFor("HookRegistrationFailed")))
+                        Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = TextFor("HookRegistrationFailed") });
             RefreshOverlay(); QueueRuntimeEvent(); return;
         }
         base.WndProc(ref m);
     }
     private async Task RunInputActionAsync(int id)
     {
+        if (_closing) return;
+        // CONTRACT-REQUEST: Suspend actions during binding capture. The protocol has no capture lifecycle message.
         try
         {
             switch (id)

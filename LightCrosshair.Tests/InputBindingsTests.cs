@@ -29,4 +29,11 @@ public class InputBindingsTests
         store.Settings.Hotkeys.PreviousCrosshair = new() { Key = "WheelUp" };
         Assert.Equal(2, InputBindings.Conflicts(InputBindings.Resolve(store.Settings, GameRules.Evaluate(store, "game.exe"))).Count);
     }
+    [Fact]
+    public void InheritedBindingErrorsBelongToTheGlobalAction()
+    {
+        var store = LegacyMigration.Defaults();
+        store.GameProfiles.Add(new() { ProcessName = "game.exe", CrosshairId = store.Settings.DefaultCrosshairId });
+        Assert.Equal("ToggleVisibility", InputBindings.Resolve(store.Settings, GameRules.Evaluate(store, "game.exe"))[0].Action);
+    }
 }

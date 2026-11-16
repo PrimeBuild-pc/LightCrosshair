@@ -46,7 +46,12 @@ internal sealed class CoreStore(string directory)
     }
     public Task SaveAsync(StoreDocument document)
     {
-        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(Validation.Store(Validation.Copy(document), ImagesDirectory), ContractJson.IndentedOptions);
+        var valid = Validation.Store(Validation.Copy(document), ImagesDirectory);
+        // Reserve room for RuntimeState and the envelope inside the protocol's 8 MiB limit.
+        // A successful save must remain readable and transferable on the next launch.
+        if (JsonSerializer.SerializeToUtf8Bytes(valid, ContractJson.Options).Length > 7 * 1024 * 1024) throw Validation.Invalid("Library exceeds the transport limit.");
+        byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(valid, ContractJson.IndentedOptions);
+        if (bytes.Length > 32 * 1024 * 1024) throw Validation.Invalid("Library exceeds the storage limit.");
         lock (_pendingGate)
         {
             _pending = bytes; _revision++;

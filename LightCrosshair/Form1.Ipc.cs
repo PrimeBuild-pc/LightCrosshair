@@ -15,7 +15,7 @@ internal sealed partial class Form1
     private long _lastRuntimeEvent;
     private void InitializePipe()
     {
-        _pipe = new(ContractInfo.PipeName(Process.GetCurrentProcess().SessionId),
+        _pipe = new(Program.PipeName,
             request => OnUiAsync(() => HandleRequestAsync(request)),
             () => OnUiAsync(() => { EndPreview(); return Task.FromResult<object?>(null); }));
         RuntimeUpdated += QueueRuntimeEvent;

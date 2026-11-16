@@ -1,18 +1,23 @@
-param([string]$Executable = "$PSScriptRoot/../../releases/LightCrosshair-v2.0.0-win-x64/LightCrosshair.exe")
+param([string]$Executable = "$PSScriptRoot/../../releases/LightCrosshair-v2.0.0-win-x64/LightCrosshair.exe", [switch]$Isolated)
 $ErrorActionPreference = 'Stop'
-if (Get-Process LightCrosshair -ErrorAction SilentlyContinue) { throw 'Close the existing Core before smoke testing' }
+if (!$Isolated -and (Get-Process LightCrosshair -ErrorAction SilentlyContinue)) { throw 'Close the existing Core before smoke testing, or use -Isolated' }
 $testRoot = Join-Path ([IO.Path]::GetTempPath()) ('lc2-smoke-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $testRoot | Out-Null
 $previousRoot = $env:LIGHTCROSSHAIR_DATA_ROOT
+$previousInstance = $env:LIGHTCROSSHAIR_TEST_INSTANCE
+if ($Isolated) { $env:LIGHTCROSSHAIR_TEST_INSTANCE = [Guid]::NewGuid().ToString('N') }
+$script:pipeName = "LightCrosshair.v2.$([Diagnostics.Process]::GetCurrentProcess().SessionId)"
+if ($env:LIGHTCROSSHAIR_TEST_INSTANCE) { $script:pipeName += ".test.$env:LIGHTCROSSHAIR_TEST_INSTANCE" }
 $env:LIGHTCROSSHAIR_DATA_ROOT = Join-Path $testRoot 'v2'
 $app = Start-Process -FilePath ([IO.Path]::GetFullPath($Executable)) -PassThru -WindowStyle Hidden
 $env:LIGHTCROSSHAIR_DATA_ROOT = $previousRoot
+$env:LIGHTCROSSHAIR_TEST_INSTANCE = $previousInstance
 $script:requestId = 0
 $script:pipe = $null
 $script:reader = $null
 $events = [Collections.Generic.List[string]]::new()
 function Connect-Core {
-    $script:pipe = [IO.Pipes.NamedPipeClientStream]::new('.', "LightCrosshair.v2.$([Diagnostics.Process]::GetCurrentProcess().SessionId)", [IO.Pipes.PipeDirection]::InOut, [IO.Pipes.PipeOptions]::Asynchronous)
+    $script:pipe = [IO.Pipes.NamedPipeClientStream]::new('.', $script:pipeName, [IO.Pipes.PipeDirection]::InOut, [IO.Pipes.PipeOptions]::Asynchronous)
     $script:pipe.Connect(5000)
     $script:reader = [IO.StreamReader]::new($script:pipe, [Text.Encoding]::UTF8, $false, 4096, $true)
     Invoke-Core hello @{ protocolVersion = 1; client = 'local-smoke' } | Out-Null

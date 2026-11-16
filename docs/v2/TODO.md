@@ -35,7 +35,7 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 - [x] `SetWinEventHook` foreground detection; process name resolution
 - [x] Apply / restore crosshair, display colors, FPS overlay override, visibility binding override
 - [x] Default crosshair + "show only in configured games"
-- [x] NVIDIA per-app FPS cap on save/delete, capability detection
+- [ ] NVIDIA per-app FPS cap on save/delete, capability detection — save/delete implemented; actual feature probe and v1 driver-cap adoption deferred in HANDOFF-core.md
 - [x] Known-games list (~50) + suggestion + tray notification → UI `--page games --suggest`
 - [x] Tests: rule table for foreground transitions (pure logic)
 ### C5 IPC and lifecycle
@@ -55,8 +55,8 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 - [x] Publish scripts produce both exes in one folder (x64, ARM64); installer, ZIP, winget/choco templates reference .NET 10 Desktop Runtime
 - [x] README, CHANGELOG 2.0.0, docs/SETTINGS.md rewritten for v2
 ### C9 Verification
-- [ ] Run `measure.ps1` on v2 Core, compare with budgets in PLAN.md §4, write results in HANDOFF-core.md
-- [ ] `docs/v2/HANDOFF-core.md` complete
+- [x] Run `measure.ps1` on v2 Core, compare with budgets in PLAN.md §4, write results in HANDOFF-core.md
+- [x] `docs/v2/HANDOFF-core.md` complete
 
 ## Cursor — UI, branch `v2-ui`
 ### U0 Foundation

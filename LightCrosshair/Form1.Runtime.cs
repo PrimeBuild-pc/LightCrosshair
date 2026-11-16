@@ -84,9 +84,13 @@ internal sealed partial class Form1
         _closing = true; _foreground?.Dispose(); _foreground = null;
         _pipe?.Publish(IpcEvents.CloseRequested, null);
         _fps.Configure(false, 0, Document.Settings.FpsOverlay, null);
-        try { await Store.SaveAsync(Document); }
+        Task restoreColors = _colors.SetAsync(null);
+        // Never turn a failed migration/load into a successful default-store marker.
+        await _mutations.WaitAsync();
+        try { if (_ready) await Store.SaveAsync(Document); }
         catch (Exception ex) { Program.LogError(ex, "Shutdown store"); }
-        await _colors.SetAsync(null);
+        finally { _mutations.Release(); }
+        await restoreColors;
         _allowClose = true; Close();
     }
 }

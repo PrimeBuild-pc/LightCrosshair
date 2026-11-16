@@ -19,7 +19,7 @@ internal sealed class FpsOverlay : IDisposable
             _timer.Stop(); _window.Hide(); _ = _capture.StopAsync(); _last = null; return;
         }
         _settings = settings; _monitor = settings.MonitorDeviceName ?? crosshairMonitor;
-        _capture.Start(pid); _last = null; _timer.Start(); Draw();
+        _capture.Start(pid); _last = null; _timer.Start(); Draw(); _window.ReinforceTopmost();
     }
     private void Draw()
     {
@@ -38,7 +38,7 @@ internal sealed class FpsOverlay : IDisposable
             using var brush = new SolidBrush(ColorTranslator.FromHtml(_settings.TextColor));
             g.DrawString(text, font, brush, 5, 5);
         });
-        if (!_window.Visible) _window.Show(); _window.ReinforceTopmost(); _last = key;
+        if (!_window.Visible) _window.Show(); _last = key;
     }
     public void Dispose() { _timer.Dispose(); _ = _capture.StopAsync(); _window.Dispose(); }
 }

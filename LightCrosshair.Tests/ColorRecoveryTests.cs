@@ -51,6 +51,22 @@ public sealed class ColorRecoveryTests : IDisposable
         Assert.Equal(baseline, restored);
         Assert.False(File.Exists(Path.Combine(_directory, "colors-applied.json")));
     }
+    [Fact]
+    public async Task LeavingAGameDiscardsQueuedStaleAppliesBehindASlowDriverCall()
+    {
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var fake = new FakeColors { BeforeApply = () => { started.TrySetResult(); release.Task.GetAwaiter().GetResult(); } };
+        var session = new ColorSession(_directory, () => fake);
+        Task first = session.SetAsync(new() { Gamma = 110 });
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Task obsolete = session.SetAsync(new() { Gamma = 120 });
+        Task leave = session.SetAsync(null);
+        release.SetResult();
+        await Task.WhenAll(first, obsolete, leave);
+        Assert.Equal(1, fake.Applies); Assert.Equal(1, fake.Restores);
+        Assert.False(File.Exists(Path.Combine(_directory, "colors-applied.json")));
+    }
     private sealed class FakeColors : IGpuColorManager
     {
         public string BackendName => "Fake"; public GpuVendor Vendor => GpuVendor.Unknown;
