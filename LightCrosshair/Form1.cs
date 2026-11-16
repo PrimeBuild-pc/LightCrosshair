@@ -28,10 +28,16 @@ internal sealed partial class Form1 : LayeredWindow
         menu.Items.Add(CoreStrings.Get("auto", "Exit"), null, (_, _) => Close());
         _tray = new() { Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? SystemIcons.Application, Text = "LightCrosshair", ContextMenuStrip = menu, Visible = true };
         _tray.DoubleClick += (_, _) => OpenSettings();
-        _colors.Failed += restore =>
+        _colors.StatusChanged += (revision, code) =>
         {
             if (IsDisposed || !IsHandleCreated) return;
-            try { BeginInvoke(new Action(() => { if (!IsDisposed) _tray.ShowBalloonTip(5000, "LightCrosshair", TextFor(restore ? "ColorsRestoreFailed" : "ColorsApplyFailed"), ToolTipIcon.Warning); })); }
+            try { BeginInvoke(new Action(() =>
+            {
+                if (IsDisposed || revision != _colors.Revision) return;
+                bool notify = code is not null && Runtime.DisplayColorsError != code;
+                Runtime.DisplayColorsError = code; QueueRuntimeEvent();
+                if (notify) _tray.ShowBalloonTip(5000, "LightCrosshair", TextFor(code == "restore_failed" ? "ColorsRestoreFailed" : "ColorsApplyFailed"), ToolTipIcon.Warning);
+            })); }
             catch (InvalidOperationException) { }
         };
         _tray.BalloonTipClicked += (_, _) => OpenSettings(Runtime.PendingSuggestion is null ? null : new() { Page = UiPages.Games, SuggestProcess = Runtime.PendingSuggestion.ProcessName });

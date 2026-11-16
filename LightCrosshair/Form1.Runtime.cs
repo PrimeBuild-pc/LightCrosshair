@@ -54,8 +54,8 @@ internal sealed partial class Form1
         if (Runtime.Monitors.Count == 0)
             Runtime.Monitors = MonitorNames.Populate(Screen.AllScreens.Select(s => new MonitorInfo { DeviceName = s.DeviceName, IsPrimary = s.Primary, Width = s.Bounds.Width, Height = s.Bounds.Height }));
         var colors = _context.DisplayColors;
-        string colorsKey = System.Text.Json.JsonSerializer.Serialize(colors, ContractJson.Options);
-        if (_colorsKey != colorsKey) { _colorsKey = colorsKey; _ = _colors.SetAsync(colors); }
+        string colorsKey = (_context.Game?.Id ?? "") + ":" + System.Text.Json.JsonSerializer.Serialize(colors, ContractJson.Options);
+        if (_colorsKey != colorsKey) { _colorsKey = colorsKey; Runtime.DisplayColorsError = null; _ = _colors.SetAsync(colors); }
         _fps.Configure(_context.FpsEnabled, _foregroundPid, Document.Settings.FpsOverlay, Document.Settings.MonitorDeviceName, Document.Settings.Language);
         ConfigureInput(); ConfigureRecording(); UpdateTrayText();
         RefreshOverlay(); RuntimeUpdated?.Invoke();
