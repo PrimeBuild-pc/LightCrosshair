@@ -26,6 +26,7 @@ public static class Icons
     public const string Close = "\uE8BB";
     public const string Copy = "\uE8C8";
     public const string Paste = "\uE77F";
+    public const string Edit = "\uE70F";
     public const string More = "\uE712";
     public const string Up = "\uE74A";
     public const string Down = "\uE74B";

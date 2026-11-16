@@ -180,7 +180,7 @@
   <data name="Games_ProfileName" xml:space="preserve"><value>Имя профиля</value></data>
   <data name="Games_CapValue" xml:space="preserve"><value>Предел</value></data>
   <data name="Games_Delete" xml:space="preserve"><value>Удалить профиль</value></data>
-  <data name="Hotkeys_Help" xml:space="preserve"><value>Щёлкните поле и нажмите клавишу или кнопку мыши. Esc отменяет. Колёсико только переключает.</value></data>
+  <data name="Hotkeys_Help" xml:space="preserve"><value>Щёлкните сочетание, затем нажмите клавишу или кнопку мыши</value></data>
   <data name="Hotkeys_ToggleVisibility" xml:space="preserve"><value>Показать или скрыть прицел</value></data>
   <data name="Hotkeys_Next" xml:space="preserve"><value>Следующий прицел</value></data>
   <data name="Hotkeys_Previous" xml:space="preserve"><value>Предыдущий прицел</value></data>
@@ -206,9 +206,9 @@
   <data name="Key_Alt" xml:space="preserve"><value>Alt</value></data>
   <data name="Key_Shift" xml:space="preserve"><value>Shift</value></data>
   <data name="Key_Win" xml:space="preserve"><value>Win</value></data>
-  <data name="Settings_Display" xml:space="preserve"><value>Экран</value></data>
+  <data name="Settings_Display" xml:space="preserve"><value>Дисплей</value></data>
   <data name="Settings_Monitor" xml:space="preserve"><value>Монитор</value></data>
-  <data name="Settings_Primary" xml:space="preserve"><value>Основной монитор</value></data>
+  <data name="Settings_Primary" xml:space="preserve"><value>Основной</value></data>
   <data name="Settings_Position" xml:space="preserve"><value>Положение</value></data>
   <data name="Settings_OffsetX" xml:space="preserve"><value>Сдвиг по горизонтали</value></data>
   <data name="Settings_OffsetY" xml:space="preserve"><value>Сдвиг по вертикали</value></data>
@@ -262,4 +262,18 @@
   <data name="Boot_Connecting" xml:space="preserve"><value>Подключение к LightCrosshair</value></data>
   <data name="Color_Presets" xml:space="preserve"><value>Готовые цвета</value></data>
   <data name="Common_More" xml:space="preserve"><value>Ещё</value></data>
+  <data name="Library_UseTitle" xml:space="preserve"><value>Использовать этот прицел</value></data>
+  <data name="Library_AlreadySaved" xml:space="preserve"><value>Уже в «Мои прицелы»</value></data>
+  <data name="Library_Use" xml:space="preserve"><value>Использовать</value></data>
+  <data name="Library_UseExisting" xml:space="preserve"><value>Использовать существующий</value></data>
+  <data name="Library_SaveCopy" xml:space="preserve"><value>Сохранить ещё копию</value></data>
+  <data name="Library_InUse" xml:space="preserve"><value>Используется</value></data>
+  <data name="Library_UseMenu" xml:space="preserve"><value>Использовать…</value></data>
+  <data name="Library_Rename" xml:space="preserve"><value>Переименовать</value></data>
+  <data name="Hotkeys_MouseButton" xml:space="preserve"><value>Кнопка мыши</value></data>
+  <data name="Settings_MonitorName" xml:space="preserve"><value>{0} · Дисплей {1}</value></data>
+  <data name="Games_UsePreset" xml:space="preserve"><value>Использовать готовый</value></data>
+  <data name="Games_ColorApplyFailed" xml:space="preserve"><value>Не удалось применить цвета дисплея. Драйвер видеокарты отклонил изменение.</value></data>
+  <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>Не удалось восстановить прежние цвета дисплея.</value></data>
+  <data name="Games_ColorUnsupported" xml:space="preserve"><value>Этот дисплей не поддерживает настройку цветов.</value></data>
 </root>

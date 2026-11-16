@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
 
@@ -60,29 +61,62 @@ public static class WindowPlacementStore
         }
     }
 
-    public static void Restore(Window window, WindowPlacement? placement)
+    public static bool Restore(Window window, WindowPlacement? placement)
     {
-        if (placement == null || placement.Width < 400 || placement.Height < 300 || !IntersectsVirtualScreen(placement))
-        {
-            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            window.Width = 1180;
-            window.Height = 740;
-            return;
-        }
-
+        var place = WindowPlacer.Place(placement, Cursor(), WorkAreas(), 1180, 740);
         window.WindowStartupLocation = WindowStartupLocation.Manual;
-        window.Left = placement.Left;
-        window.Top = placement.Top;
-        window.Width = Math.Max(window.MinWidth, placement.Width);
-        window.Height = Math.Max(window.MinHeight, placement.Height);
-        if (placement.Maximized) window.WindowState = WindowState.Maximized;
+        window.WindowState = WindowState.Normal;
+        window.Left = place.Bounds.Left;
+        window.Top = place.Bounds.Top;
+        window.Width = Math.Max(window.MinWidth, place.Bounds.Width);
+        window.Height = Math.Max(window.MinHeight, place.Bounds.Height);
+        return place.Maximized;
     }
 
-    private static bool IntersectsVirtualScreen(WindowPlacement placement)
+    private static Point Cursor()
     {
-        var rect = new Rect(placement.Left, placement.Top, placement.Width, placement.Height);
-        var screen = new Rect(SystemParameters.VirtualScreenLeft, SystemParameters.VirtualScreenTop, SystemParameters.VirtualScreenWidth, SystemParameters.VirtualScreenHeight);
-        rect.Intersect(screen);
-        return rect.Width > 80 && rect.Height > 80;
+        return GetCursorPos(out var point) ? new Point(point.X, point.Y) : new Point(0, 0);
+    }
+
+    private static IReadOnlyList<Rect> WorkAreas()
+    {
+        var areas = new List<Rect>();
+        EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (monitor, _, _, _) =>
+        {
+            var info = new MonitorInfo { Size = Marshal.SizeOf<MonitorInfo>() };
+            if (GetMonitorInfo(monitor, ref info))
+            {
+                var work = info.Work;
+                areas.Add(new Rect(work.Left, work.Top, Math.Max(0, work.Right - work.Left), Math.Max(0, work.Bottom - work.Top)));
+            }
+            return true;
+        }, IntPtr.Zero);
+        return areas;
+    }
+
+    private delegate bool MonitorEnumProc(IntPtr monitor, IntPtr hdc, IntPtr rect, IntPtr data);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr clip, MonitorEnumProc proc, IntPtr data);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out NativePoint point);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint { public int X; public int Y; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect { public int Left; public int Top; public int Right; public int Bottom; }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    private struct MonitorInfo
+    {
+        public int Size;
+        public NativeRect Monitor;
+        public NativeRect Work;
+        public uint Flags;
     }
 }

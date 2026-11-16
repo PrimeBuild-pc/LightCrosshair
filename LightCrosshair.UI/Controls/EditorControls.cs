@@ -208,6 +208,7 @@ public class BindingCaptureBox : Border
     private readonly DispatcherTimer _renew = new() { Interval = TimeSpan.FromSeconds(30) };
     private Window? _window;
     private bool _capturing;
+    private bool _arming;
 
     public BindingCaptureBox()
     {
@@ -247,10 +248,11 @@ public class BindingCaptureBox : Border
 
     private static void OnBindingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) => ((BindingCaptureBox)d).Refresh();
 
-    private void Start()
+    internal void StartCapture(bool openingClickHeld = false)
     {
         if (_capturing) return;
         _capturing = true;
+        _arming = openingClickHeld || Mouse.LeftButton == MouseButtonState.Pressed;
         Focus();
         _text.Text = Prompt;
         BorderBrush = Application.Current?.TryFindResource("AccentBrush") as Brush;
@@ -258,6 +260,29 @@ public class BindingCaptureBox : Border
         NotifyCapture(true);
         _renew.Start();
     }
+
+    internal void ReleaseOpeningClick() => _arming = false;
+
+    internal string? MouseBinding(MouseButton button)
+    {
+        if (!_capturing || _arming) return null;
+        return button switch
+        {
+            MouseButton.Middle => "MiddleClick",
+            MouseButton.Right => "RightClick",
+            MouseButton.XButton1 => "Mouse4",
+            MouseButton.XButton2 => "Mouse5",
+            _ => null,
+        };
+    }
+
+    internal string? WheelBinding(int delta)
+    {
+        if (!_capturing || _arming || delta == 0) return null;
+        return delta > 0 ? "WheelUp" : "WheelDown";
+    }
+
+    private void Start() => StartCapture();
 
     private void EndCapture()
     {
@@ -309,16 +334,18 @@ public class BindingCaptureBox : Border
         base.OnPreviewMouseDown(e);
         if (!_capturing) return;
         e.Handled = true;
-        var name = e.ChangedButton switch
-        {
-            MouseButton.Middle => "MiddleClick",
-            MouseButton.Right => "RightClick",
-            MouseButton.XButton1 => "Mouse4",
-            MouseButton.XButton2 => "Mouse5",
-            _ => null,
-        };
+        if (e.ChangedButton == MouseButton.Left && _arming) return;
+        var name = MouseBinding(e.ChangedButton);
         if (name == null) return;
         Finish(name, ReadModifiers());
+    }
+
+    protected override void OnPreviewMouseUp(MouseButtonEventArgs e)
+    {
+        base.OnPreviewMouseUp(e);
+        if (!_capturing || e.ChangedButton != MouseButton.Left) return;
+        _arming = false;
+        e.Handled = true;
     }
 
     protected override void OnPreviewMouseWheel(MouseWheelEventArgs e)
@@ -326,7 +353,9 @@ public class BindingCaptureBox : Border
         base.OnPreviewMouseWheel(e);
         if (!_capturing) return;
         e.Handled = true;
-        Finish(e.Delta > 0 ? "WheelUp" : "WheelDown", ReadModifiers());
+        var name = WheelBinding(e.Delta);
+        if (name == null) return;
+        Finish(name, ReadModifiers());
     }
 
     private void Finish(string key, KeyModifiers modifiers)

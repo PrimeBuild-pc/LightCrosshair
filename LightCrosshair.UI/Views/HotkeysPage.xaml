@@ -27,10 +27,15 @@
                     </MultiBinding>
                   </TextBlock.Text>
                 </TextBlock>
-                <controls:BindingCaptureBox Grid.Column="1" Margin="0,0,12,0" Binding="{Binding Binding}" Prompt="{loc:Tr Hotkeys_Press}"
-                                             CapturedCommand="{Binding DataContext.CommitCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                             CaptureChangedCommand="{Binding DataContext.SetCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                             CommandParameter="{Binding Action}"/>
+                <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                  <controls:BindingCaptureBox Binding="{Binding Binding}" Prompt="{loc:Tr Hotkeys_Press}"
+                                               CapturedCommand="{Binding DataContext.CommitCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                               CaptureChangedCommand="{Binding DataContext.SetCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                               CommandParameter="{Binding Action}"/>
+                  <ComboBox Margin="0,8,0,0" ItemsSource="{Binding DataContext.MouseChoices, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            SelectedValuePath="Key" DisplayMemberPath="Label" SelectedValue="{Binding MouseKey, Mode=OneWay}"
+                            SelectionChanged="OnMouseChanged" AutomationProperties.Name="{loc:Tr Hotkeys_MouseButton}"/>
+                </StackPanel>
                 <ComboBox Grid.Column="2" MinWidth="160" IsEnabled="{Binding AllowsHold}" SelectedValuePath="Tag" SelectedValue="{Binding Binding.Mode, Mode=OneWay}"
                           SelectionChanged="OnModeChanged" AutomationProperties.Name="{loc:Tr Hotkeys_Mode}">
                   <ComboBoxItem Tag="{x:Static contracts:BindingMode.Toggle}" Content="{loc:Tr Hotkeys_Toggle}"/>

@@ -225,6 +225,22 @@
         </StackPanel>
       </Border>
     </Grid>
+    <Popup x:Name="UsePopup" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade"
+           IsOpen="{Binding Library.UseOpen, Mode=TwoWay}" Opened="OnUseOpened">
+      <Border Padding="12" Width="320" Focusable="True" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" PreviewKeyDown="OnUseKey">
+        <StackPanel>
+          <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Library_UseTitle}"/>
+          <TextBlock Style="{StaticResource BodyText}" Text="{loc:Tr Library_AlreadySaved}" TextWrapping="Wrap" Margin="0,0,0,8" Visibility="{Binding Library.ShowUseExisting, Converter={StaticResource Vis}}"/>
+          <TextBox x:Name="UseNameBox" Text="{Binding Library.UseName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12" Visibility="{Binding Library.ShowUseName, Converter={StaticResource Vis}}" AutomationProperties.Name="{loc:Tr Library_UseTitle}"/>
+          <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="{loc:Tr Library_UseExisting}" Command="{Binding Library.ConfirmUseCommand}" Margin="0,0,8,8" Visibility="{Binding Library.ShowUseExisting, Converter={StaticResource Vis}}" Style="{StaticResource PrimaryButton}" AutomationProperties.Name="{loc:Tr Library_UseExisting}"/>
+            <Button Content="{loc:Tr Library_SaveCopy}" Command="{Binding Library.SaveAnotherCopyCommand}" Margin="0,0,8,8" Visibility="{Binding Library.ShowUseExisting, Converter={StaticResource Vis}}" AutomationProperties.Name="{loc:Tr Library_SaveCopy}"/>
+            <Button Content="{loc:Tr Library_Use}" Command="{Binding Library.ConfirmUseCommand}" Margin="0,0,8,8" Visibility="{Binding Library.ShowUseName, Converter={StaticResource Vis}}" Style="{StaticResource PrimaryButton}" AutomationProperties.Name="{loc:Tr Library_Use}"/>
+            <Button Content="{loc:Tr Cancel}" Command="{Binding Library.CancelUseCommand}" Margin="0,0,0,8" AutomationProperties.Name="{loc:Tr Cancel}"/>
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+    </Popup>
     <ItemsControl Grid.Row="1" Panel.ZIndex="3" ItemsSource="{Binding Ui.Toasts}" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,16,16" IsHitTestVisible="False">
       <ItemsControl.ItemTemplate>
         <DataTemplate>

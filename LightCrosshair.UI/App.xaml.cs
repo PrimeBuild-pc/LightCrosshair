@@ -32,17 +32,26 @@ public partial class App : Application
         var viewModel = new MainViewModel(core, ui, options);
         var window = new MainWindow { DataContext = viewModel };
         MainWindow = window;
+        var restoreMaximized = false;
         if (options.ScreenshotsDirectory == null)
-            WindowPlacementStore.Restore(window, WindowPlacementStore.Load());
-        window.SourceInitialized += (_, _) => ui.WindowHandle = new WindowInteropHelper(window).Handle;
+            restoreMaximized = WindowPlacementStore.Restore(window, WindowPlacementStore.Load());
+        else
+            viewModel.AllowExit = true;
+        window.SourceInitialized += (_, _) =>
+        {
+            ui.WindowHandle = new WindowInteropHelper(window).Handle;
+            if (restoreMaximized) window.WindowState = WindowState.Maximized;
+        };
         window.Show();
         ui.WindowHandle = new WindowInteropHelper(window).Handle;
-        await viewModel.StartAsync().ConfigureAwait(true);
         if (options.ScreenshotsDirectory != null)
         {
+            await viewModel.StartAsync().ConfigureAwait(true);
             await ScreenshotRunner.CaptureAsync(window, viewModel, options.ScreenshotsDirectory).ConfigureAwait(true);
             Shutdown(0);
+            return;
         }
+        _ = window.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => { _ = viewModel.StartAsync(); }));
     }
 
     protected override void OnExit(ExitEventArgs e)

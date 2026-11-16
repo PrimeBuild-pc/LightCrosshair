@@ -13,6 +13,7 @@ using Xunit;
 
 namespace LightCrosshair.UI.Tests;
 
+[Collection("UiSta")]
 public class Review2Tests
 {
     [Fact]
@@ -29,7 +30,7 @@ public class Review2Tests
 
             Environment.SetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT", root);
             Assert.Equal(Path.Combine(root, "ui-placement.json"), WindowPlacementStore.FilePath);
-            Sta(() =>
+            UiSta.Run(() =>
             {
                 var window = new Window { Left = 30, Top = 40, Width = 900, Height = 640 };
                 WindowPlacementStore.Save(window);
@@ -67,7 +68,7 @@ public class Review2Tests
     {
         var core = new FakeCoreClient(new InlineMarshaler());
         await core.ConnectAsync();
-        Sta(() =>
+        UiSta.Run(() =>
         {
             var main = new MainViewModel(core, new FakeUi(), new LaunchOptions(UiPages.Studio, null, true, null));
             var window = new MainWindow { DataContext = main, ShowInTaskbar = false };
@@ -99,7 +100,7 @@ public class Review2Tests
         Assert.Equal(24, CrispIcon.FrameForScale(1.25));
         Assert.Equal(32, CrispIcon.FrameForScale(1.5));
         Assert.Equal(40, CrispIcon.FrameForScale(2));
-        Sta(() =>
+        UiSta.Run(() =>
         {
             foreach (var scale in new[] { 1d, 1.5 })
             {
@@ -129,7 +130,7 @@ public class Review2Tests
     {
         var core = new FakeCoreClient(new InlineMarshaler());
         await core.ConnectAsync();
-        Sta(() =>
+        UiSta.Run(() =>
         {
             var studio = new StudioViewModel(core, new FakeUi());
             studio.Load(core.Snapshot!.Store.Crosshairs[0]);
@@ -232,36 +233,4 @@ public class Review2Tests
         }
     }
 
-    private static Dispatcher? _dispatcher;
-
-    private static void Sta(Action action)
-    {
-        if (_dispatcher == null)
-        {
-            using var ready = new ManualResetEventSlim();
-            var thread = new Thread(() =>
-            {
-                var app = new LightCrosshair.UI.App();
-                try { app.InitializeComponent(); }
-                catch (InvalidOperationException) { }
-                if (!app.Resources.Contains("Vis"))
-                    throw new InvalidOperationException("App resources are not loaded.");
-                _dispatcher = Dispatcher.CurrentDispatcher;
-                ready.Set();
-                Dispatcher.Run();
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.IsBackground = true;
-            thread.Start();
-            ready.Wait();
-        }
-
-        Exception? error = null;
-        _dispatcher!.Invoke(() =>
-        {
-            try { action(); }
-            catch (Exception ex) { error = ex; }
-        });
-        if (error != null) throw error;
-    }
 }

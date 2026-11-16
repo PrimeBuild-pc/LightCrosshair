@@ -64,10 +64,18 @@
           <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_Process}"/>
           <TextBlock Style="{StaticResource BodyText}" Text="{Binding ProcessName}" Margin="0,4,0,12"/>
           <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_Crosshair}"/>
-          <ComboBox ItemsSource="{Binding Crosshairs}" SelectedValuePath="Id" SelectedValue="{Binding CrosshairId}" Margin="0,4,0,12" AutomationProperties.Name="{loc:Tr Games_Crosshair}" ItemContainerStyle="{StaticResource NamedComboItem}">
+          <ComboBox ItemsSource="{Binding Crosshairs}" SelectedValuePath="Id" SelectedValue="{Binding CrosshairId}" Margin="0,4,0,8" AutomationProperties.Name="{loc:Tr Games_Crosshair}" ItemContainerStyle="{StaticResource NamedComboItem}">
             <ComboBox.ItemTemplate>
               <DataTemplate>
                 <TextBlock Text="{Binding Name}"/>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_UsePreset}"/>
+          <ComboBox x:Name="PresetPick" ItemsSource="{Binding PresetPicks}" Margin="0,4,0,12" SelectionChanged="OnPresetPicked" AutomationProperties.Name="{loc:Tr Games_UsePreset}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding Design.Name}"/>
               </DataTemplate>
             </ComboBox.ItemTemplate>
           </ComboBox>
@@ -90,6 +98,7 @@
             <ComboBoxItem Tag="off" Content="{loc:Tr Off}"/>
           </ComboBox>
           <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Games_DisplayColors}"/>
+          <TextBlock Style="{StaticResource WarningText}" Text="{Binding DisplayColorsMessage}" TextWrapping="Wrap" Visibility="{Binding DisplayColorsMessage, Converter={StaticResource NullVis}}" Margin="0,0,0,8"/>
           <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Games_UseColors}" IsChecked="{Binding UseColors}" IsEnabled="{Binding GammaSupported}" AutomationProperties.Name="{loc:Tr Games_UseColors}"/>
           <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_ReasonGamma}" Visibility="{Binding GammaSupported, Converter={StaticResource VisInv}}" Margin="0,4,0,8"/>
           <StackPanel Visibility="{Binding UseColors, Converter={StaticResource Vis}}">

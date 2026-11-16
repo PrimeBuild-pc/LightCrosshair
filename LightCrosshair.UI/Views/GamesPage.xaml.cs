@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using LightCrosshair.UI.ViewModels;
@@ -25,5 +26,15 @@ public partial class GamesPage : UserControl
     {
         if (sender is not CheckBox box || box.DataContext is not GameProfile profile) return;
         if (DataContext is GamesViewModel games) games.ToggleEnabledCommand.Execute(profile);
+    }
+
+    private void OnPresetPicked(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not ComboBox box || box.SelectedItem is not LibraryCard card) return;
+        if (DataContext is not GamesViewModel games) return;
+        if (Window.GetWindow(this) is not MainWindow window || window.DataContext is not MainViewModel main) return;
+        box.SelectedItem = null;
+        window.ShowUsePopup(box);
+        main.Library.BeginUse(card, games.Selected?.Id);
     }
 }

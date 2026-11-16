@@ -180,7 +180,7 @@
   <data name="Games_ProfileName" xml:space="preserve"><value>Nome profilo</value></data>
   <data name="Games_CapValue" xml:space="preserve"><value>Limite</value></data>
   <data name="Games_Delete" xml:space="preserve"><value>Elimina profilo</value></data>
-  <data name="Hotkeys_Help" xml:space="preserve"><value>Fai clic su una scorciatoia, poi premi un tasto o un pulsante del mouse. Esc annulla. La rotella può solo attivare o disattivare.</value></data>
+  <data name="Hotkeys_Help" xml:space="preserve"><value>Fai clic su una scorciatoia, poi premi un tasto o un pulsante del mouse</value></data>
   <data name="Hotkeys_ToggleVisibility" xml:space="preserve"><value>Mostra o nascondi mirino</value></data>
   <data name="Hotkeys_Next" xml:space="preserve"><value>Mirino successivo</value></data>
   <data name="Hotkeys_Previous" xml:space="preserve"><value>Mirino precedente</value></data>
@@ -208,7 +208,7 @@
   <data name="Key_Win" xml:space="preserve"><value>Win</value></data>
   <data name="Settings_Display" xml:space="preserve"><value>Schermo</value></data>
   <data name="Settings_Monitor" xml:space="preserve"><value>Monitor</value></data>
-  <data name="Settings_Primary" xml:space="preserve"><value>Monitor principale</value></data>
+  <data name="Settings_Primary" xml:space="preserve"><value>Principale</value></data>
   <data name="Settings_Position" xml:space="preserve"><value>Posizione</value></data>
   <data name="Settings_OffsetX" xml:space="preserve"><value>Scostamento orizzontale</value></data>
   <data name="Settings_OffsetY" xml:space="preserve"><value>Scostamento verticale</value></data>
@@ -262,4 +262,18 @@
   <data name="Boot_Connecting" xml:space="preserve"><value>Connessione a LightCrosshair</value></data>
   <data name="Color_Presets" xml:space="preserve"><value>Colori predefiniti</value></data>
   <data name="Common_More" xml:space="preserve"><value>Altro</value></data>
+  <data name="Library_UseTitle" xml:space="preserve"><value>Usa questo mirino</value></data>
+  <data name="Library_AlreadySaved" xml:space="preserve"><value>Già in I miei mirini</value></data>
+  <data name="Library_Use" xml:space="preserve"><value>Usa</value></data>
+  <data name="Library_UseExisting" xml:space="preserve"><value>Usa esistente</value></data>
+  <data name="Library_SaveCopy" xml:space="preserve"><value>Salva un'altra copia</value></data>
+  <data name="Library_InUse" xml:space="preserve"><value>In uso</value></data>
+  <data name="Library_UseMenu" xml:space="preserve"><value>Usa…</value></data>
+  <data name="Library_Rename" xml:space="preserve"><value>Rinomina</value></data>
+  <data name="Hotkeys_MouseButton" xml:space="preserve"><value>Pulsante del mouse</value></data>
+  <data name="Settings_MonitorName" xml:space="preserve"><value>{0} · Schermo {1}</value></data>
+  <data name="Games_UsePreset" xml:space="preserve"><value>Usa un predefinito</value></data>
+  <data name="Games_ColorApplyFailed" xml:space="preserve"><value>I colori dello schermo non sono stati applicati. Il driver grafico ha rifiutato la modifica.</value></data>
+  <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>I colori precedenti dello schermo non sono stati ripristinati.</value></data>
+  <data name="Games_ColorUnsupported" xml:space="preserve"><value>Questo schermo non supporta la regolazione dei colori.</value></data>
 </root>

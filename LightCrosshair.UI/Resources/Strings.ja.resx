@@ -180,7 +180,7 @@
   <data name="Games_ProfileName" xml:space="preserve"><value>プロファイル名</value></data>
   <data name="Games_CapValue" xml:space="preserve"><value>上限</value></data>
   <data name="Games_Delete" xml:space="preserve"><value>プロファイルを削除</value></data>
-  <data name="Hotkeys_Help" xml:space="preserve"><value>ショートカットをクリックし、キーかマウスボタンを押します。Esc で取消。ホイールは切り替えのみです。</value></data>
+  <data name="Hotkeys_Help" xml:space="preserve"><value>ショートカットをクリックし、キーまたはマウスボタンを押します</value></data>
   <data name="Hotkeys_ToggleVisibility" xml:space="preserve"><value>クロスヘアの表示切り替え</value></data>
   <data name="Hotkeys_Next" xml:space="preserve"><value>次のクロスヘア</value></data>
   <data name="Hotkeys_Previous" xml:space="preserve"><value>前のクロスヘア</value></data>
@@ -208,7 +208,7 @@
   <data name="Key_Win" xml:space="preserve"><value>Win</value></data>
   <data name="Settings_Display" xml:space="preserve"><value>ディスプレイ</value></data>
   <data name="Settings_Monitor" xml:space="preserve"><value>モニター</value></data>
-  <data name="Settings_Primary" xml:space="preserve"><value>メインモニター</value></data>
+  <data name="Settings_Primary" xml:space="preserve"><value>プライマリ</value></data>
   <data name="Settings_Position" xml:space="preserve"><value>位置</value></data>
   <data name="Settings_OffsetX" xml:space="preserve"><value>横方向のオフセット</value></data>
   <data name="Settings_OffsetY" xml:space="preserve"><value>縦方向のオフセット</value></data>
@@ -262,4 +262,18 @@
   <data name="Boot_Connecting" xml:space="preserve"><value>LightCrosshair に接続しています</value></data>
   <data name="Color_Presets" xml:space="preserve"><value>プリセットカラー</value></data>
   <data name="Common_More" xml:space="preserve"><value>その他</value></data>
+  <data name="Library_UseTitle" xml:space="preserve"><value>このクロスヘアを使う</value></data>
+  <data name="Library_AlreadySaved" xml:space="preserve"><value>マイ クロスヘアにあります</value></data>
+  <data name="Library_Use" xml:space="preserve"><value>使う</value></data>
+  <data name="Library_UseExisting" xml:space="preserve"><value>既存を使う</value></data>
+  <data name="Library_SaveCopy" xml:space="preserve"><value>別のコピーを保存</value></data>
+  <data name="Library_InUse" xml:space="preserve"><value>使用中</value></data>
+  <data name="Library_UseMenu" xml:space="preserve"><value>使う…</value></data>
+  <data name="Library_Rename" xml:space="preserve"><value>名前を変更</value></data>
+  <data name="Hotkeys_MouseButton" xml:space="preserve"><value>マウスボタン</value></data>
+  <data name="Settings_MonitorName" xml:space="preserve"><value>{0} · ディスプレイ {1}</value></data>
+  <data name="Games_UsePreset" xml:space="preserve"><value>プリセットを使う</value></data>
+  <data name="Games_ColorApplyFailed" xml:space="preserve"><value>ディスプレイの色を適用できませんでした。グラフィックドライバーが変更を拒否しました。</value></data>
+  <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>以前のディスプレイの色を復元できませんでした。</value></data>
+  <data name="Games_ColorUnsupported" xml:space="preserve"><value>このディスプレイは色の調整に対応していません。</value></data>
 </root>

@@ -180,7 +180,7 @@
   <data name="Games_ProfileName" xml:space="preserve"><value>配置名称</value></data>
   <data name="Games_CapValue" xml:space="preserve"><value>上限</value></data>
   <data name="Games_Delete" xml:space="preserve"><value>删除配置</value></data>
-  <data name="Hotkeys_Help" xml:space="preserve"><value>点击快捷键，然后按键或鼠标按钮。Esc 取消。滚轮只能切换。</value></data>
+  <data name="Hotkeys_Help" xml:space="preserve"><value>单击快捷键，然后按下一个键或鼠标按钮</value></data>
   <data name="Hotkeys_ToggleVisibility" xml:space="preserve"><value>显示或隐藏准星</value></data>
   <data name="Hotkeys_Next" xml:space="preserve"><value>下一个准星</value></data>
   <data name="Hotkeys_Previous" xml:space="preserve"><value>上一个准星</value></data>
@@ -206,7 +206,7 @@
   <data name="Key_Alt" xml:space="preserve"><value>Alt</value></data>
   <data name="Key_Shift" xml:space="preserve"><value>Shift</value></data>
   <data name="Key_Win" xml:space="preserve"><value>Win</value></data>
-  <data name="Settings_Display" xml:space="preserve"><value>显示</value></data>
+  <data name="Settings_Display" xml:space="preserve"><value>显示器</value></data>
   <data name="Settings_Monitor" xml:space="preserve"><value>显示器</value></data>
   <data name="Settings_Primary" xml:space="preserve"><value>主显示器</value></data>
   <data name="Settings_Position" xml:space="preserve"><value>位置</value></data>
@@ -262,4 +262,18 @@
   <data name="Boot_Connecting" xml:space="preserve"><value>正在连接 LightCrosshair</value></data>
   <data name="Color_Presets" xml:space="preserve"><value>预设颜色</value></data>
   <data name="Common_More" xml:space="preserve"><value>更多</value></data>
+  <data name="Library_UseTitle" xml:space="preserve"><value>使用此准星</value></data>
+  <data name="Library_AlreadySaved" xml:space="preserve"><value>已在我的准星中</value></data>
+  <data name="Library_Use" xml:space="preserve"><value>使用</value></data>
+  <data name="Library_UseExisting" xml:space="preserve"><value>使用现有</value></data>
+  <data name="Library_SaveCopy" xml:space="preserve"><value>另存一份</value></data>
+  <data name="Library_InUse" xml:space="preserve"><value>使用中</value></data>
+  <data name="Library_UseMenu" xml:space="preserve"><value>使用…</value></data>
+  <data name="Library_Rename" xml:space="preserve"><value>重命名</value></data>
+  <data name="Hotkeys_MouseButton" xml:space="preserve"><value>鼠标按钮</value></data>
+  <data name="Settings_MonitorName" xml:space="preserve"><value>{0} · 显示器 {1}</value></data>
+  <data name="Games_UsePreset" xml:space="preserve"><value>使用预设</value></data>
+  <data name="Games_ColorApplyFailed" xml:space="preserve"><value>无法应用显示颜色。显卡驱动拒绝了这项更改。</value></data>
+  <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>无法恢复之前的显示颜色。</value></data>
+  <data name="Games_ColorUnsupported" xml:space="preserve"><value>此显示器不支持颜色调节。</value></data>
 </root>
