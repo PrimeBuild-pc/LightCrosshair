@@ -120,6 +120,9 @@ public sealed class PipeCoreClient : ICoreClient, IAsyncDisposable
     public Task DismissSuggestionAsync(string processName, CancellationToken cancellationToken = default)
         => InvokeAsync(IpcMethods.DismissSuggestion, new TextPayload { Value = processName }, _options.RequestTimeout, cancellationToken);
 
+    public Task SetInputCaptureAsync(bool active, CancellationToken cancellationToken = default)
+        => InvokeAsync(IpcMethods.SetInputCapture, new InputCaptureRequest { Active = active }, _options.RequestTimeout, cancellationToken);
+
     public Task QuitAsync(CancellationToken cancellationToken = default)
         => InvokeAsync(IpcMethods.Quit, null, _options.RequestTimeout, cancellationToken);
 

@@ -110,6 +110,14 @@ public sealed partial class GamesViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task SetCaptureAsync(bool active)
+    {
+        try { await _core.SetInputCaptureAsync(active).ConfigureAwait(true); }
+        catch (CoreException) { }
+        catch (Exception) { }
+    }
+
+    [RelayCommand]
     private void Select(GameProfile? profile)
     {
         if (profile == null)
@@ -126,7 +134,7 @@ public sealed partial class GamesViewModel : ObservableObject
         _working = JsonClone.Clone(profile);
         _savedJson = JsonClone.Text(_working);
         IsDirty = false;
-        UseColors = _working.DisplayColors != null;
+        UseColors = _working.DisplayColorsEnabled;
         UseCap = _working.NvidiaFpsCap != null;
         CustomVisibility = _working.VisibilityBinding != null;
         FpsMode = _working.FpsOverlay switch { true => "on", false => "off", _ => "follow" };
@@ -137,7 +145,8 @@ public sealed partial class GamesViewModel : ObservableObject
     partial void OnUseColorsChanged(bool value)
     {
         if (_suspend || Selected == null) return;
-        _working.DisplayColors = value ? _working.DisplayColors ?? new DisplayColorSettings() : null;
+        _working.DisplayColorsEnabled = value;
+        if (value) _working.DisplayColors ??= new DisplayColorSettings();
         Touch();
     }
 

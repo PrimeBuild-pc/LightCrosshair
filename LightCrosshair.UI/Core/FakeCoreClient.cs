@@ -59,6 +59,7 @@ public sealed class FakeCoreClient : ICoreClient
     }
 
     public bool IsFake => true;
+    public bool InputCapture { get; private set; }
     public CoreLinkState State { get; private set; } = CoreLinkState.Idle;
     public Snapshot? Snapshot { get; private set; }
     public int PreviewCount { get; private set; }
@@ -308,6 +309,12 @@ public sealed class FakeCoreClient : ICoreClient
             Publish();
             return Task.CompletedTask;
         }
+    }
+
+    public Task SetInputCaptureAsync(bool active, CancellationToken cancellationToken = default)
+    {
+        InputCapture = active;
+        return Task.CompletedTask;
     }
 
     public Task QuitAsync(CancellationToken cancellationToken = default)

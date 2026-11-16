@@ -87,6 +87,8 @@ public sealed class Base64ImageConverter : IValueConverter
             image.BeginInit();
             image.CacheOption = BitmapCacheOption.OnLoad;
             image.StreamSource = stream;
+            if (parameter != null && int.TryParse(parameter.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var edge) && edge > 0)
+                image.DecodePixelWidth = edge;
             image.EndInit();
             image.Freeze();
             return image;
@@ -94,6 +96,26 @@ public sealed class Base64ImageConverter : IValueConverter
         catch (Exception)
         {
             return null;
+        }
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class HexBrushConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        try
+        {
+            var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(value as string ?? "#0E0F11")!);
+            brush.Freeze();
+            return brush;
+        }
+        catch (Exception)
+        {
+            return Brushes.Transparent;
         }
     }
 

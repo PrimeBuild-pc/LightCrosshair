@@ -16,7 +16,7 @@ public class UniformWrapPanel : VirtualizingPanel, IScrollInfo
     private Size _viewport = new(1, 1);
     private Point _offset;
     private Size _lastMeasure = new(1, 1);
-    private static int _measureDepth;
+    private int _measureDepth;
     private bool _scrollQueued;
 
     public double ItemWidth { get => (double)GetValue(ItemWidthProperty); set => SetValue(ItemWidthProperty, value); }
@@ -69,7 +69,9 @@ public class UniformWrapPanel : VirtualizingPanel, IScrollInfo
             var count = ItemsControl.GetItemsOwner(this)?.Items.Count ?? 0;
             var width = availableSize.Width;
             if (double.IsInfinity(width) || width <= 0) width = Math.Max(ItemWidth, ScrollOwner?.ViewportWidth ?? ItemWidth);
-            var columns = Math.Max(1, (int)(width / ItemWidth));
+            if (ScrollOwner != null && ScrollOwner.ViewportWidth > 1)
+                width = Math.Min(width, ScrollOwner.ViewportWidth);
+            var columns = Math.Max(1, (int)Math.Floor(width / ItemWidth));
             var rows = count == 0 ? 0 : (int)Math.Ceiling(count / (double)columns);
             _extent = new Size(columns * ItemWidth, rows * ItemHeight);
 

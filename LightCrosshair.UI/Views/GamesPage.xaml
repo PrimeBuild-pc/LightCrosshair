@@ -36,7 +36,7 @@
             </Style>
           </TextBlock.Style>
         </TextBlock>
-        <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding Selected}" AutomationProperties.Name="{loc:Tr Nav_Games}">
+        <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding Selected}" ItemContainerStyle="{StaticResource NamedItem}" AutomationProperties.Name="{loc:Tr Nav_Games}">
           <ListBox.ItemTemplate>
             <DataTemplate>
               <Grid Margin="0,4">
@@ -64,7 +64,7 @@
           <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_Process}"/>
           <TextBlock Style="{StaticResource BodyText}" Text="{Binding ProcessName}" Margin="0,4,0,12"/>
           <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_Crosshair}"/>
-          <ComboBox ItemsSource="{Binding Crosshairs}" SelectedValuePath="Id" SelectedValue="{Binding CrosshairId}" Margin="0,4,0,12" AutomationProperties.Name="{loc:Tr Games_Crosshair}">
+          <ComboBox ItemsSource="{Binding Crosshairs}" SelectedValuePath="Id" SelectedValue="{Binding CrosshairId}" Margin="0,4,0,12" AutomationProperties.Name="{loc:Tr Games_Crosshair}" ItemContainerStyle="{StaticResource NamedComboItem}">
             <ComboBox.ItemTemplate>
               <DataTemplate>
                 <TextBlock Text="{Binding Name}"/>
@@ -76,7 +76,7 @@
           <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Games_VisibilityOverride}" IsChecked="{Binding CustomVisibility}" Margin="0,8,0,8" AutomationProperties.Name="{loc:Tr Games_VisibilityOverride}"/>
           <StackPanel Visibility="{Binding CustomVisibility, Converter={StaticResource Vis}}" Margin="0,0,0,12">
             <controls:BindingCaptureBox Binding="{Binding Visibility}" Prompt="{loc:Tr Hotkeys_Press}"
-                                         CapturedCommand="{Binding CommitVisibilityCommand}" CommandParameter="VisibilityBinding"/>
+                                         CapturedCommand="{Binding CommitVisibilityCommand}" CaptureChangedCommand="{Binding SetCaptureCommand}" CommandParameter="VisibilityBinding"/>
             <ComboBox SelectedValue="{Binding VisibilityMode}" SelectedValuePath="Tag" Margin="0,8,0,0" AutomationProperties.Name="{loc:Tr Hotkeys_Mode}">
               <ComboBoxItem Tag="{x:Static contracts:BindingMode.Toggle}" Content="{loc:Tr Hotkeys_Toggle}"/>
               <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToHide}" Content="{loc:Tr Hotkeys_HoldHide}"/>
@@ -122,6 +122,11 @@
             <Button Content="{loc:Tr Cancel}" Command="{Binding CancelPickCommand}" AutomationProperties.Name="{loc:Tr Cancel}"/>
           </StackPanel>
           <ListBox ItemsSource="{Binding Processes}" AutomationProperties.Name="{loc:Tr Games_Running}">
+            <ListBox.ItemContainerStyle>
+              <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                <Setter Property="AutomationProperties.Name" Value="{Binding ProcessName}"/>
+              </Style>
+            </ListBox.ItemContainerStyle>
             <ListBox.ItemTemplate>
               <DataTemplate>
                 <Button Content="{Binding ProcessName}" Command="{Binding DataContext.AddProcessCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" HorizontalContentAlignment="Left" AutomationProperties.Name="{Binding ProcessName}"/>

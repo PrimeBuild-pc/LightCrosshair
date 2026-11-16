@@ -5,13 +5,13 @@
              xmlns:controls="clr-namespace:LightCrosshair.UI.Controls">
   <UserControl.Resources>
     <DataTemplate x:Key="Card">
-      <Border Width="120" Height="156" Margin="4" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" controls:ThumbLoader.Card="{Binding}">
+      <Border Width="120" Height="156" Margin="8" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" controls:ThumbLoader.Card="{Binding}">
         <DockPanel Margin="8">
           <DockPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
             <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="{x:Static loc:Icons.Star}" Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" Visibility="{Binding IsPreset, Converter={StaticResource VisInv}}" AutomationProperties.Name="{loc:Tr Library_Favorite}"/>
             <TextBlock Text="{Binding Design.Name}" TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center"/>
           </DockPanel>
-          <Image Source="{Binding Png, Converter={StaticResource Png}}" Height="96" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform"/>
+          <Image Source="{Binding Png, Converter={StaticResource Png}, ConverterParameter=96}" Height="96" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform"/>
         </DockPanel>
       </Border>
     </DataTemplate>
@@ -23,7 +23,12 @@
           <Button Content="{loc:Tr Library_ImportFile}" Command="{Binding ImportFileCommand}" Margin="0,0,8,0" AutomationProperties.Name="{loc:Tr Library_ImportFile}"/>
           <Button Content="{loc:Tr Library_PasteCode}" Command="{Binding PasteCodeCommand}" AutomationProperties.Name="{loc:Tr Library_PasteCode}"/>
         </StackPanel>
-        <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:Tr Library_Search}" MinHeight="32"/>
+        <Grid MinHeight="32">
+          <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{loc:Tr Library_Search}" MinHeight="32" Padding="28,4,8,4"/>
+          <TextBlock FontFamily="{DynamicResource IconFont}" Text="{x:Static loc:Icons.Search}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" IsHitTestVisible="False"/>
+          <TextBlock Margin="32,0,8,0" VerticalAlignment="Center" Style="{StaticResource LabelText}" Text="{loc:Tr Library_Search}" IsHitTestVisible="False"
+                     Visibility="{Binding Search, Converter={StaticResource NullVisInv}}"/>
+        </Grid>
       </DockPanel>
       <ItemsControl ItemsSource="{Binding TagKeys}" Margin="0,0,0,12">
         <ItemsControl.ItemsPanel>
@@ -54,17 +59,17 @@
     <Grid>
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto"/>
-        <RowDefinition Height="180"/>
+        <RowDefinition Height="188"/>
         <RowDefinition Height="Auto"/>
         <RowDefinition Height="*"/>
       </Grid.RowDefinitions>
       <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Library_Mine}"/>
-      <ListBox x:Name="MineList" Grid.Row="1" ItemsSource="{Binding Mine}" ItemTemplate="{StaticResource Card}" BorderThickness="0" Background="Transparent"
+      <ListBox x:Name="MineList" Grid.Row="1" ItemsSource="{Binding Mine}" ItemTemplate="{StaticResource Card}" ItemContainerStyle="{StaticResource CardItem}" BorderThickness="0" Background="Transparent"
                ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True"
                AutomationProperties.Name="{loc:Tr Library_Mine}">
         <ListBox.ItemsPanel>
           <ItemsPanelTemplate>
-            <controls:UniformWrapPanel ItemWidth="128" ItemHeight="168"/>
+            <controls:UniformWrapPanel ItemWidth="136" ItemHeight="172"/>
           </ItemsPanelTemplate>
         </ListBox.ItemsPanel>
         <ListBox.Template>
@@ -76,12 +81,12 @@
         </ListBox.Template>
       </ListBox>
       <TextBlock Grid.Row="2" Style="{StaticResource SectionTitle}" Text="{loc:Tr Library_Presets}"/>
-      <ListBox x:Name="PresetList" Grid.Row="3" ItemsSource="{Binding Presets}" ItemTemplate="{StaticResource Card}" BorderThickness="0" Background="Transparent"
+      <ListBox x:Name="PresetList" Grid.Row="3" ItemsSource="{Binding Presets}" ItemTemplate="{StaticResource Card}" ItemContainerStyle="{StaticResource CardItem}" BorderThickness="0" Background="Transparent"
                ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True"
                AutomationProperties.Name="{loc:Tr Library_Presets}">
         <ListBox.ItemsPanel>
           <ItemsPanelTemplate>
-            <controls:UniformWrapPanel ItemWidth="128" ItemHeight="168"/>
+            <controls:UniformWrapPanel ItemWidth="136" ItemHeight="172"/>
           </ItemsPanelTemplate>
         </ListBox.ItemsPanel>
         <ListBox.Template>

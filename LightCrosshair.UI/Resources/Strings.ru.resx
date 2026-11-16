@@ -97,6 +97,7 @@
   <data name="Studio_ArmBottom" xml:space="preserve"><value>Низ</value></data>
   <data name="Studio_ArmLeft" xml:space="preserve"><value>Лево</value></data>
   <data name="Studio_Color" xml:space="preserve"><value>Цвет</value></data>
+  <data name="Studio_Fill" xml:space="preserve"><value>Заливка</value></data>
   <data name="Studio_Opacity" xml:space="preserve"><value>Непрозрачность</value></data>
   <data name="Studio_OffsetX" xml:space="preserve"><value>Сдвиг X</value></data>
   <data name="Studio_OffsetY" xml:space="preserve"><value>Сдвиг Y</value></data>
@@ -252,6 +253,7 @@
   <data name="File_Png" xml:space="preserve"><value>Изображение PNG|*.png</value></data>
   <data name="File_Exe" xml:space="preserve"><value>Программа|*.exe</value></data>
   <data name="File_Export" xml:space="preserve"><value>Прицелы LightCrosshair|*.lcx.json</value></data>
+  <data name="File_Import" xml:space="preserve"><value>Импорт прицелов LightCrosshair|*.lcx.json</value></data>
   <data name="Toast_Copied" xml:space="preserve"><value>Код скопирован.</value></data>
   <data name="Toast_Saved" xml:space="preserve"><value>Сохранено.</value></data>
   <data name="Toast_NoClipboard" xml:space="preserve"><value>Буфер обмена пуст.</value></data>

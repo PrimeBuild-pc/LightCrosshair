@@ -97,6 +97,7 @@
   <data name="Studio_ArmBottom" xml:space="preserve"><value>Basso</value></data>
   <data name="Studio_ArmLeft" xml:space="preserve"><value>Sinistra</value></data>
   <data name="Studio_Color" xml:space="preserve"><value>Colore</value></data>
+  <data name="Studio_Fill" xml:space="preserve"><value>Riempimento</value></data>
   <data name="Studio_Opacity" xml:space="preserve"><value>Opacità</value></data>
   <data name="Studio_OffsetX" xml:space="preserve"><value>Scostamento X</value></data>
   <data name="Studio_OffsetY" xml:space="preserve"><value>Scostamento Y</value></data>
@@ -252,6 +253,7 @@
   <data name="File_Png" xml:space="preserve"><value>Immagine PNG|*.png</value></data>
   <data name="File_Exe" xml:space="preserve"><value>Programma|*.exe</value></data>
   <data name="File_Export" xml:space="preserve"><value>Mirini LightCrosshair|*.lcx.json</value></data>
+  <data name="File_Import" xml:space="preserve"><value>Importa mirini LightCrosshair|*.lcx.json</value></data>
   <data name="Toast_Copied" xml:space="preserve"><value>Codice copiato.</value></data>
   <data name="Toast_Saved" xml:space="preserve"><value>Salvato.</value></data>
   <data name="Toast_NoClipboard" xml:space="preserve"><value>Gli appunti sono vuoti.</value></data>

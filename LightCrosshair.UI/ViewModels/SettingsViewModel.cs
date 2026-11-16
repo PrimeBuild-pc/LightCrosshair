@@ -11,12 +11,16 @@ public sealed class MonitorChoice
 {
     public string DeviceName { get; init; } = "";
     public string Label { get; init; } = "";
+
+    public override string ToString() => Label;
 }
 
 public sealed class LanguageOption
 {
     public required string Id { get; init; }
     public required string LabelKey { get; init; }
+
+    public override string ToString() => Loc.Instance[LabelKey];
 }
 
 public sealed partial class SettingsViewModel : ObservableObject

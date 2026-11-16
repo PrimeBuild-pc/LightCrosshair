@@ -19,6 +19,8 @@ public sealed partial class HotkeyRow : ObservableObject
     [ObservableProperty] private bool _capturing;
 
     public void RefreshText() => Display = HotkeyRules.Format(Binding);
+
+    public override string ToString() => Loc.Instance[LabelKey];
 }
 
 public sealed partial class HotkeysViewModel : ObservableObject
@@ -26,6 +28,14 @@ public sealed partial class HotkeysViewModel : ObservableObject
     private readonly ICoreClient _core;
     private readonly IUiServices _ui;
     private HotkeySettings _hotkeys = new();
+
+    [RelayCommand]
+    private async Task SetCaptureAsync(bool active)
+    {
+        try { await _core.SetInputCaptureAsync(active).ConfigureAwait(true); }
+        catch (CoreException) { }
+        catch (Exception) { }
+    }
 
     public HotkeysViewModel(ICoreClient core, IUiServices ui)
     {

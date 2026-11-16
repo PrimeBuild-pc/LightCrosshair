@@ -58,12 +58,14 @@
     <Setter Property="FontSize" Value="13"/>
     <Setter Property="Cursor" Value="Hand"/>
     <Setter Property="FocusVisualStyle" Value="{StaticResource AccentFocus}"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="Button">
           <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                   BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
-            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" RecognizesAccessKey="True"/>
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
@@ -299,6 +301,36 @@
     </Setter>
   </Style>
 
+  <Style x:Key="ComboItem" TargetType="ComboBoxItem">
+    <Setter Property="Padding" Value="8,6"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ComboBoxItem">
+          <Border x:Name="Bd" Background="Transparent" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+            <ContentPresenter/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+              <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentSubtleBrush}"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="NamedComboItem" TargetType="ComboBoxItem" BasedOn="{StaticResource ComboItem}">
+    <Setter Property="AutomationProperties.Name" Value="{Binding Name}"/>
+  </Style>
+
+  <Style x:Key="TextComboItem" TargetType="ComboBoxItem" BasedOn="{StaticResource ComboItem}">
+    <Setter Property="AutomationProperties.Name" Value="{Binding}"/>
+  </Style>
+
   <Style TargetType="ComboBox">
     <Setter Property="MinHeight" Value="32"/>
     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
@@ -372,6 +404,17 @@
         </ControlTemplate>
       </Setter.Value>
     </Setter>
+  </Style>
+
+  <Style x:Key="NamedItem" TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+    <Setter Property="AutomationProperties.Name" Value="{Binding Name}"/>
+  </Style>
+
+  <Style x:Key="CardItem" TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="HorizontalContentAlignment" Value="Left"/>
+    <Setter Property="VerticalContentAlignment" Value="Top"/>
+    <Setter Property="AutomationProperties.Name" Value="{Binding Design.Name}"/>
   </Style>
 
   <Style x:Key="ScrollThumb" TargetType="Thumb">

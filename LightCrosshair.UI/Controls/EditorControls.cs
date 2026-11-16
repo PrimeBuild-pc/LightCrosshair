@@ -5,6 +5,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using LightCrosshair.UI.Localization;
 using LightCrosshair.UI.Services;
 using LightCrosshair.UI.ViewModels;
@@ -200,9 +201,12 @@ public class BindingCaptureBox : Border
         nameof(Binding), typeof(LightCrosshair.Contracts.InputBinding), typeof(BindingCaptureBox), new PropertyMetadata(null, OnBindingChanged));
     public static readonly DependencyProperty PromptProperty = DependencyProperty.Register(nameof(Prompt), typeof(string), typeof(BindingCaptureBox), new PropertyMetadata(""));
     public static readonly DependencyProperty CapturedCommandProperty = DependencyProperty.Register(nameof(CapturedCommand), typeof(ICommand), typeof(BindingCaptureBox));
+    public static readonly DependencyProperty CaptureChangedCommandProperty = DependencyProperty.Register(nameof(CaptureChangedCommand), typeof(ICommand), typeof(BindingCaptureBox));
     public static readonly DependencyProperty CommandParameterProperty = DependencyProperty.Register(nameof(CommandParameter), typeof(object), typeof(BindingCaptureBox));
 
     private readonly TextBlock _text = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 8, 0) };
+    private readonly DispatcherTimer _renew = new() { Interval = TimeSpan.FromSeconds(30) };
+    private Window? _window;
     private bool _capturing;
 
     public BindingCaptureBox()
@@ -216,7 +220,19 @@ public class BindingCaptureBox : Border
         Cursor = Cursors.Hand;
         Child = _text;
         MouseLeftButtonDown += (_, e) => { Start(); e.Handled = true; };
-        Loaded += (_, _) => Refresh();
+        Loaded += (_, _) =>
+        {
+            Refresh();
+            _window = Window.GetWindow(this);
+            if (_window != null) _window.Deactivated += OnWindowDeactivated;
+        };
+        Unloaded += (_, _) =>
+        {
+            if (_window != null) _window.Deactivated -= OnWindowDeactivated;
+            _window = null;
+            EndCapture();
+        };
+        _renew.Tick += (_, _) => NotifyCapture(true);
         LocChanged();
         Loc.Instance.Changed += (_, _) => Refresh();
     }
@@ -224,6 +240,7 @@ public class BindingCaptureBox : Border
     public LightCrosshair.Contracts.InputBinding? Binding { get => (LightCrosshair.Contracts.InputBinding?)GetValue(BindingProperty); set => SetValue(BindingProperty, value); }
     public string Prompt { get => (string)GetValue(PromptProperty); set => SetValue(PromptProperty, value); }
     public ICommand? CapturedCommand { get => (ICommand?)GetValue(CapturedCommandProperty); set => SetValue(CapturedCommandProperty, value); }
+    public ICommand? CaptureChangedCommand { get => (ICommand?)GetValue(CaptureChangedCommandProperty); set => SetValue(CaptureChangedCommandProperty, value); }
     public object? CommandParameter { get => GetValue(CommandParameterProperty); set => SetValue(CommandParameterProperty, value); }
 
     private void LocChanged() { }
@@ -232,19 +249,33 @@ public class BindingCaptureBox : Border
 
     private void Start()
     {
+        if (_capturing) return;
         _capturing = true;
         Focus();
         _text.Text = Prompt;
         BorderBrush = Application.Current?.TryFindResource("AccentBrush") as Brush;
         Mouse.Capture(this);
+        NotifyCapture(true);
+        _renew.Start();
     }
 
-    private void Stop()
+    private void EndCapture()
     {
+        if (!_capturing) return;
         _capturing = false;
+        _renew.Stop();
         if (Mouse.Captured == this) Mouse.Capture(null);
         BorderBrush = Application.Current?.TryFindResource("BorderStrongBrush") as Brush;
         Refresh();
+        NotifyCapture(false);
+    }
+
+    private void OnWindowDeactivated(object? sender, EventArgs e) => EndCapture();
+
+    private void NotifyCapture(bool active)
+    {
+        if (CaptureChangedCommand?.CanExecute(active) == true)
+            CaptureChangedCommand.Execute(active);
     }
 
     private void Refresh()
@@ -265,7 +296,7 @@ public class BindingCaptureBox : Border
         e.Handled = true;
         if (e.Key == Key.Escape || (e.Key == Key.System && e.SystemKey == Key.Escape))
         {
-            Stop();
+            EndCapture();
             return;
         }
         var name = KeyCodes.FromKey(e.Key == Key.System ? e.SystemKey : e.Key);
@@ -301,7 +332,7 @@ public class BindingCaptureBox : Border
     private void Finish(string key, KeyModifiers modifiers)
     {
         var binding = new LightCrosshair.Contracts.InputBinding { Key = key, Modifiers = modifiers, Mode = Binding?.Mode ?? LightCrosshair.Contracts.BindingMode.Toggle };
-        Stop();
+        EndCapture();
         if (CapturedCommand?.CanExecute(CommandParameter) == true)
             CapturedCommand.Execute(new HotkeyCommit { Action = CommandParameter as string ?? "", Binding = binding });
     }

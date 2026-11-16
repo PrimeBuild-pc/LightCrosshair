@@ -97,6 +97,7 @@
   <data name="Studio_ArmBottom" xml:space="preserve"><value>下</value></data>
   <data name="Studio_ArmLeft" xml:space="preserve"><value>左</value></data>
   <data name="Studio_Color" xml:space="preserve"><value>颜色</value></data>
+  <data name="Studio_Fill" xml:space="preserve"><value>填充</value></data>
   <data name="Studio_Opacity" xml:space="preserve"><value>不透明度</value></data>
   <data name="Studio_OffsetX" xml:space="preserve"><value>水平偏移</value></data>
   <data name="Studio_OffsetY" xml:space="preserve"><value>垂直偏移</value></data>
@@ -252,6 +253,7 @@
   <data name="File_Png" xml:space="preserve"><value>PNG 图像|*.png</value></data>
   <data name="File_Exe" xml:space="preserve"><value>程序|*.exe</value></data>
   <data name="File_Export" xml:space="preserve"><value>LightCrosshair 准星|*.lcx.json</value></data>
+  <data name="File_Import" xml:space="preserve"><value>导入 LightCrosshair 准星|*.lcx.json</value></data>
   <data name="Toast_Copied" xml:space="preserve"><value>分享码已复制。</value></data>
   <data name="Toast_Saved" xml:space="preserve"><value>已保存。</value></data>
   <data name="Toast_NoClipboard" xml:space="preserve"><value>剪贴板是空的。</value></data>
