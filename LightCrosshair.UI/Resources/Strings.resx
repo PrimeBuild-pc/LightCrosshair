@@ -276,4 +276,18 @@
   <data name="Games_ColorApplyFailed" xml:space="preserve"><value>The display colors could not be applied. The graphics driver refused the change.</value></data>
   <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>The previous display colors could not be restored.</value></data>
   <data name="Games_ColorUnsupported" xml:space="preserve"><value>This display does not support color adjustments.</value></data>
+  <data name="Library_SetDefaultAll" xml:space="preserve"><value>Set as default for all apps</value></data>
+  <data name="Library_Default" xml:space="preserve"><value>Default</value></data>
+  <data name="Library_InUseGame" xml:space="preserve"><value>In use · {0}</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>While held</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Choose a key or mouse button for a hold binding.</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>While held in this game</value></data>
+  <data name="Games_HoldOff" xml:space="preserve"><value>Off in this game</value></data>
+  <data name="Games_HoldOwn" xml:space="preserve"><value>Own binding</value></data>
+  <data name="Nav_FpsOverlay" xml:space="preserve"><value>FPS overlay</value></data>
+  <data name="Nav_FpsVisible" xml:space="preserve"><value>Show FPS overlay</value></data>
+  <data name="Fps_Graph" xml:space="preserve"><value>Frametime graph</value></data>
+  <data name="Fps_Help" xml:space="preserve"><value>FPS, frametime and 1% low. Game profiles can override the global switch.</value></data>
+  <data name="Settings_ColorsHelp" xml:space="preserve"><value>Applies on the desktop and in apps. An enabled game profile takes priority. Drag to preview; releasing restores the current context.</value></data>
+  <data name="Settings_UseColors" xml:space="preserve"><value>Adjust display colors</value></data>
 </root>

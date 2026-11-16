@@ -180,7 +180,8 @@ public sealed class CoreStoreTests : IDisposable
         var doc = await store.LoadAsync(_root);
         var game = Assert.Single(doc.GameProfiles);
         Assert.Equal("game.exe", game.ProcessName); Assert.Equal(120, game.DisplayColors!.Gamma);
-        Assert.Equal("Mouse5", game.VisibilityBinding!.Key);
+        Assert.Equal("Mouse5", game.HoldVisibility!.Key);
+        Assert.Null(game.VisibilityBinding);
         Assert.Equal("F9", doc.Settings.Hotkeys.ToggleVisibility.Key);
         Assert.Equal(KeyModifiers.Control, doc.Settings.Hotkeys.ToggleVisibility.Modifiers);
         Assert.Equal("legacy", doc.Settings.DefaultCrosshairId); Assert.False(doc.Settings.CrosshairVisible);

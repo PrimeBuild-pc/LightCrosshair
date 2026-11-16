@@ -6,6 +6,19 @@ namespace LightCrosshair.Tests;
 
 public class GameRulesTests
 {
+    [Fact]
+    public void UpdatingTheGameSelectionWhileEditingKeepsItsContextAndRestoresTheDefaultOnLeave()
+    {
+        var store = LegacyMigration.Defaults(); string fallback = store.Settings.DefaultCrosshairId;
+        store.Crosshairs.Add(new() { Id = "picked", Name = "Picked" });
+        store.GameProfiles.Add(new() { Id = "game", ProcessName = "game.exe", CrosshairId = fallback });
+        var before = GameRules.Evaluate(store, "game.exe");
+        store.GameProfiles[0].CrosshairId = "picked";
+        var changed = GameRules.Evaluate(store, "game.exe");
+        Assert.Equal("picked", GameRules.Evaluate(store, "lightcrosshair.ui.exe", changed).CrosshairId);
+        Assert.Equal(fallback, GameRules.Evaluate(store, "explorer.exe", changed).CrosshairId);
+        Assert.Equal(fallback, before.CrosshairId);
+    }
     [Theory]
     [InlineData(null, false, true, false)]
     [InlineData("unconfigured.exe", true, false, false)]

@@ -28,6 +28,7 @@ public interface ICoreClient
     Task<GameProfile> SaveGameProfileAsync(GameProfile profile, CancellationToken cancellationToken = default);
     Task DeleteGameProfileAsync(string id, CancellationToken cancellationToken = default);
     Task<AppSettings> SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default);
+    Task PreviewDisplayColorsAsync(DisplayColorSettings? colors, CancellationToken cancellationToken = default);
     Task PreviewAsync(CrosshairDesign? design, CancellationToken cancellationToken = default);
     Task<string> RenderPngAsync(RenderRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PresetEntry>> GetPresetsAsync(CancellationToken cancellationToken = default);

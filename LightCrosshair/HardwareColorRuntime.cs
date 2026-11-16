@@ -248,8 +248,9 @@ namespace LightCrosshair
         }
     }
 
-    internal sealed class AmdAdlColorManager
+    internal sealed class AmdAdlColorManager : IDisposable
     {
+        public void Dispose() { if (_libraryHandle != IntPtr.Zero) NativeLibrary.Free(_libraryHandle); }
         public List<AmdChannelSnapshot> CaptureRecovery() => _originalValues.Select(e => new AmdChannelSnapshot(e.Key.AdapterIndex, e.Key.DisplayIndex, e.Key.ColorType, e.Value)).ToList();
         public void LoadRecovery(List<AmdChannelSnapshot> channels)
         {

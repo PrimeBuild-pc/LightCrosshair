@@ -16,7 +16,7 @@ Choose the 2.0 release on the [releases page](https://github.com/PrimeBuild-pc/L
 | Portable ZIP, x64 | `LightCrosshair-v2.0.0-win-x64.zip` | TBD |
 | Portable ZIP, ARM64 | `LightCrosshair-v2.0.0-win-arm64.zip` | TBD |
 
-For a ZIP, extract the whole folder and keep `LightCrosshair.exe` and `LightCrosshair.UI.exe` together. Start `LightCrosshair.exe`; open settings from the tray or with Alt+L. Closing settings leaves the Core running. Use **Exit LightCrosshair** to stop both processes and restore display colors.
+For a ZIP, extract the whole folder and keep `LightCrosshair.exe` and `LightCrosshair.UI.exe` together. Start `LightCrosshair.exe`; open settings from the tray or with Alt+L. Closing the settings window with × leaves the Core running and parks the settings process for up to five minutes for quick reopening. Use **Exit LightCrosshair** to stop both processes and restore display colors.
 
 WinGet and Chocolatey packages may follow the GitHub release. Once the 2.0 packages are published:
 
@@ -33,21 +33,21 @@ The [Chocolatey package page](https://community.chocolatey.org/packages/lightcro
 |---|---|---|
 | <a href="docs/images/ui-studio.png"><img src="docs/images/ui-studio.png" width="250" alt="Studio: layered crosshair editing and preview"></a> | <a href="docs/images/ui-library.png"><img src="docs/images/ui-library.png" width="250" alt="Library: saved crosshairs and presets"></a> | <a href="docs/images/ui-games.png"><img src="docs/images/ui-games.png" width="250" alt="Games: executable-based profile settings"></a> |
 
-| Hotkeys | Settings |
-|---|---|
-| <a href="docs/images/ui-hotkeys.png"><img src="docs/images/ui-hotkeys.png" width="380" alt="Hotkeys: keyboard and mouse bindings"></a> | <a href="docs/images/ui-settings.png"><img src="docs/images/ui-settings.png" width="380" alt="Settings: display, behavior and FPS overlay"></a> |
+| Hotkeys | FPS overlay | Settings |
+|---|---|---|
+| <a href="docs/images/ui-hotkeys.png"><img src="docs/images/ui-hotkeys.png" width="250" alt="Hotkeys: independent toggle and while-held bindings"></a> | <a href="docs/images/ui-fps.png"><img src="docs/images/ui-fps.png" width="250" alt="FPS overlay: numbers and optional frametime graph"></a> | <a href="docs/images/ui-settings.png"><img src="docs/images/ui-settings.png" width="250" alt="Settings: display, behavior and global display colors"></a> |
 
 ## Features
 
 - Up to eight editable layers: arms, dots, rings, boxes, corner brackets and PNG images, with position, rotation, opacity and outlines. Rings and boxes can have a separate fill.
 - Shared rendering for the editor and overlay, live in-game preview, undo/redo and pixel-based geometry.
-- A local gallery with 30 original presets: choose one, name the saved copy and use it immediately. Saved crosshairs support favorites, search and tag filters.
+- A local gallery with 30 original presets: choose one, name the saved copy and use it immediately. Saved crosshairs support favorites, search and tag filters. Use applies to the active game; the card menu can explicitly set the all-apps default.
 - Next/previous cycling uses favorites when at least two exist, otherwise all saved crosshairs, and saves the choice for the active game or as the default.
 - `LC2:` share codes for vector designs and `.lcx.json` import/export with embedded images.
 - Game profiles for crosshairs, display colors, visibility bindings and FPS overlay overrides. Optional suggestions for recognized games.
-- Software gamma, contrast, brightness and vibrance; AMD color support; NVIDIA Digital Vibrance and per-app driver FPS caps on supported hardware.
-- Optional FPS, frametime and 1% low overlay, captured only while enabled.
-- Keyboard and explicit mouse-button/wheel bindings with modifiers; Toggle, Hold to hide and Hold to show for visibility.
+- Global and per-game gamma, contrast, brightness and vibrance, with live slider preview and recovery of original display values; AMD color support; NVIDIA Digital Vibrance and per-app driver FPS caps on supported hardware.
+- A dedicated FPS overlay page and sidebar switch, with FPS, frametime, 1% low and an optional two-second frametime graph. Capture runs only while enabled; the graph draws at most 20 times per second.
+- Separate Toggle and While held bindings: hold right mouse to hide the crosshair while aiming, then release to restore it. Games can follow the global hold, disable it or use their own. Keyboard and mouse input continues to reach the game.
 - Monitor selection by model name, position offsets, startup with Windows, automatic backups and display-color recovery after a crash.
 - English, Italian, Spanish, Simplified Chinese, Russian and Japanese.
 
@@ -55,7 +55,7 @@ The [Chocolatey package page](https://community.chocolatey.org/packages/lightcro
 
 Exit 1.9 before starting 2.0. On the first launch, crosshairs, supported preferences, hotkeys and executable associations are imported automatically into `%AppData%\LightCrosshair\v2`. Original v1 files are left untouched, with migration copies kept in the new backup folder. The active working copy is merged into its source profile; an old disabled crosshair becomes a globally hidden overlay with its editable layers still visible.
 
-Frame Cap Assistant, Detailed FPS mode, diagnostic graphs and pacing analysis, RTSS/frame-generation heuristics, G-Sync/FreeSync status displays and per-profile direct-select hotkeys are removed. NVIDIA per-app caps remain available in Games; existing driver caps from 1.x are left unchanged until explicitly managed in 2.0. See the [settings and recovery guide](docs/SETTINGS.md).
+Frame Cap Assistant, Detailed FPS mode, the old diagnostic graphs and pacing analysis, RTSS/frame-generation heuristics, G-Sync/FreeSync status displays and per-profile direct-select hotkeys are removed. NVIDIA per-app caps remain available in Games; existing driver caps from 1.x are left unchanged until explicitly managed in 2.0. See the [settings and recovery guide](docs/SETTINGS.md).
 
 ## Performance
 
@@ -65,7 +65,9 @@ Idle values are means of 60 one-second samples after a 10-second warmup, with a 
 
 ![Core private memory over 50 Library sessions, before and after the allocation-budget fix](docs/perf/library-soak.svg)
 
-The Library soak opens and closes the real UI 50 times, scrolls through the Library and waits for all 31 thumbnails each time, then samples the continuously running Core after the UI exits.
+The historical Library soak opens and closes the real UI 50 times, scrolls through the Library and waits for all 31 thumbnails each time, then samples the continuously running Core after the UI exits.
+
+The final [cold/parked UI test](docs/perf/final-ui-open.csv) records one cold launch and 20 reopens during a hardware DX12 borderless probe; warm first frames range from 16.0 to 28.9 ms on this machine.
 
 Charts use decimal MB and CPU as a percentage of one logical core; a sampled zero is below measurement resolution. The shaded growth target applies after five sessions. These are recorded pre-release measurements; [CSV data, build identities and methods](docs/perf/README.md) include the separate [20-session UI open/close run](docs/perf/ui-cycles.csv).
 
@@ -78,14 +80,14 @@ Charts use decimal MB and CPU as a percentage of one logical core; a sampled zer
 | Alt+V | Previous favorite when at least two exist; otherwise previous saved crosshair |
 | Alt+L | Open or close settings |
 
-Cycling follows Library order and saves the selection into the active configured game profile, or the default when no configured game is active. Presets enter the cycle after you save a copy. Bindings can be changed or cleared in Hotkeys, including explicit mouse-button and wheel choices. Input continues to reach the game; conflicts and registration failures are shown in the UI.
+Cycling follows Library order and saves the selection into the active configured game profile, or the default when no configured game is active. Presets enter the cycle after you save a copy. Bindings can be changed or cleared in Hotkeys, including an independent, initially unbound While held action (Hold to hide / Hold to show). Wheel bindings are toggle-only. Input continues to reach the game; conflicts and registration failures are shown in the UI.
 
 ## Limitations and safety
 
 - Use windowed or borderless mode. Exclusive fullscreen can hide ordinary desktop overlays.
 - No game injection, game-memory access, screen capture or kernel driver is used. Check the rules of each game and anti-cheat system; this does not guarantee permission or compatibility.
 - NVIDIA Digital Vibrance and per-app FPS caps are **not yet verified on NVIDIA hardware**.
-- Display-color support depends on the driver and display mode; a failure is reported and logged. On AMD, neutral gamma preserves the existing calibration without requiring a gamma-ramp API.
+- Display-color support depends on the driver and display mode; a failure is reported and logged. Colors apply to the whole display. An enabled game profile overrides global colors; leaving it restores global colors or the original calibration. Errors appear inline.
 - FPS telemetry uses external ETW present events and is not a frame-generation detector. After two seconds without frames, the overlay shows “–” and a localized reason; permissions or the game's presentation path can prevent capture.
 - Recording detection checks for recorder processes. It can hide the crosshair while the recorder is open but not recording.
 

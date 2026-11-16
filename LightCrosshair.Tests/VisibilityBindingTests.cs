@@ -199,6 +199,15 @@ public class VisibilityBindingTests
     }
 
     [Fact]
+    public void NewHookGetsAStartupGracePeriodBeforeRawDeliveryCanReinstallIt()
+    {
+        var health = new HookHealth(); health.HookCalled(10000); health.RawInput(10010);
+        Assert.False(health.NeedsReinstall(10010));
+        health.RawInput(10800); Assert.False(health.NeedsReinstall(10800));
+        health.HookCalled(10801); Assert.False(health.NeedsReinstall(13000));
+    }
+
+    [Fact]
     public void WatchdogRecoversSilentRemovalWithoutTreatingIdleOrDeliveryOrderAsFailure()
     {
         var health = new HookHealth();
@@ -206,6 +215,7 @@ public class VisibilityBindingTests
         Assert.False(health.NeedsReinstall(4000));
         Assert.False(health.NeedsReinstall(60000)); // idle is not a hook failure
         health.RawInput(61000);
+        Assert.False(health.NeedsReinstall(61000)); // allow the callback behind fresh raw input
         Assert.True(health.NeedsReinstall(63000));
         Assert.False(health.NeedsReinstall(64000));
         health.RawInput(65000); health.HookCalled(65010);

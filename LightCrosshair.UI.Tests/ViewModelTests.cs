@@ -332,8 +332,10 @@ public class ViewModelTests
         Assert.Equal("valorant-win64-shipping.exe", store.GameProfiles[1].ProcessName);
         Assert.Equal("VALORANT", store.GameProfiles[1].Name);
         Assert.Null(seeded.Snapshot.Runtime.PendingSuggestion);
-        Assert.Equal("Mouse5", store.Settings.Hotkeys.ToggleVisibility.Key);
-        Assert.Equal(BindingMode.HoldToShow, store.Settings.Hotkeys.ToggleVisibility.Mode);
+        Assert.Equal("X", store.Settings.Hotkeys.ToggleVisibility.Key);
+        Assert.Equal(BindingMode.Toggle, store.Settings.Hotkeys.ToggleVisibility.Mode);
+        Assert.Equal("RightClick", store.Settings.Hotkeys.HoldVisibility.Key);
+        Assert.Equal(BindingMode.HoldToHide, store.Settings.Hotkeys.HoldVisibility.Mode);
         Assert.Equal("samplegame.exe", core.Snapshot.Store.GameProfiles[0].ProcessName);
     }
 

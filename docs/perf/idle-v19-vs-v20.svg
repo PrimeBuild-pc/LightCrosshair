@@ -20,19 +20,19 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 432 
-L 864 432 
-L 864 0 
-L 0 0 
+   <path d="M 0 432
+L 864 432
+L 864 0
+L 0 0
 z
 " style="fill: #0e0f11"/>
   </g>
   <g id="axes_1">
    <g id="patch_2">
-    <path d="M 69.12 302.4 
-L 396.337021 302.4 
-L 396.337021 90.72 
-L 69.12 90.72 
+    <path d="M 69.12 302.4
+L 396.337021 302.4
+L 396.337021 90.72
+L 69.12 90.72
 z
 " style="fill: #0e0f11"/>
    </g>
@@ -53,8 +53,8 @@ z
    <g id="matplotlib.axis_2">
     <g id="ytick_1">
      <g id="line2d_3">
-      <path d="M 69.12 302.4 
-L 396.337021 302.4 
+      <path d="M 69.12 302.4
+L 396.337021 302.4
 " clip-path="url(#p67e5802ffd)" style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_4"/>
@@ -64,8 +64,8 @@ L 396.337021 302.4
     </g>
     <g id="ytick_2">
      <g id="line2d_5">
-      <path d="M 69.12 240.761725 
-L 396.337021 240.761725 
+      <path d="M 69.12 240.761725
+L 396.337021 240.761725
 " clip-path="url(#p67e5802ffd)" style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_6"/>
@@ -75,8 +75,8 @@ L 396.337021 240.761725
     </g>
     <g id="ytick_3">
      <g id="line2d_7">
-      <path d="M 69.12 179.123449 
-L 396.337021 179.123449 
+      <path d="M 69.12 179.123449
+L 396.337021 179.123449
 " clip-path="url(#p67e5802ffd)" style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_8"/>
@@ -86,8 +86,8 @@ L 396.337021 179.123449
     </g>
     <g id="ytick_4">
      <g id="line2d_9">
-      <path d="M 69.12 117.485174 
-L 396.337021 117.485174 
+      <path d="M 69.12 117.485174
+L 396.337021 117.485174
 " clip-path="url(#p67e5802ffd)" style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_10"/>
@@ -100,28 +100,28 @@ L 396.337021 117.485174
     </g>
    </g>
    <g id="patch_3">
-    <path d="M 69.12 302.4 
-L 69.12 90.72 
+    <path d="M 69.12 302.4
+L 69.12 90.72
 " style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="patch_4">
-    <path d="M 69.12 302.4 
-L 396.337021 302.4 
+    <path d="M 69.12 302.4
+L 396.337021 302.4
 " style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="patch_5">
-    <path d="M 83.993501 302.4 
-L 189.547379 302.4 
-L 189.547379 139.569231 
-L 83.993501 139.569231 
+    <path d="M 83.993501 302.4
+L 189.547379 302.4
+L 189.547379 139.569231
+L 83.993501 139.569231
 z
 " clip-path="url(#p67e5802ffd)" style="fill: #9aa0a6"/>
    </g>
    <g id="patch_6">
-    <path d="M 275.909642 302.4 
-L 381.46352 302.4 
-L 381.46352 183.694741 
-L 275.909642 183.694741 
+    <path d="M 275.909642 302.4
+L 381.46352 302.4
+L 381.46352 181.622906
+L 275.909642 181.622906
 z
 " clip-path="url(#p67e5802ffd)" style="fill: #3ddc97"/>
    </g>
@@ -129,7 +129,7 @@ z
     <text style="font-weight: 600; font-size: 16px; font-family: 'Segoe UI'; text-anchor: middle; fill: #9aa0a6" x="136.77044" y="130.569231" transform="rotate(-0 136.77044 130.569231)">21.13</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 600; font-size: 16px; font-family: 'Segoe UI'; text-anchor: middle; fill: #3ddc97" x="328.686581" y="174.694741" transform="rotate(-0 328.686581 174.694741)">15.41</text>
+    <text style="font-weight: 600; font-size: 16px; font-family: 'Segoe UI'; text-anchor: middle; fill: #3ddc97" x="328.686581" y="172.622906" transform="rotate(-0 328.686581 172.622906)">15.68</text>
    </g>
    <g id="text_10">
     <text style="font-size: 15px; font-family: 'Segoe UI'; text-anchor: start; fill: #e8eaed" x="69.12" y="73.72" transform="rotate(-0 69.12 73.72)">Private memory</text>
@@ -137,10 +137,10 @@ z
   </g>
   <g id="axes_2">
    <g id="patch_7">
-    <path d="M 510.862979 302.4 
-L 838.08 302.4 
-L 838.08 90.72 
-L 510.862979 90.72 
+    <path d="M 510.862979 302.4
+L 838.08 302.4
+L 838.08 90.72
+L 510.862979 90.72
 z
 " style="fill: #0e0f11"/>
    </g>
@@ -161,8 +161,8 @@ z
    <g id="matplotlib.axis_4">
     <g id="ytick_5">
      <g id="line2d_13">
-      <path d="M 510.862979 302.4 
-L 838.08 302.4 
+      <path d="M 510.862979 302.4
+L 838.08 302.4
 " clip-path="url(#pe8cd2203d2)" style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_14"/>
@@ -172,8 +172,8 @@ L 838.08 302.4
     </g>
     <g id="ytick_6">
      <g id="line2d_15">
-      <path d="M 510.862979 244.776361 
-L 838.08 244.776361 
+      <path d="M 510.862979 244.776361
+L 838.08 244.776361
 " clip-path="url(#pe8cd2203d2)" style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_16"/>
@@ -183,8 +183,8 @@ L 838.08 244.776361
     </g>
     <g id="ytick_7">
      <g id="line2d_17">
-      <path d="M 510.862979 187.152721 
-L 838.08 187.152721 
+      <path d="M 510.862979 187.152721
+L 838.08 187.152721
 " clip-path="url(#pe8cd2203d2)" style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_18"/>
@@ -194,8 +194,8 @@ L 838.08 187.152721
     </g>
     <g id="ytick_8">
      <g id="line2d_19">
-      <path d="M 510.862979 129.529082 
-L 838.08 129.529082 
+      <path d="M 510.862979 129.529082
+L 838.08 129.529082
 " clip-path="url(#pe8cd2203d2)" style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linecap: square"/>
      </g>
      <g id="line2d_20"/>
@@ -208,28 +208,28 @@ L 838.08 129.529082
     </g>
    </g>
    <g id="patch_8">
-    <path d="M 510.862979 302.4 
-L 510.862979 90.72 
+    <path d="M 510.862979 302.4
+L 510.862979 90.72
 " style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="patch_9">
-    <path d="M 510.862979 302.4 
-L 838.08 302.4 
+    <path d="M 510.862979 302.4
+L 838.08 302.4
 " style="fill: none; stroke: #26292e; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="patch_10">
-    <path d="M 525.73648 302.4 
-L 631.290358 302.4 
-L 631.290358 139.569231 
-L 525.73648 139.569231 
+    <path d="M 525.73648 302.4
+L 631.290358 302.4
+L 631.290358 139.569231
+L 525.73648 139.569231
 z
 " clip-path="url(#pe8cd2203d2)" style="fill: #9aa0a6"/>
    </g>
    <g id="patch_11">
-    <path d="M 717.652621 302.4 
-L 823.206499 302.4 
-L 823.206499 302.4 
-L 717.652621 302.4 
+    <path d="M 717.652621 302.4
+L 823.206499 302.4
+L 823.206499 302.4
+L 717.652621 302.4
 z
 " clip-path="url(#pe8cd2203d2)" style="fill: #3ddc97"/>
    </g>
@@ -243,11 +243,11 @@ z
     <text style="font-size: 15px; font-family: 'Segoe UI'; text-anchor: start; fill: #e8eaed" x="510.862979" y="73.72" transform="rotate(-0 510.862979 73.72)">CPU</text>
    </g>
    <g id="line2d_21">
-    <path d="M 770.42956 302.4 
+    <path d="M 770.42956 302.4
 " style="fill: none; stroke: #3ddc97; stroke-width: 1.5; stroke-linecap: square"/>
     <defs>
-     <path id="m7704042399" d="M 12 0 
-L -12 -0 
+     <path id="m7704042399" d="M 12 0
+L -12 -0
 " style="stroke: #3ddc97"/>
     </defs>
     <g>
@@ -262,7 +262,7 @@ L -12 -0
    <text style="font-size: 10.5px; font-family: 'Segoe UI'; text-anchor: start; fill: #9aa0a6" x="69.12" y="354.24" transform="rotate(-0 69.12 354.24)">AMD Ryzen 7 5800X3D · Windows 11 build 26200 · 2026-11-16</text>
   </g>
   <g id="text_23">
-   <text style="font-size: 10.5px; font-family: 'Segoe UI'; text-anchor: start; fill: #9aa0a6" x="69.12" y="373.68" transform="rotate(-0 69.12 373.68)">Release x64 · 1.9: .NET 8 target (72a3ed8) · 2.0: .NET 10 (ba83c0d)</text>
+   <text style="font-size: 10.5px; font-family: 'Segoe UI'; text-anchor: start; fill: #9aa0a6" x="69.12" y="373.68" transform="rotate(-0 69.12 373.68)">Release x64 · 1.9: .NET 8 target (72a3ed8) · 2.0: .NET 10 (767c3b1)</text>
   </g>
   <g id="text_24">
    <text style="font-size: 10.5px; font-family: 'Segoe UI'; text-anchor: start; fill: #9aa0a6" x="69.12" y="393.12" transform="rotate(-0 69.12 393.12)">10 s warmup · 60 × 1 s samples · static crosshair · FPS off · settings closed</text>

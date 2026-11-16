@@ -32,7 +32,7 @@
                                                CapturedCommand="{Binding DataContext.CommitCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                CaptureChangedCommand="{Binding DataContext.SetCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                CommandParameter="{Binding Action}"/>
-                  <ComboBox Margin="0,8,0,0" ItemsSource="{Binding DataContext.MouseChoices, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                  <ComboBox Margin="0,8,0,0" ItemsSource="{Binding MouseChoices}"
                             SelectedValuePath="Key" SelectedValue="{Binding MouseKey, Mode=OneWay}"
                             SelectionChanged="OnMouseChanged" AutomationProperties.Name="{loc:Tr Hotkeys_MouseButton}">
                     <ComboBox.ItemTemplate>
@@ -44,7 +44,7 @@
                 </StackPanel>
                 <ComboBox Grid.Column="2" MinWidth="160" IsEnabled="{Binding AllowsHold}" SelectedValuePath="Tag" SelectedValue="{Binding Binding.Mode, Mode=OneWay}"
                           SelectionChanged="OnModeChanged" AutomationProperties.Name="{loc:Tr Hotkeys_Mode}">
-                  <ComboBoxItem Tag="{x:Static contracts:BindingMode.Toggle}" Content="{loc:Tr Hotkeys_Toggle}"/>
+                  <ComboBoxItem Tag="{x:Static contracts:BindingMode.Toggle}" Content="{loc:Tr Hotkeys_Toggle}" Visibility="{Binding DataContext.HoldOnly, RelativeSource={RelativeSource AncestorType=ComboBox}, Converter={StaticResource VisInv}}"/>
                   <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToHide}" Content="{loc:Tr Hotkeys_HoldHide}"/>
                   <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToShow}" Content="{loc:Tr Hotkeys_HoldShow}"/>
                 </ComboBox>

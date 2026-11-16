@@ -3,7 +3,6 @@ param(
     [ValidateRange(1, 100)][int]$SettingsCycles = 20,
     [string]$DiagnosticsTools,
     [switch]$ProfileHeap,
-    [switch]$AllowUiPlacementBackup,
     [int]$WarmupSeconds = 10,
     [string]$OutputDirectory = "$PSScriptRoot/results",
     [switch]$SkipBuild,
@@ -13,7 +12,6 @@ param(
     [string]$Executable
 )
 $ErrorActionPreference = 'Stop'
-. "$PSScriptRoot/ProfileGuard.ps1"
 if ($ProfileHeap -and !$DiagnosticsTools) { throw '-ProfileHeap requires -DiagnosticsTools' }
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 if (!$Executable -and !$SkipBuild -and !$Legacy) {
@@ -28,6 +26,7 @@ if (!$Executable) {
     $Executable = (Get-ChildItem "$repo/LightCrosshair/bin/Release" -Recurse -Filter LightCrosshair.exe |
         Where-Object FullName -NotMatch 'publish' | Sort-Object LastWriteTime -Descending | Select-Object -First 1).FullName
 }
+$Executable = [IO.Path]::GetFullPath($Executable)
 if (!$Isolated) {
     $existingMutex = $null
     if ($Legacy -and (Get-Process LightCrosshair -ErrorAction SilentlyContinue)) { throw 'Close the existing v1 process before measuring' }
@@ -40,8 +39,8 @@ if (!$Isolated -and !$SkipSettings -and !$Legacy) {
     $placementSource = Join-Path $repo 'LightCrosshair.UI/Services/WindowPlacementStore.cs'
     if (Test-Path -LiteralPath $placementSource) {
         $placement = Get-Content -LiteralPath $placementSource -Raw
-        if ($placement.Contains('SpecialFolder.ApplicationData') -and !$placement.Contains('LIGHTCROSSHAIR_DATA_ROOT') -and !$AllowUiPlacementBackup) {
-            throw 'UI placement ignores LIGHTCROSSHAIR_DATA_ROOT. Use -SkipSettings, or -AllowUiPlacementBackup only when the placement-only exception is authorized; every real file path/hash is verified after restoration.'
+        if ($placement.Contains('SpecialFolder.ApplicationData') -and !$placement.Contains('LIGHTCROSSHAIR_DATA_ROOT')) {
+            throw 'UI placement must honor LIGHTCROSSHAIR_DATA_ROOT. Use an isolated UI build or -SkipSettings.'
         }
     }
 }
@@ -60,6 +59,7 @@ public static class PerfNative {
     public delegate bool EnumProc(IntPtr h, IntPtr p);
     [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc p, IntPtr l);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
     [DllImport("user32.dll")] public static extern uint GetGuiResources(IntPtr p, uint f);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder text, int count);
@@ -79,9 +79,8 @@ public static class PerfNative {
 '@
 New-Item -ItemType Directory -Force $OutputDirectory | Out-Null
 $watch = [Diagnostics.Stopwatch]::StartNew()
-$app = $null; $counterProcess = $null; $profileGuard = $null
+$app = $null; $counterProcess = $null
 try {
-    if ($AllowUiPlacementBackup -and !$SkipSettings) { $profileGuard = Start-RealProfileGuard (Join-Path $OutputDirectory 'profile-backup') }
     $app = Start-Process -FilePath $Executable -PassThru -WindowStyle Hidden
     if ($DiagnosticsTools) {
         $counterProcess = Start-Process -FilePath (Join-Path $DiagnosticsTools 'dotnet-counters.exe') -ArgumentList @('collect', '--process-id', $app.Id, '--counters', 'System.Runtime', '--refresh-interval', '1', '--format', 'csv', '--output', ([IO.Path]::GetFullPath("$OutputDirectory/runtime.csv")), '--duration', '00:05:00') -WindowStyle Hidden -PassThru
@@ -166,11 +165,13 @@ try {
             # A production pipe can become busy just before hello is dispatched.
             Start-Sleep -Milliseconds 200
             if ($cycle -eq 0) { $coldUiWindowMs = [math]::Round($uiWatch.Elapsed.TotalMilliseconds, 1) }
-            [void][PerfNative]::PostMessage($window, 0x312, [IntPtr]9003, [IntPtr]::Zero)
-            $closed = $ui.WaitForExit(8000)
+            $uiWindow = $ui.MainWindowHandle
+            [void]$ui.CloseMainWindow() # exercise the window-close/parking path, as the warm observer does
+            $deadline = [DateTime]::UtcNow.AddSeconds(8)
+            do { Start-Sleep -Milliseconds 25; $closed = $ui.HasExited -or ![PerfNative]::IsWindowVisible($uiWindow) } until($closed -or [DateTime]::UtcNow -gt $deadline)
             $completedCycles++
             $app.Refresh(); $cyclePrivateMB += [math]::Round($app.PrivateMemorySize64 / 1MB, 2); $cycleHandles += $app.HandleCount
-            if ($closed) { $verifiedCycles++ } else { throw "UI cycle $($cycle + 1) did not exit" }
+            if ($closed) { $verifiedCycles++ } else { throw "UI cycle $($cycle + 1) did not close or park" }
             if ($ProfileHeap -and $cycle + 1 -in @(5, $SettingsCycles)) {
                 & (Join-Path $DiagnosticsTools 'dotnet-gcdump.exe') collect --process-id $app.Id --output "$OutputDirectory/cycle-$($cycle + 1).gcdump"
                 if ($LASTEXITCODE) { throw 'Heap collection failed' }
@@ -208,8 +209,7 @@ try {
     $summary | ConvertTo-Json
 }
 finally {
-    # On a failed cycle the UI may still be running. Finish its placement writes
-    # before restoring the sole authorized real-profile exception.
+    # Release only the processes created by this run, including a parked UI.
     if ($ui -and !$ui.HasExited) {
         [void]$ui.CloseMainWindow()
         if (!$ui.WaitForExit(5000)) { $ui.Kill(); $ui.WaitForExit() }
@@ -220,5 +220,4 @@ finally {
     }
     if ($counterProcess) { if (!$counterProcess.HasExited) { $counterProcess.Kill() }; $counterProcess.Dispose() }
     if ($app) { $app.Dispose() }
-    Restore-RealProfileGuard $profileGuard (Join-Path $OutputDirectory 'real-profile-verification.json')
 }

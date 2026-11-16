@@ -63,8 +63,10 @@ public sealed record VisibilityBinding
 internal sealed class VisibilityBindingState
 {
     private bool _down;
+    private bool _blocked;
     public bool? Override { get; private set; }
-    public void Reset() { _down = false; Override = null; }
+    public void Reset() { _down = false; _blocked = false; Override = null; }
+    public void CancelUntilRelease(bool held = false) { _blocked |= _down || held; _down = false; Override = null; }
 
     public bool Process(VisibilityBinding binding, BindingInput input, int key, int modifiers, bool down)
     {
@@ -79,6 +81,7 @@ internal sealed class VisibilityBindingState
             if ((binding.Modifiers & modifiers) != binding.Modifiers) Override = null;
             return false;
         }
+        if (_blocked) return false;
         if (!trigger || _down) return false;
         _down = !binding.IsWheel;
         if (!binding.Matches(input, key, modifiers)) return false;
@@ -91,14 +94,20 @@ internal sealed class VisibilityBindingState
 // A raw-input observation without a corresponding hook callback is evidence of silent removal.
 internal sealed class HookHealth
 {
-    private long _lastHook, _lastRaw;
-    public void HookCalled(long now) => _lastHook = now;
-    public void RawInput(long now) => _lastRaw = now;
+    private long _lastHook, _lastRaw, _firstMissingRaw;
+    public void HookCalled(long now) { _lastHook = now; _firstMissingRaw = 0; }
+    public void RawInput(long now)
+    {
+        _lastRaw = now;
+        if (_firstMissingRaw == 0 && now - _lastHook > 500) _firstMissingRaw = now;
+    }
     public bool NeedsReinstall(long now)
     {
-        // Allow for raw input being delivered just after its hook callback and for batching.
-        if (_lastRaw - _lastHook <= 500 || now - _lastHook < 2000) return false;
-        _lastHook = _lastRaw = now;
+        // Give fresh raw input a delivery window before declaring its callback missing,
+        // including the first event after a long idle period.
+        if (_lastRaw - _lastHook <= 500 || now - _lastHook < 2000 ||
+            _firstMissingRaw == 0 || now - _firstMissingRaw < 500) return false;
+        _lastHook = _lastRaw = now; _firstMissingRaw = 0;
         return true;
     }
 }

@@ -81,13 +81,22 @@ internal static partial class Validation
         settings.Hotkeys.NextCrosshair = Binding(settings.Hotkeys.NextCrosshair, false);
         settings.Hotkeys.PreviousCrosshair = Binding(settings.Hotkeys.PreviousCrosshair, false);
         settings.Hotkeys.OpenSettings = Binding(settings.Hotkeys.OpenSettings, false);
+        settings.Hotkeys.HoldVisibility = HoldBinding(settings.Hotkeys.HoldVisibility);
         var fps = settings.FpsOverlay;
         fps.Scale = Range(fps.Scale, .5, 3); fps.BackgroundOpacity = Range(fps.BackgroundOpacity, 0, 1);
         fps.TextColor = Color(fps.TextColor); fps.BackgroundColor = Color(fps.BackgroundColor);
         fps.OffsetX = Math.Clamp(fps.OffsetX, 0, 16384); fps.OffsetY = Math.Clamp(fps.OffsetY, 0, 16384);
         settings.DismissedSuggestions = settings.DismissedSuggestions.Select(ProcessName).Distinct().Take(1000).ToList();
         if (settings.MonitorDeviceName?.Length > 128 || fps.MonitorDeviceName?.Length > 128) throw Invalid("Invalid monitor.");
+        settings.DisplayColors = Colors(settings.DisplayColors);
         return settings;
+    }
+    internal static InputBinding HoldBinding(InputBinding? binding)
+    {
+        var result = Binding(binding);
+        if (result.Key.Length == 0) result.Mode = Contracts.BindingMode.HoldToHide;
+        if (result.Mode == Contracts.BindingMode.Toggle || result.Key is "WheelUp" or "WheelDown") throw Invalid("While held requires a key or button in a hold mode.");
+        return result;
     }
     public static GameProfile Game(GameProfile? game, StoreDocument store)
     {
@@ -95,14 +104,19 @@ internal static partial class Validation
         game = Copy(game); game.Id = Id(game.Id); game.Name = Name(game.Name); game.ProcessName = ProcessName(game.ProcessName);
         if (store.GameProfiles.Any(g => g.Id != game.Id && g.ProcessName == game.ProcessName)) throw Invalid("Duplicate process.");
         if (game.VisibilityBinding is not null) game.VisibilityBinding = Binding(game.VisibilityBinding);
+        if (game.HoldVisibility is not null) game.HoldVisibility = HoldBinding(game.HoldVisibility);
         if (game.NvidiaFpsCap.HasValue) game.NvidiaFpsCap = Math.Clamp(game.NvidiaFpsCap.Value, 20, 1000);
-        if (game.DisplayColors is { } c)
-        {
-            c.Gamma = Math.Clamp(c.Gamma, 50, 150); c.Contrast = Math.Clamp(c.Contrast, 50, 150);
-            c.Brightness = Math.Clamp(c.Brightness, 50, 150); c.Vibrance = Math.Clamp(c.Vibrance, 0, 100);
-            if (c.NvidiaDigitalVibrance.HasValue) c.NvidiaDigitalVibrance = Math.Clamp(c.NvidiaDigitalVibrance.Value, 0, 100);
-        }
+        game.DisplayColors = Colors(game.DisplayColors);
         return game;
+    }
+    public static DisplayColorSettings? Colors(DisplayColorSettings? colors)
+    {
+        if (colors is null) return null;
+        var c = Copy(colors);
+        c.Gamma = Math.Clamp(c.Gamma, 50, 150); c.Contrast = Math.Clamp(c.Contrast, 50, 150);
+        c.Brightness = Math.Clamp(c.Brightness, 50, 150); c.Vibrance = Math.Clamp(c.Vibrance, 0, 100);
+        if (c.NvidiaDigitalVibrance.HasValue) c.NvidiaDigitalVibrance = Math.Clamp(c.NvidiaDigitalVibrance.Value, 0, 100);
+        return c;
     }
     public static StoreDocument Store(StoreDocument? store, string imagesDirectory)
     {

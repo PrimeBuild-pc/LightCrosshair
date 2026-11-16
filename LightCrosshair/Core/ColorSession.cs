@@ -83,7 +83,7 @@ namespace Core
                         ? _helper(new() { Operation = NvidiaHelperOperations.RestoreVibrance, VibranceState = raw }).Success
                         : !_original.NvidiaVibrance.HasValue || _helper(NvidiaHelperRequest.SetVibrance(_original.NvidiaVibrance.Value)).Success;
                     if (!gammaOk || !vibranceOk) throw new BackendFailure("restore_failed", $"{_manager.BackendName}: Color restoration failed: {restoreError ?? "gamma restored"}; NVIDIA vibrance restored={vibranceOk}");
-                    File.Delete(Marker); _original = null; _manager = null;
+                    File.Delete(Marker); _original = null; _manager.Dispose(); _manager = null;
                 }
                 if (colors is null)
                 {
@@ -91,6 +91,7 @@ namespace Core
                     return;
                 }
                 restoring = false;
+                _manager?.Dispose();
                 _manager = _create();
                 if (!_manager.TryCaptureOriginalState(out string? captureError)) throw new BackendFailure("unsupported", $"{_manager.BackendName}: Color baseline unavailable: {captureError ?? "driver returned no details"}");
                 _original = _manager.CaptureRecovery(); _original.Vendor = _manager.Vendor.ToString();
@@ -133,6 +134,7 @@ namespace Core
                 Notify(revision, code);
                 // Partial apply must immediately try to restore. Leave the marker on failure.
                 if (colors is not null && !restoring && File.Exists(Marker)) Transition(null, revision, rollback: true);
+                if (!File.Exists(Marker)) { _manager?.Dispose(); _manager = null; }
             }
         }
     }

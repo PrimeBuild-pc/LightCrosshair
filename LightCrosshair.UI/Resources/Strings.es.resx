@@ -276,4 +276,18 @@
   <data name="Games_ColorApplyFailed" xml:space="preserve"><value>No se pudieron aplicar los colores de la pantalla. El controlador gráfico rechazó el cambio.</value></data>
   <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>No se pudieron restaurar los colores anteriores de la pantalla.</value></data>
   <data name="Games_ColorUnsupported" xml:space="preserve"><value>Esta pantalla no admite ajustes de color.</value></data>
+  <data name="Library_SetDefaultAll" xml:space="preserve"><value>Establecer como predeterminado para todas las apps</value></data>
+  <data name="Library_Default" xml:space="preserve"><value>Predeterminado</value></data>
+  <data name="Library_InUseGame" xml:space="preserve"><value>En uso · {0}</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>Mientras se mantiene</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Elige una tecla o botón para mantener pulsado.</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>Mientras se mantiene en este juego</value></data>
+  <data name="Games_HoldOff" xml:space="preserve"><value>Desactivado en este juego</value></data>
+  <data name="Games_HoldOwn" xml:space="preserve"><value>Atajo propio</value></data>
+  <data name="Nav_FpsOverlay" xml:space="preserve"><value>Superposición FPS</value></data>
+  <data name="Nav_FpsVisible" xml:space="preserve"><value>Mostrar superposición FPS</value></data>
+  <data name="Fps_Graph" xml:space="preserve"><value>Gráfico de tiempo de fotograma</value></data>
+  <data name="Fps_Help" xml:space="preserve"><value>FPS, tiempo de fotograma y mínimo del 1%. Los perfiles pueden modificar el ajuste global.</value></data>
+  <data name="Settings_ColorsHelp" xml:space="preserve"><value>Se aplica al escritorio y a las aplicaciones. Un perfil de juego habilitado tiene prioridad. Arrastra para previsualizar; al soltar se restaura el contexto actual.</value></data>
+  <data name="Settings_UseColors" xml:space="preserve"><value>Ajustar los colores de pantalla</value></data>
 </root>

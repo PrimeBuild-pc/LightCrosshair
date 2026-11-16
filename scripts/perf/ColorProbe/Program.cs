@@ -5,6 +5,7 @@ using LightCrosshair;
 // Snapshot through the existing baseline API. No new color values are requested:
 // its ADL writability probes reapply each channel's current value. No explicit
 // TryApply/TryRestore calls are made here; compare snapshots after the Core test.
+if (args.Length == 2 && args[0] == "--gamma-readback") { GammaReadback.Read(args[1]); return; }
 if (args.Length != 2) throw new ArgumentException("snapshot.json isolated-data-root");
 Environment.SetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT", args[1]);
 var factory = typeof(ColorRecoverySnapshot).Assembly.GetType("LightCrosshair.GpuColorManagerFactory", true)!;

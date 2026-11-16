@@ -12,6 +12,9 @@ public sealed partial class HotkeyRow : ObservableObject
     public required string Action { get; init; }
     public required string LabelKey { get; init; }
     public bool AllowsHold { get; init; }
+    public bool HoldOnly { get; init; }
+    public IReadOnlyList<MouseButtonChoice> MouseChoices { get; set; } = [];
+    public void OnMouseChoicesChanged() => OnPropertyChanged(nameof(MouseChoices));
     [ObservableProperty] private InputBinding _binding = new();
     [ObservableProperty] private string _display = "";
     [ObservableProperty] private string _warning = "";
@@ -46,6 +49,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
         Rows =
         [
             new HotkeyRow { Action = "ToggleVisibility", LabelKey = "Hotkeys_ToggleVisibility", AllowsHold = true },
+            new HotkeyRow { Action = "HoldVisibility", LabelKey = "Hotkeys_WhileHeld", AllowsHold = true, HoldOnly = true },
             new HotkeyRow { Action = "NextCrosshair", LabelKey = "Hotkeys_Next" },
             new HotkeyRow { Action = "PreviousCrosshair", LabelKey = "Hotkeys_Previous" },
             new HotkeyRow { Action = "OpenSettings", LabelKey = "Hotkeys_OpenSettings" },
@@ -70,6 +74,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
         Set("NextCrosshair", _hotkeys.NextCrosshair);
         Set("PreviousCrosshair", _hotkeys.PreviousCrosshair);
         Set("OpenSettings", _hotkeys.OpenSettings);
+        Set("HoldVisibility", _hotkeys.HoldVisibility);
         ApplyErrors(snapshot);
     }
 
@@ -80,7 +85,9 @@ public sealed partial class HotkeysViewModel : ObservableObject
     {
         if (commit == null) return;
         var row = Rows.First(item => item.Action == commit.Action);
+        if (row.HoldOnly && HotkeyRules.IsWheel(commit.Binding.Key)) { row.Warning = Loc.Instance["Hotkeys_HoldButtonsOnly"]; return; }
         var binding = HotkeyRules.Copy(commit.Binding);
+        if (row.HoldOnly && binding.Mode == BindingMode.Toggle) binding.Mode = row.Binding.Mode == BindingMode.HoldToShow ? BindingMode.HoldToShow : BindingMode.HoldToHide;
         if (!row.AllowsHold) binding.Mode = BindingMode.Toggle;
         if (HotkeyRules.IsWheel(binding.Key) && binding.Mode != BindingMode.Toggle)
         {
@@ -95,7 +102,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
             row.RefreshText();
             return;
         }
-        if (!HotkeyRules.IsMouse(binding.Key) && !string.IsNullOrEmpty(binding.Key) && KeyCodes.TryVirtualKey(binding.Key, out var virtualKey))
+        if (binding.Mode == BindingMode.Toggle && !HotkeyRules.IsMouse(binding.Key) && !string.IsNullOrEmpty(binding.Key) && KeyCodes.TryVirtualKey(binding.Key, out var virtualKey))
         {
             if (!HotkeyProbe.IsFree(_ui.WindowHandle, (int)binding.Modifiers, virtualKey))
             {
@@ -114,9 +121,9 @@ public sealed partial class HotkeysViewModel : ObservableObject
     private async Task ClearAsync(string? action)
     {
         if (action == null) return;
-        Assign(action, new InputBinding());
         var row = Rows.First(item => item.Action == action);
-        row.Binding = new InputBinding();
+        row.Binding = new InputBinding { Mode = row.HoldOnly ? BindingMode.HoldToHide : BindingMode.Toggle };
+        Assign(action, row.Binding);
         row.Warning = "";
         row.RefreshText();
         await SaveAsync().ConfigureAwait(true);
@@ -144,6 +151,8 @@ public sealed partial class HotkeysViewModel : ObservableObject
             new MouseButtonChoice("WheelUp", Loc.Instance["Key_WheelUp"]),
             new MouseButtonChoice("WheelDown", Loc.Instance["Key_WheelDown"]),
         ];
+        foreach (var row in Rows)
+        { row.MouseChoices = MouseChoices.Where(choice => !row.HoldOnly || !HotkeyRules.IsWheel(choice.Key)).ToList(); row.OnMouseChoicesChanged(); }
         OnPropertyChanged(nameof(MouseChoices));
     }
 
@@ -152,6 +161,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
     {
         if (change == null) return;
         var row = Rows.First(item => item.Action == change.Action);
+        if (row.HoldOnly && change.Mode == BindingMode.Toggle) return;
         if (!row.AllowsHold && change.Mode != BindingMode.Toggle) return;
         if (HotkeyRules.IsWheel(row.Binding.Key) && change.Mode != BindingMode.Toggle)
         {
@@ -203,6 +213,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
             case "NextCrosshair": _hotkeys.NextCrosshair = copy; break;
             case "PreviousCrosshair": _hotkeys.PreviousCrosshair = copy; break;
             case "OpenSettings": _hotkeys.OpenSettings = copy; break;
+            case "HoldVisibility": _hotkeys.HoldVisibility = copy; break;
             default: _hotkeys.ToggleVisibility = copy; break;
         }
     }
@@ -215,6 +226,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
             case "NextCrosshair": copy.NextCrosshair = candidate; break;
             case "PreviousCrosshair": copy.PreviousCrosshair = candidate; break;
             case "OpenSettings": copy.OpenSettings = candidate; break;
+            case "HoldVisibility": copy.HoldVisibility = candidate; break;
             default: copy.ToggleVisibility = candidate; break;
         }
         return copy;
@@ -236,6 +248,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
         "NextCrosshair" => Loc.Instance["Hotkeys_Next"],
         "PreviousCrosshair" => Loc.Instance["Hotkeys_Previous"],
         "OpenSettings" => Loc.Instance["Hotkeys_OpenSettings"],
+        "HoldVisibility" => Loc.Instance["Hotkeys_WhileHeld"],
         _ when action.StartsWith("GameProfile:", StringComparison.Ordinal) => Loc.Instance["Games_VisibilityOverride"],
         _ => action,
     };

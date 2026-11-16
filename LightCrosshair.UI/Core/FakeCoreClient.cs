@@ -85,6 +85,18 @@ public sealed class FakeCoreClient : ICoreClient
         Publish();
     }
 
+    public void SetActiveGameProfile(string? id)
+    {
+        lock (_gate)
+        {
+            var game = _store.GameProfiles.FirstOrDefault(item => item.Id == id && item.Enabled);
+            _runtime.ActiveGameProfileId = game?.Id;
+            _runtime.ForegroundProcess = game?.ProcessName ?? "explorer.exe";
+            _runtime.ActiveCrosshairId = game?.CrosshairId ?? _store.Settings.DefaultCrosshairId;
+        }
+        PublishRuntime();
+    }
+
     public void SetHotkeyErrors(IReadOnlyList<HotkeyError> errors)
     {
         lock (_gate) _runtime.HotkeyErrors = errors.ToList();
@@ -164,6 +176,9 @@ public sealed class FakeCoreClient : ICoreClient
         }
     }
 
+    public List<DisplayColorSettings?> ColorPreviews { get; } = new();
+    public Task PreviewDisplayColorsAsync(DisplayColorSettings? colors, CancellationToken cancellationToken = default)
+    { ColorPreviews.Add(colors is null ? null : JsonClone.Clone(colors)); return Task.CompletedTask; }
     public Task PreviewAsync(CrosshairDesign? design, CancellationToken cancellationToken = default)
     {
         lock (_gate)
@@ -481,9 +496,12 @@ public sealed class FakeCoreClient : ICoreClient
                 {
                     DefaultCrosshairId = classic.Id,
                     Language = "en",
+                    DisplayColorsEnabled = true,
+                    DisplayColors = new() { Gamma = 110, Contrast = 110, Brightness = 105, Vibrance = 60 },
                     Hotkeys = new HotkeySettings
                     {
-                        ToggleVisibility = new InputBinding { Key = "Mouse5", Mode = BindingMode.HoldToShow },
+                        ToggleVisibility = new InputBinding { Key = "X", Modifiers = KeyModifiers.Alt },
+                        HoldVisibility = new InputBinding { Key = "RightClick", Mode = BindingMode.HoldToHide },
                     },
                 },
                 Crosshairs = [classic, precision, tactical, ring],

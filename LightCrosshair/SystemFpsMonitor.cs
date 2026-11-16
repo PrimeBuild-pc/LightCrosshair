@@ -126,6 +126,7 @@ internal sealed class SystemFpsMonitor
             return sample.HasData ? sample : new(false, 0, 0, 0, _pid <= 0 ? "FpsNoForeground" : _failure ?? "FpsNoFrames");
         }
     }
+    internal FpsGraphPoint[] Graph() { lock (_gate) return _presents.Graph(_now()); }
     public async Task StopAsync()
     {
         CancellationTokenSource? stop; Task worker;

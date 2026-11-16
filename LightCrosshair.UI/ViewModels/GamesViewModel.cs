@@ -10,6 +10,7 @@ namespace LightCrosshair.UI.ViewModels;
 public sealed partial class GamesViewModel : ObservableObject
 {
     private readonly ICoreClient _core;
+    private readonly DisplayColorsPreview _colorPreview;
     private readonly IUiServices _ui;
     private readonly HashSet<string> _notNow = new(StringComparer.OrdinalIgnoreCase);
     private GameProfile _working = new();
@@ -33,6 +34,42 @@ public sealed partial class GamesViewModel : ObservableObject
     [ObservableProperty] private bool _customVisibility;
     [ObservableProperty] private string _fpsMode = "follow";
     [ObservableProperty] private string _displayColorsMessage = "";
+    [ObservableProperty] private string _holdPolicy = "follow";
+    public bool HasOwnHold => HoldPolicy == "custom";
+    public InputBinding HoldBinding => _working.HoldVisibility ?? new() { Key = "", Mode = BindingMode.HoldToHide };
+    public string HoldMouseKey
+    {
+        get => HotkeyRules.IsMouse(HoldBinding.Key) ? HoldBinding.Key : "";
+        set { if (!_suspend && HasOwnHold && !string.IsNullOrEmpty(value) && value != HoldBinding.Key) CommitHold(new() { Action = "HoldVisibility", Binding = new() { Key = value, Modifiers = HoldBinding.Modifiers, Mode = HoldBinding.Mode } }); }
+    }
+    public BindingMode HoldMode
+    {
+        get => HoldBinding.Mode;
+        set { if (!_suspend && HasOwnHold && value != BindingMode.Toggle) { _working.HoldVisibility!.Mode = value; Touch(); } }
+    }
+    partial void OnHoldPolicyChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasOwnHold));
+        if (_suspend) return;
+        _working.HoldVisibility = value switch
+        {
+            "off" => new() { Key = "", Mode = BindingMode.HoldToHide },
+            "custom" => _working.HoldVisibility is { Key.Length: > 0 } own ? own : new() { Key = "RightClick", Modifiers = KeyModifiers.None, Mode = BindingMode.HoldToHide },
+            _ => null
+        };
+        Touch();
+    }
+    [RelayCommand]
+    private void CommitHold(HotkeyCommit? commit)
+    {
+        if (commit is null || Selected is null) return;
+        if (HotkeyRules.IsWheel(commit.Binding.Key)) { Error = Loc.Instance["Hotkeys_HoldButtonsOnly"]; return; }
+        var copy = HotkeyRules.Copy(commit.Binding);
+        if (copy.Mode == BindingMode.Toggle) copy.Mode = BindingMode.HoldToHide;
+        _working.HoldVisibility = copy;
+        HoldPolicy = "custom";
+        Touch();
+    }
 
     public bool GammaSupported => Gpu.SoftwareGamma;
     public bool NvidiaColorSupported => Gpu.NvidiaDigitalVibrance;
@@ -52,11 +89,11 @@ public sealed partial class GamesViewModel : ObservableObject
             _ = PersistCrosshairAsync(Selected?.Id, _working.CrosshairId);
         }
     }
-    public int Gamma { get => _working.DisplayColors?.Gamma ?? 100; set { Colors().Gamma = value; Touch(); } }
-    public int Contrast { get => _working.DisplayColors?.Contrast ?? 100; set { Colors().Contrast = value; Touch(); } }
-    public int Brightness { get => _working.DisplayColors?.Brightness ?? 100; set { Colors().Brightness = value; Touch(); } }
-    public int Vibrance { get => _working.DisplayColors?.Vibrance ?? 50; set { Colors().Vibrance = value; Touch(); } }
-    public int NvidiaVibrance { get => _working.DisplayColors?.NvidiaDigitalVibrance ?? 50; set { Colors().NvidiaDigitalVibrance = value; Touch(); } }
+    public int Gamma { get => _working.DisplayColors?.Gamma ?? 100; set { Colors().Gamma = value; ColorTouched(); } }
+    public int Contrast { get => _working.DisplayColors?.Contrast ?? 100; set { Colors().Contrast = value; ColorTouched(); } }
+    public int Brightness { get => _working.DisplayColors?.Brightness ?? 100; set { Colors().Brightness = value; ColorTouched(); } }
+    public int Vibrance { get => _working.DisplayColors?.Vibrance ?? 50; set { Colors().Vibrance = value; ColorTouched(); } }
+    public int NvidiaVibrance { get => _working.DisplayColors?.NvidiaDigitalVibrance ?? 50; set { Colors().NvidiaDigitalVibrance = value; ColorTouched(); } }
     public int Cap { get => _working.NvidiaFpsCap ?? 144; set { _working.NvidiaFpsCap = value; Touch(); } }
     public InputBinding Visibility => _working.VisibilityBinding ?? new InputBinding();
 
@@ -83,6 +120,8 @@ public sealed partial class GamesViewModel : ObservableObject
     public GamesViewModel(ICoreClient core, IUiServices ui)
     {
         _core = core;
+        _colorPreview = new(core);
+        _colorPreview.Failed += () => Error = ErrorText.For(null);
         _ui = ui;
         Loc.Instance.Changed += (_, _) => OnPropertyChanged(nameof(SuggestionText));
     }
@@ -158,6 +197,7 @@ public sealed partial class GamesViewModel : ObservableObject
     [RelayCommand]
     private void Select(GameProfile? profile)
     {
+        _ = _colorPreview.EndAsync();
         if (profile == null)
         {
             Selected = null;
@@ -175,6 +215,7 @@ public sealed partial class GamesViewModel : ObservableObject
         UseColors = _working.DisplayColorsEnabled;
         UseCap = _working.NvidiaFpsCap != null;
         CustomVisibility = _working.VisibilityBinding != null;
+        HoldPolicy = _working.HoldVisibility is null ? "follow" : string.IsNullOrEmpty(_working.HoldVisibility.Key) ? "off" : "custom";
         FpsMode = _working.FpsOverlay switch { true => "on", false => "off", _ => "follow" };
         _suspend = false;
         NotifyWorking();
@@ -200,6 +241,10 @@ public sealed partial class GamesViewModel : ObservableObject
         if (_suspend || Selected == null) return;
         _working.VisibilityBinding = value ? _working.VisibilityBinding ?? new InputBinding { Key = "X", Modifiers = KeyModifiers.Alt } : null;
         OnPropertyChanged(nameof(Visibility));
+        OnPropertyChanged(nameof(HoldBinding));
+        OnPropertyChanged(nameof(HoldMode));
+        OnPropertyChanged(nameof(HoldMouseKey));
+        OnPropertyChanged(nameof(HasOwnHold));
         Touch();
     }
 
@@ -387,6 +432,9 @@ public sealed partial class GamesViewModel : ObservableObject
         return profile == null ? null : JsonClone.Clone(profile);
     }
 
+    [RelayCommand] private void BeginColors() => _colorPreview.Begin();
+    [RelayCommand] private Task EndColorsAsync() => _colorPreview.EndAsync();
+    private void ColorTouched() { Touch(); if (UseColors) _colorPreview.Update(Colors()); }
     private DisplayColorSettings Colors() => _working.DisplayColors ??= new DisplayColorSettings();
 
     private void Touch()
@@ -410,6 +458,10 @@ public sealed partial class GamesViewModel : ObservableObject
         OnPropertyChanged(nameof(NvidiaVibrance));
         OnPropertyChanged(nameof(Cap));
         OnPropertyChanged(nameof(Visibility));
+        OnPropertyChanged(nameof(HoldBinding));
+        OnPropertyChanged(nameof(HoldMode));
+        OnPropertyChanged(nameof(HoldMouseKey));
+        OnPropertyChanged(nameof(HasOwnHold));
         OnPropertyChanged(nameof(VisibilityMode));
         OnPropertyChanged(nameof(SuggestionText));
     }

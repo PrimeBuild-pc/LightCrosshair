@@ -58,7 +58,10 @@ internal sealed partial class Form1
             bool systemHotkey = action.Binding.Input == BindingInput.Keyboard && action.Binding.Mode == BindingMode.Toggle;
             if (systemHotkey && !manager.RegisterHotkeyWithId(action.HotkeyId, action.Binding.Modifiers, action.Binding.Key))
             { Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = TextFor("HotkeyRegistrationFailed") }); continue; }
-            _bindings.Add(action); _bindingStates[action.HotkeyId] = new();
+            _bindings.Add(action);
+            var state = new VisibilityBindingState();
+            if (action.Binding.Mode != BindingMode.Toggle) state.CancelUntilRelease(VisibilityInputHook.IsTriggerHeld(action.Binding));
+            _bindingStates[action.HotkeyId] = state;
         }
         _input.Configure(_bindings.Where(a => a.Binding.Input != BindingInput.Keyboard || a.Binding.Mode != BindingMode.Toggle).Select(a => a.Binding).ToArray(), false);
     }
@@ -87,6 +90,7 @@ internal sealed partial class Form1
         {
             if (m.Msg == 0x8066) { m.Result = (IntPtr)(_pipe?.IsConnected == true ? 1 : 0); return; }
             if (m.Msg == 0x8067) { m.Result = (IntPtr)((_fps.Enabled ? 1 : 0) + (_recordingTimer?.Enabled == true ? 1 : 0)); return; }
+            if (m.Msg == 0x8070) { m.Result = (IntPtr)(_input?.ActiveHookMask ?? 0); return; }
         }
         if (_capture.Active && m.Msg is 0x312 or VisibilityInputHook.InputMessage or VisibilityInputHook.ResetMessage) return;
         if (m.Msg == 0x312)
@@ -105,8 +109,8 @@ internal sealed partial class Form1
                 if (action.Binding.Input == BindingInput.Keyboard && action.Binding.Mode == BindingMode.Toggle) continue;
                 var state = _bindingStates[action.HotkeyId];
                 if (state.Process(action.Binding, input, key, modifiers, down)) _ = RunInputActionAsync(action.HotkeyId);
-                if (action.HotkeyId == 9000) _holdOverride = state.Override;
             }
+            _holdOverride = _bindingStates.GetValueOrDefault(9004)?.Override ?? _bindingStates.GetValueOrDefault(9000)?.Override;
             RefreshOverlay(); QueueRuntimeEvent(); return;
         }
         if (m.Msg == VisibilityInputHook.ResetMessage)
@@ -119,6 +123,11 @@ internal sealed partial class Form1
             RefreshOverlay(); QueueRuntimeEvent(); return;
         }
         base.WndProc(ref m);
+    }
+    private void ReleaseHolds()
+    {
+        foreach (var state in _bindingStates.Values) state.CancelUntilRelease();
+        _holdOverride = null;
     }
     private async Task RunInputActionAsync(int id)
     {

@@ -23,6 +23,7 @@ public sealed partial class MainViewModel : ObservableObject
         Games = new GamesViewModel(core, ui);
         Hotkeys = new HotkeysViewModel(core, ui);
         Settings = new SettingsViewModel(core, ui);
+        FpsOverlay = new(Settings);
         Library.GameCrosshairChanged = Games.NoteExternalCrosshair;
         Games.NoteLaunchSuggest(options.Suggest);
         Page = options.Page;
@@ -40,7 +41,8 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Hotkeys.ApplyRuntime(runtime);
             Games.ApplyRuntime(runtime);
-            Library.NoteActive(string.IsNullOrEmpty(runtime.ActiveCrosshairId) ? _core.Snapshot?.Store.Settings.DefaultCrosshairId : runtime.ActiveCrosshairId);
+            Settings.ApplyRuntime(runtime);
+            Library.ApplyRuntime(runtime);
             if (_core.Snapshot != null && (runtime.PendingSuggestion != null || Games.Suggestion != null))
                 Games.Apply(_core.Snapshot);
         };
@@ -64,6 +66,7 @@ public sealed partial class MainViewModel : ObservableObject
     public GamesViewModel Games { get; }
     public HotkeysViewModel Hotkeys { get; }
     public SettingsViewModel Settings { get; }
+    public FpsOverlayViewModel FpsOverlay { get; }
 
     [ObservableProperty] private string _page = UiPages.Studio;
     [ObservableProperty] private CoreLinkState _linkState = CoreLinkState.Connecting;
@@ -74,6 +77,7 @@ public sealed partial class MainViewModel : ObservableObject
         UiPages.Games => Games,
         UiPages.Hotkeys => Hotkeys,
         UiPages.Settings => Settings,
+        FpsOverlayViewModel.PageId => FpsOverlay,
         _ => Studio,
     };
 
@@ -107,6 +111,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void Park()
     {
+        _ = Settings.EndColorsCommand.ExecuteAsync(null);
+        _ = Games.EndColorsCommand.ExecuteAsync(null);
         _ = Studio.LeaveAsync();
         Library.ReleaseCaches();
         SetMinimized(true);
@@ -150,6 +156,8 @@ public sealed partial class MainViewModel : ObservableObject
             if (choice == UnsavedChoice.Discard) Studio.Revert();
         }
         if (Page == UiPages.Studio) await Studio.LeaveAsync().ConfigureAwait(true);
+        await Settings.EndColorsCommand.ExecuteAsync(null);
+        await Games.EndColorsCommand.ExecuteAsync(null);
         Page = page;
         OnPropertyChanged(nameof(CurrentPage));
         if (page == UiPages.Studio) Studio.Enter();

@@ -25,6 +25,7 @@ public sealed partial class LibraryCard : ObservableObject
     public override string ToString() => Design.Name;
     [ObservableProperty] private string? _png;
     [ObservableProperty] private bool _inUse;
+    [ObservableProperty] private string _usageText = "";
     [ObservableProperty] private bool _renaming;
     [ObservableProperty] private string _renameText = "";
     public string SectionKey => IsPreset ? "Library_Presets" : "Library_Mine";
@@ -45,6 +46,8 @@ public sealed partial class LibraryViewModel : ObservableObject
     private readonly List<LibraryCard> _mine = new();
     private readonly List<LibraryCard> _presets = new();
     private bool _minimized;
+    private StoreDocument? _store;
+    private RuntimeState? _runtime;
 
     public LibraryViewModel(ICoreClient core, IUiServices ui, StudioViewModel studio, ThumbnailCache? thumbs = null)
     {
@@ -52,6 +55,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         _ui = ui;
         _studio = studio;
         _thumbs = thumbs ?? new ThumbnailCache();
+        Loc.Instance.Changed += (_, _) => UpdateUsage();
     }
 
     public ObservableCollection<LibraryCard> Mine { get; } = new();
@@ -93,6 +97,8 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     public void Apply(Snapshot snapshot)
     {
+        _store = snapshot.Store;
+        _runtime = snapshot.Runtime;
         DefaultCrosshairId = snapshot.Store.Settings.DefaultCrosshairId;
         var active = snapshot.Runtime.ActiveCrosshairId;
         if (string.IsNullOrEmpty(active)) active = snapshot.Store.Settings.DefaultCrosshairId;
@@ -103,6 +109,7 @@ public sealed partial class LibraryViewModel : ObservableObject
             _mine.Add(card);
         }
         ApplyFilter();
+        UpdateUsage();
     }
 
     public void SetMinimized(bool minimized) => _minimized = minimized;
@@ -111,6 +118,23 @@ public sealed partial class LibraryViewModel : ObservableObject
     {
         foreach (var card in _mine)
             card.InUse = card.Design.Id == id;
+        UpdateUsage();
+    }
+
+    public void ApplyRuntime(RuntimeState runtime)
+    { _runtime = runtime; NoteActive(runtime.ActiveCrosshairId); }
+
+    private void UpdateUsage()
+    {
+        if (_store is null) return;
+        var game = _store.GameProfiles.FirstOrDefault(item => item.Id == _runtime?.ActiveGameProfileId);
+        foreach (var card in _mine)
+        {
+            var labels = new List<string>();
+            if (game is not null && game.CrosshairId == card.Design.Id) labels.Add(Loc.Instance.Format("Library_InUseGame", game.Name));
+            if (_store.Settings.DefaultCrosshairId == card.Design.Id) labels.Add(Loc.Instance["Library_Default"]);
+            card.UsageText = string.Join(" · ", labels);
+        }
     }
 
     public void ReleaseCaches()
@@ -140,8 +164,11 @@ public sealed partial class LibraryViewModel : ObservableObject
     private async Task ApplyDefaultAsync(LibraryCard? card)
     {
         if (card == null || card.IsPreset) return;
-        await ActivateAsync(card.Design.Id, null).ConfigureAwait(true);
+        await ActivateAsync(card.Design.Id, _core.Snapshot?.Runtime.ActiveGameProfileId).ConfigureAwait(true);
     }
+
+    [RelayCommand]
+    private Task SetDefaultForAllAppsAsync(LibraryCard? card) => card is null || card.IsPreset ? Task.CompletedTask : ActivateAsync(card.Design.Id, null);
 
     public void BeginUse(LibraryCard card, string? gameProfileId)
     {
@@ -170,7 +197,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         if (_useCard == null) return;
         if (ShowUseExisting && _existingCopy != null)
         {
-            await ActivateAsync(_existingCopy.Id, _gameProfileId).ConfigureAwait(true);
+            await ActivateAsync(_existingCopy.Id, _gameProfileId ?? _core.Snapshot?.Runtime.ActiveGameProfileId).ConfigureAwait(true);
             CloseUse();
             return;
         }
@@ -184,7 +211,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         copy.Favorite = false;
         copy.UpdatedAt = DateTimeOffset.UtcNow;
         if (!await SaveDesignAsync(copy).ConfigureAwait(true)) return;
-        await ActivateAsync(copy.Id, _gameProfileId).ConfigureAwait(true);
+        await ActivateAsync(copy.Id, _gameProfileId ?? _core.Snapshot?.Runtime.ActiveGameProfileId).ConfigureAwait(true);
         CloseUse();
     }
 

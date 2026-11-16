@@ -123,25 +123,7 @@ public partial class MainWindow : Window
                 Close();
             };
             _parkTimer.Start();
-            if (Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_TIMING") == "1")
-                ScheduleTimingWake();
         });
-    }
-
-    private void ScheduleTimingWake()
-    {
-        var wake = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-        wake.Tick += (_, _) =>
-        {
-            wake.Stop();
-            var requested = Environment.TickCount64;
-            if (!IsVisible) Show();
-            if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
-            Wake();
-            Activate();
-            _ = Dispatcher.BeginInvoke(DispatcherPriority.Render, () => OpenTiming.NoteWake(requested));
-        };
-        wake.Start();
     }
 
     private void Wake()

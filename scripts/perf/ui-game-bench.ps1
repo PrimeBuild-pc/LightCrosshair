@@ -3,12 +3,12 @@ param(
     [string]$Probe = "$PSScriptRoot/results-review3/probe/SwapchainProbe.exe",
     [string]$OutputDirectory = "$PSScriptRoot/results-review3/ui-after",
     [string]$Stage = 'after',
-    [int]$Cycles = 5
+    [int]$Cycles = 5,
+    [switch]$Warm
 )
 . "$PSScriptRoot/ReviewProbe.ps1"
-. "$PSScriptRoot/ProfileGuard.ps1"
 $out = [IO.Path]::GetFullPath($OutputDirectory); New-Item -ItemType Directory -Path $out -Force | Out-Null
-$guard = Start-RealProfileGuard (Join-Path $out 'profile-backup')
+$previousTiming=$env:LIGHTCROSSHAIR_TIMING; $env:LIGHTCROSSHAIR_TIMING=''
 $session=$null; $probeProcess=$null; $pipeReleased=$false
 try {
     dotnet build "$PSScriptRoot/UiOpenProbe" -c Release --nologo
@@ -28,7 +28,7 @@ try {
     if(!(Test-Path -LiteralPath $ready)){throw 'DX12 probe did not initialize'}
     $handle=(Get-Content -LiteralPath $ready).Split(',')[1]
     Start-Sleep -Seconds 2
-    & "$PSScriptRoot/UiOpenProbe/bin/Release/net10.0-windows/UiOpenProbe.exe" $session.App.Id $handle $Cycles (Join-Path $out 'ui.csv') $Stage
+    & "$PSScriptRoot/UiOpenProbe/bin/Release/net10.0-windows/UiOpenProbe.exe" $session.App.Id $handle $Cycles (Join-Path $out 'ui.csv') $Stage $(if($Warm){'warm'}else{'cold'})
     if($LASTEXITCODE){throw 'UI observer failed'}
     [void]$probeProcess.CloseMainWindow()
     if(!$probeProcess.WaitForExit(5000)){throw 'DX12 probe did not exit'}
@@ -45,5 +45,5 @@ try {
         Invoke-ProbeCore $session hello @{protocolVersion=1;client='ui-bench-shutdown'} | Out-Null
     }
         Stop-ProbeCore $session
-    } finally { Restore-RealProfileGuard $guard (Join-Path $out 'profile-audit.json') }
+    } finally { $env:LIGHTCROSSHAIR_TIMING=$previousTiming }
 }

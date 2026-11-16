@@ -27,7 +27,7 @@ public sealed record LaunchOptions(string Page, string? Suggest, bool FakeCore, 
             }
         }
 
-        if (page is not (UiPages.Studio or UiPages.Library or UiPages.Games or UiPages.Hotkeys or UiPages.Settings))
+        if (page is not (UiPages.Studio or UiPages.Library or UiPages.Games or UiPages.Hotkeys or UiPages.Settings or ViewModels.FpsOverlayViewModel.PageId))
             page = UiPages.Studio;
         return new LaunchOptions(page, suggest, fake, shots);
     }

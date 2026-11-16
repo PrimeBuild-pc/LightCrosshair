@@ -2,6 +2,9 @@ param(
     [string]$Executable = "$PSScriptRoot/../../releases/LightCrosshair-v2.0.0-win-x64/LightCrosshair.exe",
     [string]$OutputDirectory = "$PSScriptRoot/results-review3/colors-after",
     [int]$Gamma = 100,
+    [int]$Contrast = 110,
+    [int]$Brightness = 105,
+    [int]$Vibrance = 60,
     [switch]$Baseline
 )
 . "$PSScriptRoot/ReviewProbe.ps1"
@@ -18,7 +21,7 @@ try {
     $session=Start-ProbeCore $Executable $root
     Invoke-ProbeCore $session hello @{protocolVersion=1;client='color-smoke'} | Out-Null
     $snapshot=Invoke-ProbeCore $session getSnapshot
-    Invoke-ProbeCore $session saveGameProfile @{id='probe';name='Display colors probe';processName='swapchainprobe.exe';crosshairId=$snapshot.store.settings.defaultCrosshairId;enabled=$true;displayColorsEnabled=$true;displayColors=@{gamma=$Gamma;contrast=100;brightness=100;vibrance=50};fpsOverlay=$false} | Out-Null
+    Invoke-ProbeCore $session saveGameProfile @{id='probe';name='Display colors probe';processName='swapchainprobe.exe';crosshairId=$snapshot.store.settings.defaultCrosshairId;enabled=$true;displayColorsEnabled=$true;displayColors=@{gamma=$Gamma;contrast=$Contrast;brightness=$Brightness;vibrance=$Vibrance};fpsOverlay=$false} | Out-Null
     $ready=Join-Path $out 'game.ready';if(Test-Path -LiteralPath $ready){Remove-Item -LiteralPath $ready}
     $probe=[IO.Path]::GetFullPath("$PSScriptRoot/results-review3/probe/SwapchainProbe.exe")
     $game=Start-Process $probe -ArgumentList "--api 12 --borderless --seconds 15 --ready `"$ready`"" -PassThru -WindowStyle Normal
@@ -27,6 +30,8 @@ try {
     if($during.runtime.activeGameProfileId -ne 'probe'){throw 'Color test game did not become foreground'}
     Start-Sleep -Seconds 2
     $during=Invoke-ProbeCore $session getSnapshot
+    & $snapshotExe (Join-Path $out 'applied.json') (Join-Path $root 'snapshot-logs')
+    if($LASTEXITCODE){throw 'Cannot read applied colors'}
     [void]$game.CloseMainWindow();if(!$game.WaitForExit(5000)){throw '3D test did not exit'};$game.Dispose();$game=$null
     Start-Sleep -Seconds 1
     $left=Invoke-ProbeCore $session getSnapshot

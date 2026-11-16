@@ -11,6 +11,9 @@
 - Monitor model names with an adapter-description fallback, and explicit mouse-button/wheel choices beside keyboard capture.
 - `LC2:` vector share codes and `.lcx.json` import/export with embedded images.
 - Executable-based game profiles for crosshairs, display colors, visibility bindings and FPS overlay overrides, with local game suggestions.
+- Independent While held visibility binding, with per-game inherit/off/own policies and click pass-through.
+- A dedicated FPS overlay page and sidebar switch, plus an optional bounded two-second frametime graph (off by default, at most 20 redraws/s).
+- Global display colors and live slider previews in Settings and Games; game colors take precedence over globals.
 - A v2 data store with atomic saves, automatic backups, corrupt-file recovery and a display-color recovery journal.
 
 ### Changed
@@ -19,15 +22,15 @@
 - Target .NET 10 Desktop Runtime, with x64 and ARM64 ZIP packages and an x64 installer.
 - Render the overlay with per-pixel alpha, updating only when its appearance or placement changes.
 - Keep keyboard/mouse visibility bindings and modifiers, with capture suspension and visible registration/conflict errors.
-- Keep display colors, AMD color support, NVIDIA Digital Vibrance and per-app FPS caps as game-profile settings; preserve disabled saved color values.
-- Keep the optional FPS overlay focused on FPS, frametime and 1% low; capture runs only while enabled.
-- Provide Studio, Library, Games, Hotkeys and Settings in English, Italian, Spanish, Simplified Chinese, Russian and Japanese.
+- Keep AMD color support, NVIDIA Digital Vibrance and per-app FPS caps, with global and game color settings; preserve disabled saved color values.
+- Keep the optional FPS overlay focused on FPS, frametime, 1% low and the optional frametime graph; capture runs only while enabled.
+- Provide Studio, Library, Games, Hotkeys, FPS overlay and Settings in English, Italian, Spanish, Simplified Chinese, Russian and Japanese.
 - Bound transient rendering allocations so repeated Library sessions reach a stable Core memory footprint.
 - Cycle favorites when at least two exist, otherwise all saved crosshairs in Library order; persist the selection into the active game profile or default.
 - Decode DXGI/D3D9 present events without requiring registered ETW payload decoders, include MPO presents, track swapchains independently and retry failed capture sessions. Show a localized reason after two seconds without frames and stop native sessions when disabled.
 - Launch settings below normal CPU priority with low I/O priority during games/fullscreen foreground windows; queue IPC thumbnails on one below-normal worker and discard obsolete queued work.
 - Focus a parked connected settings process instead of closing it or launching a replacement.
-- Preserve AMD calibration at neutral gamma without requiring a Win32 gamma ramp; report display-color failures, retain vendor details once, and clear the apply error on success or leaving the game.
+- Apply and recover AMD gamma through named display contexts, preserving each monitor's original ramp alongside ADL values. Report driver failures inline and keep the recovery journal until restoration succeeds.
 
 ### Removed
 
@@ -38,6 +41,7 @@
 ### Upgrade notes
 
 - Exit 1.x before launching 2.0. Supported v1 profiles, active working state, preferences, hotkeys and process associations migrate automatically; original v1 files are never modified.
+- V1 visibility bindings in Hold mode migrate to While held while Alt+X remains the visibility toggle. Global v1 display colors migrate when no target process was configured.
 - An active v1 crosshair switched off migrates to global visibility off, keeping all editable layers visible. Disabled saved display-color values remain available.
 - New data lives in `%AppData%\LightCrosshair\v2`; back up the entire folder to keep imported PNG images with the store.
 - Pre-existing v1 NVIDIA driver caps are left untouched. Caps explicitly saved through 2.0 are managed on save/delete.

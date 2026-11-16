@@ -276,4 +276,18 @@
   <data name="Games_ColorApplyFailed" xml:space="preserve"><value>无法应用显示颜色。显卡驱动拒绝了这项更改。</value></data>
   <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>无法恢复之前的显示颜色。</value></data>
   <data name="Games_ColorUnsupported" xml:space="preserve"><value>此显示器不支持颜色调节。</value></data>
+  <data name="Library_SetDefaultAll" xml:space="preserve"><value>设为所有应用的默认准星</value></data>
+  <data name="Library_Default" xml:space="preserve"><value>默认</value></data>
+  <data name="Library_InUseGame" xml:space="preserve"><value>使用中 · {0}</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>按住时</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>请选择可按住的按键或鼠标按钮。</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>此游戏中按住时</value></data>
+  <data name="Games_HoldOff" xml:space="preserve"><value>在此游戏中禁用</value></data>
+  <data name="Games_HoldOwn" xml:space="preserve"><value>独立绑定</value></data>
+  <data name="Nav_FpsOverlay" xml:space="preserve"><value>FPS叠加层</value></data>
+  <data name="Nav_FpsVisible" xml:space="preserve"><value>显示FPS叠加层</value></data>
+  <data name="Fps_Graph" xml:space="preserve"><value>帧时间曲线</value></data>
+  <data name="Fps_Help" xml:space="preserve"><value>FPS、帧时间和1%最低帧率。游戏配置可覆盖全局开关。</value></data>
+  <data name="Settings_ColorsHelp" xml:space="preserve"><value>应用于桌面和应用。已启用的游戏配置优先。拖动以预览；松开后恢复当前设置。</value></data>
+  <data name="Settings_UseColors" xml:space="preserve"><value>调整显示颜色</value></data>
 </root>

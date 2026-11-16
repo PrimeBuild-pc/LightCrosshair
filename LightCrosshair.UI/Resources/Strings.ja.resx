@@ -276,4 +276,18 @@
   <data name="Games_ColorApplyFailed" xml:space="preserve"><value>ディスプレイの色を適用できませんでした。グラフィックドライバーが変更を拒否しました。</value></data>
   <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>以前のディスプレイの色を復元できませんでした。</value></data>
   <data name="Games_ColorUnsupported" xml:space="preserve"><value>このディスプレイは色の調整に対応していません。</value></data>
+  <data name="Library_SetDefaultAll" xml:space="preserve"><value>すべてのアプリの既定に設定</value></data>
+  <data name="Library_Default" xml:space="preserve"><value>既定</value></data>
+  <data name="Library_InUseGame" xml:space="preserve"><value>使用中 · {0}</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>押している間</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>保持するキーまたはマウスボタンを選択してください。</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>このゲームで押している間</value></data>
+  <data name="Games_HoldOff" xml:space="preserve"><value>このゲームでは無効</value></data>
+  <data name="Games_HoldOwn" xml:space="preserve"><value>独自の割り当て</value></data>
+  <data name="Nav_FpsOverlay" xml:space="preserve"><value>FPSオーバーレイ</value></data>
+  <data name="Nav_FpsVisible" xml:space="preserve"><value>FPSを表示</value></data>
+  <data name="Fps_Graph" xml:space="preserve"><value>フレーム時間グラフ</value></data>
+  <data name="Fps_Help" xml:space="preserve"><value>FPS、フレーム時間、1%低値。ゲームプロファイルで全体の設定を上書きできます。</value></data>
+  <data name="Settings_ColorsHelp" xml:space="preserve"><value>デスクトップとアプリに適用します。有効なゲームプロファイルを優先します。ドラッグでプレビューし、離すと現在の設定に戻ります。</value></data>
+  <data name="Settings_UseColors" xml:space="preserve"><value>ディスプレイの色を調整</value></data>
 </root>

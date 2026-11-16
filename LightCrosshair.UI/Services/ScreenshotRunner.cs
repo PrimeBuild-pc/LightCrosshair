@@ -16,7 +16,7 @@ public static class ScreenshotRunner
         window.Width = 1180;
         window.Height = 740;
         await PumpAsync().ConfigureAwait(true);
-        foreach (var page in new[] { "studio", "library", "games", "hotkeys", "settings" })
+        foreach (var page in new[] { "studio", "library", "games", "hotkeys", "fps", "settings" })
         {
             if (viewModel.Page != page)
                 await viewModel.NavigateCommand.ExecuteAsync(page).ConfigureAwait(true);
@@ -66,7 +66,19 @@ public static class ScreenshotRunner
     private static bool HideCutRows(Window window)
     {
         var limit = window.ActualHeight - 12;
-        return HideCutRows(window, window, limit);
+        var page = FindPage(window);
+        return page is not null && HideCutRows(window, page, limit);
+    }
+
+    private static DependencyObject? FindPage(DependencyObject root)
+    {
+        if (root is System.Windows.Controls.UserControl && root.GetType().Namespace == "LightCrosshair.UI.Views") return root;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var found = FindPage(VisualTreeHelper.GetChild(root, i));
+            if (found is not null) return found;
+        }
+        return null;
     }
 
     private static bool HideCutRows(Window window, DependencyObject root, double limit)
