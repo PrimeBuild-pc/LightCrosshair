@@ -2,13 +2,39 @@
 
 ## v2.0.0 — Unreleased
 
-- Split the event-driven WinForms Core from the separate settings application on .NET 10.
-- Add layered per-pixel alpha crosshairs, 30 original presets, favorites, local share codes and image-aware JSON export.
-- Add executable-based game contexts with visibility, colors and optional NVIDIA FPS cap overrides.
-- Preserve v1 files during migration and add atomic v2 storage, backups and crash recovery for display colors.
-- Keep FPS, frametime and 1% low telemetry on demand; remove detailed diagnostics, frame-cap guidance, RTSS and frame-generation heuristics.
-- Localize Core tray and notification strings in six languages.
-- Final UI integration, GPU/ARM64 hardware checks and release validation remain required before distribution.
+### Added
+
+- Crosshair Studio with up to eight editable Arms, Dot, Ring, Box or PNG Image layers, fills for rings/boxes, outlines, opacity, rotation and position controls.
+- Shared editor/overlay rendering, live in-game preview, undo/redo and layer reordering.
+- A local library with 30 original presets, favorites, search and tag filters.
+- `LC2:` vector share codes and `.lcx.json` import/export with embedded images.
+- Executable-based game profiles for crosshairs, display colors, visibility bindings and FPS overlay overrides, with local game suggestions.
+- A v2 data store with atomic saves, automatic backups, corrupt-file recovery and a display-color recovery journal.
+
+### Changed
+
+- Move settings into a separate WPF app; the resident WinForms Core remains running when settings closes.
+- Target .NET 10 Desktop Runtime, with x64 and ARM64 ZIP packages and an x64 installer.
+- Render the overlay with per-pixel alpha, updating only when its appearance or placement changes.
+- Keep keyboard/mouse visibility bindings and modifiers, with capture suspension and visible registration/conflict errors.
+- Keep display colors, AMD color support, NVIDIA Digital Vibrance and per-app FPS caps as game-profile settings; preserve disabled saved color values.
+- Keep the optional FPS overlay focused on FPS, frametime and 1% low; capture runs only while enabled.
+- Provide Studio, Library, Games, Hotkeys and Settings in English, Italian, Spanish, Simplified Chinese, Russian and Japanese.
+- Bound transient rendering allocations so repeated Library sessions reach a stable Core memory footprint.
+
+### Removed
+
+- Frame Cap Assistant, Detailed FPS mode, diagnostic graphs and frame-pacing analysis.
+- RTSS fallback, frame-generation heuristics and G-Sync/FreeSync/color-management status panels.
+- Per-profile direct-select hotkeys and the in-process settings window.
+
+### Upgrade notes
+
+- Exit 1.x before launching 2.0. Supported v1 profiles, active working state, preferences, hotkeys and process associations migrate automatically; original v1 files are never modified.
+- An active v1 crosshair switched off migrates to global visibility off, keeping all editable layers visible. Disabled saved display-color values remain available.
+- New data lives in `%AppData%\LightCrosshair\v2`; back up the entire folder to keep imported PNG images with the store.
+- Pre-existing v1 NVIDIA driver caps are left untouched. Caps explicitly saved through 2.0 are managed on save/delete.
+- NVIDIA Digital Vibrance and FPS caps are not yet verified on NVIDIA hardware. See the README for platform and overlay limitations.
 
 ## v1.9.0 — 2026-11-11
 
