@@ -284,4 +284,8 @@
   <data name="Games_HoldPolicy" xml:space="preserve"><value>此游戏中按住时</value></data>
   <data name="Games_HoldOff" xml:space="preserve"><value>在此游戏中禁用</value></data>
   <data name="Games_HoldOwn" xml:space="preserve"><value>独立绑定</value></data>
+  <data name="Nav_FpsOverlay" xml:space="preserve"><value>FPS叠加层</value></data>
+  <data name="Nav_FpsVisible" xml:space="preserve"><value>显示FPS叠加层</value></data>
+  <data name="Fps_Graph" xml:space="preserve"><value>帧时间曲线</value></data>
+  <data name="Fps_Help" xml:space="preserve"><value>FPS、帧时间和1%最低帧率。游戏配置可覆盖全局开关。</value></data>
 </root>

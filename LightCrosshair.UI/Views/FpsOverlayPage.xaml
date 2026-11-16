@@ -1,0 +1,30 @@
+<UserControl x:Class="LightCrosshair.UI.Views.FpsOverlayPage"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:loc="clr-namespace:LightCrosshair.UI.Localization"
+ xmlns:controls="clr-namespace:LightCrosshair.UI.Controls">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel DataContext="{Binding Editor}" MaxWidth="640" HorizontalAlignment="Left">
+      <TextBlock Style="{StaticResource BodyText}" Text="{loc:Tr Fps_Help}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_FpsOn}" IsChecked="{Binding FpsEnabled}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_FpsOn}"/>
+      <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Settings_FpsMonitor}"/>
+      <ComboBox ItemsSource="{Binding FpsMonitorChoices}" SelectedValuePath="DeviceName" SelectedValue="{Binding FpsMonitor}" Margin="0,4,0,8" AutomationProperties.Name="{loc:Tr Settings_FpsMonitor}" ItemContainerStyle="{StaticResource TextComboItem}">
+        <ComboBox.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding Label}"/>
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <controls:NumberSlider Caption="{loc:Tr Settings_OffsetX}" Value="{Binding FpsOffsetX}" Minimum="0" Maximum="2000" Unit="{loc:Tr Unit_Px}"/>
+      <controls:NumberSlider Caption="{loc:Tr Settings_OffsetY}" Value="{Binding FpsOffsetY}" Minimum="0" Maximum="2000" Unit="{loc:Tr Unit_Px}"/>
+      <controls:NumberSlider Caption="{loc:Tr Settings_Scale}" Value="{Binding FpsScale}" Minimum="0.5" Maximum="3" Integer="False"/>
+      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_Frametime}" IsChecked="{Binding ShowFrametime}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_Frametime}"/>
+      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_Low}" IsChecked="{Binding Show1PercentLow}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_Low}"/>
+      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Fps_Graph}" IsChecked="{Binding ShowFrametimeGraph}" Margin="0,4" AutomationProperties.Name="{loc:Tr Fps_Graph}"/>
+      <controls:ColorField Caption="{loc:Tr Settings_TextColor}" Value="{Binding TextColor}"/>
+      <controls:ColorField Caption="{loc:Tr Settings_BackgroundColor}" Value="{Binding BackgroundColor}"/>
+      <controls:NumberSlider Caption="{loc:Tr Settings_BackgroundOpacity}" Value="{Binding BackgroundOpacityPercent}" Minimum="0" Maximum="100" Unit="{loc:Tr Unit_Percent}" Integer="False"/>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

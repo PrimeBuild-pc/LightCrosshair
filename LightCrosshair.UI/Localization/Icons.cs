@@ -8,6 +8,7 @@ public static class Icons
     public const string Games = "\uE7FC";
     public const string Hotkeys = "\uE92E";
     public const string Settings = "\uE713";
+    public const string FpsOverlay = "\uEC4A";
     public const string Add = "\uE710";
     public const string Delete = "\uE74D";
     public const string Duplicate = "\uE8C8";

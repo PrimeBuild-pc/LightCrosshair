@@ -9,6 +9,23 @@ namespace LightCrosshair.UI.Tests;
 public class FinalRoundTests
 {
     [Fact]
+    public async Task FpsHasItsOwnPageAndSharedSwitchPersistsTheGraphWithoutLosingOtherSettings()
+    {
+        var core = new FakeCoreClient(new InlineMarshaler());
+        var options = LaunchOptions.Parse(["--fake-core", "--page", "fps"]);
+        var main = new MainViewModel(core, new FakeUi(), options); await main.StartAsync();
+        var page = Assert.IsType<FpsOverlayViewModel>(main.CurrentPage);
+        Assert.Same(main.Settings, page.Editor);
+        Assert.False(page.Editor.ShowFrametimeGraph);
+        page.Editor.FpsEnabled = true; page.Editor.ShowFrametimeGraph = true;
+        await page.Editor.FlushAsync();
+        Assert.True(core.Snapshot!.Store.Settings.FpsOverlay.Enabled);
+        Assert.True(core.Snapshot.Store.Settings.FpsOverlay.ShowFrametimeGraph);
+        Assert.Equal("X", core.Snapshot.Store.Settings.Hotkeys.ToggleVisibility.Key);
+        await main.NavigateCommand.ExecuteAsync("settings");
+        Assert.Same(main.Settings, main.CurrentPage);
+    }
+    [Fact]
     public async Task WhileHeldHasItsOwnRowAndGamesKeepFollowOffAndOwnDistinct()
     {
         var core = new FakeCoreClient(new InlineMarshaler()); await core.ConnectAsync();

@@ -284,4 +284,8 @@
   <data name="Games_HoldPolicy" xml:space="preserve"><value>Mentre premi in questo gioco</value></data>
   <data name="Games_HoldOff" xml:space="preserve"><value>Disattivato in questo gioco</value></data>
   <data name="Games_HoldOwn" xml:space="preserve"><value>Combinazione dedicata</value></data>
+  <data name="Nav_FpsOverlay" xml:space="preserve"><value>Overlay FPS</value></data>
+  <data name="Nav_FpsVisible" xml:space="preserve"><value>Mostra overlay FPS</value></data>
+  <data name="Fps_Graph" xml:space="preserve"><value>Grafico dei tempi frame</value></data>
+  <data name="Fps_Help" xml:space="preserve"><value>FPS, tempo frame e minimo 1%. I profili gioco possono modificare lo stato globale.</value></data>
 </root>

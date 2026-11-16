@@ -284,4 +284,8 @@
   <data name="Games_HoldPolicy" xml:space="preserve"><value>Mientras se mantiene en este juego</value></data>
   <data name="Games_HoldOff" xml:space="preserve"><value>Desactivado en este juego</value></data>
   <data name="Games_HoldOwn" xml:space="preserve"><value>Atajo propio</value></data>
+  <data name="Nav_FpsOverlay" xml:space="preserve"><value>Superposición FPS</value></data>
+  <data name="Nav_FpsVisible" xml:space="preserve"><value>Mostrar superposición FPS</value></data>
+  <data name="Fps_Graph" xml:space="preserve"><value>Gráfico de tiempo de fotograma</value></data>
+  <data name="Fps_Help" xml:space="preserve"><value>FPS, tiempo de fotograma y mínimo del 1%. Los perfiles pueden modificar el ajuste global.</value></data>
 </root>

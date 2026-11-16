@@ -284,4 +284,8 @@
   <data name="Games_HoldPolicy" xml:space="preserve"><value>While held in this game</value></data>
   <data name="Games_HoldOff" xml:space="preserve"><value>Off in this game</value></data>
   <data name="Games_HoldOwn" xml:space="preserve"><value>Own binding</value></data>
+  <data name="Nav_FpsOverlay" xml:space="preserve"><value>FPS overlay</value></data>
+  <data name="Nav_FpsVisible" xml:space="preserve"><value>Show FPS overlay</value></data>
+  <data name="Fps_Graph" xml:space="preserve"><value>Frametime graph</value></data>
+  <data name="Fps_Help" xml:space="preserve"><value>FPS, frametime and 1% low. Game profiles can override the global switch.</value></data>
 </root>

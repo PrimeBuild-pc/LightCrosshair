@@ -284,4 +284,8 @@
   <data name="Games_HoldPolicy" xml:space="preserve"><value>このゲームで押している間</value></data>
   <data name="Games_HoldOff" xml:space="preserve"><value>このゲームでは無効</value></data>
   <data name="Games_HoldOwn" xml:space="preserve"><value>独自の割り当て</value></data>
+  <data name="Nav_FpsOverlay" xml:space="preserve"><value>FPSオーバーレイ</value></data>
+  <data name="Nav_FpsVisible" xml:space="preserve"><value>FPSを表示</value></data>
+  <data name="Fps_Graph" xml:space="preserve"><value>フレーム時間グラフ</value></data>
+  <data name="Fps_Help" xml:space="preserve"><value>FPS、フレーム時間、1%低値。ゲームプロファイルで全体の設定を上書きできます。</value></data>
 </root>

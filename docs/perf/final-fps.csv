@@ -1,0 +1,5 @@
+"Case","Foreground","ProbeFrames","Fps","Reason","StaleFps","StaleReason","Visible"
+"dx11-windowed","swapchainprobe.exe","1105","359.96","0","0","1","True"
+"dx11-borderless","swapchainprobe.exe","1098","359.97","0","0","1","True"
+"dx12-windowed","swapchainprobe.exe","1080","354.07","0","0","1","True"
+"dx12-borderless","swapchainprobe.exe","1082","359.97","0","0","1","True"

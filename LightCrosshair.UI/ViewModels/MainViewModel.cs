@@ -23,6 +23,7 @@ public sealed partial class MainViewModel : ObservableObject
         Games = new GamesViewModel(core, ui);
         Hotkeys = new HotkeysViewModel(core, ui);
         Settings = new SettingsViewModel(core, ui);
+        FpsOverlay = new(Settings);
         Library.GameCrosshairChanged = Games.NoteExternalCrosshair;
         Games.NoteLaunchSuggest(options.Suggest);
         Page = options.Page;
@@ -64,6 +65,7 @@ public sealed partial class MainViewModel : ObservableObject
     public GamesViewModel Games { get; }
     public HotkeysViewModel Hotkeys { get; }
     public SettingsViewModel Settings { get; }
+    public FpsOverlayViewModel FpsOverlay { get; }
 
     [ObservableProperty] private string _page = UiPages.Studio;
     [ObservableProperty] private CoreLinkState _linkState = CoreLinkState.Connecting;
@@ -74,6 +76,7 @@ public sealed partial class MainViewModel : ObservableObject
         UiPages.Games => Games,
         UiPages.Hotkeys => Hotkeys,
         UiPages.Settings => Settings,
+        FpsOverlayViewModel.PageId => FpsOverlay,
         _ => Studio,
     };
 

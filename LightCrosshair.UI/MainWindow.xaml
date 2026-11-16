@@ -51,6 +51,7 @@
         <DockPanel>
           <StackPanel DockPanel.Dock="Bottom" Margin="12">
             <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding CrosshairVisible}" Content="{loc:Tr Nav_Visibility}" AutomationProperties.Name="{loc:Tr Nav_Visibility}" Margin="0,0,0,12"/>
+            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Settings.FpsEnabled}" Content="{loc:Tr Nav_FpsVisible}" AutomationProperties.Name="{loc:Tr Nav_FpsVisible}" Margin="0,0,0,12"/>
             <StackPanel Orientation="Horizontal">
               <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{Binding LinkState, Converter={StaticResource StatusBrush}}"/>
               <TextBlock Margin="8,0,0,0" Style="{StaticResource LabelText}" VerticalAlignment="Center">
@@ -146,6 +147,26 @@
               <StackPanel Orientation="Horizontal">
                 <TextBlock FontFamily="{DynamicResource IconFont}" Text="{x:Static loc:Icons.Hotkeys}" Margin="0,0,8,0"/>
                 <TextBlock Text="{loc:Tr Nav_Hotkeys}" TextWrapping="Wrap"/>
+              </StackPanel>
+            </Button>
+            <Button Command="{Binding NavigateCommand}" CommandParameter="fps" AutomationProperties.Name="{loc:Tr Nav_FpsOverlay}">
+              <Button.Style>
+                <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                  <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                  <Setter Property="Padding" Value="10,8"/>
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding Page}" Value="fps">
+                      <Setter Property="Background" Value="{DynamicResource AccentSubtleBrush}"/>
+                      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                      <Setter Property="BorderThickness" Value="2,0,0,0"/>
+                      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </Button.Style>
+              <StackPanel Orientation="Horizontal">
+                <TextBlock FontFamily="{DynamicResource IconFont}" Text="{x:Static loc:Icons.FpsOverlay}" Margin="0,0,8,0"/>
+                <TextBlock Text="{loc:Tr Nav_FpsOverlay}" TextWrapping="Wrap"/>
               </StackPanel>
             </Button>
             <Button Command="{Binding NavigateCommand}" CommandParameter="settings" AutomationProperties.Name="{loc:Tr Nav_Settings}">

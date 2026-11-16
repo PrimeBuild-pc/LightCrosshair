@@ -100,6 +100,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     public double FpsScale { get => _settings.FpsOverlay.Scale; set { if (_settings.FpsOverlay.Scale == value) return; _settings.FpsOverlay.Scale = value; OnPropertyChanged(); Touch(); } }
     public bool ShowFrametime { get => _settings.FpsOverlay.ShowFrametime; set { if (_settings.FpsOverlay.ShowFrametime == value) return; _settings.FpsOverlay.ShowFrametime = value; OnPropertyChanged(); Touch(); } }
     public bool Show1PercentLow { get => _settings.FpsOverlay.Show1PercentLow; set { if (_settings.FpsOverlay.Show1PercentLow == value) return; _settings.FpsOverlay.Show1PercentLow = value; OnPropertyChanged(); Touch(); } }
+    public bool ShowFrametimeGraph { get => _settings.FpsOverlay.ShowFrametimeGraph; set { if (_settings.FpsOverlay.ShowFrametimeGraph == value) return; _settings.FpsOverlay.ShowFrametimeGraph = value; OnPropertyChanged(); Touch(); } }
     public string TextColor { get => _settings.FpsOverlay.TextColor; set => SetColor(value, color => _settings.FpsOverlay.TextColor = color, nameof(TextColor), () => _settings.FpsOverlay.TextColor); }
     public string BackgroundColor { get => _settings.FpsOverlay.BackgroundColor; set => SetColor(value, color => _settings.FpsOverlay.BackgroundColor = color, nameof(BackgroundColor), () => _settings.FpsOverlay.BackgroundColor); }
     public double BackgroundOpacityPercent { get => _settings.FpsOverlay.BackgroundOpacity * 100; set { var next = Math.Clamp(value, 0, 100) / 100.0; if (_settings.FpsOverlay.BackgroundOpacity == next) return; _settings.FpsOverlay.BackgroundOpacity = next; OnPropertyChanged(); Touch(); } }
@@ -246,7 +247,7 @@ public sealed partial class SettingsViewModel : ObservableObject
             nameof(Language), nameof(MonitorDeviceName), nameof(OffsetX), nameof(OffsetY), nameof(ShowOnlyInConfiguredGames),
             nameof(HideDuringScreenRecording), nameof(StartWithWindows), nameof(SuggestKnownGames), nameof(FpsEnabled),
             nameof(FpsMonitor), nameof(FpsOffsetX), nameof(FpsOffsetY), nameof(FpsScale), nameof(ShowFrametime),
-            nameof(Show1PercentLow), nameof(TextColor), nameof(BackgroundColor), nameof(BackgroundOpacityPercent),
+            nameof(Show1PercentLow), nameof(ShowFrametimeGraph), nameof(TextColor), nameof(BackgroundColor), nameof(BackgroundOpacityPercent),
             nameof(CheckForUpdates), nameof(MonitorWidth), nameof(MonitorHeight),
         })
             OnPropertyChanged(name);
