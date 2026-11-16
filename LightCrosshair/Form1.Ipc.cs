@@ -67,8 +67,20 @@ internal sealed partial class Form1
         }
         finally { _mutations.Release(); }
     }
-    internal Task<object?> ToggleVisibilityAsync() => MutateAsync(next =>
-    { next.Settings.CrosshairVisible = !next.Settings.CrosshairVisible; return Task.FromResult<object?>(null); });
+    internal async Task<object?> ToggleVisibilityAsync()
+    {
+        bool desired = !(_manualVisibility ?? Document.Settings.CrosshairVisible);
+        _manualVisibility = desired; RefreshOverlay(); QueueRuntimeEvent();
+        try
+        {
+            return await MutateAsync(next => { next.Settings.CrosshairVisible = desired; return Task.FromResult<object?>(null); });
+        }
+        finally
+        {
+            if (_manualVisibility == desired) _manualVisibility = null;
+            RefreshOverlay(); QueueRuntimeEvent();
+        }
+    }
     private async Task<object?> HandleRequestAsync(IpcEnvelope request)
     {
         if (_closing) throw new CoreException(IpcErrorCodes.Internal, "Core is stopping.");

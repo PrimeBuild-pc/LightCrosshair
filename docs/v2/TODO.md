@@ -43,8 +43,8 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 - [x] Start/focus/close UI; UI-absent behavior (tray menu: Show/Hide crosshair, Open LightCrosshair, Exit)
 - [x] Tests: envelope round-trip, handshake mismatch, pipelined requests, disconnect ends preview
 ### C6 Hotkeys
-- [ ] Global hotkeys + input-hook bindings from `AppSettings.Hotkeys` and game overrides; v1.9 semantics preserved
-- [ ] Registration failures reported in `RuntimeState.HotkeyErrors` (never silent)
+- [x] Global hotkeys + input-hook bindings from `AppSettings.Hotkeys` and game overrides; v1.9 semantics preserved
+- [x] Registration failures reported in `RuntimeState.HotkeyErrors` (never silent)
 ### C7 Library features
 - [ ] ~30 original presets (generic names, no player/team/game trademarks), tagged
 - [ ] Share code encode/decode per CONTRACT.md §6 + tests

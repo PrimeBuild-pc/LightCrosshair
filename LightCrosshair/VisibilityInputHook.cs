@@ -10,8 +10,9 @@ internal sealed class VisibilityInputHook : IDisposable
 {
     internal const int InputMessage = 0x8000 + 30, ResetMessage = 0x8000 + 31;
     private const int ConfigureMessage = 0x8000 + 32, StopMessage = 0x8000 + 33;
-    private sealed record Configuration(VisibilityBinding Binding, bool Capture, int Generation);
-    private Configuration _configuration = new(new(), false, 0);
+    private sealed record Configuration(VisibilityBinding[] Bindings, bool Capture, int Generation);
+    private Configuration _configuration = new([], false, 0);
+    public string? Error { get; private set; }
     private readonly IntPtr _target;
     private readonly Thread _thread;
     private HookWindow? _window;
@@ -32,10 +33,11 @@ internal sealed class VisibilityInputHook : IDisposable
         _thread.Start();
     }
 
-    public void Configure(VisibilityBinding binding, bool capture)
+    public void Configure(VisibilityBinding binding, bool capture) => Configure([binding], capture);
+    public void Configure(VisibilityBinding[] bindings, bool capture)
     {
-        Generation++;
-        Volatile.Write(ref _configuration, new(binding, capture, Generation));
+        Generation++; Error = null;
+        Volatile.Write(ref _configuration, new(bindings, capture, Generation));
         var window = Volatile.Read(ref _window);
         if (window != null) PostMessage(window.Handle, ConfigureMessage, IntPtr.Zero, IntPtr.Zero);
     }
@@ -56,10 +58,9 @@ internal sealed class VisibilityInputHook : IDisposable
     private void ApplyConfiguration()
     {
         var cfg = Volatile.Read(ref _configuration);
-        bool mouse = cfg.Capture || cfg.Binding.Input != BindingInput.Keyboard;
-        bool keyboard = cfg.Capture || (cfg.Binding.Mode != BindingMode.Toggle &&
-            (cfg.Binding.Input == BindingInput.Keyboard || cfg.Binding.Modifiers != 0));
-        if (mouse == _wantMouse && keyboard == _wantKeyboard) return;
+        bool mouse = cfg.Capture || cfg.Bindings.Any(b => b.Input != BindingInput.Keyboard);
+        bool keyboard = cfg.Capture || cfg.Bindings.Any(b => b.Mode != BindingMode.Toggle && (b.Input == BindingInput.Keyboard || b.Modifiers != 0));
+        if (mouse == _wantMouse && keyboard == _wantKeyboard) { InstallMissingHooks(); return; }
         RemoveHooks();
         _wantMouse = mouse; _wantKeyboard = keyboard;
         RegisterRaw(mouse, keyboard);
@@ -72,13 +73,13 @@ internal sealed class VisibilityInputHook : IDisposable
         {
             _mouseHealth = new();
             _mouseHook = SetWindowsHookEx(14, _mouseProc, GetModuleHandle(null), 0);
-            if (_mouseHook == IntPtr.Zero) Program.LogError(new Win32Exception(), "Install mouse hook");
+            if (_mouseHook == IntPtr.Zero) ReportError("Mouse hook registration failed.");
         }
         if (_wantKeyboard && _keyboardHook == IntPtr.Zero)
         {
             _keyboardHealth = new();
             _keyboardHook = SetWindowsHookEx(13, _keyboardProc, GetModuleHandle(null), 0);
-            if (_keyboardHook == IntPtr.Zero) Program.LogError(new Win32Exception(), "Install keyboard hook");
+            if (_keyboardHook == IntPtr.Zero) ReportError("Keyboard hook registration failed.");
         }
     }
 
@@ -101,22 +102,24 @@ internal sealed class VisibilityInputHook : IDisposable
         InstallMissingHooks();
         var cfg = Volatile.Read(ref _configuration);
         // Recover a lost release (desktop switches, hook removal) without persisting a hold state.
-        if (cfg.Binding.Mode != BindingMode.Toggle && !cfg.Capture)
+        foreach (var binding in cfg.Bindings)
         {
-            int key = cfg.Binding.Input switch
+            if (binding.Mode == BindingMode.Toggle || cfg.Capture) continue;
+            int key = binding.Input switch
             {
-                BindingInput.Keyboard => cfg.Binding.Key, BindingInput.RightClick => 2,
+                BindingInput.Keyboard => binding.Key, BindingInput.RightClick => 2,
                 BindingInput.MiddleClick => 4, BindingInput.Mouse4 => 5, BindingInput.Mouse5 => 6, _ => 0
             };
-            if (key != 0)
-            {
-                int modifiers = ReadModifiers();
-                if ((GetAsyncKeyState(key) & 0x8000) == 0)
-                    PostInput(cfg, cfg.Binding.Input, cfg.Binding.Key, modifiers, false);
-                else if ((modifiers & cfg.Binding.Modifiers) != cfg.Binding.Modifiers)
-                    PostInput(cfg, BindingInput.Keyboard, 0, modifiers, false);
-            }
+            if (key == 0) continue;
+            int modifiers = ReadModifiers();
+            if ((GetAsyncKeyState(key) & 0x8000) == 0) PostInput(cfg, binding.Input, binding.Key, modifiers, false);
+            else if ((modifiers & binding.Modifiers) != binding.Modifiers) PostInput(cfg, BindingInput.Keyboard, 0, modifiers, false);
         }
+    }
+    private void ReportError(string message)
+    {
+        Error = message;
+        PostMessage(_target, ResetMessage, IntPtr.Zero, IntPtr.Zero);
     }
 
     private IntPtr MouseCallback(int code, IntPtr message, IntPtr data)
@@ -160,9 +163,14 @@ internal sealed class VisibilityInputHook : IDisposable
     {
         var cfg = Volatile.Read(ref _configuration);
         bool modifier = input == BindingInput.Keyboard && VisibilityBinding.IsModifier(key);
-        if (cfg.Capture ? (!down || modifier) :
-            !(cfg.Binding.Input == input && (input != BindingInput.Keyboard || cfg.Binding.Key == key)) && !modifier)
-            return;
+        bool relevant = modifier;
+        if (cfg.Capture) { if (!down || modifier) return; }
+        else
+        {
+            foreach (var binding in cfg.Bindings)
+                if (binding.Input == input && (input != BindingInput.Keyboard || binding.Key == key)) { relevant = true; break; }
+            if (!relevant) return;
+        }
         int modifiers = ReadModifiers();
         // LL keyboard callbacks run before GetAsyncKeyState reflects this key transition.
         if (modifier && !down)
@@ -213,21 +221,17 @@ internal sealed class VisibilityInputHook : IDisposable
     private sealed class HookWindow : NativeWindow
     {
         private readonly VisibilityInputHook _owner;
-        private readonly System.Windows.Forms.Timer _timer;
         public HookWindow(VisibilityInputHook owner)
         {
             _owner = owner;
             CreateHandle(new CreateParams { Caption = "LightCrosshair input", Parent = new IntPtr(-3) });
-            _timer = new() { Interval = 500 };
-            _timer.Tick += (_, _) => owner.CheckHealth();
-            _timer.Start();
         }
         protected override void WndProc(ref Message m)
         {
             if (m.Msg == ConfigureMessage) _owner.ApplyConfiguration();
             else if (m.Msg == StopMessage)
             {
-                _timer.Dispose(); _owner.RemoveHooks(); _owner.RegisterRaw(false, false);
+                _owner.RemoveHooks(); _owner.RegisterRaw(false, false);
                 System.Windows.Forms.Application.ExitThread();
             }
             else if (m.Msg == 0xFF)
@@ -237,6 +241,7 @@ internal sealed class VisibilityInputHook : IDisposable
                 {
                     if (header.Type == 0) _owner._mouseHealth.RawInput(Environment.TickCount64);
                     if (header.Type == 1) _owner._keyboardHealth.RawInput(Environment.TickCount64);
+                    _owner.CheckHealth();
                 }
             }
             base.WndProc(ref m);

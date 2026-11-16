@@ -55,7 +55,8 @@ internal sealed partial class Form1 : LayeredWindow
         if (!_ready || IsDisposed) return;
         var settings = Document.Settings;
         var design = PreviewDesign ?? Document.Crosshairs.FirstOrDefault(d => d.Id == Runtime.ActiveCrosshairId) ?? Document.Crosshairs.First(d => d.Id == settings.DefaultCrosshairId);
-        bool visible = PreviewDesign is not null || (_holdOverride ?? (_context?.Visible ?? settings.CrosshairVisible));
+        bool visible = PreviewDesign is not null || ((_holdOverride ?? _manualVisibility ?? settings.CrosshairVisible) &&
+            (_context?.Game is not null || !settings.ShowOnlyInConfiguredGames) && !_recording);
         Runtime.CrosshairShown = visible; Runtime.PreviewActive = PreviewDesign is not null;
         if (!visible) { Hide(); return; }
         Rectangle screen = OverlayMonitorSelector.ResolveBounds(settings.MonitorDeviceName);
@@ -97,6 +98,7 @@ internal sealed partial class Form1 : LayeredWindow
         {
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemDisplayChanged;
             _previewTimeout?.Cancel(); _previewTimeout?.Dispose(); _pipe?.Dispose();
+            _recordingTimer?.Dispose(); _input?.Dispose(); HotkeyManager.Instance.UnregisterAll();
             _foreground?.Dispose(); _fps.Dispose();
             _tray.Visible = false; _tray.ContextMenuStrip?.Dispose(); _tray.Icon?.Dispose(); _tray.Dispose();
         }

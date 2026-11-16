@@ -56,6 +56,7 @@ internal sealed partial class Form1
         string colorsKey = System.Text.Json.JsonSerializer.Serialize(colors, ContractJson.Options);
         if (_colorsKey != colorsKey) { _colorsKey = colorsKey; _ = _colors.SetAsync(colors); }
         _fps.Configure(_context.FpsEnabled, _foregroundPid, Document.Settings.FpsOverlay, Document.Settings.MonitorDeviceName);
+        ConfigureInput(); ConfigureRecording();
         RefreshOverlay(); RuntimeUpdated?.Invoke();
     }
     internal async Task ApplyDriverCapAsync(GameProfile? old, GameProfile? next)
