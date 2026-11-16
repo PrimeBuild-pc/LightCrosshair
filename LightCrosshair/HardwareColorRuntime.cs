@@ -250,6 +250,12 @@ namespace LightCrosshair
 
     internal sealed class AmdAdlColorManager
     {
+        public List<AmdChannelSnapshot> CaptureRecovery() => _originalValues.Select(e => new AmdChannelSnapshot(e.Key.AdapterIndex, e.Key.DisplayIndex, e.Key.ColorType, e.Value)).ToList();
+        public void LoadRecovery(List<AmdChannelSnapshot> channels)
+        {
+            _originalValues.Clear();
+            foreach (var c in channels) _originalValues[new ChannelKey(c.Adapter, c.Display, c.Type)] = c.Value;
+        }
         private const int ADL_OK = 0;
         private const int ADL_ERR_NOT_SUPPORTED = -3;
         private const int ADL_DISPLAY_COLOR_BRIGHTNESS = 1 << 0;
@@ -597,7 +603,9 @@ namespace LightCrosshair
                     var unsupportedKeys = new List<ChannelKey>();
                     foreach (var kvp in _originalValues)
                     {
-                        int setResult = _displayColorSet!(context, kvp.Key.AdapterIndex, kvp.Key.DisplayIndex, kvp.Key.ColorType, kvp.Value);
+                        Core.ColorWriteGuard.BeforeWrite?.Invoke();
+                    Core.ColorWriteGuard.BeforeWrite?.Invoke();
+            int setResult = _displayColorSet!(context, kvp.Key.AdapterIndex, kvp.Key.DisplayIndex, kvp.Key.ColorType, kvp.Value);
                         if (setResult == ADL_ERR_NOT_SUPPORTED)
                         {
                             unsupportedKeys.Add(kvp.Key);
@@ -727,7 +735,8 @@ namespace LightCrosshair
                     _originalValues[originalKey] = snapshot.Current;
                 }
 
-                int setResult = _displayColorSet!(context, adapterIndex, displayIndex, snapshot.ColorType, mapped);
+                Core.ColorWriteGuard.BeforeWrite?.Invoke();
+            int setResult = _displayColorSet!(context, adapterIndex, displayIndex, snapshot.ColorType, mapped);
                 if (setResult == ADL_OK)
                 {
                     return true;

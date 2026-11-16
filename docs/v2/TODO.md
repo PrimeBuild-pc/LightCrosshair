@@ -32,12 +32,12 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 - [x] `render` to PNG with the same renderer (< 5 ms at 128 px)
 - [x] Tests: geometry per kind, outline, bounds, rotation, render determinism
 ### C4 Game profiles
-- [ ] `SetWinEventHook` foreground detection; process name resolution
-- [ ] Apply / restore crosshair, display colors, FPS overlay override, visibility binding override
-- [ ] Default crosshair + "show only in configured games"
-- [ ] NVIDIA per-app FPS cap on save/delete, capability detection
-- [ ] Known-games list (~50) + suggestion + tray notification → UI `--page games --suggest`
-- [ ] Tests: rule table for foreground transitions (pure logic)
+- [x] `SetWinEventHook` foreground detection; process name resolution
+- [x] Apply / restore crosshair, display colors, FPS overlay override, visibility binding override
+- [x] Default crosshair + "show only in configured games"
+- [x] NVIDIA per-app FPS cap on save/delete, capability detection
+- [x] Known-games list (~50) + suggestion + tray notification → UI `--page games --suggest`
+- [x] Tests: rule table for foreground transitions (pure logic)
 ### C5 IPC and lifecycle
 - [ ] Single-instance Core; pipe server per CONTRACT.md §2; all `IpcMethods`; events
 - [ ] Start/focus/close UI; UI-absent behavior (tray menu: Show/Hide crosshair, Open LightCrosshair, Exit)

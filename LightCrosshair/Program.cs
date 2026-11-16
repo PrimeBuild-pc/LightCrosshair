@@ -29,17 +29,17 @@ internal static class Program
         catch (Exception ex) { LogError(ex, "Startup"); return 1; }
     }
 
-    public static void LogError(Exception ex, string context) => WriteLog($"{context}: {ex.GetType().Name}");
+    public static void LogError(Exception ex, string context, string? root = null) => WriteLog($"{context}: {ex.GetType().Name}", root);
     public static void LogDebug(string message, string? context = null) { if (DebugLoggingEnabled) WriteLog(context ?? "Debug"); }
     // Legacy driver diagnostics may contain paths. Log the operation only.
     public static void LogLifecycle(string message, string? context = null) => WriteLog(context ?? "Lifecycle");
-    internal static void WriteLog(string message)
+    internal static void WriteLog(string message, string? root = null)
     {
         try
         {
             lock (LogGate)
             {
-                string directory = Path.Combine(DataRoot, "logs");
+                string directory = Path.Combine(root ?? DataRoot, "logs");
                 Directory.CreateDirectory(directory);
                 string path = Path.Combine(directory, "core.log");
                 if (File.Exists(path) && new FileInfo(path).Length >= 1024 * 1024)

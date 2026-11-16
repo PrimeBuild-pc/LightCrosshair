@@ -31,6 +31,8 @@ namespace LightCrosshair
         bool TryCaptureOriginalState(out string? error);
         bool TryApply(ColorAdjustment adjustment, out string? error);
         bool TryRestore(out string? error);
+        ColorRecoverySnapshot CaptureRecovery() => throw new NotSupportedException();
+        void LoadRecovery(ColorRecoverySnapshot snapshot) => throw new NotSupportedException();
     }
 
     internal readonly record struct GpuDetectionResult(GpuVendor Vendor, string AdapterDescription);
@@ -139,6 +141,11 @@ namespace LightCrosshair
 
     internal sealed class Win32GammaColorManager : IGpuColorManager
     {
+        public ColorRecoverySnapshot CaptureRecovery() => new() { Global = _hasOriginalRamp ? RampSnapshot.From(_originalRamp) : null };
+        public void LoadRecovery(ColorRecoverySnapshot snapshot)
+        {
+            if (snapshot.Global is not null) { _originalRamp = snapshot.Global.ToRamp(); _hasOriginalRamp = true; }
+        }
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public struct GammaRamp
         {
@@ -271,10 +278,11 @@ namespace LightCrosshair
 
                 if (!_hasOriginalRamp)
                 {
-                    _ = TryCaptureOnDc(dc, releaseWithUser32: false, releaseAfter: false, out _);
+                    if (!TryCaptureOnDc(dc, releaseWithUser32: false, releaseAfter: false, out error)) return false;
                 }
 
                 var ramp = BuildRamp(adjustment);
+                Core.ColorWriteGuard.BeforeWrite?.Invoke();
                 if (!SetDeviceGammaRamp(dc, ref ramp))
                 {
                     int win32 = Marshal.GetLastWin32Error();
@@ -366,6 +374,7 @@ namespace LightCrosshair
             try
             {
                 var ramp = _originalRamp;
+                Core.ColorWriteGuard.BeforeWrite?.Invoke();
                 if (!SetDeviceGammaRamp(dc, ref ramp))
                 {
                     int win32 = Marshal.GetLastWin32Error();
@@ -472,6 +481,8 @@ namespace LightCrosshair
 
     internal abstract class DelegatingGpuColorManager : IGpuColorManager
     {
+        public virtual ColorRecoverySnapshot CaptureRecovery() => _fallback.CaptureRecovery();
+        public virtual void LoadRecovery(ColorRecoverySnapshot snapshot) => _fallback.LoadRecovery(snapshot);
         private readonly IGpuColorManager _fallback;
 
         protected DelegatingGpuColorManager(IGpuColorManager fallback)
@@ -494,6 +505,19 @@ namespace LightCrosshair
 
     internal sealed class NvidiaColorManager : DelegatingGpuColorManager
     {
+        public override ColorRecoverySnapshot CaptureRecovery()
+        {
+            var snapshot = base.CaptureRecovery();
+            foreach (var entry in _originalRampsByDisplay) snapshot.Displays[entry.Key] = RampSnapshot.From(entry.Value);
+            return snapshot;
+        }
+        public override void LoadRecovery(ColorRecoverySnapshot snapshot)
+        {
+            base.LoadRecovery(snapshot);
+            _originalRampsByDisplay.Clear();
+            foreach (var entry in snapshot.Displays) _originalRampsByDisplay[entry.Key] = entry.Value.ToRamp();
+            _win32FallbackPathTouched = true;
+        }
         private const int NVAPI_OK = 0;
         private const int DISPLAY_DEVICE_ATTACHED_TO_DESKTOP = 0x00000001;
         private const int RASTERCAPS = 38;
@@ -717,6 +741,7 @@ namespace LightCrosshair
                         try
                         {
                             var endpointRamp = ramp;
+                            Core.ColorWriteGuard.BeforeWrite?.Invoke();
                             result = NvAPI_Disp_SetGammaRamp(endpoint.NvapiDisplayId, ref endpointRamp);
                         }
                         catch (Exception ex)
@@ -1039,6 +1064,7 @@ namespace LightCrosshair
                         nameof(NvidiaColorManager));
                 }
 
+                Core.ColorWriteGuard.BeforeWrite?.Invoke();
                 if (!SetDeviceGammaRamp(dc, ref ramp))
                 {
                     int win32 = Marshal.GetLastWin32Error();
@@ -1076,6 +1102,12 @@ namespace LightCrosshair
 
     internal sealed class AmdColorManager : DelegatingGpuColorManager
     {
+        public override ColorRecoverySnapshot CaptureRecovery()
+        {
+            var snapshot = base.CaptureRecovery(); snapshot.AmdChannels = _adlColorManager.CaptureRecovery(); return snapshot;
+        }
+        public override void LoadRecovery(ColorRecoverySnapshot snapshot)
+        { base.LoadRecovery(snapshot); _adlColorManager.LoadRecovery(snapshot.AmdChannels); _win32FallbackPathTouched = true; }
         private readonly GpuDetectionResult _detection;
         private readonly bool _adlxRuntimeAvailable;
         private readonly AmdAdlColorManager _adlColorManager;
@@ -1179,61 +1211,11 @@ namespace LightCrosshair
 
         public override bool TryRestore(out string? error)
         {
-            bool adlRestoreOk = true;
-            bool win32RestoreOk = true;
-            string? adlError = null;
-            string? win32Error = null;
-            bool hasAdlState = _adlColorManager.HasCapturedOriginalState;
-            bool usedFallbackPath = _win32FallbackPathTouched;
-
-            if (hasAdlState)
-            {
-                adlRestoreOk = _adlColorManager.TryRestore(out adlError);
-            }
-
-            if (usedFallbackPath)
-            {
-                win32RestoreOk = Fallback.TryRestore(out win32Error);
-            }
-
-            // One restore attempt should consume the fallback flag to avoid repeated stale failures.
-            _win32FallbackPathTouched = false;
-
-            if (adlRestoreOk)
-            {
-                error = null;
-                return true;
-            }
-
-            if (!hasAdlState && usedFallbackPath && win32RestoreOk)
-            {
-                error = null;
-                return true;
-            }
-
-            if (hasAdlState && !adlRestoreOk && !usedFallbackPath)
-            {
-                error = $"AMD restore failed: {adlError}";
-                return false;
-            }
-
-            if (hasAdlState && !adlRestoreOk && usedFallbackPath && !win32RestoreOk)
-            {
-                error = $"AMD restore failed: {adlError} | Win32 restore failed: {win32Error}";
-                return false;
-            }
-
-            if (hasAdlState && !adlRestoreOk && usedFallbackPath && win32RestoreOk)
-            {
-                // Keep app functional even if AMD restore is partially unsupported on this driver/output.
-                error = null;
-                return true;
-            }
-
-            error = string.IsNullOrWhiteSpace(win32Error)
-                ? adlError
-                : win32Error;
-            return false;
+            bool adl = !_adlColorManager.HasCapturedOriginalState || _adlColorManager.TryRestore(out _);
+            bool gamma = !_win32FallbackPathTouched || Fallback.TryRestore(out _);
+            if (gamma) _win32FallbackPathTouched = false;
+            error = adl && gamma ? null : "Original display colors could not be fully restored.";
+            return adl && gamma;
         }
 
         private static bool IsAdlxRuntimeAvailable()

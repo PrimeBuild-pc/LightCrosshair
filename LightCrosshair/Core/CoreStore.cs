@@ -26,7 +26,7 @@ internal sealed class CoreStore(string directory)
             catch (Exception ex) when (ex is JsonException or CoreException or IOException or ArgumentException or NullReferenceException)
             {
                 File.Move(StorePath, Path.Combine(DirectoryPath, $"store.corrupt-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.json"));
-                Recovered = true; Program.WriteLog("Store recovery");
+                Recovered = true; Program.WriteLog("Store recovery", DirectoryPath);
             }
         }
         StoreDocument? document = null;

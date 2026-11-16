@@ -10,6 +10,8 @@
 
 The requested worktree did not exist. Created v2-core from the reviewer’s committed v2 planning commit 72a3ed8. No merge, rebase or push.
 
+Color driver transactions are serialized in background tasks; the crosshair updates immediately. The 50 ms foreground budget cannot include potentially slow vendor calls and must be measured separately. Capability flags currently reflect detected vendor, not a successful write probe; actual unsupported driver operations return errors. Physical NVIDIA/AMD restoration, HDR and hot-plug need hardware validation.
+
 ## How to build, run, test, measure
 
 `dotnet build LightCrosshair/LightCrosshair.csproj -c Release`

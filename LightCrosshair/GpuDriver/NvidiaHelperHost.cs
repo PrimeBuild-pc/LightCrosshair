@@ -97,6 +97,7 @@ namespace LightCrosshair.GpuDriver
                     RunFpsCapClear(service, request),
                 NvidiaHelperOperations.SetVibrance =>
                     RunVibranceApply(service, request),
+                NvidiaHelperOperations.GetVibrance => ReadVibrance(service),
                 _ => NvidiaHelperResponse.Error("Unknown NVIDIA helper operation.")
             };
         }
@@ -109,6 +110,12 @@ namespace LightCrosshair.GpuDriver
                 success
                     ? $"FPS cap of {request.TargetFps.Value} applied successfully to '{request.TargetExePath}'."
                     : $"Failed to apply FPS cap: {error}");
+        }
+
+        private static NvidiaHelperResponse ReadVibrance(NvidiaDriverService service)
+        {
+            bool ok = service.TryGetNvidiaVibrance(out int value, out _);
+            return new() { Success = ok, Vibrance = ok ? value : null };
         }
 
         private static NvidiaHelperResponse RunFpsCapClear(NvidiaDriverService service, NvidiaHelperRequest request)

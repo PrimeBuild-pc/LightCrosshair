@@ -5,7 +5,7 @@ using LightCrosshair.Core;
 
 namespace LightCrosshair;
 
-internal sealed class Form1 : LayeredWindow
+internal sealed partial class Form1 : LayeredWindow
 {
     private readonly NotifyIcon _tray;
     internal readonly CoreStore Store = new(Program.DataRoot);
@@ -21,13 +21,14 @@ internal sealed class Form1 : LayeredWindow
         var menu = new ContextMenuStrip();
         menu.Items.Add("Show/Hide crosshair", null, async (_, _) =>
         {
-            try { Document.Settings.CrosshairVisible = !Document.Settings.CrosshairVisible; RefreshOverlay(); await Store.SaveAsync(Document); }
+            try { Document.Settings.CrosshairVisible = !Document.Settings.CrosshairVisible; RefreshContext(); await Store.SaveAsync(Document); }
             catch (Exception ex) { Program.LogError(ex, "Toggle visibility"); }
         });
         menu.Items.Add("Open LightCrosshair", null, (_, _) => OpenSettings());
         menu.Items.Add("Exit", null, (_, _) => Close());
         _tray = new() { Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? SystemIcons.Application, Text = "LightCrosshair", ContextMenuStrip = menu, Visible = true };
         _tray.DoubleClick += (_, _) => OpenSettings();
+        _tray.BalloonTipClicked += (_, _) => OpenSettings(Runtime.PendingSuggestion is null ? null : new() { Page = UiPages.Games, SuggestProcess = Runtime.PendingSuggestion.ProcessName });
         DisplayChanged += OnDisplayChanged;
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += SystemDisplayChanged;
     }
@@ -37,22 +38,23 @@ internal sealed class Form1 : LayeredWindow
         try
         {
             Document = await Store.LoadAsync();
+            await _colors.RecoverAsync();
             if (IsDisposed) return;
             _ready = true; Runtime.ActiveCrosshairId = Document.Settings.DefaultCrosshairId;
-            RefreshOverlay();
+            InitializeRuntime();
             if (Store.Recovered) _tray.ShowBalloonTip(3000, "LightCrosshair", "Your library was recovered from a backup.", ToolTipIcon.Info);
         }
         catch (Exception ex) { Program.LogError(ex, "Load store"); Close(); }
     }
     private void SystemDisplayChanged(object? sender, EventArgs e)
     { if (!IsDisposed && IsHandleCreated) BeginInvoke(OnDisplayChanged); }
-    private void OnDisplayChanged() { _renderKey = null; RefreshOverlay(); }
+    private void OnDisplayChanged() { _renderKey = null; RefreshContext(); }
     internal void RefreshOverlay()
     {
         if (!_ready || IsDisposed) return;
         var settings = Document.Settings;
         var design = PreviewDesign ?? Document.Crosshairs.FirstOrDefault(d => d.Id == Runtime.ActiveCrosshairId) ?? Document.Crosshairs.First(d => d.Id == settings.DefaultCrosshairId);
-        bool visible = PreviewDesign is not null || settings.CrosshairVisible;
+        bool visible = PreviewDesign is not null || (_holdOverride ?? (_context?.Visible ?? settings.CrosshairVisible));
         Runtime.CrosshairShown = visible; Runtime.PreviewActive = PreviewDesign is not null;
         if (!visible) { Hide(); return; }
         Rectangle screen = OverlayMonitorSelector.ResolveBounds(settings.MonitorDeviceName);
@@ -68,12 +70,21 @@ internal sealed class Form1 : LayeredWindow
         if (!Visible) Show();
         ReinforceTopmost();
     }
-    private void OpenSettings()
+    private void OpenSettings(NavigateRequest? navigate = null)
     {
         string path = Path.Combine(AppContext.BaseDirectory, ContractInfo.UiExeName);
         try
         {
-            if (File.Exists(path)) Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            if (File.Exists(path))
+            {
+                var start = new ProcessStartInfo(path) { UseShellExecute = true };
+                if (navigate is not null)
+                {
+                    start.ArgumentList.Add("--page"); start.ArgumentList.Add(navigate.Page);
+                    if (navigate.SuggestProcess is not null) { start.ArgumentList.Add("--suggest"); start.ArgumentList.Add(navigate.SuggestProcess); }
+                }
+                Process.Start(start);
+            }
             else _tray.ShowBalloonTip(3000, "LightCrosshair", "Install the settings app beside LightCrosshair.", ToolTipIcon.Info);
         }
         catch (Exception ex) { Program.LogError(ex, "Open settings"); }
@@ -83,6 +94,7 @@ internal sealed class Form1 : LayeredWindow
         if (disposing)
         {
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemDisplayChanged;
+            _foreground?.Dispose(); _fps.Dispose();
             _tray.Visible = false; _tray.ContextMenuStrip?.Dispose(); _tray.Icon?.Dispose(); _tray.Dispose();
         }
         base.Dispose(disposing);

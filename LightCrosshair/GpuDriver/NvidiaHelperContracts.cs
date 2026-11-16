@@ -12,6 +12,7 @@ namespace LightCrosshair.GpuDriver
         public const string SetFpsCap = "set-fps-cap";
         public const string ClearFpsCap = "clear-fps-cap";
         public const string SetVibrance = "set-vibrance";
+        public const string GetVibrance = "get-vibrance";
     }
 
     public sealed record NvidiaHelperRequest
@@ -64,6 +65,7 @@ namespace LightCrosshair.GpuDriver
 
     public sealed record NvidiaHelperResponse
     {
+        public int? Vibrance { get; init; }
         public bool Success { get; init; }
         public string StatusText { get; init; } = string.Empty;
         public NvidiaProfileAuditResult? AuditResult { get; init; }
@@ -109,6 +111,7 @@ namespace LightCrosshair.GpuDriver
                 NvidiaHelperOperations.SetFpsCap => ValidateSetFpsRequest(request),
                 NvidiaHelperOperations.ClearFpsCap => ValidateTarget(request.TargetExePath, "clearing an NVIDIA driver FPS cap"),
                 NvidiaHelperOperations.SetVibrance => ValidateVibranceRequest(request),
+                NvidiaHelperOperations.GetVibrance => null,
                 _ => NvidiaHelperResponse.Error("Unknown NVIDIA helper operation.")
             };
         }
