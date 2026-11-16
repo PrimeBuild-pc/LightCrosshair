@@ -92,13 +92,13 @@ internal sealed partial class Form1 : LayeredWindow
         {
             if (File.Exists(path))
             {
-                var start = new ProcessStartInfo(path) { UseShellExecute = true };
+                var start = new ProcessStartInfo(path) { UseShellExecute = false };
                 if (navigate is not null)
                 {
                     start.ArgumentList.Add("--page"); start.ArgumentList.Add(navigate.Page);
                     if (navigate.SuggestProcess is not null) { start.ArgumentList.Add("--suggest"); start.ArgumentList.Add(navigate.SuggestProcess); }
                 }
-                using var launched = Process.Start(start);
+                UiLaunch.Start(start, UiLaunch.ReducePriority(_context?.Game is not null, UiLaunch.ForegroundIsFullscreen()));
             }
             else _tray.ShowBalloonTip(3000, "LightCrosshair", TextFor("MissingUi"), ToolTipIcon.Info);
         }
@@ -117,6 +117,7 @@ internal sealed partial class Form1 : LayeredWindow
         {
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemDisplayChanged;
             _previewTimeout?.Cancel(); _previewTimeout?.Dispose(); _pipe?.Dispose();
+            _renders.Dispose();
             _captureTimer?.Dispose();
             _recordingTimer?.Dispose(); _input?.Dispose(); HotkeyManager.Instance.UnregisterAll();
             _foreground?.Dispose(); _fps.Dispose();

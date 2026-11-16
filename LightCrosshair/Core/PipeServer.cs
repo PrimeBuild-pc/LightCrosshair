@@ -3,6 +3,8 @@ using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 using LightCrosshair.Contracts;
 
 namespace LightCrosshair.Core;
@@ -33,6 +35,9 @@ internal sealed class BoundedLineReader(Stream stream)
 
 internal sealed class PipeServer : IDisposable
 {
+    internal uint ClientProcessId { get; private set; }
+    internal CancellationToken ConnectionToken => _connection?.Token ?? new CancellationToken(true);
+    [DllImport("kernel32.dll")] private static extern bool GetNamedPipeClientProcessId(SafePipeHandle pipe, out uint pid);
     private readonly string _name;
     private readonly Func<IpcEnvelope, Task<object?>> _dispatch;
     private readonly Func<Task> _disconnected;
@@ -63,6 +68,7 @@ internal sealed class PipeServer : IDisposable
             try
             {
                 await pipe.WaitForConnectionAsync(_stop.Token).ConfigureAwait(false);
+                ClientProcessId = GetNamedPipeClientProcessId(pipe.SafePipeHandle, out uint clientPid) ? clientPid : 0;
                 using var connection = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
                 _connection = connection;
                 var outbound = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(64) { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
@@ -79,7 +85,7 @@ internal sealed class PipeServer : IDisposable
             { if (!_stop.IsCancellationRequested) Program.WriteLog("IPC connection ended"); }
             finally
             {
-                Volatile.Write(ref _connected, 0); Volatile.Write(ref _outbound, null); _connection = null;
+                Volatile.Write(ref _connected, 0); Volatile.Write(ref _outbound, null); _connection = null; ClientProcessId = 0;
                 try { await _disconnected().ConfigureAwait(false); }
                 catch (Exception ex) { Program.LogError(ex, "IPC disconnect"); }
             }

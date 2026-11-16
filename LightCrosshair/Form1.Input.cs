@@ -132,7 +132,7 @@ internal sealed partial class Form1
                     await MutateAsync(next => Task.FromResult<object?>(CrosshairCycling.Apply(next, Runtime.ActiveCrosshairId, Runtime.ActiveGameProfileId, id == 9001)));
                     break;
                 case 9003:
-                    if (_pipe?.IsConnected == true) _pipe.Publish(IpcEvents.CloseRequested, null); else OpenSettings();
+                    if (_pipe?.IsConnected == true && !UiLaunch.IsParked(_pipe.ClientProcessId)) _pipe.Publish(IpcEvents.CloseRequested, null); else OpenSettings();
                     break;
             }
         }
