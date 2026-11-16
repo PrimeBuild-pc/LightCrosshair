@@ -24,6 +24,7 @@ Request → response payloads are documented on each constant in `IpcMethods` (I
 - After every successful mutation Core persists, then emits `snapshotChanged` with the full snapshot. The UI treats snapshots as the only truth and does not apply optimistic updates to the stored lists (it may keep unsaved edits in its own editor state).
 - `preview` is transient: never persisted, ends on `preview {design:null}`, on disconnect, or after 10 minutes without a new preview request. While a preview is active the overlay shows it even if the crosshair is hidden.
 - `render` must take < 5 ms for a 128 px canvas. The UI throttles `preview` and `render` to ≤ 30 per second while dragging and always sends the final value.
+- `setInputCapture {active:true}` suspends every Core hotkey and input-hook action until `{active:false}`, disconnect, or 60 s without a renewed `true`. The UI sends `true` when a binding field enters capture and `false` on capture end, cancel, page change and window deactivation.
 - Errors: `bad_request` (malformed payload), `not_found`, `validation`, `unsupported` (e.g. NVIDIA feature on a non-NVIDIA PC, image in a share code), `internal` (logged by Core). The UI maps codes to localized messages and never shows `Message` to users.
 
 ## 4. Storage (Core only)

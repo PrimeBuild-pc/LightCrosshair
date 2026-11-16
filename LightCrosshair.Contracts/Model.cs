@@ -51,6 +51,9 @@ public sealed class CrosshairLayer
     public int Gap { get; set; } = 4;
     public ArmMask Arms { get; set; } = ArmMask.All;
 
+    /// <summary>Box and Ring only: interior fill "#RRGGBB" drawn beneath the stroke; null = unfilled. Uses the layer Opacity.</summary>
+    public string? FillColor { get; set; }
+
     public bool Outline { get; set; }
     /// <summary>Range 1..8.</summary>
     public int OutlineThickness { get; set; } = 1;
@@ -152,8 +155,10 @@ public sealed class GameProfile
     public string ProcessName { get; set; } = "";
     public bool Enabled { get; set; } = true;
     public string CrosshairId { get; set; } = "";
-    /// <summary>Null = don't touch display colors for this game.</summary>
+    /// <summary>Null = never configured. Values are kept even while DisplayColorsEnabled is false.</summary>
     public DisplayColorSettings? DisplayColors { get; set; }
+    /// <summary>Apply DisplayColors for this game. False = keep the values but don't touch display colors.</summary>
+    public bool DisplayColorsEnabled { get; set; } = true;
     /// <summary>NVIDIA per-app driver FPS cap, written to the driver on save. Null = no cap managed by LightCrosshair.</summary>
     public int? NvidiaFpsCap { get; set; }
     /// <summary>Null = follow the global FPS overlay setting.</summary>

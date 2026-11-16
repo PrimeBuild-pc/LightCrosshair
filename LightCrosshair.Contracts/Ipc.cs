@@ -84,6 +84,9 @@ public static class IpcMethods
     /// <summary>TextPayload (process name) -> null. Adds it to DismissedSuggestions.</summary>
     public const string DismissSuggestion = "dismissSuggestion";
 
+    /// <summary>InputCaptureRequest -> null. While Active, Core suspends every hotkey and hook action so the UI can capture a new binding. Reset on disconnect and after 60 s without a renewal.</summary>
+    public const string SetInputCapture = "setInputCapture";
+
     /// <summary>null -> null. Exits Core (and therefore the app).</summary>
     public const string Quit = "quit";
 }
@@ -146,6 +149,11 @@ public sealed class ExportRequest
 {
     public string Path { get; set; } = "";
     public List<string> CrosshairIds { get; set; } = [];
+}
+
+public sealed class InputCaptureRequest
+{
+    public bool Active { get; set; }
 }
 
 public sealed class ImportResult
