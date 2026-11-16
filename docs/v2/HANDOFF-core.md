@@ -138,3 +138,7 @@ public bool DisplayColorsEnabled { get; set; } = true;
 ```
 
 Workaround: the marked migration branch uses null to preserve disabled behavior; source values remain recoverable from v1 and its migration backup. Backfill them before final release if the contract is extended.
+
+## Review 1
+
+- C-1: Remap invalid legacy IDs consistently across designs/default/game links; merge a v1.9 `working::<32 hex>` into `SourceProfileId` before validating v2 identity; skip/log individual invalid profiles. Exact JSON fixture and regression tests pass; published x64 Core starts from a copied fixture and returns one edited source/default via IPC (`scripts/perf/migration-smoke.ps1`).
