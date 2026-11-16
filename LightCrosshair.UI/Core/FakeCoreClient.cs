@@ -85,6 +85,18 @@ public sealed class FakeCoreClient : ICoreClient
         Publish();
     }
 
+    public void SetActiveGameProfile(string? id)
+    {
+        lock (_gate)
+        {
+            var game = _store.GameProfiles.FirstOrDefault(item => item.Id == id && item.Enabled);
+            _runtime.ActiveGameProfileId = game?.Id;
+            _runtime.ForegroundProcess = game?.ProcessName ?? "explorer.exe";
+            _runtime.ActiveCrosshairId = game?.CrosshairId ?? _store.Settings.DefaultCrosshairId;
+        }
+        PublishRuntime();
+    }
+
     public void SetHotkeyErrors(IReadOnlyList<HotkeyError> errors)
     {
         lock (_gate) _runtime.HotkeyErrors = errors.ToList();

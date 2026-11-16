@@ -276,4 +276,7 @@
   <data name="Games_ColorApplyFailed" xml:space="preserve"><value>无法应用显示颜色。显卡驱动拒绝了这项更改。</value></data>
   <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>无法恢复之前的显示颜色。</value></data>
   <data name="Games_ColorUnsupported" xml:space="preserve"><value>此显示器不支持颜色调节。</value></data>
+  <data name="Library_SetDefaultAll" xml:space="preserve"><value>设为所有应用的默认准星</value></data>
+  <data name="Library_Default" xml:space="preserve"><value>默认</value></data>
+  <data name="Library_InUseGame" xml:space="preserve"><value>使用中 · {0}</value></data>
 </root>

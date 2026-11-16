@@ -143,6 +143,7 @@ public partial class LibraryPage : UserControl
         else
         {
             Add(menu, "Library_Use", library.ApplyDefaultCommand, card);
+            Add(menu, "Library_SetDefaultAll", library.SetDefaultForAllAppsCommand, card);
             Add(menu, "Edit", library.EditCommand, card);
             Add(menu, "Duplicate", library.DuplicateCommand, card);
             Add(menu, card.Design.Favorite ? "Library_Unfavorite" : "Library_Favorite", library.ToggleFavoriteCommand, card);

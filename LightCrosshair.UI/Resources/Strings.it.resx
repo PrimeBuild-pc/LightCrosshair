@@ -276,4 +276,7 @@
   <data name="Games_ColorApplyFailed" xml:space="preserve"><value>I colori dello schermo non sono stati applicati. Il driver grafico ha rifiutato la modifica.</value></data>
   <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>I colori precedenti dello schermo non sono stati ripristinati.</value></data>
   <data name="Games_ColorUnsupported" xml:space="preserve"><value>Questo schermo non supporta la regolazione dei colori.</value></data>
+  <data name="Library_SetDefaultAll" xml:space="preserve"><value>Imposta come predefinito per tutte le app</value></data>
+  <data name="Library_Default" xml:space="preserve"><value>Predefinito</value></data>
+  <data name="Library_InUseGame" xml:space="preserve"><value>In uso · {0}</value></data>
 </root>

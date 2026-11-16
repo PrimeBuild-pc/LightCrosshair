@@ -276,4 +276,7 @@
   <data name="Games_ColorApplyFailed" xml:space="preserve"><value>ディスプレイの色を適用できませんでした。グラフィックドライバーが変更を拒否しました。</value></data>
   <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>以前のディスプレイの色を復元できませんでした。</value></data>
   <data name="Games_ColorUnsupported" xml:space="preserve"><value>このディスプレイは色の調整に対応していません。</value></data>
+  <data name="Library_SetDefaultAll" xml:space="preserve"><value>すべてのアプリの既定に設定</value></data>
+  <data name="Library_Default" xml:space="preserve"><value>既定</value></data>
+  <data name="Library_InUseGame" xml:space="preserve"><value>使用中 · {0}</value></data>
 </root>

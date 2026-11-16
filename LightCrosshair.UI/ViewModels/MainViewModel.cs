@@ -40,7 +40,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Hotkeys.ApplyRuntime(runtime);
             Games.ApplyRuntime(runtime);
-            Library.NoteActive(string.IsNullOrEmpty(runtime.ActiveCrosshairId) ? _core.Snapshot?.Store.Settings.DefaultCrosshairId : runtime.ActiveCrosshairId);
+            Library.ApplyRuntime(runtime);
             if (_core.Snapshot != null && (runtime.PendingSuggestion != null || Games.Suggestion != null))
                 Games.Apply(_core.Snapshot);
         };

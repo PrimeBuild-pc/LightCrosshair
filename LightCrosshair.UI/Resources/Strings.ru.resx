@@ -276,4 +276,7 @@
   <data name="Games_ColorApplyFailed" xml:space="preserve"><value>Не удалось применить цвета дисплея. Драйвер видеокарты отклонил изменение.</value></data>
   <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>Не удалось восстановить прежние цвета дисплея.</value></data>
   <data name="Games_ColorUnsupported" xml:space="preserve"><value>Этот дисплей не поддерживает настройку цветов.</value></data>
+  <data name="Library_SetDefaultAll" xml:space="preserve"><value>По умолчанию для всех приложений</value></data>
+  <data name="Library_Default" xml:space="preserve"><value>По умолчанию</value></data>
+  <data name="Library_InUseGame" xml:space="preserve"><value>Используется · {0}</value></data>
 </root>

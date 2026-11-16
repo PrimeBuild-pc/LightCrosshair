@@ -276,4 +276,7 @@
   <data name="Games_ColorApplyFailed" xml:space="preserve"><value>No se pudieron aplicar los colores de la pantalla. El controlador gráfico rechazó el cambio.</value></data>
   <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>No se pudieron restaurar los colores anteriores de la pantalla.</value></data>
   <data name="Games_ColorUnsupported" xml:space="preserve"><value>Esta pantalla no admite ajustes de color.</value></data>
+  <data name="Library_SetDefaultAll" xml:space="preserve"><value>Establecer como predeterminado para todas las apps</value></data>
+  <data name="Library_Default" xml:space="preserve"><value>Predeterminado</value></data>
+  <data name="Library_InUseGame" xml:space="preserve"><value>En uso · {0}</value></data>
 </root>

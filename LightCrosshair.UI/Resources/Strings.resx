@@ -276,4 +276,7 @@
   <data name="Games_ColorApplyFailed" xml:space="preserve"><value>The display colors could not be applied. The graphics driver refused the change.</value></data>
   <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>The previous display colors could not be restored.</value></data>
   <data name="Games_ColorUnsupported" xml:space="preserve"><value>This display does not support color adjustments.</value></data>
+  <data name="Library_SetDefaultAll" xml:space="preserve"><value>Set as default for all apps</value></data>
+  <data name="Library_Default" xml:space="preserve"><value>Default</value></data>
+  <data name="Library_InUseGame" xml:space="preserve"><value>In use · {0}</value></data>
 </root>
