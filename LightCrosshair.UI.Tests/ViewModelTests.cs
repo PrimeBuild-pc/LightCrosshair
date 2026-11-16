@@ -115,10 +115,22 @@ public class ViewModelTests
         var stored = core.Snapshot!.Store.GameProfiles.Single(item => item.Id == profile.Id);
         Assert.NotEqual(enabled, stored.Enabled);
 
+        games.UseColors = false;
         games.UseColors = true;
+        games.Gamma = 120;
         Assert.True(games.IsDirty);
         await games.SaveCommand.ExecuteAsync(null);
-        Assert.NotNull(core.Snapshot.Store.GameProfiles.Single(item => item.Id == profile.Id).DisplayColors);
+        var colored = core.Snapshot.Store.GameProfiles.Single(item => item.Id == profile.Id);
+        Assert.True(colored.DisplayColorsEnabled);
+        Assert.NotNull(colored.DisplayColors);
+        Assert.Equal(120, colored.DisplayColors.Gamma);
+
+        games.UseColors = false;
+        await games.SaveCommand.ExecuteAsync(null);
+        var kept = core.Snapshot.Store.GameProfiles.Single(item => item.Id == profile.Id);
+        Assert.False(kept.DisplayColorsEnabled);
+        Assert.NotNull(kept.DisplayColors);
+        Assert.Equal(120, kept.DisplayColors.Gamma);
 
         var suggestion = new GameSuggestion { ProcessName = "samplegame2.exe", DisplayName = "Sample Game" };
         core.SetSuggestion(suggestion);
@@ -209,6 +221,92 @@ public class ViewModelTests
         finally
         {
             Loc.Instance.Apply("en");
+        }
+    }
+
+    [Fact]
+    public async Task StudioNavigationAsksBeforeLeavingADirtyDesign()
+    {
+        var core = await ConnectedAsync();
+        var ui = new FakeUi { UnsavedAnswer = UnsavedChoice.Cancel };
+        var main = new MainViewModel(core, ui, new LaunchOptions(UiPages.Studio, null, true, null));
+        await main.StartAsync();
+        var original = main.Studio.DesignName;
+        main.Studio.DesignName = "Unsaved";
+        await main.NavigateCommand.ExecuteAsync(UiPages.Library);
+        Assert.Equal(UiPages.Studio, main.Page);
+        Assert.Equal("Unsaved", main.Studio.DesignName);
+
+        ui.UnsavedAnswer = UnsavedChoice.Discard;
+        await main.NavigateCommand.ExecuteAsync(UiPages.Library);
+        Assert.Equal(UiPages.Library, main.Page);
+        Assert.Equal(original, main.Studio.DesignName);
+    }
+
+    [Fact]
+    public async Task SettingsDebounceWaitsBeforeSaving()
+    {
+        var core = await ConnectedAsync();
+        var settings = new SettingsViewModel(core, new FakeUi(), new StubFeed(), TimeSpan.FromMilliseconds(80));
+        settings.Apply(core.Snapshot!);
+        var original = settings.OffsetX;
+        settings.OffsetX = original + 7;
+        await Task.Delay(20);
+        Assert.Equal(original, core.Snapshot!.Store.Settings.OffsetX);
+        await settings.FlushAsync();
+        Assert.Equal(original + 7, core.Snapshot.Store.Settings.OffsetX);
+    }
+
+    [Fact]
+    public async Task InputCaptureIsSentWhileABindingIsArmed()
+    {
+        var core = await ConnectedAsync();
+        var hotkeys = new HotkeysViewModel(core, new FakeUi());
+        await hotkeys.SetCaptureCommand.ExecuteAsync(true);
+        Assert.True(core.InputCapture);
+        await hotkeys.SetCaptureCommand.ExecuteAsync(false);
+        Assert.False(core.InputCapture);
+
+        var games = new GamesViewModel(core, new FakeUi());
+        await games.SetCaptureCommand.ExecuteAsync(true);
+        Assert.True(core.InputCapture);
+        await games.SetCaptureCommand.ExecuteAsync(false);
+        Assert.False(core.InputCapture);
+    }
+
+    [Fact]
+    public async Task StudioFillKeepsTheStrokeUntilAColorIsChosen()
+    {
+        var core = await ConnectedAsync();
+        var studio = new StudioViewModel(core, new FakeUi());
+        studio.Load(core.Snapshot!.Store.Crosshairs[0]);
+        studio.Selected = studio.Rows.First(row => row.Layer.Kind == LayerKind.Ring);
+        Assert.True(studio.ShowFill);
+        studio.Fill = true;
+        Assert.Equal(studio.Color, studio.Selected!.Layer.FillColor);
+        studio.FillColor = "#112233";
+        Assert.Equal("#112233", studio.Selected.Layer.FillColor);
+        studio.Fill = false;
+        Assert.Null(studio.Selected.Layer.FillColor);
+    }
+
+    [Fact]
+    public void ItemTypesExposeAReadableName()
+    {
+        var samples = new object[]
+        {
+            new LayerRow(new CrosshairLayer { Kind = LayerKind.Ring, Name = "Ring" }),
+            new LanguageOption { Id = "en", LabelKey = "Settings_LangEn" },
+            new MonitorChoice { DeviceName = @"\\.\DISPLAY1", Label = "Primary" },
+            new LibraryCard(new CrosshairDesign { Name = "Classic" }, false, []),
+            new HotkeyRow { Action = "ToggleVisibility", LabelKey = "Hotkeys_ToggleVisibility" },
+        };
+        foreach (var sample in samples)
+        {
+            var text = sample.ToString();
+            Assert.False(string.IsNullOrWhiteSpace(text));
+            Assert.DoesNotContain("LightCrosshair.UI.ViewModels", text);
+            Assert.NotEqual(sample.GetType().FullName, text);
         }
     }
 

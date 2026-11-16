@@ -4,6 +4,7 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:loc="clr-namespace:LightCrosshair.UI.Localization"
         Title="{loc:Tr AppName}"
+        Icon="assets/icon.ico"
         WindowStyle="None"
         ResizeMode="CanResize"
         Background="{DynamicResource BgBrush}"
@@ -61,11 +62,15 @@
               </TextBlock>
             </StackPanel>
           </StackPanel>
-          <StackPanel Margin="8,16,8,0">
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="16,16,12,8">
+            <Image Source="pack://application:,,,/assets/icon.ico" Width="20" Height="20" RenderOptions.BitmapScalingMode="HighQuality"/>
+            <TextBlock Text="{loc:Tr AppName}" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="14"/>
+          </StackPanel>
+          <StackPanel Margin="8,8,8,0">
             <Button Command="{Binding NavigateCommand}" CommandParameter="studio" AutomationProperties.Name="{loc:Tr Nav_Studio}">
               <Button.Style>
                 <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
-                  <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                  <Setter Property="HorizontalContentAlignment" Value="Left"/>
                   <Setter Property="Padding" Value="10,8"/>
                   <Style.Triggers>
                     <DataTrigger Binding="{Binding Page}" Value="studio">
@@ -85,7 +90,7 @@
             <Button Command="{Binding NavigateCommand}" CommandParameter="library" AutomationProperties.Name="{loc:Tr Nav_Library}">
               <Button.Style>
                 <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
-                  <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                  <Setter Property="HorizontalContentAlignment" Value="Left"/>
                   <Setter Property="Padding" Value="10,8"/>
                   <Style.Triggers>
                     <DataTrigger Binding="{Binding Page}" Value="library">
@@ -105,7 +110,7 @@
             <Button Command="{Binding NavigateCommand}" CommandParameter="games" AutomationProperties.Name="{loc:Tr Nav_Games}">
               <Button.Style>
                 <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
-                  <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                  <Setter Property="HorizontalContentAlignment" Value="Left"/>
                   <Setter Property="Padding" Value="10,8"/>
                   <Style.Triggers>
                     <DataTrigger Binding="{Binding Page}" Value="games">
@@ -125,7 +130,7 @@
             <Button Command="{Binding NavigateCommand}" CommandParameter="hotkeys" AutomationProperties.Name="{loc:Tr Nav_Hotkeys}">
               <Button.Style>
                 <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
-                  <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                  <Setter Property="HorizontalContentAlignment" Value="Left"/>
                   <Setter Property="Padding" Value="10,8"/>
                   <Style.Triggers>
                     <DataTrigger Binding="{Binding Page}" Value="hotkeys">
@@ -145,7 +150,7 @@
             <Button Command="{Binding NavigateCommand}" CommandParameter="settings" AutomationProperties.Name="{loc:Tr Nav_Settings}">
               <Button.Style>
                 <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
-                  <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                  <Setter Property="HorizontalContentAlignment" Value="Left"/>
                   <Setter Property="Padding" Value="10,8"/>
                   <Style.Triggers>
                     <DataTrigger Binding="{Binding Page}" Value="settings">
@@ -167,8 +172,8 @@
       </Border>
       <Grid Grid.Column="1" Margin="24">
         <ContentControl Content="{Binding CurrentPage}" IsEnabled="{Binding IsPageEnabled}"/>
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="420"
-                    Visibility="{Binding ShowBlock, Converter={StaticResource Vis}}">
+        <Border Background="{DynamicResource BgBrush}" Visibility="{Binding ShowBlock, Converter={StaticResource Vis}}" Panel.ZIndex="1">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="420">
           <TextBlock Style="{StaticResource BodyText}" TextAlignment="Center" Margin="0,0,0,16">
             <TextBlock.Text>
               <MultiBinding Converter="{StaticResource KeyText}">
@@ -180,6 +185,7 @@
           <Button HorizontalAlignment="Center" Style="{StaticResource PrimaryButton}" Content="{loc:Tr Retry}" Command="{Binding RetryCommand}" AutomationProperties.Name="{loc:Tr Retry}"
                   Visibility="{Binding CanRetry, Converter={StaticResource Vis}}"/>
         </StackPanel>
+        </Border>
       </Grid>
     </Grid>
     <Grid Grid.Row="1" Panel.ZIndex="2" Visibility="{Binding Ui.Dialogs.IsOpen, Converter={StaticResource Vis}}" Background="{DynamicResource ScrimBrush}">

@@ -83,7 +83,8 @@ public sealed class AppUi : IUiServices
 
     public string? PickOpenFile(string filter)
     {
-        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = filter, CheckFileExists = true };
+        var title = filter.Split('|')[0];
+        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = filter, Title = title, CheckFileExists = true };
         return dialog.ShowDialog() == true ? dialog.FileName : null;
     }
 

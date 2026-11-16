@@ -15,6 +15,7 @@
       <conv:NullToVisConverter x:Key="NullVis"/>
       <conv:NullToVisConverter x:Key="NullVisInv" Invert="True"/>
       <conv:Base64ImageConverter x:Key="Png"/>
+      <conv:HexBrushConverter x:Key="HexBrush"/>
       <conv:ZoomConverter x:Key="Zoom"/>
       <conv:StatusBrushConverter x:Key="StatusBrush"/>
       <conv:EqualsParameterConverter x:Key="Eq"/>

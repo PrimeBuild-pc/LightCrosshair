@@ -39,6 +39,7 @@ public interface ICoreClient
     Task<IReadOnlyList<ProcessEntry>> ListProcessesAsync(CancellationToken cancellationToken = default);
     Task<GameProfile> AcceptSuggestionAsync(string processName, CancellationToken cancellationToken = default);
     Task DismissSuggestionAsync(string processName, CancellationToken cancellationToken = default);
+    Task SetInputCaptureAsync(bool active, CancellationToken cancellationToken = default);
     Task QuitAsync(CancellationToken cancellationToken = default);
 }
 

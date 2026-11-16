@@ -44,6 +44,8 @@ internal static class FakeRenderer
         var cos = Math.Cos(rad);
         var sin = Math.Sin(rad);
         var outline = layer.Outline ? Math.Clamp(layer.OutlineThickness, 1, 8) : 0;
+        byte fr = 0, fg = 0, fb = 0;
+        var hasFill = layer.Kind is LayerKind.Ring or LayerKind.Box && TryParse(layer.FillColor, out fr, out fg, out fb);
 
         for (var y = 0; y < canvas; y++)
         {
@@ -53,6 +55,8 @@ internal static class FakeRenderer
                 var dy = y + 0.5 - cy;
                 var lx = dx * cos + dy * sin;
                 var ly = -dx * sin + dy * cos;
+                if (hasFill && Inside(layer, lx, ly))
+                    Blend(pixels, (y * canvas + x) * 4, fr, fg, fb, opacity);
                 var cover = Coverage(layer, lx, ly, outline, antiAlias);
                 if (cover <= 0) continue;
                 var useOutline = cover < 0;
@@ -79,6 +83,16 @@ internal static class FakeRenderer
             if (Hit(layer, x + ox, y + oy, 0)) inside++;
         }
         return inside == 0 ? 1 : inside / 4.0;
+    }
+
+    private static bool Inside(CrosshairLayer layer, double x, double y)
+    {
+        var length = Math.Clamp(layer.Length, 1, 256);
+        var thickness = Math.Clamp(layer.Thickness, 1, 64);
+        var inner = length / 2.0 - thickness;
+        if (inner <= 0) return false;
+        if (layer.Kind == LayerKind.Ring) return x * x + y * y <= inner * inner;
+        return Math.Abs(x) < inner && Math.Abs(y) < inner;
     }
 
     private static bool Hit(CrosshairLayer layer, double x, double y, int grow)

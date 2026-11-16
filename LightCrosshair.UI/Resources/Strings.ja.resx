@@ -97,6 +97,7 @@
   <data name="Studio_ArmBottom" xml:space="preserve"><value>下</value></data>
   <data name="Studio_ArmLeft" xml:space="preserve"><value>左</value></data>
   <data name="Studio_Color" xml:space="preserve"><value>色</value></data>
+  <data name="Studio_Fill" xml:space="preserve"><value>塗り</value></data>
   <data name="Studio_Opacity" xml:space="preserve"><value>不透明度</value></data>
   <data name="Studio_OffsetX" xml:space="preserve"><value>オフセット X</value></data>
   <data name="Studio_OffsetY" xml:space="preserve"><value>オフセット Y</value></data>
@@ -252,6 +253,7 @@
   <data name="File_Png" xml:space="preserve"><value>PNG 画像|*.png</value></data>
   <data name="File_Exe" xml:space="preserve"><value>プログラム|*.exe</value></data>
   <data name="File_Export" xml:space="preserve"><value>LightCrosshair クロスヘア|*.lcx.json</value></data>
+  <data name="File_Import" xml:space="preserve"><value>LightCrosshair クロスヘアを読み込む|*.lcx.json</value></data>
   <data name="Toast_Copied" xml:space="preserve"><value>共有コードをコピーしました。</value></data>
   <data name="Toast_Saved" xml:space="preserve"><value>保存しました。</value></data>
   <data name="Toast_NoClipboard" xml:space="preserve"><value>クリップボードは空です。</value></data>

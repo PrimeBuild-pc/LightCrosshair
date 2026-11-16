@@ -14,6 +14,8 @@ public sealed partial class LayerRow : ObservableObject
     public CrosshairLayer Layer { get; }
 
     public string Name => string.IsNullOrWhiteSpace(Layer.Name) ? Layer.Kind.ToString() : Layer.Name;
+
+    public override string ToString() => Name;
     public bool Visible => Layer.Visible;
     public string KindKey => "Kind_" + Layer.Kind;
 
@@ -63,7 +65,7 @@ public sealed partial class StudioViewModel : ObservableObject
     [ObservableProperty] private bool _isDirty;
     [ObservableProperty] private string _error = "";
     [ObservableProperty] private string? _previewPng;
-    [ObservableProperty] private int _zoom = 1;
+    [ObservableProperty] private int _zoom = 2;
     [ObservableProperty] private string _background = "dark";
     [ObservableProperty] private string _customBackground = "#3A3D42";
     [ObservableProperty] private bool _isMinimized;
@@ -90,6 +92,7 @@ public sealed partial class StudioViewModel : ObservableObject
     public bool ShowOutline => Selected?.Layer.Kind != LayerKind.Image;
     public bool ShowImage => Selected?.Layer.Kind == LayerKind.Image;
     public bool ShowShape => Selected != null && Selected.Layer.Kind != LayerKind.Image;
+    public bool ShowFill => Selected?.Layer.Kind is LayerKind.Ring or LayerKind.Box;
     public string LengthLabelKey => Selected?.Layer.Kind switch
     {
         LayerKind.Dot or LayerKind.Ring => "Studio_Diameter",
@@ -163,6 +166,22 @@ public sealed partial class StudioViewModel : ObservableObject
         set => EditColor(value, color => { if (Selected != null) Selected.Layer.Color = color; });
     }
 
+    public bool Fill
+    {
+        get => !string.IsNullOrEmpty(Selected?.Layer.FillColor);
+        set => Edit(() =>
+        {
+            if (Selected == null) return;
+            Selected.Layer.FillColor = value ? Selected.Layer.FillColor ?? Selected.Layer.Color : null;
+        });
+    }
+
+    public string FillColor
+    {
+        get => Selected?.Layer.FillColor ?? Selected?.Layer.Color ?? "#FFFFFF";
+        set => EditColor(value, color => { if (Selected != null) Selected.Layer.FillColor = color; });
+    }
+
     public bool Outline
     {
         get => Selected?.Layer.Outline ?? false;
@@ -192,12 +211,13 @@ public sealed partial class StudioViewModel : ObservableObject
     public bool ArmBottom { get => HasArm(ArmMask.Bottom); set => SetArm(ArmMask.Bottom, value); }
     public bool ArmLeft { get => HasArm(ArmMask.Left); set => SetArm(ArmMask.Left, value); }
 
-    public string? RenderBackground => Background switch
+    public bool CheckerPreview => Background == "checker";
+
+    public string PreviewFill => Background switch
     {
         "mid" => "#808080",
         "light" => "#E8EAED",
-        "custom" => NormalizeHex(CustomBackground),
-        "checker" => null,
+        "custom" => NormalizeHex(CustomBackground) ?? "#3A3D42",
         _ => "#0E0F11",
     };
 
@@ -437,8 +457,18 @@ public sealed partial class StudioViewModel : ObservableObject
         ScheduleRender(final: true);
     }
 
-    partial void OnCustomBackgroundChanged(string value) => ScheduleRender(final: true);
-    partial void OnBackgroundChanged(string value) => OnPropertyChanged(nameof(ShowCustomBackground));
+    partial void OnCustomBackgroundChanged(string value)
+    {
+        OnPropertyChanged(nameof(PreviewFill));
+        ScheduleRender(final: true);
+    }
+
+    partial void OnBackgroundChanged(string value)
+    {
+        OnPropertyChanged(nameof(ShowCustomBackground));
+        OnPropertyChanged(nameof(CheckerPreview));
+        OnPropertyChanged(nameof(PreviewFill));
+    }
     public bool ShowCustomBackground => Background == "custom";
     partial void OnZoomChanged(int value) => OnPropertyChanged(nameof(ShowPixelGrid));
     public bool ShowPixelGrid => Zoom == 4;
@@ -646,7 +676,7 @@ public sealed partial class StudioViewModel : ObservableObject
             {
                 Design = design,
                 CanvasSize = 256,
-                Background = RenderBackground,
+                Background = null,
             }).ConfigureAwait(true);
             if (generation == _renderGeneration) PreviewPng = png;
         }
@@ -667,6 +697,8 @@ public sealed partial class StudioViewModel : ObservableObject
         OnPropertyChanged(nameof(OffsetY));
         OnPropertyChanged(nameof(Rotation));
         OnPropertyChanged(nameof(Color));
+        OnPropertyChanged(nameof(Fill));
+        OnPropertyChanged(nameof(FillColor));
         OnPropertyChanged(nameof(Outline));
         OnPropertyChanged(nameof(OutlineThickness));
         OnPropertyChanged(nameof(OutlineColor));
@@ -682,6 +714,7 @@ public sealed partial class StudioViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowOutline));
         OnPropertyChanged(nameof(ShowImage));
         OnPropertyChanged(nameof(ShowShape));
+        OnPropertyChanged(nameof(ShowFill));
         OnPropertyChanged(nameof(LengthLabelKey));
         OnPropertyChanged(nameof(CanAddLayer));
         NotifyUndo();

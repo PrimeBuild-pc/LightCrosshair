@@ -8,7 +8,7 @@
       <TextBlock Style="{StaticResource WarningText}" Text="{Binding Error}" Visibility="{Binding Error, Converter={StaticResource NullVis}}"/>
       <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_Display}"/>
       <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Settings_Monitor}"/>
-      <ComboBox ItemsSource="{Binding MonitorChoices}" SelectedValuePath="DeviceName" SelectedValue="{Binding MonitorDeviceName}" Margin="0,4,0,8" AutomationProperties.Name="{loc:Tr Settings_Monitor}">
+      <ComboBox ItemsSource="{Binding MonitorChoices}" SelectedValuePath="DeviceName" SelectedValue="{Binding MonitorDeviceName}" Margin="0,4,0,8" AutomationProperties.Name="{loc:Tr Settings_Monitor}" ItemContainerStyle="{StaticResource TextComboItem}">
         <ComboBox.ItemTemplate>
           <DataTemplate>
             <TextBlock Text="{Binding Label}"/>
@@ -29,7 +29,7 @@
       <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_Fps}"/>
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_FpsOn}" IsChecked="{Binding FpsEnabled}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_FpsOn}"/>
       <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Settings_FpsMonitor}"/>
-      <ComboBox ItemsSource="{Binding FpsMonitorChoices}" SelectedValuePath="DeviceName" SelectedValue="{Binding FpsMonitor}" Margin="0,4,0,8" AutomationProperties.Name="{loc:Tr Settings_FpsMonitor}">
+      <ComboBox ItemsSource="{Binding FpsMonitorChoices}" SelectedValuePath="DeviceName" SelectedValue="{Binding FpsMonitor}" Margin="0,4,0,8" AutomationProperties.Name="{loc:Tr Settings_FpsMonitor}" ItemContainerStyle="{StaticResource TextComboItem}">
         <ComboBox.ItemTemplate>
           <DataTemplate>
             <TextBlock Text="{Binding Label}"/>
@@ -46,7 +46,7 @@
       <controls:NumberSlider Caption="{loc:Tr Settings_BackgroundOpacity}" Value="{Binding BackgroundOpacityPercent}" Minimum="0" Maximum="100" Unit="{loc:Tr Unit_Percent}" Integer="False"/>
 
       <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_Language}"/>
-      <ComboBox ItemsSource="{Binding Languages}" SelectedValuePath="Id" SelectedValue="{Binding Language}" Margin="0,4,0,12" AutomationProperties.Name="{loc:Tr Settings_Language}">
+      <ComboBox ItemsSource="{Binding Languages}" SelectedValuePath="Id" SelectedValue="{Binding Language}" Margin="0,4,0,12" AutomationProperties.Name="{loc:Tr Settings_Language}" ItemContainerStyle="{StaticResource TextComboItem}">
         <ComboBox.ItemTemplate>
           <DataTemplate>
             <TextBlock>

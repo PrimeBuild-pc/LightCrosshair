@@ -63,10 +63,11 @@
         </StackPanel>
       </StackPanel>
       <Grid>
-        <Border Background="{StaticResource CheckerBrush}" CornerRadius="8"/>
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+        <Border Background="{StaticResource CheckerBrush}" CornerRadius="8" Visibility="{Binding CheckerPreview, Converter={StaticResource Vis}}"/>
+        <Border Background="{Binding PreviewFill, Converter={StaticResource HexBrush}}" CornerRadius="8" Visibility="{Binding CheckerPreview, Converter={StaticResource VisInv}}"/>
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="Transparent">
           <Grid Width="{Binding Zoom, Converter={StaticResource Zoom}, ConverterParameter=256}" Height="{Binding Zoom, Converter={StaticResource Zoom}, ConverterParameter=256}" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Image Source="{Binding PreviewPng, Converter={StaticResource Png}}" Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+            <Image Source="{Binding PreviewPng, Converter={StaticResource Png}, ConverterParameter=256}" Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
             <Rectangle IsHitTestVisible="False" Visibility="{Binding ShowPixelGrid, Converter={StaticResource Vis}}">
               <Rectangle.Fill>
                 <DrawingBrush TileMode="Tile" Viewport="0,0,4,4" ViewportUnits="Absolute">
@@ -115,6 +116,7 @@
         <TextBlock DockPanel.Dock="Top" Style="{StaticResource LabelText}" Text="{loc:Tr Studio_LayerOrder}" Margin="0,0,0,8"/>
         <ListBox x:Name="LayerList" DockPanel.Dock="Top" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" MinHeight="120" MaxHeight="220"
                  AllowDrop="True" PreviewMouseLeftButtonDown="OnLayerPress" PreviewMouseMove="OnLayerDrag" Drop="OnLayerDrop"
+                 ItemContainerStyle="{StaticResource NamedItem}"
                  AutomationProperties.Name="{loc:Tr Studio_Layers}">
           <ListBox.InputBindings>
             <KeyBinding Key="Up" Modifiers="Control" Command="{Binding MoveUpCommand}" CommandParameter="{Binding Selected}"/>
@@ -152,14 +154,18 @@
               <controls:NumberSlider Caption="{loc:Tr Studio_Length}" Value="{Binding Length}" Minimum="1" Maximum="256" Unit="{loc:Tr Unit_Px}" Visibility="{Binding ShowShape, Converter={StaticResource Vis}}" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
               <controls:NumberSlider Caption="{loc:Tr Studio_Thickness}" Value="{Binding Thickness}" Minimum="1" Maximum="64" Unit="{loc:Tr Unit_Px}" Visibility="{Binding ShowThickness, Converter={StaticResource Vis}}" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
               <controls:NumberSlider Caption="{loc:Tr Studio_Gap}" Value="{Binding Gap}" Minimum="0" Maximum="128" Unit="{loc:Tr Unit_Px}" Visibility="{Binding ShowGap, Converter={StaticResource Vis}}" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
-              <StackPanel Orientation="Horizontal" Visibility="{Binding ShowArms, Converter={StaticResource Vis}}" Margin="0,4,0,8">
-                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmTop}" IsChecked="{Binding ArmTop}" Margin="0,0,8,0" AutomationProperties.Name="{loc:Tr Studio_ArmTop}"/>
-                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmRight}" IsChecked="{Binding ArmRight}" Margin="0,0,8,0" AutomationProperties.Name="{loc:Tr Studio_ArmRight}"/>
-                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmBottom}" IsChecked="{Binding ArmBottom}" Margin="0,0,8,0" AutomationProperties.Name="{loc:Tr Studio_ArmBottom}"/>
-                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmLeft}" IsChecked="{Binding ArmLeft}" AutomationProperties.Name="{loc:Tr Studio_ArmLeft}"/>
-              </StackPanel>
+              <UniformGrid Columns="2" Visibility="{Binding ShowArms, Converter={StaticResource Vis}}" Margin="0,4,0,8">
+                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmTop}" IsChecked="{Binding ArmTop}" Margin="0,4,8,4" AutomationProperties.Name="{loc:Tr Studio_ArmTop}"/>
+                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmRight}" IsChecked="{Binding ArmRight}" Margin="0,4,8,4" AutomationProperties.Name="{loc:Tr Studio_ArmRight}"/>
+                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmBottom}" IsChecked="{Binding ArmBottom}" Margin="0,4,8,4" AutomationProperties.Name="{loc:Tr Studio_ArmBottom}"/>
+                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmLeft}" IsChecked="{Binding ArmLeft}" Margin="0,4,8,4" AutomationProperties.Name="{loc:Tr Studio_ArmLeft}"/>
+              </UniformGrid>
               <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Studio_ColorGroup}"/>
               <controls:ColorField Caption="{loc:Tr Studio_Color}" Value="{Binding Color}"/>
+              <StackPanel Visibility="{Binding ShowFill, Converter={StaticResource Vis}}">
+                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_Fill}" IsChecked="{Binding Fill}" Margin="0,8,0,4" AutomationProperties.Name="{loc:Tr Studio_Fill}"/>
+                <controls:ColorField Caption="{loc:Tr Studio_Fill}" Value="{Binding FillColor}" Visibility="{Binding Fill, Converter={StaticResource Vis}}"/>
+              </StackPanel>
               <controls:NumberSlider Caption="{loc:Tr Studio_Opacity}" Value="{Binding OpacityPercent}" Minimum="0" Maximum="100" Unit="{loc:Tr Unit_Percent}" Integer="False" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
               <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Studio_Position}"/>
               <controls:NumberSlider Caption="{loc:Tr Studio_OffsetX}" Value="{Binding OffsetX}" Minimum="-128" Maximum="128" Unit="{loc:Tr Unit_Px}" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>

@@ -97,6 +97,7 @@
   <data name="Studio_ArmBottom" xml:space="preserve"><value>Abajo</value></data>
   <data name="Studio_ArmLeft" xml:space="preserve"><value>Izquierda</value></data>
   <data name="Studio_Color" xml:space="preserve"><value>Color</value></data>
+  <data name="Studio_Fill" xml:space="preserve"><value>Relleno</value></data>
   <data name="Studio_Opacity" xml:space="preserve"><value>Opacidad</value></data>
   <data name="Studio_OffsetX" xml:space="preserve"><value>Desplazamiento X</value></data>
   <data name="Studio_OffsetY" xml:space="preserve"><value>Desplazamiento Y</value></data>
@@ -252,6 +253,7 @@
   <data name="File_Png" xml:space="preserve"><value>Imagen PNG|*.png</value></data>
   <data name="File_Exe" xml:space="preserve"><value>Programa|*.exe</value></data>
   <data name="File_Export" xml:space="preserve"><value>Miras de LightCrosshair|*.lcx.json</value></data>
+  <data name="File_Import" xml:space="preserve"><value>Importar miras de LightCrosshair|*.lcx.json</value></data>
   <data name="Toast_Copied" xml:space="preserve"><value>Código copiado.</value></data>
   <data name="Toast_Saved" xml:space="preserve"><value>Guardado.</value></data>
   <data name="Toast_NoClipboard" xml:space="preserve"><value>El portapapeles está vacío.</value></data>

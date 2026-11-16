@@ -21,6 +21,8 @@ public sealed partial class LibraryCard : ObservableObject
     public CrosshairDesign Design { get; }
     public bool IsPreset { get; }
     public IReadOnlyList<string> Tags { get; }
+
+    public override string ToString() => Design.Name;
     [ObservableProperty] private string? _png;
     public string SectionKey => IsPreset ? "Library_Presets" : "Library_Mine";
 }
@@ -166,7 +168,7 @@ public sealed partial class LibraryViewModel : ObservableObject
     [RelayCommand]
     private async Task ImportFileAsync()
     {
-        var path = _ui.PickOpenFile(Loc.Instance["File_Export"]);
+        var path = _ui.PickOpenFile(Loc.Instance["File_Import"]);
         if (path == null) return;
         try
         {
@@ -251,7 +253,9 @@ public sealed partial class LibraryViewModel : ObservableObject
 
 public sealed class ThumbnailCache
 {
+    private const int MaxEntries = 48;
     private readonly Dictionary<string, string> _png = new();
+    private readonly List<string> _order = new();
 
     public async Task<string> GetAsync(ICoreClient core, CrosshairDesign design, int size, CancellationToken cancellationToken = default)
     {
@@ -259,6 +263,14 @@ public sealed class ThumbnailCache
         if (_png.TryGetValue(key, out var cached)) return cached;
         var png = await core.RenderPngAsync(new RenderRequest { Design = design, CanvasSize = size, Background = "#16181B" }, cancellationToken).ConfigureAwait(false);
         _png[key] = png;
+        _order.Remove(key);
+        _order.Add(key);
+        while (_order.Count > MaxEntries)
+        {
+            var oldest = _order[0];
+            _order.RemoveAt(0);
+            _png.Remove(oldest);
+        }
         return png;
     }
 }
