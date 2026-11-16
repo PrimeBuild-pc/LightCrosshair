@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="AppName" xml:space="preserve"><value>LightCrosshair</value></data>
+  <data name="Retry" xml:space="preserve"><value>重试</value></data>
+  <data name="Ok" xml:space="preserve"><value>确定</value></data>
+  <data name="Cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="Save" xml:space="preserve"><value>保存</value></data>
+  <data name="Discard" xml:space="preserve"><value>放弃</value></data>
+  <data name="Delete" xml:space="preserve"><value>删除</value></data>
+  <data name="Close" xml:space="preserve"><value>关闭</value></data>
+  <data name="Edit" xml:space="preserve"><value>编辑</value></data>
+  <data name="Duplicate" xml:space="preserve"><value>复制</value></data>
+  <data name="Export" xml:space="preserve"><value>导出</value></data>
+  <data name="Import" xml:space="preserve"><value>导入</value></data>
+  <data name="Copy" xml:space="preserve"><value>复制</value></data>
+  <data name="Paste" xml:space="preserve"><value>粘贴</value></data>
+  <data name="Apply" xml:space="preserve"><value>应用</value></data>
+  <data name="Search" xml:space="preserve"><value>搜索</value></data>
+  <data name="On" xml:space="preserve"><value>开</value></data>
+  <data name="Off" xml:space="preserve"><value>关</value></data>
+  <data name="Browse" xml:space="preserve"><value>浏览</value></data>
+  <data name="Add" xml:space="preserve"><value>添加</value></data>
+  <data name="None" xml:space="preserve"><value>无</value></data>
+  <data name="Default" xml:space="preserve"><value>默认</value></data>
+  <data name="Nav_Studio" xml:space="preserve"><value>工作室</value></data>
+  <data name="Nav_Library" xml:space="preserve"><value>库</value></data>
+  <data name="Nav_Games" xml:space="preserve"><value>游戏</value></data>
+  <data name="Nav_Hotkeys" xml:space="preserve"><value>热键</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>设置</value></data>
+  <data name="Nav_Visibility" xml:space="preserve"><value>显示准星</value></data>
+  <data name="Status_Connected" xml:space="preserve"><value>已连接</value></data>
+  <data name="Status_Reconnecting" xml:space="preserve"><value>正在重新连接</value></data>
+  <data name="Status_Offline" xml:space="preserve"><value>未连接</value></data>
+  <data name="Window_Minimize" xml:space="preserve"><value>最小化</value></data>
+  <data name="Window_Maximize" xml:space="preserve"><value>最大化</value></data>
+  <data name="Window_Restore" xml:space="preserve"><value>还原</value></data>
+  <data name="Window_Close" xml:space="preserve"><value>关闭</value></data>
+  <data name="Error_BadRequest" xml:space="preserve"><value>无法理解该请求。</value></data>
+  <data name="Error_NotFound" xml:space="preserve"><value>该项目已不存在。</value></data>
+  <data name="Error_Validation" xml:space="preserve"><value>部分数值无法保存。</value></data>
+  <data name="Error_Unsupported" xml:space="preserve"><value>此处不支持此操作。</value></data>
+  <data name="Error_ProtocolMismatch" xml:space="preserve"><value>需要重新安装 LightCrosshair。设置程序与后台程序版本不一致。</value></data>
+  <data name="Error_Internal" xml:space="preserve"><value>出现问题。请重试。</value></data>
+  <data name="Error_Timeout" xml:space="preserve"><value>后台程序未及时响应。</value></data>
+  <data name="Error_Disconnected" xml:space="preserve"><value>与 LightCrosshair 的连接已断开。</value></data>
+  <data name="Error_CoreMissing" xml:space="preserve"><value>LightCrosshair 未在运行。请启动后重试。</value></data>
+  <data name="Unsaved_Title" xml:space="preserve"><value>未保存的更改</value></data>
+  <data name="Unsaved_Message" xml:space="preserve"><value>离开工作室前保存准星？</value></data>
+  <data name="DeleteCrosshair_Title" xml:space="preserve"><value>删除准星</value></data>
+  <data name="DeleteCrosshair_Message" xml:space="preserve"><value>删除 {0}？此操作无法撤销。</value></data>
+  <data name="DeleteGame_Title" xml:space="preserve"><value>删除游戏配置</value></data>
+  <data name="DeleteGame_Message" xml:space="preserve"><value>删除 {0} 的配置？</value></data>
+  <data name="Exit_Title" xml:space="preserve"><value>退出 LightCrosshair</value></data>
+  <data name="Exit_Message" xml:space="preserve"><value>这将关闭准星和设置窗口。</value></data>
+  <data name="Studio_Name" xml:space="preserve"><value>名称</value></data>
+  <data name="Studio_SaveAs" xml:space="preserve"><value>另存为新准星</value></data>
+  <data name="Studio_Live" xml:space="preserve"><value>游戏内实时预览</value></data>
+  <data name="Studio_Undo" xml:space="preserve"><value>撤销</value></data>
+  <data name="Studio_Redo" xml:space="preserve"><value>重做</value></data>
+  <data name="Studio_CopyCode" xml:space="preserve"><value>复制分享码</value></data>
+  <data name="Studio_PasteCode" xml:space="preserve"><value>粘贴分享码</value></data>
+  <data name="Studio_Zoom1" xml:space="preserve"><value>1×</value></data>
+  <data name="Studio_Zoom2" xml:space="preserve"><value>2×</value></data>
+  <data name="Studio_Zoom4" xml:space="preserve"><value>4×</value></data>
+  <data name="Studio_Background" xml:space="preserve"><value>背景</value></data>
+  <data name="Studio_BgDark" xml:space="preserve"><value>深色</value></data>
+  <data name="Studio_BgMid" xml:space="preserve"><value>中灰</value></data>
+  <data name="Studio_BgLight" xml:space="preserve"><value>浅色</value></data>
+  <data name="Studio_BgChecker" xml:space="preserve"><value>棋盘</value></data>
+  <data name="Studio_BgCustom" xml:space="preserve"><value>自定义</value></data>
+  <data name="Studio_Layers" xml:space="preserve"><value>图层</value></data>
+  <data name="Studio_AddLayer" xml:space="preserve"><value>添加图层</value></data>
+  <data name="Studio_LayerOrder" xml:space="preserve"><value>列表顶部的图层画在最上面。</value></data>
+  <data name="Studio_ShowLayer" xml:space="preserve"><value>显示图层</value></data>
+  <data name="Studio_HideLayer" xml:space="preserve"><value>隐藏图层</value></data>
+  <data name="Studio_DuplicateLayer" xml:space="preserve"><value>复制图层</value></data>
+  <data name="Studio_DeleteLayer" xml:space="preserve"><value>删除图层</value></data>
+  <data name="Studio_MoveUp" xml:space="preserve"><value>上移</value></data>
+  <data name="Studio_MoveDown" xml:space="preserve"><value>下移</value></data>
+  <data name="Studio_Properties" xml:space="preserve"><value>图层属性</value></data>
+  <data name="Studio_Shape" xml:space="preserve"><value>形状</value></data>
+  <data name="Studio_ColorGroup" xml:space="preserve"><value>颜色</value></data>
+  <data name="Studio_Position" xml:space="preserve"><value>位置</value></data>
+  <data name="Studio_OutlineGroup" xml:space="preserve"><value>轮廓</value></data>
+  <data name="Studio_Length" xml:space="preserve"><value>长度</value></data>
+  <data name="Studio_Diameter" xml:space="preserve"><value>直径</value></data>
+  <data name="Studio_Side" xml:space="preserve"><value>边长</value></data>
+  <data name="Studio_Thickness" xml:space="preserve"><value>粗细</value></data>
+  <data name="Studio_Gap" xml:space="preserve"><value>间隙</value></data>
+  <data name="Studio_Arms" xml:space="preserve"><value>臂</value></data>
+  <data name="Studio_ArmTop" xml:space="preserve"><value>上</value></data>
+  <data name="Studio_ArmRight" xml:space="preserve"><value>右</value></data>
+  <data name="Studio_ArmBottom" xml:space="preserve"><value>下</value></data>
+  <data name="Studio_ArmLeft" xml:space="preserve"><value>左</value></data>
+  <data name="Studio_Color" xml:space="preserve"><value>颜色</value></data>
+  <data name="Studio_Opacity" xml:space="preserve"><value>不透明度</value></data>
+  <data name="Studio_OffsetX" xml:space="preserve"><value>水平偏移</value></data>
+  <data name="Studio_OffsetY" xml:space="preserve"><value>垂直偏移</value></data>
+  <data name="Studio_Rotation" xml:space="preserve"><value>旋转</value></data>
+  <data name="Studio_Outline" xml:space="preserve"><value>轮廓</value></data>
+  <data name="Studio_OutlineThickness" xml:space="preserve"><value>轮廓粗细</value></data>
+  <data name="Studio_OutlineColor" xml:space="preserve"><value>轮廓颜色</value></data>
+  <data name="Studio_ImageScale" xml:space="preserve"><value>图像缩放</value></data>
+  <data name="Studio_ImportImage" xml:space="preserve"><value>导入 PNG</value></data>
+  <data name="Studio_AntiAlias" xml:space="preserve"><value>平滑边缘</value></data>
+  <data name="Studio_MaxLayers" xml:space="preserve"><value>一个准星最多 8 个图层。</value></data>
+  <data name="Studio_NoLayer" xml:space="preserve"><value>添加图层后即可编辑。</value></data>
+  <data name="Studio_Unsaved" xml:space="preserve"><value>未保存的更改</value></data>
+  <data name="Studio_Hex" xml:space="preserve"><value>十六进制颜色</value></data>
+  <data name="Kind_Arms" xml:space="preserve"><value>臂</value></data>
+  <data name="Kind_Dot" xml:space="preserve"><value>点</value></data>
+  <data name="Kind_Ring" xml:space="preserve"><value>圆环</value></data>
+  <data name="Kind_Box" xml:space="preserve"><value>方框</value></data>
+  <data name="Kind_Image" xml:space="preserve"><value>图像</value></data>
+  <data name="Name_NewCrosshair" xml:space="preserve"><value>准星</value></data>
+  <data name="Name_Layer" xml:space="preserve"><value>图层</value></data>
+  <data name="Unit_Px" xml:space="preserve"><value>像素</value></data>
+  <data name="Unit_Deg" xml:space="preserve"><value>度</value></data>
+  <data name="Unit_Percent" xml:space="preserve"><value>%</value></data>
+  <data name="Library_Mine" xml:space="preserve"><value>我的准星</value></data>
+  <data name="Library_Presets" xml:space="preserve"><value>预设</value></data>
+  <data name="Library_Empty" xml:space="preserve"><value>还没有准星。</value></data>
+  <data name="Library_NoMatches" xml:space="preserve"><value>没有匹配项。</value></data>
+  <data name="Library_Favorite" xml:space="preserve"><value>加入收藏</value></data>
+  <data name="Library_Unfavorite" xml:space="preserve"><value>取消收藏</value></data>
+  <data name="Library_EditCopy" xml:space="preserve"><value>编辑副本</value></data>
+  <data name="Library_ApplyDefault" xml:space="preserve"><value>设为默认</value></data>
+  <data name="Library_PasteCode" xml:space="preserve"><value>粘贴分享码</value></data>
+  <data name="Library_ImportFile" xml:space="preserve"><value>导入文件</value></data>
+  <data name="Library_Actions" xml:space="preserve"><value>操作</value></data>
+  <data name="Library_TagAll" xml:space="preserve"><value>全部</value></data>
+  <data name="Tag_dot" xml:space="preserve"><value>点</value></data>
+  <data name="Tag_cross" xml:space="preserve"><value>十字</value></data>
+  <data name="Tag_t" xml:space="preserve"><value>T 形</value></data>
+  <data name="Tag_x" xml:space="preserve"><value>X 形</value></data>
+  <data name="Tag_circle" xml:space="preserve"><value>圆</value></data>
+  <data name="Tag_box" xml:space="preserve"><value>方框</value></data>
+  <data name="Tag_minimal" xml:space="preserve"><value>简约</value></data>
+  <data name="Tag_outlined" xml:space="preserve"><value>带轮廓</value></data>
+  <data name="Tag_highvisibility" xml:space="preserve"><value>高可见</value></data>
+  <data name="Library_Imported" xml:space="preserve"><value>已导入 {0} 个准星，跳过 {1} 个。</value></data>
+  <data name="Library_Search" xml:space="preserve"><value>搜索准星</value></data>
+  <data name="Games_Add" xml:space="preserve"><value>添加游戏</value></data>
+  <data name="Games_Empty" xml:space="preserve"><value>还没有游戏配置。</value></data>
+  <data name="Games_Enabled" xml:space="preserve"><value>启用</value></data>
+  <data name="Games_Process" xml:space="preserve"><value>进程</value></data>
+  <data name="Games_Crosshair" xml:space="preserve"><value>准星</value></data>
+  <data name="Games_VisibilityOverride" xml:space="preserve"><value>可见性快捷键</value></data>
+  <data name="Games_UseGlobal" xml:space="preserve"><value>使用全局快捷键</value></data>
+  <data name="Games_FpsOverlay" xml:space="preserve"><value>FPS 叠加</value></data>
+  <data name="Games_FollowGlobal" xml:space="preserve"><value>跟随全局</value></data>
+  <data name="Games_DisplayColors" xml:space="preserve"><value>显示颜色</value></data>
+  <data name="Games_UseColors" xml:space="preserve"><value>为此游戏调整颜色</value></data>
+  <data name="Games_Gamma" xml:space="preserve"><value>伽马</value></data>
+  <data name="Games_Contrast" xml:space="preserve"><value>对比度</value></data>
+  <data name="Games_Brightness" xml:space="preserve"><value>亮度</value></data>
+  <data name="Games_Vibrance" xml:space="preserve"><value>自然饱和度</value></data>
+  <data name="Games_NvidiaVibrance" xml:space="preserve"><value>NVIDIA 数字振动</value></data>
+  <data name="Games_FpsCap" xml:space="preserve"><value>NVIDIA FPS 上限</value></data>
+  <data name="Games_NoCap" xml:space="preserve"><value>不由 LightCrosshair 限制</value></data>
+  <data name="Games_Save" xml:space="preserve"><value>保存配置</value></data>
+  <data name="Games_Running" xml:space="preserve"><value>正在运行</value></data>
+  <data name="Games_Suggest" xml:space="preserve"><value>为 {0} 创建配置？</value></data>
+  <data name="Games_Create" xml:space="preserve"><value>创建</value></data>
+  <data name="Games_NotNow" xml:space="preserve"><value>暂时不要</value></data>
+  <data name="Games_Never" xml:space="preserve"><value>此游戏不再提示</value></data>
+  <data name="Games_ReasonGamma" xml:space="preserve"><value>此电脑无法调整显示颜色。</value></data>
+  <data name="Games_ReasonNvidiaColor" xml:space="preserve"><value>此电脑不支持 NVIDIA 数字振动。</value></data>
+  <data name="Games_ReasonNvidiaCap" xml:space="preserve"><value>此电脑不支持 NVIDIA FPS 上限。</value></data>
+  <data name="Games_ReasonAmd" xml:space="preserve"><value>此电脑不支持 AMD 颜色控制。</value></data>
+  <data name="Games_PickProcess" xml:space="preserve"><value>选择正在运行的程序，或浏览 exe。</value></data>
+  <data name="Games_NoProcesses" xml:space="preserve"><value>没有找到有窗口的程序。</value></data>
+  <data name="Games_ProfileName" xml:space="preserve"><value>配置名称</value></data>
+  <data name="Games_CapValue" xml:space="preserve"><value>上限</value></data>
+  <data name="Games_Delete" xml:space="preserve"><value>删除配置</value></data>
+  <data name="Hotkeys_Help" xml:space="preserve"><value>点击快捷键，然后按键或鼠标按钮。Esc 取消。滚轮只能切换。</value></data>
+  <data name="Hotkeys_ToggleVisibility" xml:space="preserve"><value>显示或隐藏准星</value></data>
+  <data name="Hotkeys_Next" xml:space="preserve"><value>下一个准星</value></data>
+  <data name="Hotkeys_Previous" xml:space="preserve"><value>上一个准星</value></data>
+  <data name="Hotkeys_OpenSettings" xml:space="preserve"><value>打开或关闭设置</value></data>
+  <data name="Hotkeys_Press" xml:space="preserve"><value>请按键或鼠标按钮</value></data>
+  <data name="Hotkeys_Mode" xml:space="preserve"><value>模式</value></data>
+  <data name="Hotkeys_Toggle" xml:space="preserve"><value>切换</value></data>
+  <data name="Hotkeys_HoldHide" xml:space="preserve"><value>按住隐藏</value></data>
+  <data name="Hotkeys_HoldShow" xml:space="preserve"><value>按住显示</value></data>
+  <data name="Hotkeys_Unbound" xml:space="preserve"><value>未设置</value></data>
+  <data name="Hotkeys_Conflict" xml:space="preserve"><value>与{0}冲突。</value></data>
+  <data name="Hotkeys_Reserved" xml:space="preserve"><value>此快捷键已被 Windows 或其他应用占用。</value></data>
+  <data name="Hotkeys_WheelOnly" xml:space="preserve"><value>滚轮只支持切换。</value></data>
+  <data name="Hotkeys_RegisterFailed" xml:space="preserve"><value>无法注册此快捷键。</value></data>
+  <data name="Hotkeys_Clear" xml:space="preserve"><value>清除快捷键</value></data>
+  <data name="Key_MiddleClick" xml:space="preserve"><value>中键</value></data>
+  <data name="Key_RightClick" xml:space="preserve"><value>右键</value></data>
+  <data name="Key_Mouse4" xml:space="preserve"><value>鼠标 4</value></data>
+  <data name="Key_Mouse5" xml:space="preserve"><value>鼠标 5</value></data>
+  <data name="Key_WheelUp" xml:space="preserve"><value>滚轮向上</value></data>
+  <data name="Key_WheelDown" xml:space="preserve"><value>滚轮向下</value></data>
+  <data name="Key_Ctrl" xml:space="preserve"><value>Ctrl</value></data>
+  <data name="Key_Alt" xml:space="preserve"><value>Alt</value></data>
+  <data name="Key_Shift" xml:space="preserve"><value>Shift</value></data>
+  <data name="Key_Win" xml:space="preserve"><value>Win</value></data>
+  <data name="Settings_Display" xml:space="preserve"><value>显示</value></data>
+  <data name="Settings_Monitor" xml:space="preserve"><value>显示器</value></data>
+  <data name="Settings_Primary" xml:space="preserve"><value>主显示器</value></data>
+  <data name="Settings_Position" xml:space="preserve"><value>位置</value></data>
+  <data name="Settings_OffsetX" xml:space="preserve"><value>水平偏移</value></data>
+  <data name="Settings_OffsetY" xml:space="preserve"><value>垂直偏移</value></data>
+  <data name="Settings_Behavior" xml:space="preserve"><value>行为</value></data>
+  <data name="Settings_OnlyGames" xml:space="preserve"><value>仅在已配置的游戏中显示</value></data>
+  <data name="Settings_HideRecording" xml:space="preserve"><value>录屏时隐藏</value></data>
+  <data name="Settings_StartWindows" xml:space="preserve"><value>开机启动</value></data>
+  <data name="Settings_Suggestions" xml:space="preserve"><value>为已知游戏建议配置</value></data>
+  <data name="Settings_Fps" xml:space="preserve"><value>FPS 叠加</value></data>
+  <data name="Settings_FpsOn" xml:space="preserve"><value>显示 FPS 叠加</value></data>
+  <data name="Settings_FpsMonitor" xml:space="preserve"><value>叠加所在显示器</value></data>
+  <data name="Settings_SameMonitor" xml:space="preserve"><value>与准星相同</value></data>
+  <data name="Settings_Scale" xml:space="preserve"><value>缩放</value></data>
+  <data name="Settings_Frametime" xml:space="preserve"><value>显示帧时间</value></data>
+  <data name="Settings_Low" xml:space="preserve"><value>显示 1% low</value></data>
+  <data name="Settings_TextColor" xml:space="preserve"><value>文字颜色</value></data>
+  <data name="Settings_BackgroundColor" xml:space="preserve"><value>背景颜色</value></data>
+  <data name="Settings_BackgroundOpacity" xml:space="preserve"><value>背景不透明度</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>语言</value></data>
+  <data name="Settings_LangAuto" xml:space="preserve"><value>跟随 Windows</value></data>
+  <data name="Settings_LangEn" xml:space="preserve"><value>英语</value></data>
+  <data name="Settings_LangIt" xml:space="preserve"><value>意大利语</value></data>
+  <data name="Settings_LangEs" xml:space="preserve"><value>西班牙语</value></data>
+  <data name="Settings_LangZh" xml:space="preserve"><value>简体中文</value></data>
+  <data name="Settings_LangRu" xml:space="preserve"><value>俄语</value></data>
+  <data name="Settings_LangJa" xml:space="preserve"><value>日语</value></data>
+  <data name="Settings_Updates" xml:space="preserve"><value>更新</value></data>
+  <data name="Settings_CheckAuto" xml:space="preserve"><value>检查更新</value></data>
+  <data name="Settings_CheckNow" xml:space="preserve"><value>立即检查</value></data>
+  <data name="Settings_Checking" xml:space="preserve"><value>正在检查更新</value></data>
+  <data name="Settings_UpToDate" xml:space="preserve"><value>已是最新版本（{0}）。</value></data>
+  <data name="Settings_UpdateAvailable" xml:space="preserve"><value>有新版本：{0}。</value></data>
+  <data name="Settings_LocalNewer" xml:space="preserve"><value>此版本（{0}）比最新发布（{1}）更新。</value></data>
+  <data name="Settings_CheckFailed" xml:space="preserve"><value>无法检查更新。请稍后再试。</value></data>
+  <data name="Settings_CompareFailed" xml:space="preserve"><value>无法将最新发布（{0}）与此版本（{1}）比较。</value></data>
+  <data name="Settings_About" xml:space="preserve"><value>关于</value></data>
+  <data name="Settings_Version" xml:space="preserve"><value>版本 {0}</value></data>
+  <data name="Settings_Website" xml:space="preserve"><value>网站</value></data>
+  <data name="Settings_Source" xml:space="preserve"><value>源代码</value></data>
+  <data name="Settings_License" xml:space="preserve"><value>许可证</value></data>
+  <data name="Settings_LicenseText" xml:space="preserve"><value>MIT 许可证。Copyright 2024 LightCrosshair。</value></data>
+  <data name="Settings_Exit" xml:space="preserve"><value>退出 LightCrosshair</value></data>
+  <data name="Settings_OpenReleases" xml:space="preserve"><value>打开发布页</value></data>
+  <data name="File_Png" xml:space="preserve"><value>PNG 图像|*.png</value></data>
+  <data name="File_Exe" xml:space="preserve"><value>程序|*.exe</value></data>
+  <data name="File_Export" xml:space="preserve"><value>LightCrosshair 准星|*.lcx.json</value></data>
+  <data name="Toast_Copied" xml:space="preserve"><value>分享码已复制。</value></data>
+  <data name="Toast_Saved" xml:space="preserve"><value>已保存。</value></data>
+  <data name="Toast_NoClipboard" xml:space="preserve"><value>剪贴板是空的。</value></data>
+  <data name="Boot_Connecting" xml:space="preserve"><value>正在连接 LightCrosshair</value></data>
+  <data name="Color_Presets" xml:space="preserve"><value>预设颜色</value></data>
+  <data name="Common_More" xml:space="preserve"><value>更多</value></data>
+</root>

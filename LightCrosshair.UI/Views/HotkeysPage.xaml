@@ -1,0 +1,53 @@
+<UserControl x:Class="LightCrosshair.UI.Views.HotkeysPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:LightCrosshair.UI.Localization"
+             xmlns:controls="clr-namespace:LightCrosshair.UI.Controls"
+             xmlns:contracts="clr-namespace:LightCrosshair.Contracts;assembly=LightCrosshair.Contracts">
+  <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <StackPanel MaxWidth="760" HorizontalAlignment="Left">
+      <TextBlock Style="{StaticResource BodyText}" Text="{loc:Tr Hotkeys_Help}" Margin="0,0,0,16"/>
+      <TextBlock Style="{StaticResource WarningText}" Text="{Binding Error}" Visibility="{Binding Error, Converter={StaticResource NullVis}}" Margin="0,0,0,8"/>
+      <ItemsControl ItemsSource="{Binding Rows}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="0,12">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="220"/>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="180"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
+                  <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource KeyText}">
+                      <Binding Source="{x:Static loc:Loc.Instance}" Path="Version"/>
+                      <Binding Path="LabelKey"/>
+                    </MultiBinding>
+                  </TextBlock.Text>
+                </TextBlock>
+                <controls:BindingCaptureBox Grid.Column="1" Margin="0,0,12,0" Binding="{Binding Binding}" Prompt="{loc:Tr Hotkeys_Press}"
+                                             CapturedCommand="{Binding DataContext.CommitCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                             CommandParameter="{Binding Action}"/>
+                <ComboBox Grid.Column="2" MinWidth="160" IsEnabled="{Binding AllowsHold}" SelectedValuePath="Tag" SelectedValue="{Binding Binding.Mode, Mode=OneWay}"
+                          SelectionChanged="OnModeChanged" AutomationProperties.Name="{loc:Tr Hotkeys_Mode}">
+                  <ComboBoxItem Tag="{x:Static contracts:BindingMode.Toggle}" Content="{loc:Tr Hotkeys_Toggle}"/>
+                  <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToHide}" Content="{loc:Tr Hotkeys_HoldHide}"/>
+                  <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToShow}" Content="{loc:Tr Hotkeys_HoldShow}"/>
+                </ComboBox>
+                <Button Grid.Column="3" Style="{StaticResource GhostButton}" Content="{loc:Tr Hotkeys_Clear}" Margin="8,0,0,0"
+                        Command="{Binding DataContext.ClearCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                        CommandParameter="{Binding Action}" AutomationProperties.Name="{loc:Tr Hotkeys_Clear}"/>
+                <StackPanel Grid.ColumnSpan="4" Margin="0,8,0,0">
+                  <TextBlock Style="{StaticResource WarningText}" Text="{Binding Warning}" Visibility="{Binding Warning, Converter={StaticResource NullVis}}"/>
+                  <TextBlock Style="{StaticResource DangerText}" Text="{Binding Failure}" Visibility="{Binding Failure, Converter={StaticResource NullVis}}"/>
+                </StackPanel>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

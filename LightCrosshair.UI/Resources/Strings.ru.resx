@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="AppName" xml:space="preserve"><value>LightCrosshair</value></data>
+  <data name="Retry" xml:space="preserve"><value>Повторить</value></data>
+  <data name="Ok" xml:space="preserve"><value>ОК</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Отмена</value></data>
+  <data name="Save" xml:space="preserve"><value>Сохранить</value></data>
+  <data name="Discard" xml:space="preserve"><value>Не сохранять</value></data>
+  <data name="Delete" xml:space="preserve"><value>Удалить</value></data>
+  <data name="Close" xml:space="preserve"><value>Закрыть</value></data>
+  <data name="Edit" xml:space="preserve"><value>Изменить</value></data>
+  <data name="Duplicate" xml:space="preserve"><value>Дублировать</value></data>
+  <data name="Export" xml:space="preserve"><value>Экспорт</value></data>
+  <data name="Import" xml:space="preserve"><value>Импорт</value></data>
+  <data name="Copy" xml:space="preserve"><value>Копировать</value></data>
+  <data name="Paste" xml:space="preserve"><value>Вставить</value></data>
+  <data name="Apply" xml:space="preserve"><value>Применить</value></data>
+  <data name="Search" xml:space="preserve"><value>Поиск</value></data>
+  <data name="On" xml:space="preserve"><value>Вкл</value></data>
+  <data name="Off" xml:space="preserve"><value>Выкл</value></data>
+  <data name="Browse" xml:space="preserve"><value>Обзор</value></data>
+  <data name="Add" xml:space="preserve"><value>Добавить</value></data>
+  <data name="None" xml:space="preserve"><value>Нет</value></data>
+  <data name="Default" xml:space="preserve"><value>По умолчанию</value></data>
+  <data name="Nav_Studio" xml:space="preserve"><value>Студия</value></data>
+  <data name="Nav_Library" xml:space="preserve"><value>Библиотека</value></data>
+  <data name="Nav_Games" xml:space="preserve"><value>Игры</value></data>
+  <data name="Nav_Hotkeys" xml:space="preserve"><value>Клавиши</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>Настройки</value></data>
+  <data name="Nav_Visibility" xml:space="preserve"><value>Показывать прицел</value></data>
+  <data name="Status_Connected" xml:space="preserve"><value>Подключено</value></data>
+  <data name="Status_Reconnecting" xml:space="preserve"><value>Переподключение</value></data>
+  <data name="Status_Offline" xml:space="preserve"><value>Нет соединения</value></data>
+  <data name="Window_Minimize" xml:space="preserve"><value>Свернуть</value></data>
+  <data name="Window_Maximize" xml:space="preserve"><value>Развернуть</value></data>
+  <data name="Window_Restore" xml:space="preserve"><value>Восстановить</value></data>
+  <data name="Window_Close" xml:space="preserve"><value>Закрыть</value></data>
+  <data name="Error_BadRequest" xml:space="preserve"><value>Запрос не распознан.</value></data>
+  <data name="Error_NotFound" xml:space="preserve"><value>Этого элемента больше нет.</value></data>
+  <data name="Error_Validation" xml:space="preserve"><value>Некоторые значения не сохранены.</value></data>
+  <data name="Error_Unsupported" xml:space="preserve"><value>Это действие здесь недоступно.</value></data>
+  <data name="Error_ProtocolMismatch" xml:space="preserve"><value>Переустановите LightCrosshair. Версии окна настроек и фоновой программы не совпадают.</value></data>
+  <data name="Error_Internal" xml:space="preserve"><value>Что-то пошло не так. Повторите попытку.</value></data>
+  <data name="Error_Timeout" xml:space="preserve"><value>Фоновая программа не ответила вовремя.</value></data>
+  <data name="Error_Disconnected" xml:space="preserve"><value>Связь с LightCrosshair потеряна.</value></data>
+  <data name="Error_CoreMissing" xml:space="preserve"><value>LightCrosshair не запущен. Запустите его и повторите.</value></data>
+  <data name="Unsaved_Title" xml:space="preserve"><value>Несохранённые изменения</value></data>
+  <data name="Unsaved_Message" xml:space="preserve"><value>Сохранить прицел перед выходом из студии?</value></data>
+  <data name="DeleteCrosshair_Title" xml:space="preserve"><value>Удалить прицел</value></data>
+  <data name="DeleteCrosshair_Message" xml:space="preserve"><value>Удалить {0}? Это нельзя отменить.</value></data>
+  <data name="DeleteGame_Title" xml:space="preserve"><value>Удалить профиль игры</value></data>
+  <data name="DeleteGame_Message" xml:space="preserve"><value>Удалить профиль для {0}?</value></data>
+  <data name="Exit_Title" xml:space="preserve"><value>Выйти из LightCrosshair</value></data>
+  <data name="Exit_Message" xml:space="preserve"><value>Прицел и окно настроек будут закрыты.</value></data>
+  <data name="Studio_Name" xml:space="preserve"><value>Имя</value></data>
+  <data name="Studio_SaveAs" xml:space="preserve"><value>Сохранить как новый</value></data>
+  <data name="Studio_Live" xml:space="preserve"><value>Показ в игре</value></data>
+  <data name="Studio_Undo" xml:space="preserve"><value>Отменить</value></data>
+  <data name="Studio_Redo" xml:space="preserve"><value>Повторить</value></data>
+  <data name="Studio_CopyCode" xml:space="preserve"><value>Копировать код</value></data>
+  <data name="Studio_PasteCode" xml:space="preserve"><value>Вставить код</value></data>
+  <data name="Studio_Zoom1" xml:space="preserve"><value>1×</value></data>
+  <data name="Studio_Zoom2" xml:space="preserve"><value>2×</value></data>
+  <data name="Studio_Zoom4" xml:space="preserve"><value>4×</value></data>
+  <data name="Studio_Background" xml:space="preserve"><value>Фон</value></data>
+  <data name="Studio_BgDark" xml:space="preserve"><value>Тёмный</value></data>
+  <data name="Studio_BgMid" xml:space="preserve"><value>Средний</value></data>
+  <data name="Studio_BgLight" xml:space="preserve"><value>Светлый</value></data>
+  <data name="Studio_BgChecker" xml:space="preserve"><value>Клетка</value></data>
+  <data name="Studio_BgCustom" xml:space="preserve"><value>Свой цвет</value></data>
+  <data name="Studio_Layers" xml:space="preserve"><value>Слои</value></data>
+  <data name="Studio_AddLayer" xml:space="preserve"><value>Добавить слой</value></data>
+  <data name="Studio_LayerOrder" xml:space="preserve"><value>Верхний в списке рисуется поверх остальных.</value></data>
+  <data name="Studio_ShowLayer" xml:space="preserve"><value>Показать слой</value></data>
+  <data name="Studio_HideLayer" xml:space="preserve"><value>Скрыть слой</value></data>
+  <data name="Studio_DuplicateLayer" xml:space="preserve"><value>Дублировать слой</value></data>
+  <data name="Studio_DeleteLayer" xml:space="preserve"><value>Удалить слой</value></data>
+  <data name="Studio_MoveUp" xml:space="preserve"><value>Выше</value></data>
+  <data name="Studio_MoveDown" xml:space="preserve"><value>Ниже</value></data>
+  <data name="Studio_Properties" xml:space="preserve"><value>Свойства слоя</value></data>
+  <data name="Studio_Shape" xml:space="preserve"><value>Форма</value></data>
+  <data name="Studio_ColorGroup" xml:space="preserve"><value>Цвет</value></data>
+  <data name="Studio_Position" xml:space="preserve"><value>Положение</value></data>
+  <data name="Studio_OutlineGroup" xml:space="preserve"><value>Обводка</value></data>
+  <data name="Studio_Length" xml:space="preserve"><value>Длина</value></data>
+  <data name="Studio_Diameter" xml:space="preserve"><value>Диаметр</value></data>
+  <data name="Studio_Side" xml:space="preserve"><value>Сторона</value></data>
+  <data name="Studio_Thickness" xml:space="preserve"><value>Толщина</value></data>
+  <data name="Studio_Gap" xml:space="preserve"><value>Зазор</value></data>
+  <data name="Studio_Arms" xml:space="preserve"><value>Лучи</value></data>
+  <data name="Studio_ArmTop" xml:space="preserve"><value>Верх</value></data>
+  <data name="Studio_ArmRight" xml:space="preserve"><value>Право</value></data>
+  <data name="Studio_ArmBottom" xml:space="preserve"><value>Низ</value></data>
+  <data name="Studio_ArmLeft" xml:space="preserve"><value>Лево</value></data>
+  <data name="Studio_Color" xml:space="preserve"><value>Цвет</value></data>
+  <data name="Studio_Opacity" xml:space="preserve"><value>Непрозрачность</value></data>
+  <data name="Studio_OffsetX" xml:space="preserve"><value>Сдвиг X</value></data>
+  <data name="Studio_OffsetY" xml:space="preserve"><value>Сдвиг Y</value></data>
+  <data name="Studio_Rotation" xml:space="preserve"><value>Поворот</value></data>
+  <data name="Studio_Outline" xml:space="preserve"><value>Обводка</value></data>
+  <data name="Studio_OutlineThickness" xml:space="preserve"><value>Толщина обводки</value></data>
+  <data name="Studio_OutlineColor" xml:space="preserve"><value>Цвет обводки</value></data>
+  <data name="Studio_ImageScale" xml:space="preserve"><value>Масштаб изображения</value></data>
+  <data name="Studio_ImportImage" xml:space="preserve"><value>Импорт PNG</value></data>
+  <data name="Studio_AntiAlias" xml:space="preserve"><value>Сглаживать края</value></data>
+  <data name="Studio_MaxLayers" xml:space="preserve"><value>У прицела не больше 8 слоёв.</value></data>
+  <data name="Studio_NoLayer" xml:space="preserve"><value>Добавьте слой, чтобы его менять.</value></data>
+  <data name="Studio_Unsaved" xml:space="preserve"><value>Есть несохранённые изменения</value></data>
+  <data name="Studio_Hex" xml:space="preserve"><value>Цвет в HEX</value></data>
+  <data name="Kind_Arms" xml:space="preserve"><value>Лучи</value></data>
+  <data name="Kind_Dot" xml:space="preserve"><value>Точка</value></data>
+  <data name="Kind_Ring" xml:space="preserve"><value>Кольцо</value></data>
+  <data name="Kind_Box" xml:space="preserve"><value>Квадрат</value></data>
+  <data name="Kind_Image" xml:space="preserve"><value>Изображение</value></data>
+  <data name="Name_NewCrosshair" xml:space="preserve"><value>Прицел</value></data>
+  <data name="Name_Layer" xml:space="preserve"><value>Слой</value></data>
+  <data name="Unit_Px" xml:space="preserve"><value>px</value></data>
+  <data name="Unit_Deg" xml:space="preserve"><value>град</value></data>
+  <data name="Unit_Percent" xml:space="preserve"><value>%</value></data>
+  <data name="Library_Mine" xml:space="preserve"><value>Мои прицелы</value></data>
+  <data name="Library_Presets" xml:space="preserve"><value>Готовые</value></data>
+  <data name="Library_Empty" xml:space="preserve"><value>Прицелов пока нет.</value></data>
+  <data name="Library_NoMatches" xml:space="preserve"><value>Ничего не найдено.</value></data>
+  <data name="Library_Favorite" xml:space="preserve"><value>В избранное</value></data>
+  <data name="Library_Unfavorite" xml:space="preserve"><value>Убрать из избранного</value></data>
+  <data name="Library_EditCopy" xml:space="preserve"><value>Изменить копию</value></data>
+  <data name="Library_ApplyDefault" xml:space="preserve"><value>Сделать по умолчанию</value></data>
+  <data name="Library_PasteCode" xml:space="preserve"><value>Вставить код</value></data>
+  <data name="Library_ImportFile" xml:space="preserve"><value>Импорт файла</value></data>
+  <data name="Library_Actions" xml:space="preserve"><value>Действия</value></data>
+  <data name="Library_TagAll" xml:space="preserve"><value>Все</value></data>
+  <data name="Tag_dot" xml:space="preserve"><value>Точка</value></data>
+  <data name="Tag_cross" xml:space="preserve"><value>Крест</value></data>
+  <data name="Tag_t" xml:space="preserve"><value>T</value></data>
+  <data name="Tag_x" xml:space="preserve"><value>X</value></data>
+  <data name="Tag_circle" xml:space="preserve"><value>Круг</value></data>
+  <data name="Tag_box" xml:space="preserve"><value>Квадрат</value></data>
+  <data name="Tag_minimal" xml:space="preserve"><value>Минимум</value></data>
+  <data name="Tag_outlined" xml:space="preserve"><value>С обводкой</value></data>
+  <data name="Tag_highvisibility" xml:space="preserve"><value>Высокая видимость</value></data>
+  <data name="Library_Imported" xml:space="preserve"><value>Импортировано прицелов: {0}. Пропущено: {1}.</value></data>
+  <data name="Library_Search" xml:space="preserve"><value>Поиск прицелов</value></data>
+  <data name="Games_Add" xml:space="preserve"><value>Добавить игру</value></data>
+  <data name="Games_Empty" xml:space="preserve"><value>Профилей игр пока нет.</value></data>
+  <data name="Games_Enabled" xml:space="preserve"><value>Включён</value></data>
+  <data name="Games_Process" xml:space="preserve"><value>Процесс</value></data>
+  <data name="Games_Crosshair" xml:space="preserve"><value>Прицел</value></data>
+  <data name="Games_VisibilityOverride" xml:space="preserve"><value>Клавиша видимости</value></data>
+  <data name="Games_UseGlobal" xml:space="preserve"><value>Общая клавиша</value></data>
+  <data name="Games_FpsOverlay" xml:space="preserve"><value>Оверлей FPS</value></data>
+  <data name="Games_FollowGlobal" xml:space="preserve"><value>Как в общих</value></data>
+  <data name="Games_DisplayColors" xml:space="preserve"><value>Цвета экрана</value></data>
+  <data name="Games_UseColors" xml:space="preserve"><value>Настроить цвета для этой игры</value></data>
+  <data name="Games_Gamma" xml:space="preserve"><value>Гамма</value></data>
+  <data name="Games_Contrast" xml:space="preserve"><value>Контраст</value></data>
+  <data name="Games_Brightness" xml:space="preserve"><value>Яркость</value></data>
+  <data name="Games_Vibrance" xml:space="preserve"><value>Красочность</value></data>
+  <data name="Games_NvidiaVibrance" xml:space="preserve"><value>Цифровая красочность NVIDIA</value></data>
+  <data name="Games_FpsCap" xml:space="preserve"><value>Лимит FPS NVIDIA</value></data>
+  <data name="Games_NoCap" xml:space="preserve"><value>LightCrosshair не ограничивает FPS</value></data>
+  <data name="Games_Save" xml:space="preserve"><value>Сохранить профиль</value></data>
+  <data name="Games_Running" xml:space="preserve"><value>Запущенные</value></data>
+  <data name="Games_Suggest" xml:space="preserve"><value>Создать профиль для {0}?</value></data>
+  <data name="Games_Create" xml:space="preserve"><value>Создать</value></data>
+  <data name="Games_NotNow" xml:space="preserve"><value>Не сейчас</value></data>
+  <data name="Games_Never" xml:space="preserve"><value>Никогда для этой игры</value></data>
+  <data name="Games_ReasonGamma" xml:space="preserve"><value>На этом ПК нельзя менять цвета экрана.</value></data>
+  <data name="Games_ReasonNvidiaColor" xml:space="preserve"><value>Цифровая красочность NVIDIA на этом ПК недоступна.</value></data>
+  <data name="Games_ReasonNvidiaCap" xml:space="preserve"><value>Лимит FPS NVIDIA на этом ПК недоступен.</value></data>
+  <data name="Games_ReasonAmd" xml:space="preserve"><value>Управление цветом AMD на этом ПК недоступно.</value></data>
+  <data name="Games_PickProcess" xml:space="preserve"><value>Выберите запущенную программу или укажите exe.</value></data>
+  <data name="Games_NoProcesses" xml:space="preserve"><value>Оконных программ не найдено.</value></data>
+  <data name="Games_ProfileName" xml:space="preserve"><value>Имя профиля</value></data>
+  <data name="Games_CapValue" xml:space="preserve"><value>Предел</value></data>
+  <data name="Games_Delete" xml:space="preserve"><value>Удалить профиль</value></data>
+  <data name="Hotkeys_Help" xml:space="preserve"><value>Щёлкните поле и нажмите клавишу или кнопку мыши. Esc отменяет. Колёсико только переключает.</value></data>
+  <data name="Hotkeys_ToggleVisibility" xml:space="preserve"><value>Показать или скрыть прицел</value></data>
+  <data name="Hotkeys_Next" xml:space="preserve"><value>Следующий прицел</value></data>
+  <data name="Hotkeys_Previous" xml:space="preserve"><value>Предыдущий прицел</value></data>
+  <data name="Hotkeys_OpenSettings" xml:space="preserve"><value>Открыть или закрыть настройки</value></data>
+  <data name="Hotkeys_Press" xml:space="preserve"><value>Нажмите клавишу или кнопку мыши</value></data>
+  <data name="Hotkeys_Mode" xml:space="preserve"><value>Режим</value></data>
+  <data name="Hotkeys_Toggle" xml:space="preserve"><value>Переключение</value></data>
+  <data name="Hotkeys_HoldHide" xml:space="preserve"><value>Удерживать, чтобы скрыть</value></data>
+  <data name="Hotkeys_HoldShow" xml:space="preserve"><value>Удерживать, чтобы показать</value></data>
+  <data name="Hotkeys_Unbound" xml:space="preserve"><value>Не задано</value></data>
+  <data name="Hotkeys_Conflict" xml:space="preserve"><value>Конфликт с: {0}.</value></data>
+  <data name="Hotkeys_Reserved" xml:space="preserve"><value>Это сочетание занято Windows или другим приложением.</value></data>
+  <data name="Hotkeys_WheelOnly" xml:space="preserve"><value>Колёсико поддерживает только переключение.</value></data>
+  <data name="Hotkeys_RegisterFailed" xml:space="preserve"><value>Не удалось зарегистрировать сочетание.</value></data>
+  <data name="Hotkeys_Clear" xml:space="preserve"><value>Очистить</value></data>
+  <data name="Key_MiddleClick" xml:space="preserve"><value>Средняя кнопка</value></data>
+  <data name="Key_RightClick" xml:space="preserve"><value>Правая кнопка</value></data>
+  <data name="Key_Mouse4" xml:space="preserve"><value>Кнопка 4</value></data>
+  <data name="Key_Mouse5" xml:space="preserve"><value>Кнопка 5</value></data>
+  <data name="Key_WheelUp" xml:space="preserve"><value>Колёсико вверх</value></data>
+  <data name="Key_WheelDown" xml:space="preserve"><value>Колёсико вниз</value></data>
+  <data name="Key_Ctrl" xml:space="preserve"><value>Ctrl</value></data>
+  <data name="Key_Alt" xml:space="preserve"><value>Alt</value></data>
+  <data name="Key_Shift" xml:space="preserve"><value>Shift</value></data>
+  <data name="Key_Win" xml:space="preserve"><value>Win</value></data>
+  <data name="Settings_Display" xml:space="preserve"><value>Экран</value></data>
+  <data name="Settings_Monitor" xml:space="preserve"><value>Монитор</value></data>
+  <data name="Settings_Primary" xml:space="preserve"><value>Основной монитор</value></data>
+  <data name="Settings_Position" xml:space="preserve"><value>Положение</value></data>
+  <data name="Settings_OffsetX" xml:space="preserve"><value>Сдвиг по горизонтали</value></data>
+  <data name="Settings_OffsetY" xml:space="preserve"><value>Сдвиг по вертикали</value></data>
+  <data name="Settings_Behavior" xml:space="preserve"><value>Поведение</value></data>
+  <data name="Settings_OnlyGames" xml:space="preserve"><value>Показывать только в выбранных играх</value></data>
+  <data name="Settings_HideRecording" xml:space="preserve"><value>Скрывать при записи экрана</value></data>
+  <data name="Settings_StartWindows" xml:space="preserve"><value>Запускать с Windows</value></data>
+  <data name="Settings_Suggestions" xml:space="preserve"><value>Предлагать профили известных игр</value></data>
+  <data name="Settings_Fps" xml:space="preserve"><value>Оверлей FPS</value></data>
+  <data name="Settings_FpsOn" xml:space="preserve"><value>Показывать оверлей FPS</value></data>
+  <data name="Settings_FpsMonitor" xml:space="preserve"><value>Монитор оверлея</value></data>
+  <data name="Settings_SameMonitor" xml:space="preserve"><value>Как у прицела</value></data>
+  <data name="Settings_Scale" xml:space="preserve"><value>Масштаб</value></data>
+  <data name="Settings_Frametime" xml:space="preserve"><value>Показывать время кадра</value></data>
+  <data name="Settings_Low" xml:space="preserve"><value>Показывать 1% low</value></data>
+  <data name="Settings_TextColor" xml:space="preserve"><value>Цвет текста</value></data>
+  <data name="Settings_BackgroundColor" xml:space="preserve"><value>Цвет фона</value></data>
+  <data name="Settings_BackgroundOpacity" xml:space="preserve"><value>Непрозрачность фона</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>Язык</value></data>
+  <data name="Settings_LangAuto" xml:space="preserve"><value>Как в Windows</value></data>
+  <data name="Settings_LangEn" xml:space="preserve"><value>Английский</value></data>
+  <data name="Settings_LangIt" xml:space="preserve"><value>Итальянский</value></data>
+  <data name="Settings_LangEs" xml:space="preserve"><value>Испанский</value></data>
+  <data name="Settings_LangZh" xml:space="preserve"><value>Китайский (упрощённый)</value></data>
+  <data name="Settings_LangRu" xml:space="preserve"><value>Русский</value></data>
+  <data name="Settings_LangJa" xml:space="preserve"><value>Японский</value></data>
+  <data name="Settings_Updates" xml:space="preserve"><value>Обновления</value></data>
+  <data name="Settings_CheckAuto" xml:space="preserve"><value>Проверять обновления</value></data>
+  <data name="Settings_CheckNow" xml:space="preserve"><value>Проверить сейчас</value></data>
+  <data name="Settings_Checking" xml:space="preserve"><value>Проверка обновлений</value></data>
+  <data name="Settings_UpToDate" xml:space="preserve"><value>Установлена последняя версия ({0}).</value></data>
+  <data name="Settings_UpdateAvailable" xml:space="preserve"><value>Доступна новая версия: {0}.</value></data>
+  <data name="Settings_LocalNewer" xml:space="preserve"><value>Эта сборка ({0}) новее последнего выпуска ({1}).</value></data>
+  <data name="Settings_CheckFailed" xml:space="preserve"><value>Не удалось проверить обновления. Попробуйте позже.</value></data>
+  <data name="Settings_CompareFailed" xml:space="preserve"><value>Не удалось сравнить последний выпуск ({0}) с этой сборкой ({1}).</value></data>
+  <data name="Settings_About" xml:space="preserve"><value>О программе</value></data>
+  <data name="Settings_Version" xml:space="preserve"><value>Версия {0}</value></data>
+  <data name="Settings_Website" xml:space="preserve"><value>Сайт</value></data>
+  <data name="Settings_Source" xml:space="preserve"><value>Исходный код</value></data>
+  <data name="Settings_License" xml:space="preserve"><value>Лицензия</value></data>
+  <data name="Settings_LicenseText" xml:space="preserve"><value>Лицензия MIT. Copyright 2024 LightCrosshair.</value></data>
+  <data name="Settings_Exit" xml:space="preserve"><value>Выйти из LightCrosshair</value></data>
+  <data name="Settings_OpenReleases" xml:space="preserve"><value>Открыть выпуски</value></data>
+  <data name="File_Png" xml:space="preserve"><value>Изображение PNG|*.png</value></data>
+  <data name="File_Exe" xml:space="preserve"><value>Программа|*.exe</value></data>
+  <data name="File_Export" xml:space="preserve"><value>Прицелы LightCrosshair|*.lcx.json</value></data>
+  <data name="Toast_Copied" xml:space="preserve"><value>Код скопирован.</value></data>
+  <data name="Toast_Saved" xml:space="preserve"><value>Сохранено.</value></data>
+  <data name="Toast_NoClipboard" xml:space="preserve"><value>Буфер обмена пуст.</value></data>
+  <data name="Boot_Connecting" xml:space="preserve"><value>Подключение к LightCrosshair</value></data>
+  <data name="Color_Presets" xml:space="preserve"><value>Готовые цвета</value></data>
+  <data name="Common_More" xml:space="preserve"><value>Ещё</value></data>
+</root>

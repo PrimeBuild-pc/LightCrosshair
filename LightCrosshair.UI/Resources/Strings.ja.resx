@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="AppName" xml:space="preserve"><value>LightCrosshair</value></data>
+  <data name="Retry" xml:space="preserve"><value>再試行</value></data>
+  <data name="Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="Cancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="Save" xml:space="preserve"><value>保存</value></data>
+  <data name="Discard" xml:space="preserve"><value>破棄</value></data>
+  <data name="Delete" xml:space="preserve"><value>削除</value></data>
+  <data name="Close" xml:space="preserve"><value>閉じる</value></data>
+  <data name="Edit" xml:space="preserve"><value>編集</value></data>
+  <data name="Duplicate" xml:space="preserve"><value>複製</value></data>
+  <data name="Export" xml:space="preserve"><value>書き出し</value></data>
+  <data name="Import" xml:space="preserve"><value>読み込み</value></data>
+  <data name="Copy" xml:space="preserve"><value>コピー</value></data>
+  <data name="Paste" xml:space="preserve"><value>貼り付け</value></data>
+  <data name="Apply" xml:space="preserve"><value>適用</value></data>
+  <data name="Search" xml:space="preserve"><value>検索</value></data>
+  <data name="On" xml:space="preserve"><value>オン</value></data>
+  <data name="Off" xml:space="preserve"><value>オフ</value></data>
+  <data name="Browse" xml:space="preserve"><value>参照</value></data>
+  <data name="Add" xml:space="preserve"><value>追加</value></data>
+  <data name="None" xml:space="preserve"><value>なし</value></data>
+  <data name="Default" xml:space="preserve"><value>既定</value></data>
+  <data name="Nav_Studio" xml:space="preserve"><value>スタジオ</value></data>
+  <data name="Nav_Library" xml:space="preserve"><value>ライブラリ</value></data>
+  <data name="Nav_Games" xml:space="preserve"><value>ゲーム</value></data>
+  <data name="Nav_Hotkeys" xml:space="preserve"><value>ホットキー</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>設定</value></data>
+  <data name="Nav_Visibility" xml:space="preserve"><value>クロスヘアを表示</value></data>
+  <data name="Status_Connected" xml:space="preserve"><value>接続済み</value></data>
+  <data name="Status_Reconnecting" xml:space="preserve"><value>再接続中</value></data>
+  <data name="Status_Offline" xml:space="preserve"><value>未接続</value></data>
+  <data name="Window_Minimize" xml:space="preserve"><value>最小化</value></data>
+  <data name="Window_Maximize" xml:space="preserve"><value>最大化</value></data>
+  <data name="Window_Restore" xml:space="preserve"><value>元に戻す</value></data>
+  <data name="Window_Close" xml:space="preserve"><value>閉じる</value></data>
+  <data name="Error_BadRequest" xml:space="preserve"><value>リクエストを解釈できませんでした。</value></data>
+  <data name="Error_NotFound" xml:space="preserve"><value>その項目はもうありません。</value></data>
+  <data name="Error_Validation" xml:space="preserve"><value>一部の値を保存できませんでした。</value></data>
+  <data name="Error_Unsupported" xml:space="preserve"><value>この操作はここでは使えません。</value></data>
+  <data name="Error_ProtocolMismatch" xml:space="preserve"><value>LightCrosshair を再インストールしてください。設定アプリと常駐アプリのバージョンが違います。</value></data>
+  <data name="Error_Internal" xml:space="preserve"><value>問題が起きました。もう一度試してください。</value></data>
+  <data name="Error_Timeout" xml:space="preserve"><value>常駐アプリが時間内に応答しませんでした。</value></data>
+  <data name="Error_Disconnected" xml:space="preserve"><value>LightCrosshair との接続が切れました。</value></data>
+  <data name="Error_CoreMissing" xml:space="preserve"><value>LightCrosshair が起動していません。起動してから再試行してください。</value></data>
+  <data name="Unsaved_Title" xml:space="preserve"><value>未保存の変更</value></data>
+  <data name="Unsaved_Message" xml:space="preserve"><value>スタジオを離れる前にクロスヘアを保存しますか？</value></data>
+  <data name="DeleteCrosshair_Title" xml:space="preserve"><value>クロスヘアを削除</value></data>
+  <data name="DeleteCrosshair_Message" xml:space="preserve"><value>{0} を削除しますか？元に戻せません。</value></data>
+  <data name="DeleteGame_Title" xml:space="preserve"><value>ゲームプロファイルを削除</value></data>
+  <data name="DeleteGame_Message" xml:space="preserve"><value>{0} のプロファイルを削除しますか？</value></data>
+  <data name="Exit_Title" xml:space="preserve"><value>LightCrosshair を終了</value></data>
+  <data name="Exit_Message" xml:space="preserve"><value>クロスヘアと設定ウィンドウを閉じます。</value></data>
+  <data name="Studio_Name" xml:space="preserve"><value>名前</value></data>
+  <data name="Studio_SaveAs" xml:space="preserve"><value>新規として保存</value></data>
+  <data name="Studio_Live" xml:space="preserve"><value>ゲームに反映</value></data>
+  <data name="Studio_Undo" xml:space="preserve"><value>元に戻す</value></data>
+  <data name="Studio_Redo" xml:space="preserve"><value>やり直す</value></data>
+  <data name="Studio_CopyCode" xml:space="preserve"><value>共有コードをコピー</value></data>
+  <data name="Studio_PasteCode" xml:space="preserve"><value>共有コードを貼り付け</value></data>
+  <data name="Studio_Zoom1" xml:space="preserve"><value>1×</value></data>
+  <data name="Studio_Zoom2" xml:space="preserve"><value>2×</value></data>
+  <data name="Studio_Zoom4" xml:space="preserve"><value>4×</value></data>
+  <data name="Studio_Background" xml:space="preserve"><value>背景</value></data>
+  <data name="Studio_BgDark" xml:space="preserve"><value>暗</value></data>
+  <data name="Studio_BgMid" xml:space="preserve"><value>中間</value></data>
+  <data name="Studio_BgLight" xml:space="preserve"><value>明</value></data>
+  <data name="Studio_BgChecker" xml:space="preserve"><value>チェック</value></data>
+  <data name="Studio_BgCustom" xml:space="preserve"><value>カスタム</value></data>
+  <data name="Studio_Layers" xml:space="preserve"><value>レイヤー</value></data>
+  <data name="Studio_AddLayer" xml:space="preserve"><value>レイヤーを追加</value></data>
+  <data name="Studio_LayerOrder" xml:space="preserve"><value>一覧の上が最前面に描画されます。</value></data>
+  <data name="Studio_ShowLayer" xml:space="preserve"><value>レイヤーを表示</value></data>
+  <data name="Studio_HideLayer" xml:space="preserve"><value>レイヤーを隠す</value></data>
+  <data name="Studio_DuplicateLayer" xml:space="preserve"><value>レイヤーを複製</value></data>
+  <data name="Studio_DeleteLayer" xml:space="preserve"><value>レイヤーを削除</value></data>
+  <data name="Studio_MoveUp" xml:space="preserve"><value>上へ</value></data>
+  <data name="Studio_MoveDown" xml:space="preserve"><value>下へ</value></data>
+  <data name="Studio_Properties" xml:space="preserve"><value>レイヤーのプロパティ</value></data>
+  <data name="Studio_Shape" xml:space="preserve"><value>形状</value></data>
+  <data name="Studio_ColorGroup" xml:space="preserve"><value>色</value></data>
+  <data name="Studio_Position" xml:space="preserve"><value>位置</value></data>
+  <data name="Studio_OutlineGroup" xml:space="preserve"><value>アウトライン</value></data>
+  <data name="Studio_Length" xml:space="preserve"><value>長さ</value></data>
+  <data name="Studio_Diameter" xml:space="preserve"><value>直径</value></data>
+  <data name="Studio_Side" xml:space="preserve"><value>辺</value></data>
+  <data name="Studio_Thickness" xml:space="preserve"><value>太さ</value></data>
+  <data name="Studio_Gap" xml:space="preserve"><value>間隔</value></data>
+  <data name="Studio_Arms" xml:space="preserve"><value>アーム</value></data>
+  <data name="Studio_ArmTop" xml:space="preserve"><value>上</value></data>
+  <data name="Studio_ArmRight" xml:space="preserve"><value>右</value></data>
+  <data name="Studio_ArmBottom" xml:space="preserve"><value>下</value></data>
+  <data name="Studio_ArmLeft" xml:space="preserve"><value>左</value></data>
+  <data name="Studio_Color" xml:space="preserve"><value>色</value></data>
+  <data name="Studio_Opacity" xml:space="preserve"><value>不透明度</value></data>
+  <data name="Studio_OffsetX" xml:space="preserve"><value>オフセット X</value></data>
+  <data name="Studio_OffsetY" xml:space="preserve"><value>オフセット Y</value></data>
+  <data name="Studio_Rotation" xml:space="preserve"><value>回転</value></data>
+  <data name="Studio_Outline" xml:space="preserve"><value>アウトライン</value></data>
+  <data name="Studio_OutlineThickness" xml:space="preserve"><value>アウトラインの太さ</value></data>
+  <data name="Studio_OutlineColor" xml:space="preserve"><value>アウトラインの色</value></data>
+  <data name="Studio_ImageScale" xml:space="preserve"><value>画像の倍率</value></data>
+  <data name="Studio_ImportImage" xml:space="preserve"><value>PNG を読み込む</value></data>
+  <data name="Studio_AntiAlias" xml:space="preserve"><value>エッジを滑らかに</value></data>
+  <data name="Studio_MaxLayers" xml:space="preserve"><value>クロスヘアは最大 8 レイヤーです。</value></data>
+  <data name="Studio_NoLayer" xml:space="preserve"><value>編集するにはレイヤーを追加してください。</value></data>
+  <data name="Studio_Unsaved" xml:space="preserve"><value>未保存の変更</value></data>
+  <data name="Studio_Hex" xml:space="preserve"><value>16進カラー</value></data>
+  <data name="Kind_Arms" xml:space="preserve"><value>アーム</value></data>
+  <data name="Kind_Dot" xml:space="preserve"><value>ドット</value></data>
+  <data name="Kind_Ring" xml:space="preserve"><value>リング</value></data>
+  <data name="Kind_Box" xml:space="preserve"><value>ボックス</value></data>
+  <data name="Kind_Image" xml:space="preserve"><value>画像</value></data>
+  <data name="Name_NewCrosshair" xml:space="preserve"><value>クロスヘア</value></data>
+  <data name="Name_Layer" xml:space="preserve"><value>レイヤー</value></data>
+  <data name="Unit_Px" xml:space="preserve"><value>px</value></data>
+  <data name="Unit_Deg" xml:space="preserve"><value>度</value></data>
+  <data name="Unit_Percent" xml:space="preserve"><value>%</value></data>
+  <data name="Library_Mine" xml:space="preserve"><value>マイ クロスヘア</value></data>
+  <data name="Library_Presets" xml:space="preserve"><value>プリセット</value></data>
+  <data name="Library_Empty" xml:space="preserve"><value>クロスヘアはまだありません。</value></data>
+  <data name="Library_NoMatches" xml:space="preserve"><value>一致するものがありません。</value></data>
+  <data name="Library_Favorite" xml:space="preserve"><value>お気に入りに追加</value></data>
+  <data name="Library_Unfavorite" xml:space="preserve"><value>お気に入りから外す</value></data>
+  <data name="Library_EditCopy" xml:space="preserve"><value>コピーを編集</value></data>
+  <data name="Library_ApplyDefault" xml:space="preserve"><value>既定にする</value></data>
+  <data name="Library_PasteCode" xml:space="preserve"><value>共有コードを貼り付け</value></data>
+  <data name="Library_ImportFile" xml:space="preserve"><value>ファイルを読み込む</value></data>
+  <data name="Library_Actions" xml:space="preserve"><value>操作</value></data>
+  <data name="Library_TagAll" xml:space="preserve"><value>すべて</value></data>
+  <data name="Tag_dot" xml:space="preserve"><value>ドット</value></data>
+  <data name="Tag_cross" xml:space="preserve"><value>クロス</value></data>
+  <data name="Tag_t" xml:space="preserve"><value>T</value></data>
+  <data name="Tag_x" xml:space="preserve"><value>X</value></data>
+  <data name="Tag_circle" xml:space="preserve"><value>円</value></data>
+  <data name="Tag_box" xml:space="preserve"><value>ボックス</value></data>
+  <data name="Tag_minimal" xml:space="preserve"><value>ミニマル</value></data>
+  <data name="Tag_outlined" xml:space="preserve"><value>アウトライン</value></data>
+  <data name="Tag_highvisibility" xml:space="preserve"><value>視認性重視</value></data>
+  <data name="Library_Imported" xml:space="preserve"><value>{0} 件読み込み、{1} 件はスキップしました。</value></data>
+  <data name="Library_Search" xml:space="preserve"><value>クロスヘアを検索</value></data>
+  <data name="Games_Add" xml:space="preserve"><value>ゲームを追加</value></data>
+  <data name="Games_Empty" xml:space="preserve"><value>ゲームプロファイルはまだありません。</value></data>
+  <data name="Games_Enabled" xml:space="preserve"><value>有効</value></data>
+  <data name="Games_Process" xml:space="preserve"><value>プロセス</value></data>
+  <data name="Games_Crosshair" xml:space="preserve"><value>クロスヘア</value></data>
+  <data name="Games_VisibilityOverride" xml:space="preserve"><value>表示のショートカット</value></data>
+  <data name="Games_UseGlobal" xml:space="preserve"><value>全体のショートカットを使う</value></data>
+  <data name="Games_FpsOverlay" xml:space="preserve"><value>FPS 表示</value></data>
+  <data name="Games_FollowGlobal" xml:space="preserve"><value>全体に従う</value></data>
+  <data name="Games_DisplayColors" xml:space="preserve"><value>画面の色</value></data>
+  <data name="Games_UseColors" xml:space="preserve"><value>このゲームの色を調整</value></data>
+  <data name="Games_Gamma" xml:space="preserve"><value>ガンマ</value></data>
+  <data name="Games_Contrast" xml:space="preserve"><value>コントラスト</value></data>
+  <data name="Games_Brightness" xml:space="preserve"><value>明るさ</value></data>
+  <data name="Games_Vibrance" xml:space="preserve"><value>自然な彩度</value></data>
+  <data name="Games_NvidiaVibrance" xml:space="preserve"><value>NVIDIA デジタルバイブランス</value></data>
+  <data name="Games_FpsCap" xml:space="preserve"><value>NVIDIA の FPS 上限</value></data>
+  <data name="Games_NoCap" xml:space="preserve"><value>LightCrosshair では制限しない</value></data>
+  <data name="Games_Save" xml:space="preserve"><value>プロファイルを保存</value></data>
+  <data name="Games_Running" xml:space="preserve"><value>実行中</value></data>
+  <data name="Games_Suggest" xml:space="preserve"><value>{0} のプロファイルを作成しますか？</value></data>
+  <data name="Games_Create" xml:space="preserve"><value>作成</value></data>
+  <data name="Games_NotNow" xml:space="preserve"><value>今はしない</value></data>
+  <data name="Games_Never" xml:space="preserve"><value>このゲームでは今後表示しない</value></data>
+  <data name="Games_ReasonGamma" xml:space="preserve"><value>この PC では画面の色を調整できません。</value></data>
+  <data name="Games_ReasonNvidiaColor" xml:space="preserve"><value>この PC では NVIDIA デジタルバイブランスを使えません。</value></data>
+  <data name="Games_ReasonNvidiaCap" xml:space="preserve"><value>この PC では NVIDIA の FPS 上限を使えません。</value></data>
+  <data name="Games_ReasonAmd" xml:space="preserve"><value>この PC では AMD の色調整を使えません。</value></data>
+  <data name="Games_PickProcess" xml:space="preserve"><value>実行中のプログラムを選ぶか、exe を参照してください。</value></data>
+  <data name="Games_NoProcesses" xml:space="preserve"><value>ウィンドウのあるプログラムが見つかりません。</value></data>
+  <data name="Games_ProfileName" xml:space="preserve"><value>プロファイル名</value></data>
+  <data name="Games_CapValue" xml:space="preserve"><value>上限</value></data>
+  <data name="Games_Delete" xml:space="preserve"><value>プロファイルを削除</value></data>
+  <data name="Hotkeys_Help" xml:space="preserve"><value>ショートカットをクリックし、キーかマウスボタンを押します。Esc で取消。ホイールは切り替えのみです。</value></data>
+  <data name="Hotkeys_ToggleVisibility" xml:space="preserve"><value>クロスヘアの表示切り替え</value></data>
+  <data name="Hotkeys_Next" xml:space="preserve"><value>次のクロスヘア</value></data>
+  <data name="Hotkeys_Previous" xml:space="preserve"><value>前のクロスヘア</value></data>
+  <data name="Hotkeys_OpenSettings" xml:space="preserve"><value>設定を開く／閉じる</value></data>
+  <data name="Hotkeys_Press" xml:space="preserve"><value>キーかマウスボタンを押してください</value></data>
+  <data name="Hotkeys_Mode" xml:space="preserve"><value>モード</value></data>
+  <data name="Hotkeys_Toggle" xml:space="preserve"><value>切り替え</value></data>
+  <data name="Hotkeys_HoldHide" xml:space="preserve"><value>押している間は隠す</value></data>
+  <data name="Hotkeys_HoldShow" xml:space="preserve"><value>押している間は表示</value></data>
+  <data name="Hotkeys_Unbound" xml:space="preserve"><value>未設定</value></data>
+  <data name="Hotkeys_Conflict" xml:space="preserve"><value>{0} と競合しています。</value></data>
+  <data name="Hotkeys_Reserved" xml:space="preserve"><value>このショートカットは Windows か他のアプリが使用中です。</value></data>
+  <data name="Hotkeys_WheelOnly" xml:space="preserve"><value>ホイールは切り替えのみ対応です。</value></data>
+  <data name="Hotkeys_RegisterFailed" xml:space="preserve"><value>このショートカットを登録できませんでした。</value></data>
+  <data name="Hotkeys_Clear" xml:space="preserve"><value>ショートカットを解除</value></data>
+  <data name="Key_MiddleClick" xml:space="preserve"><value>中クリック</value></data>
+  <data name="Key_RightClick" xml:space="preserve"><value>右クリック</value></data>
+  <data name="Key_Mouse4" xml:space="preserve"><value>マウス 4</value></data>
+  <data name="Key_Mouse5" xml:space="preserve"><value>マウス 5</value></data>
+  <data name="Key_WheelUp" xml:space="preserve"><value>ホイール上</value></data>
+  <data name="Key_WheelDown" xml:space="preserve"><value>ホイール下</value></data>
+  <data name="Key_Ctrl" xml:space="preserve"><value>Ctrl</value></data>
+  <data name="Key_Alt" xml:space="preserve"><value>Alt</value></data>
+  <data name="Key_Shift" xml:space="preserve"><value>Shift</value></data>
+  <data name="Key_Win" xml:space="preserve"><value>Win</value></data>
+  <data name="Settings_Display" xml:space="preserve"><value>ディスプレイ</value></data>
+  <data name="Settings_Monitor" xml:space="preserve"><value>モニター</value></data>
+  <data name="Settings_Primary" xml:space="preserve"><value>メインモニター</value></data>
+  <data name="Settings_Position" xml:space="preserve"><value>位置</value></data>
+  <data name="Settings_OffsetX" xml:space="preserve"><value>横方向のオフセット</value></data>
+  <data name="Settings_OffsetY" xml:space="preserve"><value>縦方向のオフセット</value></data>
+  <data name="Settings_Behavior" xml:space="preserve"><value>動作</value></data>
+  <data name="Settings_OnlyGames" xml:space="preserve"><value>設定したゲームでのみ表示</value></data>
+  <data name="Settings_HideRecording" xml:space="preserve"><value>画面録画中は隠す</value></data>
+  <data name="Settings_StartWindows" xml:space="preserve"><value>Windows と一緒に起動</value></data>
+  <data name="Settings_Suggestions" xml:space="preserve"><value>既知のゲームにプロファイルを提案</value></data>
+  <data name="Settings_Fps" xml:space="preserve"><value>FPS 表示</value></data>
+  <data name="Settings_FpsOn" xml:space="preserve"><value>FPS を表示</value></data>
+  <data name="Settings_FpsMonitor" xml:space="preserve"><value>表示するモニター</value></data>
+  <data name="Settings_SameMonitor" xml:space="preserve"><value>クロスヘアと同じ</value></data>
+  <data name="Settings_Scale" xml:space="preserve"><value>倍率</value></data>
+  <data name="Settings_Frametime" xml:space="preserve"><value>フレームタイムを表示</value></data>
+  <data name="Settings_Low" xml:space="preserve"><value>1% low を表示</value></data>
+  <data name="Settings_TextColor" xml:space="preserve"><value>文字色</value></data>
+  <data name="Settings_BackgroundColor" xml:space="preserve"><value>背景色</value></data>
+  <data name="Settings_BackgroundOpacity" xml:space="preserve"><value>背景の不透明度</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>言語</value></data>
+  <data name="Settings_LangAuto" xml:space="preserve"><value>Windows に合わせる</value></data>
+  <data name="Settings_LangEn" xml:space="preserve"><value>英語</value></data>
+  <data name="Settings_LangIt" xml:space="preserve"><value>イタリア語</value></data>
+  <data name="Settings_LangEs" xml:space="preserve"><value>スペイン語</value></data>
+  <data name="Settings_LangZh" xml:space="preserve"><value>中国語（簡体）</value></data>
+  <data name="Settings_LangRu" xml:space="preserve"><value>ロシア語</value></data>
+  <data name="Settings_LangJa" xml:space="preserve"><value>日本語</value></data>
+  <data name="Settings_Updates" xml:space="preserve"><value>更新</value></data>
+  <data name="Settings_CheckAuto" xml:space="preserve"><value>更新を確認</value></data>
+  <data name="Settings_CheckNow" xml:space="preserve"><value>今すぐ確認</value></data>
+  <data name="Settings_Checking" xml:space="preserve"><value>更新を確認しています</value></data>
+  <data name="Settings_UpToDate" xml:space="preserve"><value>最新バージョンです（{0}）。</value></data>
+  <data name="Settings_UpdateAvailable" xml:space="preserve"><value>新しいバージョンがあります: {0}。</value></data>
+  <data name="Settings_LocalNewer" xml:space="preserve"><value>このビルド（{0}）は最新リリース（{1}）より新しいです。</value></data>
+  <data name="Settings_CheckFailed" xml:space="preserve"><value>更新を確認できませんでした。後でもう一度試してください。</value></data>
+  <data name="Settings_CompareFailed" xml:space="preserve"><value>最新リリース（{0}）とこのビルド（{1}）を比較できませんでした。</value></data>
+  <data name="Settings_About" xml:space="preserve"><value>情報</value></data>
+  <data name="Settings_Version" xml:space="preserve"><value>バージョン {0}</value></data>
+  <data name="Settings_Website" xml:space="preserve"><value>Web サイト</value></data>
+  <data name="Settings_Source" xml:space="preserve"><value>ソースコード</value></data>
+  <data name="Settings_License" xml:space="preserve"><value>ライセンス</value></data>
+  <data name="Settings_LicenseText" xml:space="preserve"><value>MIT License。Copyright 2024 LightCrosshair。</value></data>
+  <data name="Settings_Exit" xml:space="preserve"><value>LightCrosshair を終了</value></data>
+  <data name="Settings_OpenReleases" xml:space="preserve"><value>リリースを開く</value></data>
+  <data name="File_Png" xml:space="preserve"><value>PNG 画像|*.png</value></data>
+  <data name="File_Exe" xml:space="preserve"><value>プログラム|*.exe</value></data>
+  <data name="File_Export" xml:space="preserve"><value>LightCrosshair クロスヘア|*.lcx.json</value></data>
+  <data name="Toast_Copied" xml:space="preserve"><value>共有コードをコピーしました。</value></data>
+  <data name="Toast_Saved" xml:space="preserve"><value>保存しました。</value></data>
+  <data name="Toast_NoClipboard" xml:space="preserve"><value>クリップボードは空です。</value></data>
+  <data name="Boot_Connecting" xml:space="preserve"><value>LightCrosshair に接続しています</value></data>
+  <data name="Color_Presets" xml:space="preserve"><value>プリセットカラー</value></data>
+  <data name="Common_More" xml:space="preserve"><value>その他</value></data>
+</root>
