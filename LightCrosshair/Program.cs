@@ -12,6 +12,17 @@ internal static class Program
     internal static string DataRoot => ScopedDataRoot.Value ?? Environment.GetEnvironmentVariable("LIGHTCROSSHAIR_DATA_ROOT") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "LightCrosshair", "v2");
     // Opt-in test isolation for concurrent worktrees. Normal launches keep the exact contract names.
     private static readonly string TestSuffix = TestInstanceSuffix();
+    internal static bool PerfProbesEnabled
+    {
+        get
+        {
+#if DEBUG
+            return true;
+#else
+            return TestSuffix.Length != 0;
+#endif
+        }
+    }
     internal static string PipeName => ContractInfo.PipeName(Process.GetCurrentProcess().SessionId) + TestSuffix;
     private static string TestInstanceSuffix()
     {
