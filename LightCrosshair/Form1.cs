@@ -21,7 +21,7 @@ internal sealed partial class Form1 : LayeredWindow
         var menu = new ContextMenuStrip();
         menu.Items.Add("Show/Hide crosshair", null, async (_, _) =>
         {
-            try { Document.Settings.CrosshairVisible = !Document.Settings.CrosshairVisible; RefreshContext(); await Store.SaveAsync(Document); }
+            try { await ToggleVisibilityAsync(); }
             catch (Exception ex) { Program.LogError(ex, "Toggle visibility"); }
         });
         menu.Items.Add("Open LightCrosshair", null, (_, _) => OpenSettings());
@@ -42,6 +42,7 @@ internal sealed partial class Form1 : LayeredWindow
             if (IsDisposed) return;
             _ready = true; Runtime.ActiveCrosshairId = Document.Settings.DefaultCrosshairId;
             InitializeRuntime();
+            InitializePipe();
             if (Store.Recovered) _tray.ShowBalloonTip(3000, "LightCrosshair", "Your library was recovered from a backup.", ToolTipIcon.Info);
         }
         catch (Exception ex) { Program.LogError(ex, "Load store"); Close(); }
@@ -72,6 +73,7 @@ internal sealed partial class Form1 : LayeredWindow
     }
     private void OpenSettings(NavigateRequest? navigate = null)
     {
+        if (_pipe?.IsConnected == true) { _pipe.Publish(IpcEvents.FocusRequested, navigate); return; }
         string path = Path.Combine(AppContext.BaseDirectory, ContractInfo.UiExeName);
         try
         {
@@ -94,6 +96,7 @@ internal sealed partial class Form1 : LayeredWindow
         if (disposing)
         {
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemDisplayChanged;
+            _previewTimeout?.Cancel(); _previewTimeout?.Dispose(); _pipe?.Dispose();
             _foreground?.Dispose(); _fps.Dispose();
             _tray.Visible = false; _tray.ContextMenuStrip?.Dispose(); _tray.Icon?.Dispose(); _tray.Dispose();
         }

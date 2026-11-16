@@ -81,6 +81,7 @@ internal sealed partial class Form1
         e.Cancel = true; base.OnFormClosing(e);
         if (_closing) return;
         _closing = true; _foreground?.Dispose(); _foreground = null;
+        _pipe?.Publish(IpcEvents.CloseRequested, null);
         _fps.Configure(false, 0, Document.Settings.FpsOverlay, null);
         try { await Store.SaveAsync(Document); }
         catch (Exception ex) { Program.LogError(ex, "Shutdown store"); }

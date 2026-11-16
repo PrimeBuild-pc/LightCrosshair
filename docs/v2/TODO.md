@@ -39,9 +39,9 @@ Check items off in your own branch as you finish them. Scope and rules: [PLAN.md
 - [x] Known-games list (~50) + suggestion + tray notification → UI `--page games --suggest`
 - [x] Tests: rule table for foreground transitions (pure logic)
 ### C5 IPC and lifecycle
-- [ ] Single-instance Core; pipe server per CONTRACT.md §2; all `IpcMethods`; events
-- [ ] Start/focus/close UI; UI-absent behavior (tray menu: Show/Hide crosshair, Open LightCrosshair, Exit)
-- [ ] Tests: envelope round-trip, handshake mismatch, pipelined requests, disconnect ends preview
+- [x] Single-instance Core; pipe server per CONTRACT.md §2; all `IpcMethods`; events
+- [x] Start/focus/close UI; UI-absent behavior (tray menu: Show/Hide crosshair, Open LightCrosshair, Exit)
+- [x] Tests: envelope round-trip, handshake mismatch, pipelined requests, disconnect ends preview
 ### C6 Hotkeys
 - [ ] Global hotkeys + input-hook bindings from `AppSettings.Hotkeys` and game overrides; v1.9 semantics preserved
 - [ ] Registration failures reported in `RuntimeState.HotkeyErrors` (never silent)

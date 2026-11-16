@@ -1,0 +1,145 @@
+using System.IO.Pipes;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Channels;
+using LightCrosshair.Contracts;
+
+namespace LightCrosshair.Core;
+
+internal sealed class BoundedLineReader(Stream stream)
+{
+    internal const int MaxLineBytes = 8 * 1024 * 1024;
+    private readonly byte[] _buffer = new byte[16384];
+    private int _offset, _count;
+    public async Task<string?> ReadAsync(CancellationToken token)
+    {
+        using var line = new MemoryStream();
+        while (true)
+        {
+            if (_offset == _count)
+            {
+                _count = await stream.ReadAsync(_buffer, token).ConfigureAwait(false); _offset = 0;
+                if (_count == 0) return line.Length == 0 ? null : throw new InvalidDataException("Unterminated line.");
+            }
+            int end = Array.IndexOf(_buffer, (byte)'\n', _offset, _count - _offset);
+            int length = end < 0 ? _count - _offset : end - _offset;
+            if (line.Length + length > MaxLineBytes) throw new InvalidDataException("Line too long.");
+            line.Write(_buffer, _offset, length); _offset += length + (end < 0 ? 0 : 1);
+            if (end >= 0) return new UTF8Encoding(false, true).GetString(line.GetBuffer(), 0, (int)line.Length).TrimEnd('\r');
+        }
+    }
+}
+
+internal sealed class PipeServer : IDisposable
+{
+    private readonly string _name;
+    private readonly Func<IpcEnvelope, Task<object?>> _dispatch;
+    private readonly Func<Task> _disconnected;
+    private readonly CancellationTokenSource _stop = new();
+    private Channel<IpcEnvelope>? _outbound;
+    private CancellationTokenSource? _connection;
+    private int _connected;
+    public bool IsConnected => Volatile.Read(ref _connected) != 0;
+    internal Task Completion { get; }
+    public PipeServer(string name, Func<IpcEnvelope, Task<object?>> dispatch, Func<Task> disconnected)
+    {
+        _name = name; _dispatch = dispatch; _disconnected = disconnected;
+        Completion = Task.Run(RunAsync);
+    }
+    public void Publish(string method, object? payload)
+    {
+        if (!IsConnected) return;
+        var envelope = new IpcEnvelope { Kind = IpcKinds.Event, Id = 0, Method = method, Payload = Element(payload) };
+        var queue = Volatile.Read(ref _outbound);
+        if (queue is not null && !queue.Writer.TryWrite(envelope)) _connection?.Cancel();
+    }
+    internal static JsonElement? Element(object? value) => value is null ? null : JsonSerializer.SerializeToElement(value, ContractJson.Options);
+    private async Task RunAsync()
+    {
+        while (!_stop.IsCancellationRequested)
+        {
+            using var pipe = new NamedPipeServerStream(_name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            try
+            {
+                await pipe.WaitForConnectionAsync(_stop.Token).ConfigureAwait(false);
+                using var connection = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
+                _connection = connection;
+                var outbound = Channel.CreateBounded<IpcEnvelope>(new BoundedChannelOptions(64) { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
+                Volatile.Write(ref _outbound, outbound);
+                Task write = WriteAsync(pipe, outbound.Reader, connection);
+                try { await ReadAsync(pipe, outbound.Writer, connection.Token).ConfigureAwait(false); }
+                finally { outbound.Writer.TryComplete(); connection.Cancel(); }
+                try { await write.ConfigureAwait(false); } catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException) { }
+            }
+            catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException or JsonException or InvalidDataException or DecoderFallbackException)
+            { if (!_stop.IsCancellationRequested) Program.WriteLog("IPC connection ended"); }
+            finally
+            {
+                Volatile.Write(ref _connected, 0); Volatile.Write(ref _outbound, null); _connection = null;
+                try { await _disconnected().ConfigureAwait(false); }
+                catch (Exception ex) { Program.LogError(ex, "IPC disconnect"); }
+            }
+        }
+    }
+    private static async Task WriteAsync(Stream stream, ChannelReader<IpcEnvelope> queue, CancellationTokenSource connection)
+    {
+        try
+        {
+            await foreach (var message in queue.ReadAllAsync(connection.Token).ConfigureAwait(false))
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message, ContractJson.Options) + "\n");
+                if (bytes.Length > BoundedLineReader.MaxLineBytes + 1) throw new InvalidDataException("Response too large.");
+                await stream.WriteAsync(bytes, connection.Token).ConfigureAwait(false);
+                await stream.FlushAsync(connection.Token).ConfigureAwait(false);
+            }
+        }
+        finally { connection.Cancel(); }
+    }
+    private async Task ReadAsync(Stream stream, ChannelWriter<IpcEnvelope> outbound, CancellationToken token)
+    {
+        var reader = new BoundedLineReader(stream);
+        bool hello = false;
+        while (!token.IsCancellationRequested)
+        {
+            string? line = await reader.ReadAsync(token).ConfigureAwait(false);
+            if (line is null) return;
+            IpcEnvelope request = JsonSerializer.Deserialize<IpcEnvelope>(line, ContractJson.Options) ?? throw new InvalidDataException();
+            var response = new IpcEnvelope { Kind = IpcKinds.Response, Id = request.Id };
+            bool close = false;
+            try
+            {
+                if (request.Kind != IpcKinds.Request || request.Id <= 0 || string.IsNullOrEmpty(request.Method) || request.Method.Length > 64) throw new CoreException(IpcErrorCodes.BadRequest, "Invalid request envelope.");
+                object? result;
+                if (!hello)
+                {
+                    close = true;
+                    if (request.Method != IpcMethods.Hello) throw new CoreException(IpcErrorCodes.BadRequest, "hello must be first.");
+                    var payload = request.Payload;
+                    if (payload?.ValueKind != JsonValueKind.Object || !payload.Value.TryGetProperty("protocolVersion", out var version) || !version.TryGetInt32(out int number))
+                        throw new CoreException(IpcErrorCodes.BadRequest, "Missing protocol version.");
+                    if (number != ContractInfo.ProtocolVersion) throw new CoreException(IpcErrorCodes.ProtocolMismatch, "Protocol version mismatch.");
+                    var greeting = payload.Value.Deserialize<HelloRequest>(ContractJson.Options);
+                    if (greeting?.Client is null || greeting.Client.Length > 128) throw new CoreException(IpcErrorCodes.BadRequest, "Invalid client.");
+                    hello = true; close = false; Volatile.Write(ref _connected, 1);
+                    result = new HelloResponse { CoreVersion = "2.0.0" };
+                }
+                else if (request.Method == IpcMethods.Hello) throw new CoreException(IpcErrorCodes.BadRequest, "Already initialized.");
+                else result = await _dispatch(request).ConfigureAwait(false);
+                response.Payload = Element(result);
+            }
+            catch (CoreException ex) { response.Ok = false; response.Error = new() { Code = ex.Code, Message = ex.Message }; }
+            catch (Exception ex) when (ex is JsonException or ArgumentException or InvalidOperationException or NullReferenceException)
+            { response.Ok = false; response.Error = new() { Code = IpcErrorCodes.BadRequest, Message = "Malformed request." }; }
+            catch (Exception ex)
+            { Program.LogError(ex, "IPC request"); response.Ok = false; response.Error = new() { Code = IpcErrorCodes.Internal, Message = "Request failed." }; }
+            if (close)
+            {
+                // A mismatch response must reach the client before this stream is closed.
+                byte[] bytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(response, ContractJson.Options) + "\n");
+                await stream.WriteAsync(bytes, token).ConfigureAwait(false); await stream.FlushAsync(token).ConfigureAwait(false); return;
+            }
+            await outbound.WriteAsync(response, token).ConfigureAwait(false);
+        }
+    }
+    public void Dispose() { _stop.Cancel(); _connection?.Cancel(); }
+}
