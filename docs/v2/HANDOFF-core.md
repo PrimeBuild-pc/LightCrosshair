@@ -2,6 +2,8 @@
 
 Branch: `v2-core`, worktree: `../LightCrosshair-core`. Started from the reviewer’s committed plan/contract at 72a3ed8; the requested worktree did not yet exist. No branch switch, merge, rebase, push or publication. Contracts, solution, UI source and the other planning documents are unchanged.
 
+Round 1 history follows; the **Review 1** section supersedes resolved deferrals and records this round's final validation (224 Core + 17 UI tests).
+
 ## Status per milestone
 
 | Milestone | Status |
@@ -34,7 +36,7 @@ From this worktree:
 
 ```powershell
 dotnet build -c Release
-dotnet test LightCrosshair.Tests/LightCrosshair.Tests.csproj -c Release
+dotnet test -c Release
 pwsh scripts/validate-release-preflight.ps1 -CoreOnly
 pwsh scripts/build-release.ps1 -UiProject ../LightCrosshair-ui/LightCrosshair.UI/LightCrosshair.UI.csproj
 pwsh scripts/perf/smoke.ps1 -Isolated
@@ -100,7 +102,38 @@ All three additions (FillColor, DisplayColorsEnabled, setInputCapture) were acce
 
 - C-1: Remap invalid legacy IDs consistently across designs/default/game links; merge a v1.9 `working::<32 hex>` into `SourceProfileId` before validating v2 identity; skip/log individual invalid profiles. Exact JSON fixture and regression tests pass; published x64 Core starts from a copied fixture and returns one edited source/default via IPC (`scripts/perf/migration-smoke.ps1`).
 - C-2: Failed load/migration keeps Core and IPC running with editable in-memory defaults; saves/shutdown cannot create `store.json`, allowing retry next launch. One localized tray notification is logged; errors include type, message and stack. Exclusive legacy-file lock regression and published `shutdown-smoke.ps1` verify survival, one notification, unchanged v1, no marker and graceful exit; all 218 Core + 17 UI tests pass.
+- C-3 (partially fixed; final acceptance deferred): Remove duplicate IPC JSON/string buffers, finish/dispose connection writers and CTS, release saved store bytes, reuse the foreground process-path buffer, dispose launched Process handles and disable Release tiered compilation while retaining ReadyToRun. Twenty real-UI cycles improve five-cycle growth from +6.94 to +2.81 MiB, with +0.80 MiB residual drift from cycle 5 to 20. Heap/counter evidence and limits are below. A fully isolated repeat and strict flat-trend acceptance are deferred until the UI owner fixes its hard-coded placement path; Core cannot edit that file under this round's ownership.
 - C-4: Every Core test gets an async-context data/log root under a unique temporary directory, plus a safe per-run fallback for discovery/constructors. A guard writes both default log and store, asserts the per-test path and excludes production AppData. Full Release build has 0 warnings/errors; 219 Core + 17 UI tests pass without external environment setup.
-- C-5: All five diagnostic window probes (0x8064–0x8067, 0x8069) are gated by Debug or an explicit valid `LIGHTCROSSHAIR_TEST_INSTANCE`; production names expose none. Release build: 0 warnings/errors; 219 Core + 17 UI tests pass. Published normal/test-instance probe verification is included in final checks.
+- C-5: All five diagnostic window probes (0x8064–0x8067, 0x8069) are gated by Debug or an explicit valid `LIGHTCROSSHAIR_TEST_INSTANCE`; production names expose none. Release build: 0 warnings/errors; 219 Core + 17 UI tests pass. `probe-smoke.ps1` verifies all production responses are zero and the test-instance magic is enabled.
 - C-6: The 30 presets now rotate through white, green, yellow, cyan, magenta and red (five designs per color), retaining outlined variants for contrast. Stable preset identities/tags are unchanged. Release build: 0 warnings/errors; 219 Core + 17 UI tests pass.
 - C-7: Implement accepted Box/Ring FillColor in shared rendering, validation/share round-trip and single-layer v1 migration; retain disabled display values and honor DisplayColorsEnabled in game rules; suspend/unregister all hotkeys/hooks during a renewable input-capture lease. Unit tests cover pixels/opacity, invalid fill, share, migration, rules and lease boundaries; published `input-capture-smoke.ps1` verifies all actions, false/disconnect, renewal and actual 60-second expiry. Release: 0 warnings/errors; 223 Core + 17 UI tests pass.
+
+### Review 1 performance evidence and remaining limit
+
+Same Windows/CPU/runtime as the round-1 table. Both compared runs used the merged real UI next to published x64 Core, production pipe names (no `-Isolated`), a fresh temporary Core data root, 10 s warmup, 60 s idle sampling and 20 verified UI open/close/process-exit cycles. The harness waits for the UI window plus pipe occupancy/handshake and 200 ms settling. Baseline package: code through d9d99a7; final package: all Review 1 changes. No other Core/UI was running at the start of either run.
+
+| Metric (MiB unless stated) | Before | After |
+|---|---:|---:|
+| Idle private, 60 s average | 13.88 | 13.39 |
+| Idle CPU, percent of one core | 0.0256 | 0.0000 (sampling resolution) |
+| Private before UI cycles | 13.78 | 13.30 |
+| Private after cycle 5 | 20.72 | 16.11 |
+| Private after cycle 20 | 27.89 | 16.91 |
+| Increase after 5 cycles (budget +3) | +6.94 | +2.81 |
+| Increase from cycle 5 to 20 | +7.17 | +0.80 |
+| Process handles, cycle 5 / 20 | 510 / 526 | 496 / 502 |
+| UI cold window + connection + settling, ms | 895.9 | 915.4 |
+
+Final per-cycle private values: 15.16, 15.73, 15.91, 15.99, 16.11, 15.51, 15.69, 15.82, 15.94, 16.08, 15.62, 15.76, 15.88, 15.89, 16.04, 16.23, 16.54, 16.66, 16.79, 16.91. The five-cycle budget passes in this sample; +0.80 MiB residual growth is not claimed as an exactly flat private-memory trend. Window/connection time does not establish interactive readiness.
+
+**Isolation limitation found after these runs:** UI `WindowPlacementStore.FilePath` uses the real roaming `LightCrosshair/v2/ui-placement.json`, ignoring `LIGHTCROSSHAIR_DATA_ROOT`; UI closing/exit calls Save. Those UI runs could therefore read/overwrite real window placement. Core store, migration, logs and color journal used temporary roots throughout. The real placement file was not read, deleted or restored after discovering this (its original value was not captured). No further real-UI runs were made. `measure.ps1` now refuses real-UI cycles while that known hard-coded source path remains, rather than silently repeating this breach. The UI owner must route placement through the supplied data root, then repeat the final acceptance run. The numbers above are diagnostic evidence, not a claim that the entire UI run met the requested isolation rule.
+
+Profiling used local dotnet-gcdump/dotnet-counters 10.0.750501, System.Runtime counters, and heap dumps after cycles 5 and 20. Before changes, the real-UI profiling run had 1,888,595 -> 1,891,249 live heap bytes (+2,654), despite growing private commitment. Both dumps had one PipeServer, two CTS and two Bitmap objects; no surviving per-connection reader/channel/MemoryStream accumulation appeared. This does not support a managed per-session object leak in those suspects. It also does not fully attribute native/runtime commitment.
+
+After discovering the UI isolation issue, the separate `connection-profile.ps1` safely exercised 20 Core-only IPC connections and 600 preset PNG renders, without starting UI. Live heap was 1,727,709 -> 1,676,123 bytes, with the same stable PipeServer/CTS/Bitmap counts. This is a Core connection/render stress check, **not** a replacement for the deferred real-UI profiling repeat. Heap collection forces GC and adds diagnostic overhead; instrumented private/CPU values are excluded from budget comparisons. The tool warned that .NET 10 uses lossy EventPipe buffering; no completeness guarantee is asserted.
+
+An experimental GCConserveMemory=9 run did not improve private growth and was discarded; it is not shipped. Disabling tiered compilation reduced the five-cycle increase in a controlled comparison, and the foreground callback was allocating a fresh 32,768-character buffer on every window change. Release now retains ReadyToRun without tiered recompilation, and reuses a 260-character path buffer, expanding only for long paths. This is workload-specific tuning, not a GC-on-disconnect workaround. Runtime behavior is documented by [Microsoft's compilation settings](https://learn.microsoft.com/en-us/dotnet/core/runtime-config/compilation).
+
+Local raw evidence (ignored): `scripts/perf/results-review-before-verified`, `results-review-final`, `results-review-profile-before`, `results-review-connections-after`, `results-review-final-idle`. A final safe isolated 60 s Core-only run measured 14.65 MiB private, 0.0000% CPU at sampling resolution, zero redraws/repeating application timers and no WPF. Final published smoke: render median/P95 1.370/1.629 ms; preview median/P95 0.872/1.093 ms. `probe-smoke.ps1` passes for normal and test-instance launches. Full solution Release build: zero warnings/errors, 224 Core + 17 UI tests pass.
+
+`TODO.md` is unchanged as explicitly required by the ownership boundary. Its Core milestones remain implemented, and its existing NVIDIA feature-probe/adoption deferral remains open. Reviewer-owned contract-answer/integration checkboxes should be reconciled with the already merged v2; this round does not edit that reviewer-owned file.

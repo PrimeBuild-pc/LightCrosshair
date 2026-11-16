@@ -99,7 +99,7 @@ internal sealed class CoreStore(string directory)
                 lock (_pendingGate)
                 {
                     if (revision != _revision) continue;
-                    _pendingWrite = null; return;
+                    _pending = null; _pendingWrite = null; return;
                 }
             }
         }

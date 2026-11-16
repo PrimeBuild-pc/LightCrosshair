@@ -98,7 +98,7 @@ internal sealed partial class Form1 : LayeredWindow
                     start.ArgumentList.Add("--page"); start.ArgumentList.Add(navigate.Page);
                     if (navigate.SuggestProcess is not null) { start.ArgumentList.Add("--suggest"); start.ArgumentList.Add(navigate.SuggestProcess); }
                 }
-                Process.Start(start);
+                using var launched = Process.Start(start);
             }
             else _tray.ShowBalloonTip(3000, "LightCrosshair", TextFor("MissingUi"), ToolTipIcon.Info);
         }
