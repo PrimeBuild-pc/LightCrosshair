@@ -60,8 +60,8 @@ internal static class LegacyMigration
                     {
                         Name = profile.Name, ProcessName = process, CrosshairId = converted[profile].Id,
                         VisibilityBinding = profile.VisibilityBinding is { IsValid: true } b ? Binding(b) : null,
-                        // CONTRACT-REQUEST: Preserve disabled display color profiles. Raw values remain in the migration backup.
-                        DisplayColors = profile.HasDisplayColorProfile && profile.DisplayEnableGammaOverride ? new()
+                        DisplayColorsEnabled = profile.DisplayEnableGammaOverride,
+                        DisplayColors = profile.HasDisplayColorProfile ? new()
                         { Gamma = profile.DisplayGammaValue, Contrast = profile.DisplayContrastValue, Brightness = profile.DisplayBrightnessValue, Vibrance = profile.DisplayVibranceValue } : null
                     }, store));
                 }
@@ -175,19 +175,8 @@ internal static class LegacyMigration
                 Rotation = kind == "X" ? 45 : 0, Color = $"#{color.R:X2}{color.G:X2}{color.B:X2}", Opacity = color.A / 255.0,
                 Outline = outline, OutlineThickness = Math.Clamp(thickness / 2, 1, 8), OutlineColor = $"#{p.EdgeColor.R:X2}{p.EdgeColor.G:X2}{p.EdgeColor.B:X2}"
             });
-            if (kind == "Box" && p.FillColor.A > 0)
-            {
-                // CONTRACT-REQUEST: Filled boxes. At most two nested boxes cover a 256 px
-                // fill without exceeding the contract's 64 px maximum stroke width.
-                var fills = new List<CrosshairLayer>();
-                for (int side = Math.Clamp(size, 1, 256); side > 0;)
-                {
-                    int stroke = Math.Min(64, (side + 1) / 2);
-                    fills.Add(new() { Name = "Fill", Kind = LayerKind.Box, Length = side, Thickness = stroke, Gap = 0, Color = $"#{p.FillColor.R:X2}{p.FillColor.G:X2}{p.FillColor.B:X2}", Opacity = p.FillColor.A / 255.0 });
-                    side -= 2 * stroke;
-                }
-                design.Layers.InsertRange(design.Layers.Count - 1, fills);
-            }
+            if (kind is "Box" or "Circle" or "CircleOutlined" && p.FillColor.A > 0)
+                design.Layers[^1].FillColor = $"#{p.FillColor.R:X2}{p.FillColor.G:X2}{p.FillColor.B:X2}";
         }
     }
 }

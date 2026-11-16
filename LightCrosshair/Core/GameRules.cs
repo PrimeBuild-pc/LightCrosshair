@@ -2,7 +2,10 @@ using LightCrosshair.Contracts;
 
 namespace LightCrosshair.Core;
 
-internal sealed record GameContext(string CrosshairId, GameProfile? Game, bool Visible, bool FpsEnabled, InputBinding Binding);
+internal sealed record GameContext(string CrosshairId, GameProfile? Game, bool Visible, bool FpsEnabled, InputBinding Binding)
+{
+    public DisplayColorSettings? DisplayColors => Game is { DisplayColorsEnabled: true } ? Game.DisplayColors : null;
+}
 
 internal static class GameRules
 {

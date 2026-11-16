@@ -117,6 +117,7 @@ internal sealed partial class Form1 : LayeredWindow
         {
             Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= SystemDisplayChanged;
             _previewTimeout?.Cancel(); _previewTimeout?.Dispose(); _pipe?.Dispose();
+            _captureTimer?.Dispose();
             _recordingTimer?.Dispose(); _input?.Dispose(); HotkeyManager.Instance.UnregisterAll();
             _foreground?.Dispose(); _fps.Dispose();
             _tray.Visible = false; _tray.ContextMenuStrip?.Dispose(); _tray.Icon?.Dispose(); _tray.Dispose();

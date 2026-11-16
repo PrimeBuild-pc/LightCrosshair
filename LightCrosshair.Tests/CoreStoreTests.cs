@@ -225,7 +225,7 @@ public sealed class CoreStoreTests : IDisposable
     public void LargeLegacyBoxFillCoversItsCenterWithinContractLayerAndStrokeLimits()
     {
         var design = LegacyMigration.Convert(new() { EnumShape = CrosshairShape.Box, Shape = "Box", Size = 256, FillColor = System.Drawing.Color.Blue, OuterColor = System.Drawing.Color.Green });
-        Assert.Equal(3, design.Layers.Count); Assert.All(design.Layers, l => Assert.InRange(l.Thickness, 1, 64));
+        Assert.Single(design.Layers); Assert.Equal("#0000FF", design.Layers[0].FillColor); Assert.All(design.Layers, l => Assert.InRange(l.Thickness, 1, 64));
         using var bitmap = new LayerRenderer(V2).Render(design, 320);
         Assert.Equal(System.Drawing.Color.Blue.ToArgb(), bitmap.GetPixel(160, 160).ToArgb());
         Assert.Equal(System.Drawing.Color.Blue.ToArgb(), bitmap.GetPixel(240, 160).ToArgb());
