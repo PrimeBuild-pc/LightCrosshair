@@ -244,6 +244,8 @@ public sealed class RuntimeState
     public bool PreviewActive { get; set; }
     public List<HotkeyError> HotkeyErrors { get; set; } = [];
     public GameSuggestion? PendingSuggestion { get; set; }
+    /// <summary>Last display-color failure for the current context: "apply_failed", "restore_failed" or "unsupported"; null when fine.</summary>
+    public string? DisplayColorsError { get; set; }
     public GpuCapabilities Gpu { get; set; } = new();
     public List<MonitorInfo> Monitors { get; set; } = [];
 }

@@ -56,7 +56,9 @@ Runs once when `v2\store.json` doesn't exist. Reads `%AppData%\LightCrosshair\pr
 - Foreground = LightCrosshair.UI.exe → keep the current state (don't flicker while editing).
 - No profile and `ShowOnlyInConfiguredGames` → crosshair hidden; otherwise default crosshair.
 - Known-games list (embedded JSON, ~50 entries: process name + display name). Unknown-to-profiles known game in foreground, `SuggestKnownGames` on, not dismissed, not suggested yet in this session → `PendingSuggestion` + one tray notification; clicking it opens the UI with `--page games --suggest <process>`.
-- Next/Previous crosshair hotkeys change the active crosshair for the current context only (not persisted).
+- **Crosshair ids may reference a built-in preset** (`PresetEntry.Design.Id`) anywhere a crosshair id is accepted: `Settings.DefaultCrosshairId`, `GameProfile.CrosshairId`, `RuntimeState.ActiveCrosshairId`. Core resolves ids against `Crosshairs` first, then presets. Applying a preset never copies it into `Crosshairs`; only editing does ("edit a copy").
+- Next/Previous crosshair hotkeys cycle: favorites when there are at least 2, otherwise all user crosshairs followed by all presets (Library order). The choice **is persisted** where it was made: in a configured game → that `GameProfile.CrosshairId`; elsewhere → `Settings.DefaultCrosshairId`. A `snapshotChanged` follows.
+- Display-color failures set `RuntimeState.DisplayColorsError` (cleared on the next successful apply or when leaving the game) and are logged once with the vendor error; the UI shows them inline on the game profile.
 
 ## 8. Change rules
 - `LightCrosshair.Contracts` changes only on branch `v2`, by Claude.
