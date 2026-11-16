@@ -12,6 +12,12 @@ public partial class StudioPage : UserControl
 
     public StudioPage() => InitializeComponent();
 
+    private void OnPreviewSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (DataContext is StudioViewModel studio)
+            studio.SetPreviewSize(e.NewSize.Width, e.NewSize.Height);
+    }
+
     private void OnLayerPress(object sender, MouseButtonEventArgs e)
     {
         if (e.OriginalSource is DependencyObject source && FindAncestor<Button>(source) != null) return;
