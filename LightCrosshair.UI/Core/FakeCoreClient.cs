@@ -499,9 +499,10 @@ public sealed class FakeCoreClient : ICoreClient
     {
         Name = "Classic",
         Favorite = true,
+        AntiAlias = false,
         Layers =
         [
-            new CrosshairLayer { Name = "Ring", Kind = LayerKind.Ring, Length = 18, Thickness = 1, Color = "#FFFFFF", Opacity = 0.85 },
+            new CrosshairLayer { Name = "Ring", Kind = LayerKind.Ring, Length = 22, Thickness = 2, Color = "#FFFFFF" },
             new CrosshairLayer { Name = "Cross", Kind = LayerKind.Arms, Length = 10, Thickness = 2, Gap = 4, Color = "#FFFFFF", Outline = true },
             new CrosshairLayer { Name = "Dot", Kind = LayerKind.Dot, Length = 2, Color = "#3DDC97" },
         ],

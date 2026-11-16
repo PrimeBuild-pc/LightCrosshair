@@ -58,7 +58,7 @@ internal static class FakeRenderer
                 if (hasFill && Inside(layer, lx, ly))
                     Blend(pixels, (y * canvas + x) * 4, fr, fg, fb, opacity);
                 var cover = Coverage(layer, lx, ly, outline, antiAlias);
-                if (cover <= 0) continue;
+                if (cover == 0) continue;
                 var useOutline = cover < 0;
                 var alpha = Math.Clamp(Math.Abs(cover), 0, 1) * opacity;
                 Blend(pixels, (y * canvas + x) * 4, useOutline ? or : r, useOutline ? og : g, useOutline ? ob : b, alpha);
