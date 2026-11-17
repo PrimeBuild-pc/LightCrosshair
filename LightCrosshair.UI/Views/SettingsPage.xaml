@@ -36,7 +36,13 @@
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_OnlyGames}" IsChecked="{Binding ShowOnlyInConfiguredGames}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_OnlyGames}"/>
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_HideRecording}" IsChecked="{Binding HideDuringScreenRecording}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_HideRecording}"/>
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_StartWindows}" IsChecked="{Binding StartWithWindows}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_StartWindows}"/>
-      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_Suggestions}" IsChecked="{Binding SuggestKnownGames}" Margin="0,4,0,12" AutomationProperties.Name="{loc:Tr Settings_Suggestions}"/>
+      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_Suggestions}" IsChecked="{Binding SuggestKnownGames}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_Suggestions}"/>
+      <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Settings_CloseTitle}" Margin="0,8,0,4"/>
+      <WrapPanel KeyboardNavigation.DirectionalNavigation="Cycle" AutomationProperties.Name="{loc:Tr Settings_CloseTitle}">
+        <RadioButton Style="{StaticResource Segment}" GroupName="CloseButton" Content="{loc:Tr Settings_CloseKeep}" IsChecked="{Binding CloseKeepsRunning}" Margin="0,0,6,6" AutomationProperties.Name="{loc:Tr Settings_CloseKeep}"/>
+        <RadioButton Style="{StaticResource Segment}" GroupName="CloseButton" Content="{loc:Tr Settings_CloseExit}" IsChecked="{Binding CloseButtonExits}" Margin="0,0,6,6" AutomationProperties.Name="{loc:Tr Settings_CloseExit}"/>
+      </WrapPanel>
+      <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Settings_CloseHelp}" TextWrapping="Wrap" Margin="0,0,0,12" Visibility="{Binding CloseKeepsRunning, Converter={StaticResource Vis}}"/>
 
       <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_Language}"/>
       <ComboBox ItemsSource="{Binding Languages}" SelectedValuePath="Id" SelectedValue="{Binding Language}" Margin="0,4,0,12" AutomationProperties.Name="{loc:Tr Settings_Language}" ItemContainerStyle="{StaticResource TextComboItem}">

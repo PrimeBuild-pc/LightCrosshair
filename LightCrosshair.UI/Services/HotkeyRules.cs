@@ -61,6 +61,7 @@ public static class HotkeyRules
         yield return ("PreviousCrosshair", hotkeys.PreviousCrosshair);
         yield return ("OpenSettings", hotkeys.OpenSettings);
         yield return ("HoldVisibility", hotkeys.HoldVisibility);
+        yield return ("ToggleFpsOverlay", hotkeys.ToggleFpsOverlay);
         foreach (var item in gameOverrides)
             yield return item;
     }

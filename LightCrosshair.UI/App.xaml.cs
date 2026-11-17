@@ -11,6 +11,7 @@ namespace LightCrosshair.UI;
 public partial class App : Application
 {
     private SingleInstance? _instance;
+    private AppUi? _ui;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -26,7 +27,7 @@ public partial class App : Application
             return;
         }
 
-        var ui = new AppUi(new DispatcherMarshaler());
+        var ui = _ui = new AppUi(new DispatcherMarshaler());
         FakeCoreClient? fake = options.FakeCore ? new FakeCoreClient(new DispatcherMarshaler()) : null;
         if (fake != null && options.ScreenshotsDirectory != null) fake.UseReadmeSeed();
         ICoreClient core = fake != null ? fake : new PipeCoreClient(new PipeCoreClientOptions { Marshaler = new DispatcherMarshaler() });
@@ -66,8 +67,8 @@ public partial class App : Application
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         e.Handled = true;
-        var text = Loc.Instance["Error_Internal"];
-        if (MainWindow != null)
-            System.Windows.MessageBox.Show(MainWindow, text, Loc.Instance["AppName"]);
+        // In-app dialog only; a second failure while one is open just keeps that one.
+        if (_ui != null && !_ui.Dialogs.IsOpen)
+            _ = _ui.NotifyAsync(Loc.Instance["AppName"], Loc.Instance["Error_Internal"]);
     }
 }

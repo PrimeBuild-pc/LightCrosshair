@@ -290,4 +290,15 @@
   <data name="Fps_Help" xml:space="preserve"><value>FPS, tempo frame e minimo 1%. I profili gioco possono modificare lo stato globale.</value></data>
   <data name="Settings_ColorsHelp" xml:space="preserve"><value>Si applica al desktop e alle app. Un profilo di gioco abilitato ha priorità. Trascina per provare; al rilascio viene ripristinato il contesto attuale.</value></data>
   <data name="Settings_UseColors" xml:space="preserve"><value>Regola i colori dello schermo</value></data>
+  <data name="Hotkeys_ToggleFps" xml:space="preserve"><value>Mostra o nascondi overlay FPS</value></data>
+  <data name="Override_Global" xml:space="preserve"><value>Usa globale</value></data>
+  <data name="Override_Custom" xml:space="preserve"><value>Personalizzato</value></data>
+  <data name="Games_GlobalBinding" xml:space="preserve"><value>Scorciatoia globale: {0}</value></data>
+  <data name="Fps_GraphOwnColor" xml:space="preserve"><value>Usa un colore diverso per il grafico</value></data>
+  <data name="Fps_GraphColor" xml:space="preserve"><value>Colore del grafico</value></data>
+  <data name="Settings_CloseTitle" xml:space="preserve"><value>Quando chiudo la finestra</value></data>
+  <data name="Settings_CloseKeep" xml:space="preserve"><value>Resta attivo nell'area di notifica</value></data>
+  <data name="Settings_CloseExit" xml:space="preserve"><value>Esci da LightCrosshair</value></data>
+  <data name="Settings_CloseHelp" xml:space="preserve"><value>Nell'area di notifica mirino e overlay FPS restano a schermo.</value></data>
+  <data name="Dialog_Close" xml:space="preserve"><value>Chiudi finestra di dialogo</value></data>
 </root>

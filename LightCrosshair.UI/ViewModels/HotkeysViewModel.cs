@@ -13,8 +13,7 @@ public sealed partial class HotkeyRow : ObservableObject
     public required string LabelKey { get; init; }
     public bool AllowsHold { get; init; }
     public bool HoldOnly { get; init; }
-    public IReadOnlyList<MouseButtonChoice> MouseChoices { get; set; } = [];
-    public void OnMouseChoicesChanged() => OnPropertyChanged(nameof(MouseChoices));
+    public bool AllowWheel => !HoldOnly;
     [ObservableProperty] private InputBinding _binding = new();
     [ObservableProperty] private string _display = "";
     [ObservableProperty] private string _warning = "";
@@ -22,8 +21,6 @@ public sealed partial class HotkeyRow : ObservableObject
     [ObservableProperty] private bool _capturing;
 
     public void RefreshText() => Display = HotkeyRules.Format(Binding);
-    public string MouseKey => HotkeyRules.IsMouse(Binding.Key) ? Binding.Key : "";
-    partial void OnBindingChanged(InputBinding value) => OnPropertyChanged(nameof(MouseKey));
 
     public override string ToString() => Loc.Instance[LabelKey];
 }
@@ -53,17 +50,15 @@ public sealed partial class HotkeysViewModel : ObservableObject
             new HotkeyRow { Action = "NextCrosshair", LabelKey = "Hotkeys_Next" },
             new HotkeyRow { Action = "PreviousCrosshair", LabelKey = "Hotkeys_Previous" },
             new HotkeyRow { Action = "OpenSettings", LabelKey = "Hotkeys_OpenSettings" },
+            new HotkeyRow { Action = "ToggleFpsOverlay", LabelKey = "Hotkeys_ToggleFps" },
         ];
-        RebuildMouseChoices();
         Loc.Instance.Changed += (_, _) =>
         {
-            RebuildMouseChoices();
             foreach (var row in Rows) row.RefreshText();
         };
     }
 
     public IReadOnlyList<HotkeyRow> Rows { get; }
-    public IReadOnlyList<MouseButtonChoice> MouseChoices { get; private set; } = [];
 
     [ObservableProperty] private string _error = "";
 
@@ -75,6 +70,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
         Set("PreviousCrosshair", _hotkeys.PreviousCrosshair);
         Set("OpenSettings", _hotkeys.OpenSettings);
         Set("HoldVisibility", _hotkeys.HoldVisibility);
+        Set("ToggleFpsOverlay", _hotkeys.ToggleFpsOverlay);
         ApplyErrors(snapshot);
     }
 
@@ -129,32 +125,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
         await SaveAsync().ConfigureAwait(true);
     }
 
-    [RelayCommand]
-    private Task SetMouseAsync(MousePick? pick)
-    {
-        if (pick == null || string.IsNullOrEmpty(pick.Key)) return Task.CompletedTask;
-        var row = Rows.First(item => item.Action == pick.Action);
-        var binding = HotkeyRules.Copy(row.Binding);
-        binding.Key = pick.Key;
-        return CommitAsync(new HotkeyCommit { Action = pick.Action, Binding = binding });
-    }
 
-    private void RebuildMouseChoices()
-    {
-        MouseChoices =
-        [
-            new MouseButtonChoice("", Loc.Instance["Hotkeys_MouseButton"]),
-            new MouseButtonChoice("MiddleClick", Loc.Instance["Key_MiddleClick"]),
-            new MouseButtonChoice("RightClick", Loc.Instance["Key_RightClick"]),
-            new MouseButtonChoice("Mouse4", Loc.Instance["Key_Mouse4"]),
-            new MouseButtonChoice("Mouse5", Loc.Instance["Key_Mouse5"]),
-            new MouseButtonChoice("WheelUp", Loc.Instance["Key_WheelUp"]),
-            new MouseButtonChoice("WheelDown", Loc.Instance["Key_WheelDown"]),
-        ];
-        foreach (var row in Rows)
-        { row.MouseChoices = MouseChoices.Where(choice => !row.HoldOnly || !HotkeyRules.IsWheel(choice.Key)).ToList(); row.OnMouseChoicesChanged(); }
-        OnPropertyChanged(nameof(MouseChoices));
-    }
 
     [RelayCommand]
     private async Task SetModeAsync(ModeChange? change)
@@ -214,6 +185,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
             case "PreviousCrosshair": _hotkeys.PreviousCrosshair = copy; break;
             case "OpenSettings": _hotkeys.OpenSettings = copy; break;
             case "HoldVisibility": _hotkeys.HoldVisibility = copy; break;
+            case "ToggleFpsOverlay": _hotkeys.ToggleFpsOverlay = copy; break;
             default: _hotkeys.ToggleVisibility = copy; break;
         }
     }
@@ -227,6 +199,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
             case "PreviousCrosshair": copy.PreviousCrosshair = candidate; break;
             case "OpenSettings": copy.OpenSettings = candidate; break;
             case "HoldVisibility": copy.HoldVisibility = candidate; break;
+            case "ToggleFpsOverlay": copy.ToggleFpsOverlay = candidate; break;
             default: copy.ToggleVisibility = candidate; break;
         }
         return copy;
@@ -249,6 +222,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
         "PreviousCrosshair" => Loc.Instance["Hotkeys_Previous"],
         "OpenSettings" => Loc.Instance["Hotkeys_OpenSettings"],
         "HoldVisibility" => Loc.Instance["Hotkeys_WhileHeld"],
+        "ToggleFpsOverlay" => Loc.Instance["Hotkeys_ToggleFps"],
         _ when action.StartsWith("GameProfile:", StringComparison.Ordinal) => Loc.Instance["Games_VisibilityOverride"],
         _ => action,
     };
@@ -264,14 +238,6 @@ public sealed class ModeChange
 {
     public required string Action { get; init; }
     public BindingMode Mode { get; init; }
-}
-
-public sealed record MouseButtonChoice(string Key, string Label);
-
-public sealed class MousePick
-{
-    public required string Action { get; init; }
-    public required string Key { get; init; }
 }
 
 internal static class HotkeyProbe

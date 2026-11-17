@@ -290,4 +290,15 @@
   <data name="Fps_Help" xml:space="preserve"><value>FPS、フレーム時間、1%低値。ゲームプロファイルで全体の設定を上書きできます。</value></data>
   <data name="Settings_ColorsHelp" xml:space="preserve"><value>デスクトップとアプリに適用します。有効なゲームプロファイルを優先します。ドラッグでプレビューし、離すと現在の設定に戻ります。</value></data>
   <data name="Settings_UseColors" xml:space="preserve"><value>ディスプレイの色を調整</value></data>
+  <data name="Hotkeys_ToggleFps" xml:space="preserve"><value>FPS オーバーレイの表示/非表示</value></data>
+  <data name="Override_Global" xml:space="preserve"><value>全体設定を使用</value></data>
+  <data name="Override_Custom" xml:space="preserve"><value>カスタム</value></data>
+  <data name="Games_GlobalBinding" xml:space="preserve"><value>全体のショートカット: {0}</value></data>
+  <data name="Fps_GraphOwnColor" xml:space="preserve"><value>グラフに別の色を使う</value></data>
+  <data name="Fps_GraphColor" xml:space="preserve"><value>グラフの色</value></data>
+  <data name="Settings_CloseTitle" xml:space="preserve"><value>ウィンドウを閉じたとき</value></data>
+  <data name="Settings_CloseKeep" xml:space="preserve"><value>トレイで実行を続ける</value></data>
+  <data name="Settings_CloseExit" xml:space="preserve"><value>LightCrosshair を終了</value></data>
+  <data name="Settings_CloseHelp" xml:space="preserve"><value>トレイでは照準と FPS オーバーレイが画面に残ります。</value></data>
+  <data name="Dialog_Close" xml:space="preserve"><value>ダイアログを閉じる</value></data>
 </root>

@@ -18,15 +18,30 @@ public sealed class DialogButton
     public bool IsDanger { get; init; }
 }
 
+/// <summary>
+/// The app's only dialog: an in-window panel styled with the design tokens (no Windows message boxes).
+/// Focus starts on the primary button, or on the safe (cancel) one for destructive choices; Esc picks cancel.
+/// </summary>
 public sealed partial class DialogHost : ObservableObject
 {
     [ObservableProperty] private bool _isOpen;
     [ObservableProperty] private string _title = "";
     [ObservableProperty] private string _message = "";
     public ObservableCollection<DialogButton> Buttons { get; } = new();
+    public int CancelIndex { get; private set; } = -1;
+    public int FocusIndex { get; private set; }
 
-    public Task<int> ShowAsync(string title, string message, IReadOnlyList<(string Text, bool Primary, bool Danger)> buttons)
+    /// <summary>Esc: the cancel button's result, when the dialog has one.</summary>
+    public void Cancel()
     {
+        if (IsOpen && CancelIndex >= 0 && CancelIndex < Buttons.Count) Buttons[CancelIndex].Command.Execute(null);
+    }
+
+    public Task<int> ShowAsync(string title, string message, IReadOnlyList<(string Text, bool Primary, bool Danger)> buttons, int cancelIndex = -1)
+    {
+        CancelIndex = cancelIndex;
+        var primary = buttons.Select((button, index) => (button, index)).FirstOrDefault(item => item.button.Primary);
+        FocusIndex = primary.button.Text != null ? primary.index : cancelIndex >= 0 ? cancelIndex : 0;
         var source = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
         Buttons.Clear();
         for (var i = 0; i < buttons.Count; i++)
@@ -65,6 +80,8 @@ public interface IUiServices
     string? PickSaveFile(string filter, string suggestedName);
     Task<UnsavedChoice> AskUnsavedAsync();
     Task<bool> ConfirmAsync(string title, string message, string confirmText);
+    /// <summary>Information or error with one OK button, in the app style.</summary>
+    Task NotifyAsync(string title, string message);
     void Toast(string message);
     void Copy(string text);
     string? Paste();
@@ -101,7 +118,7 @@ public sealed class AppUi : IUiServices
             (Loc.Instance["Save"], true, false),
             (Loc.Instance["Discard"], false, false),
             (Loc.Instance["Cancel"], false, false),
-        ]).ConfigureAwait(true);
+        ], cancelIndex: 2).ConfigureAwait(true);
         return choice switch { 0 => UnsavedChoice.Save, 1 => UnsavedChoice.Discard, _ => UnsavedChoice.Cancel };
     }
 
@@ -111,9 +128,11 @@ public sealed class AppUi : IUiServices
         [
             (confirmText, false, true),
             (Loc.Instance["Cancel"], false, false),
-        ]).ConfigureAwait(true);
+        ], cancelIndex: 1).ConfigureAwait(true);
         return choice == 0;
     }
+
+    public Task NotifyAsync(string title, string message) => Dialogs.ShowAsync(title, message, [(Loc.Instance["Ok"], true, false)], cancelIndex: 0);
 
     public void Toast(string message)
     {
@@ -168,6 +187,8 @@ public sealed class FakeUi : IUiServices
     public string? PickSaveFile(string filter, string suggestedName) => NextSaveFile;
     public Task<UnsavedChoice> AskUnsavedAsync() => Task.FromResult(UnsavedAnswer);
     public Task<bool> ConfirmAsync(string title, string message, string confirmText) => Task.FromResult(ConfirmAnswer);
+    public List<string> Notices { get; } = new();
+    public Task NotifyAsync(string title, string message) { Notices.Add(message); return Task.CompletedTask; }
     public void Toast(string message) => Toasts.Add(new ToastNote { Message = message });
     public void Copy(string text) => Clipboard = text;
     public string? Paste() => Clipboard;

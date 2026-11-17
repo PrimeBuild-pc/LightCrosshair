@@ -290,4 +290,15 @@
   <data name="Fps_Help" xml:space="preserve"><value>FPS, frametime and 1% low. Game profiles can override the global switch.</value></data>
   <data name="Settings_ColorsHelp" xml:space="preserve"><value>Applies on the desktop and in apps. An enabled game profile takes priority. Drag to preview; releasing restores the current context.</value></data>
   <data name="Settings_UseColors" xml:space="preserve"><value>Adjust display colors</value></data>
+  <data name="Hotkeys_ToggleFps" xml:space="preserve"><value>Show or hide FPS overlay</value></data>
+  <data name="Override_Global" xml:space="preserve"><value>Use global</value></data>
+  <data name="Override_Custom" xml:space="preserve"><value>Custom</value></data>
+  <data name="Games_GlobalBinding" xml:space="preserve"><value>Global shortcut: {0}</value></data>
+  <data name="Fps_GraphOwnColor" xml:space="preserve"><value>Use a different color for the graph</value></data>
+  <data name="Fps_GraphColor" xml:space="preserve"><value>Graph color</value></data>
+  <data name="Settings_CloseTitle" xml:space="preserve"><value>When I close the window</value></data>
+  <data name="Settings_CloseKeep" xml:space="preserve"><value>Keep running in the tray</value></data>
+  <data name="Settings_CloseExit" xml:space="preserve"><value>Exit LightCrosshair</value></data>
+  <data name="Settings_CloseHelp" xml:space="preserve"><value>In the tray the crosshair and FPS overlay stay on screen.</value></data>
+  <data name="Dialog_Close" xml:space="preserve"><value>Close dialog</value></data>
 </root>

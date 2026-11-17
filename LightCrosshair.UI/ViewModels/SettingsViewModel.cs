@@ -126,6 +126,14 @@ public sealed partial class SettingsViewModel : ObservableObject
     public string TextColor { get => _settings.FpsOverlay.TextColor; set => SetColor(value, color => _settings.FpsOverlay.TextColor = color, nameof(TextColor), () => _settings.FpsOverlay.TextColor); }
     public string BackgroundColor { get => _settings.FpsOverlay.BackgroundColor; set => SetColor(value, color => _settings.FpsOverlay.BackgroundColor = color, nameof(BackgroundColor), () => _settings.FpsOverlay.BackgroundColor); }
     public double BackgroundOpacityPercent { get => _settings.FpsOverlay.BackgroundOpacity * 100; set { var next = Math.Clamp(value, 0, 100) / 100.0; if (_settings.FpsOverlay.BackgroundOpacity == next) return; _settings.FpsOverlay.BackgroundOpacity = next; OnPropertyChanged(); Touch(); } }
+    public bool UseGraphColor
+    {
+        get => _settings.FpsOverlay.GraphColor != null;
+        set { if (UseGraphColor == value) return; _settings.FpsOverlay.GraphColor = value ? _settings.FpsOverlay.TextColor : null; OnPropertyChanged(); OnPropertyChanged(nameof(GraphColor)); Touch(); }
+    }
+    public string GraphColor { get => _settings.FpsOverlay.GraphColor ?? _settings.FpsOverlay.TextColor; set => SetColor(value, color => _settings.FpsOverlay.GraphColor = color, nameof(GraphColor), () => _settings.FpsOverlay.GraphColor ?? ""); }
+    public bool CloseButtonExits { get => _settings.CloseButtonExits; set { if (_settings.CloseButtonExits == value) return; _settings.CloseButtonExits = value; OnPropertyChanged(); OnPropertyChanged(nameof(CloseKeepsRunning)); Touch(); } }
+    public bool CloseKeepsRunning { get => !CloseButtonExits; set => CloseButtonExits = !value; }
     public bool CheckForUpdates { get => _settings.CheckForUpdates; set { if (_settings.CheckForUpdates == value) return; _settings.CheckForUpdates = value; OnPropertyChanged(); Touch(); } }
 
     public int MonitorWidth => Monitors.FirstOrDefault(item => item.DeviceName == _settings.MonitorDeviceName)?.Width
@@ -190,10 +198,24 @@ public sealed partial class SettingsViewModel : ObservableObject
         try { await _core.QuitAsync().ConfigureAwait(true); }
         catch (CoreException ex) { Error = ErrorText.For(ex.Code); return; }
         catch (Exception) { Error = ErrorText.For(null); return; }
+        ShutdownApp();
+    }
+
+    /// <summary>Window close button with "Exit LightCrosshair": quit Core, then the UI, without asking (the user chose it).</summary>
+    public async Task QuitFromCloseButtonAsync()
+    {
+        await FlushAsync().ConfigureAwait(true);
+        try { await _core.QuitAsync().ConfigureAwait(true); }
+        catch (Exception) { /* Core already gone or unreachable: closing the window must still exit. */ }
+        ShutdownApp();
+    }
+
+    internal Action ShutdownApp { get; set; } = () =>
+    {
         if (System.Windows.Application.Current?.MainWindow is MainWindow window)
             window.AllowClose();
         System.Windows.Application.Current?.Shutdown();
-    }
+    };
 
     [RelayCommand]
     private void OpenWebsite() => _ui.OpenUrl("https://primebuild.website/");
@@ -272,7 +294,8 @@ public sealed partial class SettingsViewModel : ObservableObject
             nameof(HideDuringScreenRecording), nameof(StartWithWindows), nameof(SuggestKnownGames), nameof(FpsEnabled),
             nameof(FpsMonitor), nameof(FpsOffsetX), nameof(FpsOffsetY), nameof(FpsScale), nameof(ShowFrametime),
             nameof(Show1PercentLow), nameof(ShowFrametimeGraph), nameof(TextColor), nameof(BackgroundColor), nameof(BackgroundOpacityPercent),
-            nameof(CheckForUpdates), nameof(MonitorWidth), nameof(MonitorHeight),
+            nameof(CheckForUpdates), nameof(MonitorWidth), nameof(MonitorHeight), nameof(UseGraphColor), nameof(GraphColor),
+            nameof(CloseButtonExits), nameof(CloseKeepsRunning),
         })
             OnPropertyChanged(name);
     }

@@ -40,6 +40,11 @@ public partial class MainWindow : Window
                     Activate();
                     Dispatcher.BeginInvoke(DispatcherPriority.Render, () => OpenTiming.NoteWake(requested));
                 };
+                viewModel.Ui.Dialogs.PropertyChanged += (_, args) =>
+                {
+                    if (args.PropertyName == nameof(DialogHost.IsOpen) && viewModel.Ui.Dialogs.IsOpen)
+                        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () => FocusDialogButton(viewModel.Ui.Dialogs.FocusIndex));
+                };
                 viewModel.CloseRequested += (_, _) =>
                 {
                     viewModel.AllowExit = true;
@@ -62,6 +67,19 @@ public partial class MainWindow : Window
             var source = (HwndSource?)PresentationSource.FromVisual(this);
             source?.AddHook(WndProc);
         };
+    }
+
+    private void OnDialogKey(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape || DataContext is not MainViewModel viewModel) return;
+        viewModel.Ui.Dialogs.Cancel();
+        e.Handled = true;
+    }
+
+    internal void FocusDialogButton(int index)
+    {
+        if (DialogButtons.ItemContainerGenerator.ContainerFromIndex(index) is DependencyObject container && FindChild<Button>(container) is { } button)
+            button.Focus();
     }
 
     private void OnMinimize(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
@@ -109,6 +127,11 @@ public partial class MainWindow : Window
         WindowPlacementStore.Save(this);
         if (DataContext is not MainViewModel viewModel || viewModel.AllowExit || Application.Current?.MainWindow != this) return;
         e.Cancel = true;
+        if (viewModel.Settings.CloseButtonExits)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Background, async () => await viewModel.Settings.QuitFromCloseButtonAsync());
+            return;
+        }
         Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
         {
             if (!IsVisible) return;

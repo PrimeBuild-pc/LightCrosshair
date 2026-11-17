@@ -80,36 +80,43 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
           <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Games_VisibilityOverride}"/>
-          <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_UseGlobal}" Visibility="{Binding CustomVisibility, Converter={StaticResource VisInv}}" Margin="0,0,0,8"/>
-          <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Games_VisibilityOverride}" IsChecked="{Binding CustomVisibility}" Margin="0,8,0,8" AutomationProperties.Name="{loc:Tr Games_VisibilityOverride}"/>
-          <StackPanel Visibility="{Binding CustomVisibility, Converter={StaticResource Vis}}" Margin="0,0,0,12">
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,4" KeyboardNavigation.DirectionalNavigation="Cycle" AutomationProperties.Name="{loc:Tr Games_VisibilityOverride}">
+            <RadioButton Style="{StaticResource Segment}" GroupName="VisibilityPolicy" Content="{loc:Tr Override_Global}" AutomationProperties.Name="{loc:Tr Override_Global}" IsChecked="{Binding VisibilityPolicy, Converter={StaticResource Eq}, ConverterParameter=follow}"/>
+            <RadioButton Style="{StaticResource Segment}" GroupName="VisibilityPolicy" Content="{loc:Tr Games_HoldOff}" AutomationProperties.Name="{loc:Tr Games_HoldOff}" IsChecked="{Binding VisibilityPolicy, Converter={StaticResource Eq}, ConverterParameter=off}"/>
+            <RadioButton Style="{StaticResource Segment}" GroupName="VisibilityPolicy" Content="{loc:Tr Override_Custom}" AutomationProperties.Name="{loc:Tr Override_Custom}" IsChecked="{Binding VisibilityPolicy, Converter={StaticResource Eq}, ConverterParameter=custom}"/>
+          </StackPanel>
+          <TextBlock Style="{StaticResource LabelText}" Text="{Binding GlobalVisibilityText}" Margin="0,0,0,8"/>
+          <Grid Visibility="{Binding HasOwnVisibility, Converter={StaticResource Vis}}" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
             <controls:BindingCaptureBox Binding="{Binding Visibility}" Prompt="{loc:Tr Hotkeys_Press}"
                                          CapturedCommand="{Binding CommitVisibilityCommand}" CaptureChangedCommand="{Binding SetCaptureCommand}" CommandParameter="VisibilityBinding"/>
-            <ComboBox SelectedValue="{Binding VisibilityMode}" SelectedValuePath="Tag" Margin="0,8,0,0" AutomationProperties.Name="{loc:Tr Hotkeys_Mode}">
+            <ComboBox Grid.Column="1" MinWidth="160" Margin="8,0,0,0" SelectedValue="{Binding VisibilityMode}" SelectedValuePath="Tag" AutomationProperties.Name="{loc:Tr Hotkeys_Mode}">
               <ComboBoxItem Tag="{x:Static contracts:BindingMode.Toggle}" Content="{loc:Tr Hotkeys_Toggle}"/>
               <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToHide}" Content="{loc:Tr Hotkeys_HoldHide}"/>
               <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToShow}" Content="{loc:Tr Hotkeys_HoldShow}"/>
             </ComboBox>
-          </StackPanel>
+          </Grid>
           <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Hotkeys_WhileHeld}"/>
-          <ComboBox SelectedValue="{Binding HoldPolicy}" SelectedValuePath="Tag" Margin="0,0,0,8" AutomationProperties.Name="{loc:Tr Games_HoldPolicy}">
-            <ComboBoxItem Tag="follow" Content="{loc:Tr Games_FollowGlobal}"/>
-            <ComboBoxItem Tag="off" Content="{loc:Tr Games_HoldOff}"/>
-            <ComboBoxItem Tag="custom" Content="{loc:Tr Games_HoldOwn}"/>
-          </ComboBox>
-          <StackPanel Visibility="{Binding HasOwnHold, Converter={StaticResource Vis}}" Margin="0,0,0,12">
-            <controls:BindingCaptureBox Binding="{Binding HoldBinding}" Prompt="{loc:Tr Hotkeys_Press}" CapturedCommand="{Binding CommitHoldCommand}" CaptureChangedCommand="{Binding SetCaptureCommand}" CommandParameter="HoldVisibility"/>
-            <ComboBox SelectedValue="{Binding HoldMouseKey}" SelectedValuePath="Tag" Margin="0,8,0,0" AutomationProperties.Name="{loc:Tr Hotkeys_MouseButton}">
-              <ComboBoxItem Tag="RightClick" Content="{loc:Tr Key_RightClick}"/>
-              <ComboBoxItem Tag="MiddleClick" Content="{loc:Tr Key_MiddleClick}"/>
-              <ComboBoxItem Tag="Mouse4" Content="{loc:Tr Key_Mouse4}"/>
-              <ComboBoxItem Tag="Mouse5" Content="{loc:Tr Key_Mouse5}"/>
-            </ComboBox>
-            <ComboBox SelectedValue="{Binding HoldMode}" SelectedValuePath="Tag" Margin="0,8,0,0" AutomationProperties.Name="{loc:Tr Hotkeys_Mode}">
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,4" KeyboardNavigation.DirectionalNavigation="Cycle" AutomationProperties.Name="{loc:Tr Games_HoldPolicy}">
+            <RadioButton Style="{StaticResource Segment}" GroupName="HoldPolicy" Content="{loc:Tr Override_Global}" AutomationProperties.Name="{loc:Tr Override_Global}" IsChecked="{Binding HoldPolicy, Converter={StaticResource Eq}, ConverterParameter=follow}"/>
+            <RadioButton Style="{StaticResource Segment}" GroupName="HoldPolicy" Content="{loc:Tr Games_HoldOff}" AutomationProperties.Name="{loc:Tr Games_HoldOff}" IsChecked="{Binding HoldPolicy, Converter={StaticResource Eq}, ConverterParameter=off}"/>
+            <RadioButton Style="{StaticResource Segment}" GroupName="HoldPolicy" Content="{loc:Tr Override_Custom}" AutomationProperties.Name="{loc:Tr Override_Custom}" IsChecked="{Binding HoldPolicy, Converter={StaticResource Eq}, ConverterParameter=custom}"/>
+          </StackPanel>
+          <TextBlock Style="{StaticResource LabelText}" Text="{Binding GlobalHoldText}" Margin="0,0,0,8"/>
+          <Grid Visibility="{Binding HasOwnHold, Converter={StaticResource Vis}}" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <controls:BindingCaptureBox Binding="{Binding HoldBinding}" Prompt="{loc:Tr Hotkeys_Press}" AllowWheel="False" CapturedCommand="{Binding CommitHoldCommand}" CaptureChangedCommand="{Binding SetCaptureCommand}" CommandParameter="HoldVisibility"/>
+            <ComboBox Grid.Column="1" MinWidth="160" Margin="8,0,0,0" SelectedValue="{Binding HoldMode}" SelectedValuePath="Tag" AutomationProperties.Name="{loc:Tr Hotkeys_Mode}">
               <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToHide}" Content="{loc:Tr Hotkeys_HoldHide}"/>
               <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToShow}" Content="{loc:Tr Hotkeys_HoldShow}"/>
             </ComboBox>
-          </StackPanel>
+          </Grid>
           <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Games_FpsOverlay}"/>
           <ComboBox SelectedValue="{Binding FpsMode}" SelectedValuePath="Tag" Margin="0,0,0,12" AutomationProperties.Name="{loc:Tr Games_FpsOverlay}">
             <ComboBoxItem Tag="follow" Content="{loc:Tr Games_FollowGlobal}"/>
@@ -121,13 +128,13 @@
           <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Games_UseColors}" IsChecked="{Binding UseColors}" IsEnabled="{Binding GammaSupported}" AutomationProperties.Name="{loc:Tr Games_UseColors}"/>
           <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_ReasonGamma}" Visibility="{Binding GammaSupported, Converter={StaticResource VisInv}}" Margin="0,4,0,8"/>
           <StackPanel Visibility="{Binding UseColors, Converter={StaticResource Vis}}">
-            <controls:NumberSlider DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}" Caption="{loc:Tr Games_Gamma}" Value="{Binding Gamma}" Minimum="50" Maximum="150"/>
-            <controls:NumberSlider DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}" Caption="{loc:Tr Games_Contrast}" Value="{Binding Contrast}" Minimum="50" Maximum="150"/>
-            <controls:NumberSlider DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}" Caption="{loc:Tr Games_Brightness}" Value="{Binding Brightness}" Minimum="50" Maximum="150"/>
-            <controls:NumberSlider DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}" Caption="{loc:Tr Games_Vibrance}" Value="{Binding Vibrance}" Minimum="0" Maximum="100"/>
+            <controls:NumberSlider Caption="{loc:Tr Games_Gamma}" Value="{Binding Gamma}" Minimum="50" Maximum="150"/>
+            <controls:NumberSlider Caption="{loc:Tr Games_Contrast}" Value="{Binding Contrast}" Minimum="50" Maximum="150"/>
+            <controls:NumberSlider Caption="{loc:Tr Games_Brightness}" Value="{Binding Brightness}" Minimum="50" Maximum="150"/>
+            <controls:NumberSlider Caption="{loc:Tr Games_Vibrance}" Value="{Binding Vibrance}" Minimum="0" Maximum="100"/>
           </StackPanel>
           <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_ReasonNvidiaColor}" Visibility="{Binding NvidiaColorSupported, Converter={StaticResource VisInv}}"/>
-          <controls:NumberSlider DragStartedCommand="{Binding BeginColorsCommand}" DragCompletedCommand="{Binding EndColorsCommand}" Caption="{loc:Tr Games_NvidiaVibrance}" Value="{Binding NvidiaVibrance}" Minimum="0" Maximum="100" IsEnabled="{Binding NvidiaColorSupported}" Visibility="{Binding UseColors, Converter={StaticResource Vis}}"/>
+          <controls:NumberSlider Caption="{loc:Tr Games_NvidiaVibrance}" Value="{Binding NvidiaVibrance}" Minimum="0" Maximum="100" IsEnabled="{Binding NvidiaColorSupported}" Visibility="{Binding UseColors, Converter={StaticResource Vis}}"/>
           <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Games_FpsCap}"/>
           <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Games_ReasonNvidiaCap}" Visibility="{Binding CapSupported, Converter={StaticResource VisInv}}"/>
           <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Games_FpsCap}" IsChecked="{Binding UseCap}" IsEnabled="{Binding CapSupported}" AutomationProperties.Name="{loc:Tr Games_FpsCap}"/>

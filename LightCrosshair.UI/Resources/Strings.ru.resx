@@ -290,4 +290,15 @@
   <data name="Fps_Help" xml:space="preserve"><value>FPS, время кадра и минимум 1%. Профили игр могут переопределять общий переключатель.</value></data>
   <data name="Settings_ColorsHelp" xml:space="preserve"><value>Применяется к рабочему столу и приложениям. Включённый профиль игры имеет приоритет. Перетаскивайте для предпросмотра; отпустите для возврата к текущим настройкам.</value></data>
   <data name="Settings_UseColors" xml:space="preserve"><value>Настроить цвета экрана</value></data>
+  <data name="Hotkeys_ToggleFps" xml:space="preserve"><value>Показать или скрыть оверлей FPS</value></data>
+  <data name="Override_Global" xml:space="preserve"><value>Как в общих</value></data>
+  <data name="Override_Custom" xml:space="preserve"><value>Своё</value></data>
+  <data name="Games_GlobalBinding" xml:space="preserve"><value>Общее сочетание: {0}</value></data>
+  <data name="Fps_GraphOwnColor" xml:space="preserve"><value>Другой цвет для графика</value></data>
+  <data name="Fps_GraphColor" xml:space="preserve"><value>Цвет графика</value></data>
+  <data name="Settings_CloseTitle" xml:space="preserve"><value>При закрытии окна</value></data>
+  <data name="Settings_CloseKeep" xml:space="preserve"><value>Продолжать работу в трее</value></data>
+  <data name="Settings_CloseExit" xml:space="preserve"><value>Выйти из LightCrosshair</value></data>
+  <data name="Settings_CloseHelp" xml:space="preserve"><value>В трее прицел и оверлей FPS остаются на экране.</value></data>
+  <data name="Dialog_Close" xml:space="preserve"><value>Закрыть диалог</value></data>
 </root>

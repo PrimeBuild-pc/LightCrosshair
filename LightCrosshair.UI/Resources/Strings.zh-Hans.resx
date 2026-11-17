@@ -290,4 +290,15 @@
   <data name="Fps_Help" xml:space="preserve"><value>FPS、帧时间和1%最低帧率。游戏配置可覆盖全局开关。</value></data>
   <data name="Settings_ColorsHelp" xml:space="preserve"><value>应用于桌面和应用。已启用的游戏配置优先。拖动以预览；松开后恢复当前设置。</value></data>
   <data name="Settings_UseColors" xml:space="preserve"><value>调整显示颜色</value></data>
+  <data name="Hotkeys_ToggleFps" xml:space="preserve"><value>显示或隐藏 FPS 叠加层</value></data>
+  <data name="Override_Global" xml:space="preserve"><value>使用全局</value></data>
+  <data name="Override_Custom" xml:space="preserve"><value>自定义</value></data>
+  <data name="Games_GlobalBinding" xml:space="preserve"><value>全局快捷键：{0}</value></data>
+  <data name="Fps_GraphOwnColor" xml:space="preserve"><value>图表使用不同的颜色</value></data>
+  <data name="Fps_GraphColor" xml:space="preserve"><value>图表颜色</value></data>
+  <data name="Settings_CloseTitle" xml:space="preserve"><value>关闭窗口时</value></data>
+  <data name="Settings_CloseKeep" xml:space="preserve"><value>在托盘中继续运行</value></data>
+  <data name="Settings_CloseExit" xml:space="preserve"><value>退出 LightCrosshair</value></data>
+  <data name="Settings_CloseHelp" xml:space="preserve"><value>在托盘中时，准星和 FPS 叠加层仍显示在屏幕上。</value></data>
+  <data name="Dialog_Close" xml:space="preserve"><value>关闭对话框</value></data>
 </root>

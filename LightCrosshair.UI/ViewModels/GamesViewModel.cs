@@ -31,33 +31,43 @@ public sealed partial class GamesViewModel : ObservableObject
     [ObservableProperty] private GpuCapabilities _gpu = new();
     [ObservableProperty] private bool _useColors;
     [ObservableProperty] private bool _useCap;
-    [ObservableProperty] private bool _customVisibility;
+    [ObservableProperty] private string _visibilityPolicy = "follow";
     [ObservableProperty] private string _fpsMode = "follow";
     [ObservableProperty] private string _displayColorsMessage = "";
     [ObservableProperty] private string _holdPolicy = "follow";
     public bool HasOwnHold => HoldPolicy == "custom";
+    public bool HasOwnVisibility => VisibilityPolicy == "custom";
     public InputBinding HoldBinding => _working.HoldVisibility ?? new() { Key = "", Mode = BindingMode.HoldToHide };
-    public string HoldMouseKey
-    {
-        get => HotkeyRules.IsMouse(HoldBinding.Key) ? HoldBinding.Key : "";
-        set { if (!_suspend && HasOwnHold && !string.IsNullOrEmpty(value) && value != HoldBinding.Key) CommitHold(new() { Action = "HoldVisibility", Binding = new() { Key = value, Modifiers = HoldBinding.Modifiers, Mode = HoldBinding.Mode } }); }
-    }
+    public string GlobalVisibilityText => Loc.Instance.Format("Games_GlobalBinding", HotkeyRules.Format(_core.Snapshot?.Store.Settings.Hotkeys.ToggleVisibility));
+    public string GlobalHoldText => Loc.Instance.Format("Games_GlobalBinding", HotkeyRules.Format(_core.Snapshot?.Store.Settings.Hotkeys.HoldVisibility));
     public BindingMode HoldMode
     {
         get => HoldBinding.Mode;
-        set { if (!_suspend && HasOwnHold && value != BindingMode.Toggle) { _working.HoldVisibility!.Mode = value; Touch(); } }
+        set { if (!_suspend && HasOwnHold && value != BindingMode.Toggle && value != HoldBinding.Mode) SetHold(new() { Key = HoldBinding.Key, Modifiers = HoldBinding.Modifiers, Mode = value }); }
     }
+    // Binding overrides are three plain choices and save at once, like the Hotkeys page: an unsaved
+    // "own binding" looked active in the UI while the game still used the stored one.
     partial void OnHoldPolicyChanged(string value)
     {
         OnPropertyChanged(nameof(HasOwnHold));
-        if (_suspend) return;
-        _working.HoldVisibility = value switch
+        if (_suspend || Selected == null) return;
+        SetHold(value switch
         {
             "off" => new() { Key = "", Mode = BindingMode.HoldToHide },
             "custom" => _working.HoldVisibility is { Key.Length: > 0 } own ? own : new() { Key = "RightClick", Modifiers = KeyModifiers.None, Mode = BindingMode.HoldToHide },
             _ => null
-        };
-        Touch();
+        });
+    }
+    partial void OnVisibilityPolicyChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasOwnVisibility));
+        if (_suspend || Selected == null) return;
+        SetVisibility(value switch
+        {
+            "off" => new() { Key = "", Mode = BindingMode.Toggle },
+            "custom" => _working.VisibilityBinding is { Key.Length: > 0 } own ? own : new() { Key = "X", Modifiers = KeyModifiers.Alt },
+            _ => null
+        });
     }
     [RelayCommand]
     private void CommitHold(HotkeyCommit? commit)
@@ -66,10 +76,31 @@ public sealed partial class GamesViewModel : ObservableObject
         if (HotkeyRules.IsWheel(commit.Binding.Key)) { Error = Loc.Instance["Hotkeys_HoldButtonsOnly"]; return; }
         var copy = HotkeyRules.Copy(commit.Binding);
         if (copy.Mode == BindingMode.Toggle) copy.Mode = BindingMode.HoldToHide;
-        _working.HoldVisibility = copy;
-        HoldPolicy = "custom";
-        Touch();
+        SetHold(copy);
     }
+    private void SetHold(InputBinding? binding)
+    {
+        _working.HoldVisibility = binding == null ? null : HotkeyRules.Copy(binding);
+        _suspend = true;
+        HoldPolicy = PolicyOf(binding);
+        _suspend = false;
+        OnPropertyChanged(nameof(HasOwnHold)); OnPropertyChanged(nameof(HoldBinding)); OnPropertyChanged(nameof(HoldMode));
+        Touch();
+        var copy = _working.HoldVisibility == null ? null : HotkeyRules.Copy(_working.HoldVisibility);
+        _ = PersistAsync(Selected?.Id, profile => profile.HoldVisibility = copy == null ? null : HotkeyRules.Copy(copy));
+    }
+    private void SetVisibility(InputBinding? binding)
+    {
+        _working.VisibilityBinding = binding == null ? null : HotkeyRules.Copy(binding);
+        _suspend = true;
+        VisibilityPolicy = PolicyOf(binding);
+        _suspend = false;
+        OnPropertyChanged(nameof(HasOwnVisibility)); OnPropertyChanged(nameof(Visibility)); OnPropertyChanged(nameof(VisibilityMode));
+        Touch();
+        var copy = _working.VisibilityBinding == null ? null : HotkeyRules.Copy(_working.VisibilityBinding);
+        _ = PersistAsync(Selected?.Id, profile => profile.VisibilityBinding = copy == null ? null : HotkeyRules.Copy(copy));
+    }
+    private static string PolicyOf(InputBinding? binding) => binding == null ? "follow" : string.IsNullOrEmpty(binding.Key) ? "off" : "custom";
 
     public bool GammaSupported => Gpu.SoftwareGamma;
     public bool NvidiaColorSupported => Gpu.NvidiaDigitalVibrance;
@@ -113,7 +144,7 @@ public sealed partial class GamesViewModel : ObservableObject
                 return;
             }
             copy.Mode = value;
-            ApplyVisibility(copy);
+            SetVisibility(copy);
         }
     }
 
@@ -214,8 +245,8 @@ public sealed partial class GamesViewModel : ObservableObject
         IsDirty = false;
         UseColors = _working.DisplayColorsEnabled;
         UseCap = _working.NvidiaFpsCap != null;
-        CustomVisibility = _working.VisibilityBinding != null;
-        HoldPolicy = _working.HoldVisibility is null ? "follow" : string.IsNullOrEmpty(_working.HoldVisibility.Key) ? "off" : "custom";
+        VisibilityPolicy = PolicyOf(_working.VisibilityBinding);
+        HoldPolicy = PolicyOf(_working.HoldVisibility);
         FpsMode = _working.FpsOverlay switch { true => "on", false => "off", _ => "follow" };
         _suspend = false;
         NotifyWorking();
@@ -233,18 +264,6 @@ public sealed partial class GamesViewModel : ObservableObject
     {
         if (_suspend || Selected == null) return;
         _working.NvidiaFpsCap = value ? _working.NvidiaFpsCap ?? 144 : null;
-        Touch();
-    }
-
-    partial void OnCustomVisibilityChanged(bool value)
-    {
-        if (_suspend || Selected == null) return;
-        _working.VisibilityBinding = value ? _working.VisibilityBinding ?? new InputBinding { Key = "X", Modifiers = KeyModifiers.Alt } : null;
-        OnPropertyChanged(nameof(Visibility));
-        OnPropertyChanged(nameof(HoldBinding));
-        OnPropertyChanged(nameof(HoldMode));
-        OnPropertyChanged(nameof(HoldMouseKey));
-        OnPropertyChanged(nameof(HasOwnHold));
         Touch();
     }
 
@@ -277,6 +296,8 @@ public sealed partial class GamesViewModel : ObservableObject
             var saved = await _core.SaveGameProfileAsync(JsonClone.Clone(_working)).ConfigureAwait(true);
             _savedJson = JsonClone.Text(saved);
             IsDirty = false;
+            // Core now applies the saved colors in the current context; the preview has done its job.
+            await _colorPreview.EndAsync().ConfigureAwait(true);
             _ui.Toast(Loc.Instance["Toast_Saved"]);
         }
         catch (CoreException ex) { Error = ErrorText.For(ex.Code); }
@@ -374,15 +395,7 @@ public sealed partial class GamesViewModel : ObservableObject
         if (commit == null || Selected == null) return;
         var binding = HotkeyRules.Copy(commit.Binding);
         binding.Mode = HotkeyRules.IsWheel(binding.Key) ? BindingMode.Toggle : VisibilityMode;
-        ApplyVisibility(binding);
-    }
-
-    public void ApplyVisibility(InputBinding binding)
-    {
-        _working.VisibilityBinding = HotkeyRules.Copy(binding);
-        CustomVisibility = true;
-        OnPropertyChanged(nameof(Visibility));
-        Touch();
+        SetVisibility(binding);
     }
 
     private async Task CreateAsync(string processName, string displayName)
@@ -405,19 +418,22 @@ public sealed partial class GamesViewModel : ObservableObject
         catch (Exception) { Error = ErrorText.For(null); }
     }
 
-    private async Task PersistCrosshairAsync(string? profileId, string crosshairId)
+    private Task PersistCrosshairAsync(string? profileId, string crosshairId) => PersistAsync(profileId, profile => profile.CrosshairId = crosshairId);
+
+    /// <summary>Saves one field on top of the stored profile, leaving the rest of the working copy unsaved.</summary>
+    private async Task PersistAsync(string? profileId, Action<GameProfile> change)
     {
         if (string.IsNullOrEmpty(profileId)) return;
         var profile = SavedProfile();
         if (profile == null || profile.Id != profileId) return;
-        profile.CrosshairId = crosshairId;
+        change(profile);
         try
         {
-            var saved = await _core.SaveGameProfileAsync(profile).ConfigureAwait(true);
+            await _core.SaveGameProfileAsync(profile).ConfigureAwait(true);
             if (Selected?.Id != profileId) return;
             var baseline = SavedProfile();
             if (baseline == null) return;
-            baseline.CrosshairId = saved.CrosshairId;
+            change(baseline);
             _savedJson = JsonClone.Text(baseline);
             Touch();
         }
@@ -432,9 +448,10 @@ public sealed partial class GamesViewModel : ObservableObject
         return profile == null ? null : JsonClone.Clone(profile);
     }
 
-    [RelayCommand] private void BeginColors() => _colorPreview.Begin();
+    // The preview stays on after a slider is released (the released value must stay on screen) and
+    // ends on Save, on another profile, on page change and when the window parks.
     [RelayCommand] private Task EndColorsAsync() => _colorPreview.EndAsync();
-    private void ColorTouched() { Touch(); if (UseColors) _colorPreview.Update(Colors()); }
+    private void ColorTouched() { Touch(); if (UseColors) { _colorPreview.Begin(); _colorPreview.Update(Colors()); } }
     private DisplayColorSettings Colors() => _working.DisplayColors ??= new DisplayColorSettings();
 
     private void Touch()
@@ -460,8 +477,10 @@ public sealed partial class GamesViewModel : ObservableObject
         OnPropertyChanged(nameof(Visibility));
         OnPropertyChanged(nameof(HoldBinding));
         OnPropertyChanged(nameof(HoldMode));
-        OnPropertyChanged(nameof(HoldMouseKey));
         OnPropertyChanged(nameof(HasOwnHold));
+        OnPropertyChanged(nameof(HasOwnVisibility));
+        OnPropertyChanged(nameof(GlobalVisibilityText));
+        OnPropertyChanged(nameof(GlobalHoldText));
         OnPropertyChanged(nameof(VisibilityMode));
         OnPropertyChanged(nameof(SuggestionText));
     }

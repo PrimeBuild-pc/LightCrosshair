@@ -234,16 +234,23 @@ public class Review4Tests
         var row = hotkeys.Rows.First(item => item.Action == "ToggleVisibility");
         row.Binding = new LightCrosshair.Contracts.InputBinding { Key = "X", Modifiers = KeyModifiers.Alt | KeyModifiers.Shift, Mode = BindingMode.HoldToShow };
 
-        await hotkeys.SetMouseCommand.ExecuteAsync(new MousePick { Action = "ToggleVisibility", Key = "Mouse5" });
-        Assert.Equal("Mouse5", row.Binding.Key);
-        Assert.Equal(KeyModifiers.Alt | KeyModifiers.Shift, row.Binding.Modifiers);
-        Assert.Equal(BindingMode.HoldToShow, row.Binding.Mode);
-        Assert.Equal("Mouse5", row.MouseKey);
-
-        await hotkeys.SetMouseCommand.ExecuteAsync(new MousePick { Action = "ToggleVisibility", Key = "WheelDown" });
-        Assert.Equal("WheelDown", row.Binding.Key);
-        Assert.Equal(BindingMode.Toggle, row.Binding.Mode);
-        Assert.Equal(KeyModifiers.Alt | KeyModifiers.Shift, row.Binding.Modifiers);
+        // The ▾ menu of the single binding control commits through the same path as a capture.
+        UiSta.Run(() =>
+        {
+            var box = new BindingCaptureBox { Binding = row.Binding, CapturedCommand = hotkeys.CommitCommand, CommandParameter = "ToggleVisibility" };
+            Assert.Equal(["RightClick", "MiddleClick", "Mouse4", "Mouse5", "WheelUp", "WheelDown"], box.MenuKeys);
+            box.PickMouse("Mouse5");
+            Assert.Equal("Mouse5", row.Binding.Key);
+            Assert.Equal(KeyModifiers.Alt | KeyModifiers.Shift, row.Binding.Modifiers);
+            Assert.Equal(BindingMode.HoldToShow, row.Binding.Mode);
+            box.Binding = row.Binding;
+            box.PickMouse("WheelDown");
+            Assert.Equal("WheelDown", row.Binding.Key);
+            Assert.Equal(BindingMode.Toggle, row.Binding.Mode);
+            Assert.Equal(KeyModifiers.Alt | KeyModifiers.Shift, row.Binding.Modifiers);
+            Assert.DoesNotContain(new BindingCaptureBox { AllowWheel = false }.MenuKeys, HotkeyRules.IsWheel);
+        });
+        await Task.CompletedTask;
     }
 
     [Fact]

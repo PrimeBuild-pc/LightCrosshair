@@ -25,10 +25,13 @@ public class ColorsPreviewTests
         main.Settings.UseColors=true; main.Settings.BeginColorsCommand.Execute(null); main.Settings.Gamma=115;
         await main.Settings.EndColorsCommand.ExecuteAsync(null);
         Assert.True(core.Snapshot!.Store.Settings.DisplayColorsEnabled); Assert.Equal(115,core.Snapshot.Store.Settings.DisplayColors!.Gamma);
-        main.Games.UseColors=true; main.Games.BeginColorsCommand.Execute(null); main.Games.Gamma=125;
-        await main.Games.EndColorsCommand.ExecuteAsync(null);
-        Assert.Null(core.ColorPreviews.Last()); Assert.Null(core.Snapshot.Store.GameProfiles[0].DisplayColors);
+        // Games: the released value stays previewed (not saved) until Save, which then ends the preview.
+        main.Games.UseColors=true; main.Games.Gamma=125; await Task.Delay(200);
+        Assert.Equal(125,core.ColorPreviews.Last()!.Gamma); Assert.Null(core.Snapshot.Store.GameProfiles[0].DisplayColors);
         await main.Games.SaveCommand.ExecuteAsync(null); Assert.Equal(125,core.Snapshot.Store.GameProfiles[0].DisplayColors!.Gamma);
+        Assert.Null(core.ColorPreviews.Last());
+        main.Games.Gamma=130; await Task.Delay(200); Assert.Equal(130,core.ColorPreviews.Last()!.Gamma);
+        await main.NavigateCommand.ExecuteAsync("hotkeys"); Assert.Null(core.ColorPreviews.Last());
         main.Settings.BeginColorsCommand.Execute(null); main.Settings.Gamma=116; main.Park();
         await main.Settings.EndColorsCommand.ExecuteAsync(null); Assert.Null(core.ColorPreviews.Last());
     }

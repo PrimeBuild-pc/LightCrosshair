@@ -209,7 +209,12 @@ public class BindingCaptureBox : Border
     public static readonly DependencyProperty CaptureChangedCommandProperty = DependencyProperty.Register(nameof(CaptureChangedCommand), typeof(ICommand), typeof(BindingCaptureBox));
     public static readonly DependencyProperty CommandParameterProperty = DependencyProperty.Register(nameof(CommandParameter), typeof(object), typeof(BindingCaptureBox));
 
+    /// <summary>Wheel entries in the ▾ menu; off for "while held" bindings.</summary>
+    public static readonly DependencyProperty AllowWheelProperty = DependencyProperty.Register(nameof(AllowWheel), typeof(bool), typeof(BindingCaptureBox), new PropertyMetadata(true));
+    internal static readonly string[] MouseKeys = ["RightClick", "MiddleClick", "Mouse4", "Mouse5", "WheelUp", "WheelDown"];
+
     private readonly TextBlock _text = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 8, 0) };
+    private readonly Button _menuButton;
     private readonly DispatcherTimer _renew = new() { Interval = TimeSpan.FromSeconds(30) };
     private Window? _window;
     private bool _capturing;
@@ -224,7 +229,20 @@ public class BindingCaptureBox : Border
         BorderBrush = Application.Current?.TryFindResource("BorderStrongBrush") as Brush;
         Focusable = true;
         Cursor = Cursors.Hand;
-        Child = _text;
+        // One control per binding: capture a key or button, or pick a mouse button from the ▾ menu.
+        _menuButton = new Button
+        {
+            Content = new TextBlock { Text = Icons.Chevron, FontFamily = Application.Current?.TryFindResource("IconFont") as FontFamily, FontSize = 12 },
+            Style = Application.Current?.TryFindResource("GhostButton") as Style,
+            Padding = new Thickness(10, 0, 10, 0),
+            MinHeight = 30,
+        };
+        _menuButton.Click += (_, _) => OpenMouseMenu();
+        var dock = new DockPanel();
+        DockPanel.SetDock(_menuButton, Dock.Right);
+        dock.Children.Add(_menuButton);
+        dock.Children.Add(_text);
+        Child = dock;
         MouseLeftButtonDown += (_, e) => { Start(); e.Handled = true; };
         Loaded += (_, _) =>
         {
@@ -255,6 +273,26 @@ public class BindingCaptureBox : Border
     public ICommand? CapturedCommand { get => (ICommand?)GetValue(CapturedCommandProperty); set => SetValue(CapturedCommandProperty, value); }
     public ICommand? CaptureChangedCommand { get => (ICommand?)GetValue(CaptureChangedCommandProperty); set => SetValue(CaptureChangedCommandProperty, value); }
     public object? CommandParameter { get => GetValue(CommandParameterProperty); set => SetValue(CommandParameterProperty, value); }
+    public bool AllowWheel { get => (bool)GetValue(AllowWheelProperty); set => SetValue(AllowWheelProperty, value); }
+
+    internal IEnumerable<string> MenuKeys => MouseKeys.Where(key => AllowWheel || !HotkeyRules.IsWheel(key));
+
+    /// <summary>Same commit path as a capture; the current modifiers and mode stay.</summary>
+    internal void PickMouse(string key) => Finish(key, Binding?.Modifiers ?? LightCrosshair.Contracts.KeyModifiers.None);
+
+    private void OpenMouseMenu()
+    {
+        EndCapture();
+        var menu = new ContextMenu { PlacementTarget = this, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+        foreach (var key in MenuKeys)
+        {
+            var item = new MenuItem { Header = HotkeyRules.Format(new LightCrosshair.Contracts.InputBinding { Key = key }), IsChecked = Binding?.Key == key };
+            System.Windows.Automation.AutomationProperties.SetName(item, (string)item.Header);
+            item.Click += (_, _) => PickMouse(key);
+            menu.Items.Add(item);
+        }
+        menu.IsOpen = true;
+    }
 
     private void LocChanged() { }
 
@@ -320,6 +358,7 @@ public class BindingCaptureBox : Border
         if (_capturing) return;
         _text.Text = HotkeyRules.Format(Binding);
         System.Windows.Automation.AutomationProperties.SetName(this, _text.Text);
+        System.Windows.Automation.AutomationProperties.SetName(_menuButton, Loc.Instance["Hotkeys_MouseButton"]);
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)
@@ -327,7 +366,8 @@ public class BindingCaptureBox : Border
         base.OnPreviewKeyDown(e);
         if (!_capturing)
         {
-            if (e.Key is Key.Enter or Key.Space) { Start(); e.Handled = true; }
+            if (e.Key == Key.System && e.SystemKey == Key.Down) { OpenMouseMenu(); e.Handled = true; }
+            else if (e.OriginalSource != _menuButton && e.Key is Key.Enter or Key.Space) { Start(); e.Handled = true; }
             return;
         }
         e.Handled = true;
@@ -374,8 +414,9 @@ public class BindingCaptureBox : Border
     {
         var binding = new LightCrosshair.Contracts.InputBinding { Key = key, Modifiers = modifiers, Mode = Binding?.Mode ?? LightCrosshair.Contracts.BindingMode.Toggle };
         EndCapture();
-        if (CapturedCommand?.CanExecute(CommandParameter) == true)
-            CapturedCommand.Execute(new HotkeyCommit { Action = CommandParameter as string ?? "", Binding = binding });
+        var commit = new HotkeyCommit { Action = CommandParameter as string ?? "", Binding = binding };
+        if (CapturedCommand?.CanExecute(commit) == true)
+            CapturedCommand.Execute(commit);
     }
 
     private static KeyModifiers ReadModifiers()

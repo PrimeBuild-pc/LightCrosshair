@@ -70,8 +70,9 @@ public sealed class EqualsParameterConverter : IValueConverter
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => string.Equals(value?.ToString(), parameter?.ToString(), StringComparison.Ordinal);
 
+    // Radio segments: the checked one writes its parameter back; the ones being unchecked write nothing.
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotSupportedException();
+        => value is true && parameter != null ? parameter : Binding.DoNothing;
 }
 
 public sealed class Base64ImageConverter : IValueConverter

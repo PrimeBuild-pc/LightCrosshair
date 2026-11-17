@@ -22,6 +22,10 @@
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_Frametime}" IsChecked="{Binding ShowFrametime}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_Frametime}"/>
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_Low}" IsChecked="{Binding Show1PercentLow}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_Low}"/>
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Fps_Graph}" IsChecked="{Binding ShowFrametimeGraph}" Margin="0,4" AutomationProperties.Name="{loc:Tr Fps_Graph}"/>
+      <StackPanel Visibility="{Binding ShowFrametimeGraph, Converter={StaticResource Vis}}" Margin="0,0,0,4">
+        <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Fps_GraphOwnColor}" IsChecked="{Binding UseGraphColor}" Margin="0,4" AutomationProperties.Name="{loc:Tr Fps_GraphOwnColor}"/>
+        <controls:ColorField Caption="{loc:Tr Fps_GraphColor}" Value="{Binding GraphColor}" Visibility="{Binding UseGraphColor, Converter={StaticResource Vis}}"/>
+      </StackPanel>
       <controls:ColorField Caption="{loc:Tr Settings_TextColor}" Value="{Binding TextColor}"/>
       <controls:ColorField Caption="{loc:Tr Settings_BackgroundColor}" Value="{Binding BackgroundColor}"/>
       <controls:NumberSlider Caption="{loc:Tr Settings_BackgroundOpacity}" Value="{Binding BackgroundOpacityPercent}" Minimum="0" Maximum="100" Unit="{loc:Tr Unit_Percent}" Integer="False"/>
