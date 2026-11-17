@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>false</UseWindowsForms>
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
@@ -17,6 +17,7 @@
     <ProjectReference Include="..\LightCrosshair\LightCrosshair.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
     <Compile Remove="obj_tmp\**\*.cs" />
     <Compile Remove="bin_tmp\**\*.cs" />
     <None Remove="obj_tmp\**" />

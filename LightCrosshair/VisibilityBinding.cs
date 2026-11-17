@@ -63,8 +63,10 @@ public sealed record VisibilityBinding
 internal sealed class VisibilityBindingState
 {
     private bool _down;
+    private bool _blocked;
     public bool? Override { get; private set; }
-    public void Reset() { _down = false; Override = null; }
+    public void Reset() { _down = false; _blocked = false; Override = null; }
+    public void CancelUntilRelease(bool held = false) { _blocked |= _down || held; _down = false; Override = null; }
 
     public bool Process(VisibilityBinding binding, BindingInput input, int key, int modifiers, bool down)
     {
@@ -79,26 +81,49 @@ internal sealed class VisibilityBindingState
             if ((binding.Modifiers & modifiers) != binding.Modifiers) Override = null;
             return false;
         }
+        if (_blocked) return false;
         if (!trigger || _down) return false;
         _down = !binding.IsWheel;
-        if (!binding.Matches(input, key, modifiers)) return false;
+        // A hold only needs its own modifiers: players sprint or crouch (Shift/Ctrl) while aiming.
+        if (binding.Mode == BindingMode.Toggle ? !binding.Matches(input, key, modifiers) : (binding.Modifiers & ~modifiers) != 0) return false;
         if (binding.Mode == BindingMode.Toggle) return true;
         Override = binding.Mode == BindingMode.HoldToShow;
         return false;
     }
 }
 
+internal static class RawMouse
+{
+    private static readonly (int Flag, BindingInput Input, bool Down)[] Buttons =
+    [(0x4, BindingInput.RightClick, true), (0x8, BindingInput.RightClick, false), (0x10, BindingInput.MiddleClick, true), (0x20, BindingInput.MiddleClick, false),
+     (0x40, BindingInput.Mouse4, true), (0x80, BindingInput.Mouse4, false), (0x100, BindingInput.Mouse5, true), (0x200, BindingInput.Mouse5, false)];
+    /// <summary>RAWMOUSE usButtonFlags/usButtonData to binding transitions in packet order. Wheel notches are presses only.</summary>
+    internal static List<(BindingInput Input, bool Down)> Decode(int flags, short wheel)
+    {
+        var events = new List<(BindingInput, bool)>(2);
+        foreach (var button in Buttons) if ((flags & button.Flag) != 0) events.Add((button.Input, button.Down));
+        if ((flags & 0x400) != 0 && wheel != 0) events.Add((wheel > 0 ? BindingInput.WheelUp : BindingInput.WheelDown, true));
+        return events;
+    }
+}
+
 // A raw-input observation without a corresponding hook callback is evidence of silent removal.
 internal sealed class HookHealth
 {
-    private long _lastHook, _lastRaw;
-    public void HookCalled(long now) => _lastHook = now;
-    public void RawInput(long now) => _lastRaw = now;
+    private long _lastHook, _lastRaw, _firstMissingRaw;
+    public void HookCalled(long now) { _lastHook = now; _firstMissingRaw = 0; }
+    public void RawInput(long now)
+    {
+        _lastRaw = now;
+        if (_firstMissingRaw == 0 && now - _lastHook > 500) _firstMissingRaw = now;
+    }
     public bool NeedsReinstall(long now)
     {
-        // Allow for raw input being delivered just after its hook callback and for batching.
-        if (_lastRaw - _lastHook <= 500 || now - _lastHook < 2000) return false;
-        _lastHook = _lastRaw = now;
+        // Give fresh raw input a delivery window before declaring its callback missing,
+        // including the first event after a long idle period.
+        if (_lastRaw - _lastHook <= 500 || now - _lastHook < 2000 ||
+            _firstMissingRaw == 0 || now - _firstMissingRaw < 500) return false;
+        _lastHook = _lastRaw = now; _firstMissingRaw = 0;
         return true;
     }
 }

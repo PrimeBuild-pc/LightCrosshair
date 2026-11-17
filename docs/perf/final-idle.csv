@@ -1,0 +1,2 @@
+IdleSeconds,WarmupSeconds,PrivateMiB,CpuOneCorePercent,RedrawsPerSecond,ActiveRepeatingTimers,WpfLoadedInCore
+60,10,14.67,0.0,0,0,False

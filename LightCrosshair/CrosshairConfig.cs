@@ -99,40 +99,17 @@ namespace LightCrosshair
         public int BrightnessValue { get; set; } = 100; // 100 = default
         public int VibranceValue { get; set; } = 50; // 50 = default
 
-        // Frame Cap Assistant settings. Assistant-only; no real limiter backend is applied.
-        public double FrameCapAssistantRefreshRateHz { get; set; } = FrameLimiting.FrameCapAssistant.DefaultRefreshRateHz;
-        public int FrameCapAssistantTargetFps { get; set; } = FrameLimiting.FrameCapAssistant.RecommendTargetFps(FrameLimiting.FrameCapAssistant.DefaultRefreshRateHz);
 
         // FPS Overlay Settings
         public bool EnableFpsOverlay { get; set; } = false;
-        public FpsOverlayDisplayMode FpsOverlayMode { get; set; } = FpsOverlayDisplayMode.Minimal;
-        public bool UltraLightweightMode { get; set; } = false;
         public int FpsOverlayX { get; set; } = 10;
         public int FpsOverlayY { get; set; } = 10;
-        public bool ShowFrametimeGraph { get; set; } = true;
-        public const int GraphRefreshRateDefaultMs = 66;
-        public const int GraphTimeWindowDefaultMs = 2000;
 
-        private int _graphRefreshRateMs = GraphRefreshRateDefaultMs;
-        private int _graphTimeWindowMs = GraphTimeWindowDefaultMs;
 
-        public int GraphRefreshRateMs
-        {
-            get => _graphRefreshRateMs;
-            set => _graphRefreshRateMs = NormalizeGraphRefreshRatePreset(value);
-        }
 
-        public int GraphTimeWindowMs
-        {
-            get => _graphTimeWindowMs;
-            set => _graphTimeWindowMs = NormalizeGraphTimeWindowPreset(value);
-        }
         public bool Show1PercentLows { get; set; } = true;
         public bool ShowFps { get; set; } = true;
         public bool ShowFrameTime { get; set; } = true;
-        public bool ShowFramePacing { get; set; } = false;
-        public bool ShowGenFrames { get; set; } = true;
-        public bool ShowFpsDiagnostics { get; set; } = false;
         public string FpsOverlayColorSerialized { get; set; } = "255,255,255";
         public string FpsOverlayBgColorSerialized { get; set; } = "0,0,0";
         private int _fpsOverlayScale = 100;
@@ -165,7 +142,7 @@ namespace LightCrosshair
                     "LightCrosshair");
                 
                 // Create the directory if it doesn't exist
-                if (!Directory.Exists(appDataPath))
+                if (loadSettings && !_isDeserializing && !Directory.Exists(appDataPath))
                 {
                     Directory.CreateDirectory(appDataPath);
                 }
@@ -268,25 +245,13 @@ namespace LightCrosshair
                             ? 100
                             : Math.Clamp(loadedConfig.BrightnessValue, 50, 150);
                         VibranceValue = Math.Clamp(loadedConfig.VibranceValue, 0, 100);
-                        FrameCapAssistantRefreshRateHz = NormalizeFrameCapAssistantRefreshRate(loadedConfig.FrameCapAssistantRefreshRateHz);
-                        FrameCapAssistantTargetFps = NormalizeFrameCapAssistantTargetFps(loadedConfig.FrameCapAssistantTargetFps);
 
                         EnableFpsOverlay = loadedConfig.EnableFpsOverlay;
-                        FpsOverlayMode = Enum.IsDefined(typeof(FpsOverlayDisplayMode), loadedConfig.FpsOverlayMode)
-                            ? loadedConfig.FpsOverlayMode
-                            : FpsOverlayDisplayMode.Minimal;
-                        UltraLightweightMode = loadedConfig.UltraLightweightMode;
                         FpsOverlayX = loadedConfig.FpsOverlayX;
                         FpsOverlayY = loadedConfig.FpsOverlayY;
-                        ShowFrametimeGraph = loadedConfig.ShowFrametimeGraph;
-                        GraphRefreshRateMs = loadedConfig.GraphRefreshRateMs;
-                        GraphTimeWindowMs = loadedConfig.GraphTimeWindowMs;
                         Show1PercentLows = loadedConfig.Show1PercentLows;
                         ShowFps = loadedConfig.ShowFps;
                         ShowFrameTime = loadedConfig.ShowFrameTime;
-                        ShowFramePacing = loadedConfig.ShowFramePacing || loadedConfig.ShowFpsDiagnostics;
-                        ShowGenFrames = loadedConfig.ShowGenFrames;
-                        ShowFpsDiagnostics = loadedConfig.ShowFpsDiagnostics;
                         FpsOverlayColorSerialized = loadedConfig.FpsOverlayColorSerialized ?? "255,255,255";
                         FpsOverlayBgColorSerialized = loadedConfig.FpsOverlayBgColorSerialized ?? "0,0,0";
                         FpsOverlayScale = loadedConfig.FpsOverlayScale;
@@ -345,38 +310,10 @@ namespace LightCrosshair
                 : legacyDeviceName ?? string.Empty;
         }
 
-        public static int NormalizeGraphRefreshRatePreset(int value)
-        {
-            if (value <= 0) return GraphRefreshRateDefaultMs;
-            if (value <= 49) return 33;
-            if (value <= 83) return 66;
-            return 100;
-        }
-
-        public static int NormalizeGraphTimeWindowPreset(int value)
-        {
-            if (value <= 0) return GraphTimeWindowDefaultMs;
-            if (value <= 1750) return 1500;
-            if (value <= 2500) return 2000;
-            return 3000;
-        }
-
         public static int NormalizeFpsOverlayScale(int value)
         {
             if (value <= 0) return 100;
             return Math.Clamp(value, 50, 300);
-        }
-
-        public static double NormalizeFrameCapAssistantRefreshRate(double value)
-        {
-            if (!double.IsFinite(value) || value <= 0) return FrameLimiting.FrameCapAssistant.DefaultRefreshRateHz;
-            return Math.Clamp(value, 30.0, 500.0);
-        }
-
-        public static int NormalizeFrameCapAssistantTargetFps(int value)
-        {
-            if (value <= 0) return FrameLimiting.FrameCapAssistant.RecommendTargetFps(FrameLimiting.FrameCapAssistant.DefaultRefreshRateHz);
-            return Math.Clamp(value, 15, 1000);
         }
 
         private void MigrateLegacyCycleBackHotkeyDefaults()

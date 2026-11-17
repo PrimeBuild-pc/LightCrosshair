@@ -1,692 +1,154 @@
-# LightCrosshair — Settings & Options Guide
+# Settings guide — LightCrosshair 2.0
 
-## Table of Contents
+Open settings from the tray or with Alt+L. By default closing this window leaves the Core and overlay running (Settings → Behavior → **When I close the window** can make it exit everything). **Exit LightCrosshair** on the Settings page stops both processes and restores display colors. Confirmations and errors appear inside the window; Tab moves between their buttons, Enter chooses, Esc cancels.
 
-1. [Crosshair Settings](#crosshair-settings)
-2. [Hotkeys](#hotkeys)
-3. [Display Settings (Gamma / Vibrance / GPU Status)](#display-settings-gamma--vibrance--gpu-status)
-4. [FPS Overlay Settings](#fps-overlay-settings)
-5. [GPU Driver Integration](#gpu-driver-integration)
-6. [Profiles](#profiles)
-7. [Advanced / Troubleshooting](#advanced--troubleshooting)
+## Visibility and saving
 
----
+**Show crosshair** in the sidebar is the global visibility switch. Layer visibility is independent: a design with every layer hidden draws nothing even when the global switch is on. Hold bindings and configured-game rules can also affect whether the overlay is shown.
 
-## Crosshair Settings
+Studio and game-profile edits have explicit **Save** actions. Settings and global hotkey changes save automatically; errors are shown in the UI. Using a saved crosshair or cycling saves the selection into the active configured game profile. With no configured game active, it replaces the default crosshair.
 
-The Crosshair Builder tab in the Settings window lets you customise the appearance, position, and visibility of the on-screen crosshair overlay.
+## Studio
 
-### Enable Custom Crosshair
+Choose a design name, edit its layers and use **Save** or **Save as new**. Undo/redo is available through the buttons and Ctrl+Z/Ctrl+Y. Leaving Studio with unsaved edits offers Save, Discard or Cancel.
 
-- **What it does:** Toggles the crosshair on/off globally. When disabled, the overlay is hidden regardless of other visibility settings.
-- **UI control:** Checkbox labelled "Enable Custom Crosshair".
-- **Default:** On (checked).
-- **Performance impact:** None when disabled; negligible when enabled.
+The layer list supports adding, selecting, hiding, duplicating, deleting and reordering up to eight layers. Drag a layer, use the move buttons, or press Ctrl+Up/Ctrl+Down while the list is focused. Draw order matters when layers overlap.
 
-### Shape
+### Layer controls
 
-- **What it does:** Selects the basic shape of the crosshair.
-- **Available shapes (UI):** Dot, Cross, Circle.
-- **Internal shapes (code):** `Dot`, `Cross`, `CrossOutlined`, `Circle`, `CircleOutlined`, `T`, `X`, `Box`, `GapCross`, `Custom` — these are available programmatically but only Dot, Cross, and Circle are exposed in the UI.
-- **UI control:** Combo box (ShapeCombo).
-- **Default:** Cross.
-- **Recommendation:** Choose the shape that gives you the best visibility in your games. Cross is the most versatile.
+| Control | Effect |
+|---|---|
+| Kind | Arms, Dot, Ring, Box or PNG Image |
+| Length / diameter | Size in physical pixels, 1–256; arm length for Arms, diameter/side for other vector shapes |
+| Thickness | Stroke width for Arms, Ring and Box, 1–64 px |
+| Gap | Empty center for Arms; open sections of a Box create corner brackets, 0–128 px |
+| Arms | Enable Top, Right, Bottom and Left independently; rotation can produce an X |
+| Color | Vector fill/stroke color in hexadecimal RGB; images retain their PNG colors. The 12 swatches are high-contrast crosshair colors (neon green, neon yellow, cyan, fuchsia, red, electric blue, chartreuse, hot pink, neon orange, electric purple, white, black) |
+| Fill | Optional independent interior color for Ring and Box |
+| Opacity | Whole layer opacity, 0–100%, including its outline and fill |
+| Offset X / Y | Layer position relative to the crosshair center; editor range −128 to +128 px |
+| Rotation | Layer rotation; editor range −180° to +180° |
+| Outline | Enable an outline, choose its color and thickness, 1–8 px |
+| Image scale / Import image | Scale a PNG from 0.1× to 4×, or choose its source image |
+| Smooth edges | Rounds and antialiases arm ends and outline corners, and antialiases rings, dots and rotated shapes. Off: crisp, square integer-pixel geometry |
 
-### Size
+The controls shown depend on the selected kind. Every shape is drawn symmetric around its center: an odd width or size centers on the center pixel, an even one on the corner between the four center pixels, and arms keep the same gap on every side. Imported designs are validated by Core; the table describes the editor's controls.
 
-- **What it does:** Controls the overall size (diameter/span) of the crosshair in pixels.
-- **Range:** 2–100.
-- **UI control:** Slider (SizeSlider).
-- **Default:** 15 (in profile); config default is 20.
-- **Performance impact:** None.
+### Preview
 
-### Thickness
+Zoom at Fit, 1×, 2× or 4× (one crosshair pixel is exactly 1, 2 or 4 screen pixels at any window size and screen scale; a zoom larger than the preview opens centered on the crosshair) and choose dark, mid, light, checkerboard or a custom background. Background and zoom are preview aids; they do not change the in-game background or crosshair size. Preview uses the same renderer as the overlay.
 
-- **What it does:** Controls the thickness of the crosshair lines in pixels.
-- **Range:** 1–20.
-- **UI control:** Slider (ThicknessSlider).
-- **Default:** 5 (in profile); config default is 2.
-- **Performance impact:** None.
+**Live in game** sends the current editable design to the overlay, temporarily overriding global visibility. It does not save the design. Turning it off, disconnecting settings or leaving it without an update for ten minutes ends the temporary preview. Use Save to retain edits.
 
-### Outline
+PNG import accepts a PNG file up to 2 MiB and 512 pixels on either side. It is copied into the app's image store; the original file is not edited.
 
-- **What it does:** When enabled, draws a contrasting outline (edge colour) around the crosshair for better visibility against bright or complex backgrounds.
-- **UI control:** Checkbox labelled "Use Secondary/Edge Color".
-- **Default:** Off (unchecked).
-- **Recommendation:** Enable if you play on bright or highly varied backgrounds.
+## Library and sharing
 
-### Gap
+Card thumbnails show each crosshair at its real in-game size, pixel for pixel (very large designs are reduced to fit). **My crosshairs** contains saved designs; **Presets** is a gallery of 30 bundled designs. Search by name and use tag filters to narrow the lists. Click a preset to **Use** it: accept or change the suggested name and press Enter to save and activate your copy; Esc cancels. The bundled original stays unchanged. If a copy of that preset already exists, you can reuse it.
 
-- **What it does:** Sets the size of the centre gap in cross-type shapes. A larger gap gives you a clearer view of the target behind the crosshair.
-- **Range:** 0–50.
-- **UI control:** Slider (GapSlider).
-- **Default:** 4.
-- **Recommendation:** 2–6 is typical for most games. Larger gaps suit slower, more precise aiming.
+Click a saved crosshair to use it in the current context; cards show **In use · game name** and **Default** assignments. **Set as default for all apps** deliberately changes the default even while a game is active. The pencil, Edit in the menu, or a double-click opens that crosshair in Studio (asking first if Studio has unsaved changes). The saved-card menu offers Use, Set as default for all apps, Edit, Duplicate, Favorite, Export and Delete. A crosshair used as the default or assigned to a game cannot be deleted until its assignments are changed.
 
-### Colors
+Next/previous hotkeys cycle favorites only when at least two exist. With zero or one favorite, they cycle all saved crosshairs. The order matches Library (most recently updated first); gallery presets are included only after a copy is saved. Cycling persists into the active enabled game profile or, outside a configured game, the default. Leaving a game restores the default selection without losing that game's saved choice.
 
-#### Main Color (Outer)
+- Copy/paste an `LC2:` share code for a vector design. Image layers cannot be included in share codes.
+- Export `.lcx.json` files to include PNG images with the selected designs; import them from Library.
+- Imported or duplicated designs get new identifiers. Import does not replace the original designs.
 
-- **What it does:** The primary colour of the crosshair. For simple shapes (Dot, Cross) this is the sole colour.
-- **UI control:** Button labelled "Main Color" → opens a colour picker dialog.
-- **Default:** Red (in profile).
-- **Recommendation:** Choose a colour that contrasts with your typical game backgrounds. Neon colours (cyan, lime, magenta) tend to work well.
+## Games
 
-#### Secondary/Edge Color
+Use **Add game** to choose a running windowed process or browse to an `.exe`. A profile matches the executable file name, not a particular window title or full path. One profile is allowed per executable name.
 
-- **What it does:** Used for the edge/outline when the Outline option is enabled. For composite shapes this is the inner shape colour.
-- **UI control:** Button labelled "Secondary/Edge Color" → opens a colour picker dialog.
-- **Default:** White (in profile).
+Select a profile to edit its name, colors and other options, then **Save profile**. The crosshair choice and the two binding overrides save immediately. The list's enable switch controls whether its foreground overrides are used. Deleting a profile removes its game association, leaving its saved crosshair in Library.
 
-### Visibility Presets
+| Control | Behavior |
+|---|---|
+| Crosshair | Saved design to use while the configured executable is in the foreground |
+| Visibility shortcut | **Use global** (the global shortcut is shown below), **Off in this game**, or **Custom**: one binding field plus Toggle / Hold to hide / Hold to show. Saves immediately |
+| While held | **Use global**, **Off in this game**, or **Custom**: one binding field plus Hold to hide / Hold to show. Saves immediately |
+| FPS overlay | Follow the global setting, force On or force Off |
+| Use display colors | Apply saved values while this game is active; switching off retains the values |
+| Gamma / Contrast / Brightness | Display adjustments, 50–150; 100 is neutral |
+| Vibrance | Display vibrance, 0–100; 50 is neutral |
+| NVIDIA Digital Vibrance | Optional driver adjustment, 0–100, when supported |
+| NVIDIA FPS cap | Optional per-app driver cap; slider range 30–480 FPS |
 
-- **What it does:** Quickly applies a pre-configured high-contrast colour scheme optimised for visibility. Each preset sets:
-  - Outer and inner colour to a bright neon colour with full opacity.
-  - Edge colour to black.
-  - Enables the outline.
-- **Available presets:**
-  - **Neon Cyan** — Cyan (#00FFFF) with black outline.
-  - **Lime** — Green (#00FF00) with black outline.
-  - **Magenta** — Magenta (#FF00FF) with black outline.
-  - **Yellow** — Yellow (#FFFF00) with black outline.
-- **UI control:** Combo box + "Apply Preset" button.
-- **Default:** Neon Cyan selected.
-- **Recommendation:** Use presets instead of manual colour picking when you need maximum contrast fast. These are the safest colour path — they don't depend on the operating system's display colour backend.
+Display colors affect the display, not just the crosshair. Leaving a game restores default crosshair rules and global display colors when enabled, otherwise the original display colors; working in LightCrosshair settings preserves the current game context. Driver-specific controls depend on the available hardware and display mode. NVIDIA features are **not yet verified on NVIDIA hardware**.
 
-### Position & Tweaks
+AMD uses driver brightness, contrast and vibrance plus a per-display GDI gamma ramp. Gamma 100 preserves the existing calibration. Unsupported driver requests are reported inline and logged with the vendor's reason. Success clears an apply error; a failed restoration keeps its recovery journal for retry. NVIDIA features remain hardware-dependent.
 
-The crosshair can be nudged in 1-pixel increments to fine-tune its screen position. This is useful when the crosshair doesn't align perfectly with the centre of your screen.
+Moving a color slider previews the value live, without flashing the old colors in between. Preview requests are limited to 20 per second and always send the final value. In Games the released value stays on screen until you **Save profile**, pick another profile, leave the page, close the window or disconnect; Save then applies the saved colors at once in the current context (the game, if it is the last foreground app), no game restart needed. Settings saves automatically on release. Colors are re-applied whenever the foreground app changes, so a game that resets the display on focus gets them back.
 
-#### Crosshair Monitor
+A driver cap is written when the profile is saved and persists in the driver's application profile. Turning off the profile's foreground enable switch does not clear that cap: switch off the cap and Save, or delete the managed profile, to remove it. Old driver caps that were never managed by 2.0 are left untouched.
 
-- **What it does:** Selects the monitor used by the crosshair independently from the FPS overlay.
-- **UI control:** Dropdown labelled "Crosshair monitor".
-- **Default:** Primary monitor.
-- **Fallback:** If the selected monitor is disconnected, LightCrosshair temporarily uses the primary monitor and restores the selection when that display is available again.
-- **Performance impact:** None during rendering; display changes are handled only when settings or the Windows display layout change.
-
-#### Nudge Buttons
-
-- **What they do:** Move the crosshair 1 pixel in the respective direction.
-- **UI controls:** ← (left), ↑ (up), ↓ (down), → (right) buttons.
-- **Recommendation:** Use if the crosshair doesn't seem centred. This can happen with unusual resolutions or display scaling settings.
-
-#### Reset Center
-
-- **What it does:** Returns the crosshair to the centre of the screen.
-- **UI control:** Button labelled "Reset Center".
-
-#### Current Position
-
-- **What it does:** Shows the current X,Y coordinates of the crosshair centre.
-- **UI control:** Read-only text label.
-- **Example:** `Current Position: X=960, Y=540`
-
----
+Known-game suggestions offer **Create**, **Not now** and **Never for this game**. Not now suppresses the current suggestion; Never persists the dismissal. No game list or process information is uploaded.
 
 ## Hotkeys
 
-The Hotkeys tab lets you configure global keyboard shortcuts. LightCrosshair uses Win32 `RegisterHotKey` for global hotkey registration, which works even when the app is minimised or in the background.
+| Default | Action |
+|---|---|
+| Alt+X | Toggle crosshair visibility |
+| Alt+C | Next favorite when at least two exist; otherwise next saved crosshair |
+| Alt+V | Previous favorite when at least two exist; otherwise previous saved crosshair |
+| Alt+L | Open or close settings |
+| Alt+F | Show or hide the FPS overlay (same setting as the sidebar switch; a game's FPS override still wins) |
 
-**Important:** Hotkey conflicts with other apps or games may prevent registration. If a hotkey doesn't work, try a different combination.
+Every binding is one field. Click it and press a key, a key with Alt/Ctrl/Shift/Win, or a mouse button (Middle, Right, Mouse4, Mouse5, wheel); Esc cancels. Or open the field's ▾ menu (Alt+Down) and pick a mouse button; the current modifiers stay. **Clear** removes a binding.
 
-### Available Hotkeys
+**While held** is a separate action, unbound initially, with Hold to hide / Hold to show modes. For example, select Right click without modifiers and Hold to hide to hide while aiming. A hold also works while other modifiers are held (sprinting with Shift, crouching with Ctrl); toggles need their exact chord. Mouse buttons are read from raw input, the same stream games read, so a game's own raw-input mode does not hide them. The visibility toggle keeps Alt+X. A game can inherit, disable or replace the global hold binding. Other actions and all wheel bindings use Toggle. Releasing a hold, losing focus or starting binding capture restores the underlying visibility state; the temporary hold is never saved. Core actions are paused during binding capture and resume when it ends. Input still reaches other applications; a bound mouse button keeps its normal game behavior.
 
-| Action                     | Default Combination | Config Properties (CrosshairConfig)           |
-|----------------------------|---------------------|-----------------------------------------------|
-| Toggle Crosshair Visibility | `Alt + X`          | `HotkeyKey`, `HotkeyUseAlt/Ctrl/Shift/Win`    |
-| Cycle Profiles Forward     | `Alt + C`           | `CycleProfileHotkeyKey`, `CycleProfileHotkeyUse*` |
-| Cycle Profiles Backward    | `Alt + V`           | `CycleProfilePrevHotkeyKey`, `CycleProfilePrevHotkeyUse*` |
-| Toggle Settings Window     | `Alt + L`           | `SettingsWindowHotkeyKey`, `SettingsWindowHotkeyUse*` |
+Conflicts and Core registration failures appear under the affected action. Choose another binding if Windows or another application already owns it.
 
-### Customising a Hotkey
+## Settings
 
-For each hotkey, you can set:
-- **Modifier keys:** Alt, Ctrl, Shift, Win (any combination).
-- **Base key:** Select from a dropdown of all `System.Windows.Forms.Keys` values.
+### Display
 
-**Recommendation:** Use combinations with Alt or Ctrl to avoid interfering with in-game keybinds. Avoid single-key hotkeys as they may conflict with typing or gameplay inputs.
+Choose the overlay monitor by model name, for example **DELL S2721DGF · Display1**. The model comes from Windows display configuration; an adapter description is used when the model is unavailable. The primary monitor is the default and fallback when the selected display is unavailable. **Offset X / Y** moves the whole crosshair from that monitor's center in physical pixels; the editor exposes −200 to +200 px. Positive X moves right and positive Y moves down. The position diagram and numeric fields describe the same offset.
 
-### Hotkey Registration Errors
+### Display colors
 
-If a hotkey combination is already registered by another application, LightCrosshair will silently skip registration. The Settings window does not currently display registration failures, but the action simply won't trigger. Try a different key combination if a hotkey seems unresponsive.
+Enable **Adjust display colors** in Settings to apply gamma, contrast, brightness and vibrance on the desktop and in apps. Controls and ranges match Games. Optional NVIDIA Digital Vibrance is enabled only when the GPU reports support. An active game's enabled, configured colors override globals. With neither enabled, original display values are restored. Global settings save automatically; the released value is saved and stays applied unless an enabled game profile has priority. These changes affect the whole display, including other apps.
 
----
+### Behavior
 
-## Display Settings (Gamma / Vibrance / GPU Status)
+| Setting | Effect |
+|---|---|
+| Show only in configured games | Hide the crosshair elsewhere; the global Show crosshair switch still applies |
+| Hide during screen recording | Check for recorder processes only while enabled; an open recorder can hide the crosshair even when it is not recording |
+| Start with Windows | Start the Core for the current user at sign-in |
+| Suggest known games | Offer local profile suggestions for recognized foreground executables |
+| When I close the window | **Keep running in the tray** (default: the window hides, crosshair and FPS overlay stay) or **Exit LightCrosshair** (× quits settings and Core, restoring display colors). Tray → Exit always quits both |
 
-The Display Settings tab provides adjustments to the display's colour characteristics via hardware-level GPU LUT (Look-Up Table) operations, as well as read-only status information for GPU colour management and display sync technologies. These settings are **experimental** and depend on your display hardware and driver support.
+### Language, updates and exit
 
-### Color Backend Info
+Choose Automatic or English, Italian, Spanish, Simplified Chinese, Russian or Japanese. The UI and Core tray text update without a restart.
 
-- **What it does:** Displays the active colour management backend and GPU information.
-- **UI control:** Read-only info box.
-- **Example:** `GPU: NVIDIA GeForce RTX 3080 | Hardware path active`
+**Check now** queries the public GitHub release feed and opens the releases page when a newer version is found; it does not download or install an update. The automatic-check preference is saved, but the current UI performs checks through the explicit Check now action.
 
-### Enable Gamma/Contrast/Brightness/Vibrance Override
+About shows the version, website/source links and license information. **Exit LightCrosshair** asks for confirmation, closes settings and stops Core, restoring display colors.
 
-- **What it does:** Master toggle for display colour adjustments. When disabled, no gamma/vibrance changes are applied.
-- **UI control:** Checkbox.
-- **Default:** Off.
-- **Warning:** These settings depend on legacy Win32 API paths. They may have **no effect** if:
-  - Windows HDR is enabled.
-  - You are using a laptop with hybrid graphics (Optimus/MUX switch).
-  - Active colour profiles or Night Light are blocking the display LUT.
+## FPS overlay
 
-### Target Process
+Open **FPS overlay** in the sidebar (between Hotkeys and Settings). Use **Show FPS overlay** under Show crosshair, or the page's enable switch, to change the global setting, or override it per game. Capture starts/stops with the effective setting. It shows FPS with optional frametime and 1% low values for the foreground process, keeping separate swapchains independent. After two seconds without frames, “–” appears with a localized reason, such as no recent frames or unavailable capture permissions. Failed capture sessions retry while enabled. These are external ETW present-event measurements, not a frame-generation detector; no RTSS or game hook is required.
 
-- **What it does:** Restricts display colour adjustments to a specific game/application process. Leave empty to apply globally.
-- **UI controls:**
-  - Text box — type the process name (e.g., `valorant.exe`).
-  - Dropdown — pick from currently running processes.
-  - "Refresh List" — refreshes the running process list.
-  - "Browse .exe" — opens a file picker to select an executable.
-  - "Clear" — clears the target process (applies globally).
-- **Default:** Empty (global).
-- **Note:** The process name is matched to the foreground window. When the target process is in the foreground, display adjustments are applied. When it's not, they are reverted.
+| Control | Effect |
+|---|---|
+| Monitor | Use the crosshair's monitor, or choose another display |
+| Offset X / Y | Position from that monitor's top-left corner; editor range 0–2000 px |
+| Scale | Text/overlay scale, 0.5×–3× |
+| Frametime / 1% low | Show or hide the additional values |
+| Frametime graph | Off by default. Show about two seconds of peak frametimes under the numbers as a continuous scrolling line, drawn 0.2 s behind real time, at most 20 redraws/s. With the graph off, unchanged numbers cause no redraw; with the overlay off, capture and its timer stop. |
+| Text color / Background color | Hexadecimal RGB colors |
+| Use a different color for the graph | Off: the graph uses the text color. On: choose a graph color |
+| Background opacity | Background transparency, 0–100% |
 
-### Gamma
+## Storage and recovery
 
-- **What it does:** Adjusts the gamma ramp of the display (mid-tone brightness).
-- **Range:** 50–150 (100 = default/normal).
-- **UI control:** Slider + reset button (↻).
-- **Default:** 100.
-- **Recommendation:** Start with small adjustments (±5–10). Large gamma shifts can wash out colours or crush blacks.
+The default data folder is `%AppData%\LightCrosshair\v2`. It contains `store.json`, imported `images`, `backups`, rolling `logs\core.log`, and the UI's `ui-placement.json`. Back up the whole folder to retain images with your designs. Core is the only writer of the main store.
 
-### Contrast
+Store backups are made at most once per hour when changes occur; the newest ten are retained. A corrupt store is renamed and the newest valid backup is loaded. If loading cannot recover, Core stays running with temporary defaults, shows a notification and logs the failure; it leaves the store marker unwritten so the next launch can retry. Changes in that temporary session are not durable.
 
-- **What it does:** Adjusts the contrast of the display.
-- **Range:** 50–150 (100 = default/normal).
-- **UI control:** Slider + reset button.
-- **Default:** 100.
+The display-color recovery journal is cleared only after original values are restored. If restoration fails, restart Core to retry; keep the journal rather than deleting it.
 
-### Brightness
+V1 Hold bindings migrate to While held while retaining Alt+X for Toggle. V1 global colors migrate when no target process was configured.
 
-- **What it does:** Adjusts the overall brightness of the display.
-- **Range:** 50–150 (100 = default/normal).
-- **UI control:** Slider + reset button.
-- **Default:** 100.
-
-### Vibrance
-
-- **What it does:** Increases colour saturation. A higher value makes colours more vivid.
-- **Range:** 0–100 (50 = default/normal).
-- **UI control:** Slider + reset button.
-- **Default:** 50.
-- **Recommendation:** Values above 70 may oversaturate some colours. Values below 30 may look washed out.
-
-### NVIDIA Digital Vibrance (GPU Driver)
-
-- **What it does:** Adjusts the NVIDIA Digital Vibrance Control (DVC) level via the NVIDIA driver API. This provides hardware-level colour saturation control, independent of the software-based Vibrance slider above.
-- **Range:** 0–100 (50 = default/neutral).
-- **UI controls:**
-  - Vibrance slider: 0–100.
-  - "Apply" / "Reset to Default" buttons.
-  - Read-only status label showing current DVC level.
-  - Help "[?]" indicator with extended description.
-- **Note:** Applies to primary display only. Requires NVIDIA GPU with driver installed. No administrator rights needed.
-- **Disabled state:** When no NVIDIA GPU is detected, the control group is disabled with a tooltip explaining the reason (e.g., "AMD GPU detected — NVIDIA Digital Vibrance requires an NVIDIA GPU").
-
-### GPU Color Management Status
-
-Read-only status indicators showing the availability of hardware-level colour management APIs:
-
-| Indicator | Description | Possible Values |
-|-----------|-------------|-----------------|
-| **AMD Color Management** | Status of the AMD ADL2 colour management API (brightness, contrast, saturation) | Supported / Read Only / Unavailable / Unsupported |
-| **NVIDIA Color Vibrance** | Status of the NVIDIA DVC (Digital Vibrance Control) API | Supported / Read Only / Unavailable / Unsupported |
-
-- **UI controls:** Read-only text labels (`DispAmdColorManagement`, `DispNvidiaColorVibrance`).
-- **How it works:** These values are populated automatically from the GPU driver detection service on startup and when the "Refresh GPU Status" button is clicked.
-
-### Display Sync Technology Status
-
-Read-only status indicators showing the availability of variable refresh rate (VRR) technologies:
-
-| Indicator | Description | Possible Values |
-|-----------|-------------|-----------------|
-| **NVIDIA G-Sync** | Status of G-Sync detection via NVIDIA driver API | Supported / Read Only / Unavailable / Unsupported |
-| **AMD FreeSync** | Status of FreeSync detection via AMD ADL2 API | Supported / Read Only / Unavailable / Unsupported |
-
-- **UI controls:** Read-only text labels (`DispNvidiaGSync`, `DispAmdFreeSync`).
-- **Note:** G-Sync and FreeSync are detected but **not controllable** through LightCrosshair. These indicators only show whether the display technology is available. Use the NVIDIA Control Panel or AMD Adrenalin to configure VRR settings.
-- **Help "[?]" indicators:** Each status label has a tooltip explaining why a technology may be unsupported (e.g., "NVIDIA G-Sync control is not exposed by NvAPIWrapper.Net. G-Sync is managed by the NVIDIA driver and monitor; use the NVIDIA Control Panel to configure G-Sync.")
-
----
-
-## FPS Overlay Settings
-
-### FPS Monitor
-
-- **What it does:** Selects the monitor used by the FPS overlay independently from the crosshair.
-- **UI control:** Dropdown labelled "FPS monitor".
-- **Default:** Primary monitor.
-- **Fallback:** If the selected monitor is unavailable, the FPS overlay uses the primary monitor.
-
-The FPS & Performance tab controls LightCrosshair's built-in frame rate and frame timing overlay. It uses non-injected ETW telemetry with optional RTSS fallback.
-
-### Enable FPS Overlay
-
-- **What it does:** Master toggle for the entire performance overlay.
-- **UI control:** Checkbox labelled "Enable FPS Overlay".
-- **Default:** Off.
-- **Performance impact:** When on, LightCrosshair starts a background ETW trace session to capture present events. This has minimal overhead (<1% CPU on modern hardware), but does consume some resources.
-
-### Display Mode
-
-- **What it does:** Controls which information the overlay shows.
-- **Available modes:**
-  - **Off** — Overlay hidden (same as disabling the overlay checkbox).
-  - **Minimal** — Shows only the basic FPS counter, frame time, and data source. Compact layout.
-  - **Detailed** — Shows full metrics including 1% lows, frame generation, and optional pacing diagnostics.
-- **UI control:** Combo box (FpsOverlayModeCombo).
-- **Default:** Minimal.
-- **Performance impact:** Detailed mode has higher overhead due to graph rendering and pacing calculations. Minimal mode is recommended for lower-end systems.
-
-### Ultra-Lightweight Mode
-
-- **What it does:** Prioritises low overhead by:
-  - Reducing the update interval to 500 ms (instead of 33–100 ms).
-  - Displaying simple text only (no graph).
-  - Hiding pacing, diagnostics, and frame-generation details.
-  - Forcing the effective display mode to Minimal (even if Detailed is set).
-- **UI control:** Checkbox labelled "Ultra-lightweight mode".
-- **Default:** Off.
-- **Performance impact:** Significantly lower CPU/GPU usage. Recommended for low-end systems or when every frame matters.
-- **Tooltip note:** "Prioritizes low overhead: slower updates, simple text, no graph, and no detailed diagnostics."
-
-### Position X / Y
-
-- **What it does:** Sets the screen position of the overlay's top-left corner (in screen coordinates).
-- **Range:** X: 0–3840, Y: 0–2160.
-- **UI control:** Sliders (FpsXSlider, FpsYSlider).
-- **Default:** X=10, Y=10.
-- **Recommendation:** Keep the overlay in a corner where it doesn't obstruct gameplay elements. The values automatically clamp to keep the overlay fully on-screen.
-
-### Overlay Scale
-
-- **What it does:** Scales the entire overlay (text, graph, spacing) as a percentage of normal size.
-- **Range:** 50%–300%.
-- **UI control:** Slider (FpsScaleSlider).
-- **Default:** 100%.
-- **Performance impact:** None. Larger sizes may increase pixel fill, but the difference is negligible.
-
-### Displayed Metrics
-
-Each metric in the Detailed mode can be individually toggled:
-
-#### Show FPS
-
-- **Label on overlay:** `FPS: 144`
-- **What it shows:** Instantaneous frames per second, calculated as a rolling average of frame times over the last ~500 ms.
-- **UI control:** Checkbox labelled "Show FPS".
-- **Default:** On.
-- **Recommendation:** Keep this on for general performance monitoring.
-
-#### Show Frametime Text
-
-- **Label on overlay:** `FT: 6.9 ms`
-- **What it shows:** The most recent single frame time in milliseconds.
-- **UI control:** Checkbox labelled "Show frametime text".
-- **Default:** On.
-- **Recommendation:** Useful for spotting individual frame spikes.
-
-#### Show Frametime Graph
-
-- **What it does:** Renders a small live-scrolling graph of recent frame times, with a horizontal target line at the ideal frame time for the current refresh rate.
-- **UI control:** Checkbox labelled "Show frametime graph".
-- **Controls available when enabled:**
-  - **Graph Refresh Rate:** How often the graph is redrawn.
-    - `Ultra (33 ms)` — Smoother animation, higher CPU/GPU overhead.
-    - `Smooth (66 ms)` — Good balance (default).
-    - `Balanced (100 ms)` — Lower overhead, less frequent updates.
-  - **Graph Time Window:** How much history is visible on the X axis.
-    - `Reactive (1500 ms)` — More responsive to recent changes.
-    - `Standard (2000 ms)` — Default, good stability.
-    - `Stable (3000 ms)` — Better for spotting long-term trends.
-- **Default:** On.
-- **Performance impact:** Graph rendering adds overhead. Disable if you don't need it. Ultra (33 ms) refresh is the most expensive option.
-- **Tooltip notes:**
-  - Refresh rate: "Lower values feel smoother but use more CPU/GPU. Higher values reduce overhead but update less frequently."
-  - Time window: "Shorter windows are more reactive. Longer windows are more stable and better for spotting trends."
-
-#### Show 1% Lows
-
-- **Label on overlay:** `1% LOW: 120`
-- **What it shows:** The average FPS of the worst 1% of frames over the last ~1000 ms. Lower values indicate stuttering or inconsistency.
-- **UI control:** Checkbox labelled "Show 1% Lows".
-- **Default:** On (in Detailed mode).
-- **Recommendation:** Keep this on if you care about frame time consistency. A large gap between FPS and 1% lows indicates uneven frame pacing.
-
-#### Show Pacing/Stutter Details
-
-- **Label on overlay (when enabled):**
-  - `FT AVG: 6.9 ms` — Average frame time.
-  - `0.1% LOW: 90` — Average FPS of the worst 0.1% of frames (more sensitive than 1% low).
-  - `JIT: 0.5 ms SD: 0.3` — Jitter (average absolute difference between consecutive frame times) and standard deviation.
-  - `HITCH: 0` — Number of frames exceeding the hitch threshold (50 ms by default).
-  - `PACE: 95` — Stability score (0–100). Higher is better.
-- **UI control:** Checkbox labelled "Show pacing/stutter details".
-- **Default:** Off.
-- **Performance impact:** Enables additional frame pacing calculations. Low overhead.
-- **Tooltip note:** "Adds frame pacing, jitter, hitch, and stability details to the FPS overlay."
-
-#### Show Frame-Generation Estimate
-
-- **Labels on overlay:**
-  - `GEN: 0` — Generated frame count (when frame generation is detected via verified provider signal).
-  - `GEN EST: 5` — Estimated generated frame count (heuristic suspicion based on present cadence only).
-  - `FG: SUSPECT 75%` — Frame generation suspected with confidence percentage.
-  - `FG: UNKNOWN` — Unable to determine.
-  - `FG: N/A` — Frame generation data not available / unsupported.
-  - `FG: VERIFIED <technology> x1.5` — Verified frame generation with multiplier ratio.
-- **What it does:** Attempts to detect whether the tracked game/application is using frame generation technology (e.g., DLSS 3 Frame Gen, FSR 3 Fluid Motion Frames). Without a verified provider signal, this is heuristic suspicion only.
-- **UI control:** Checkbox labelled "Show frame-generation estimate".
-- **Default:** On.
-- **Tooltip note:** "Without a verified provider signal, this is heuristic suspicion from present cadence only. Only verified provider signals may be labeled as detected frame generation."
-
-### Overlay Colors
-
-#### Text Color
-
-- **What it does:** Sets the colour of all overlay text and graph lines.
-- **UI control:** Button labelled "Text Color" → opens a colour picker.
-- **Default:** White (255,255,255).
-
-#### Background Color
-
-- **What it does:** Sets the background colour of the overlay panel.
-- **UI control:** Button labelled "Background Color" → opens a colour picker.
-- **Default:** Black (0,0,0).
-- **Recommendation:** A semi-transparent or dark background improves readability against bright game scenes.
-
-### FPS Overlay Labels Reference
-
-When the overlay is active, it displays several lines of text. Here is what each abbreviation means:
-
-| Label  | Meaning                              | Description |
-|--------|--------------------------------------|-------------|
-| `FPS`  | Frames Per Second (Instant)          | Rolling average over ~500 ms window. |
-| `AVG`  | Average FPS                          | Average over the last ~1000 ms. |
-| `FT`   | Frame Time                           | Most recent single frame time in milliseconds. |
-| `1% LOW` | 1st Percentile FPS Low             | Average FPS of the worst 1% of frames. |
-| `0.1% LOW` | 0.1st Percentile FPS Low        | Average FPS of the worst 0.1% of frames (more sensitive). |
-| `FT AVG` | Average Frame Time                | Mean frame time over the sample window. |
-| `JIT`  | Jitter                               | Average absolute difference between consecutive frame times. |
-| `SD`   | Standard Deviation                   | Standard deviation of frame times — higher means more variance. |
-| `HITCH` | Hitch Count                         | Number of frames exceeding 50 ms (stutter events). |
-| `PACE` | Stability / Pacing Score             | 0–100 score derived from variance, jitter, and hitch density. |
-| `GEN`  | Generated Frames                     | Count of frames detected as generated (via heuristic or verified signal). |
-| `GEN EST` | Generated Frame Estimate         | Estimated count when frame generation is suspected but not verified. |
-| `FG`   | Frame Generation Status              | UNKNOWN / N/A / SUSPECT / VERIFIED with confidence or technology name. |
-| `SRC`  | Data Source                          | ETW, RTSS, or None depending on the active telemetry source. |
-
----
-
-## GPU Driver Integration
-
-LightCrosshair 1.6.0 introduces a GPU driver integration layer that enables direct communication with NVIDIA and AMD GPU drivers for advanced features.
-
-### GPU Detection
-
-LightCrosshair automatically detects the primary GPU vendor on startup:
-- **NVIDIA**: Full driver integration via NvAPIWrapper.Net
-- **AMD**: Color management via ADL2 API
-- **Intel / Unknown**: No driver integration (unsupported for now)
-
-The detected GPU and driver API status are shown in the **GPU Driver** settings tab.
-
-### NVIDIA Driver FPS Cap
-
-LightCrosshair can apply a frame rate limit via the NVIDIA driver profile system (DRS — Driver Registry Settings).
-
-**How it works:**
-- Uses the NVIDIA DRS API to set `PerformanceStateFrameRateLimiter` in an application-specific driver profile
-- Applies only to the **target process** configured in Display Settings → Target Process
-- Global profile fallback is **not available** — a target process must be set before applying
-
-**Behavior:**
-- Setting a cap writes to the NVIDIA driver profile for the specified application and persists until cleared
-- Clearing the cap sets the limiter to 0 (disabled) for the specified application
-- The current cap value can be read back from the driver for the specified application
-- Reading a cap never creates or modifies a driver profile (read-only)
-
-**Limitations:**
-- Requires NVIDIA GPU with driver installed
-- Requires the target process executable path (e.g., `valorant.exe`)
-- Does not require administrator rights (user-mode DRS API)
-
-**UI Controls (GPU Driver tab → NVIDIA Driver FPS Cap):**
-- Target FPS slider: 15–300 FPS
-- Apply / Clear buttons
-- Status display showing current operation result
-- Help "[?]" indicator explaining the feature
-
-### Frame Cap Assistant (GPU Driver tab)
-
-Located in the **GPU Driver** tab (under the NVIDIA FPS Cap controls), the Frame Cap Assistant provides **guidance only** — it does not enforce or apply an actual frame rate cap.
-
-**How it works:**
-- Reads the NVIDIA driver FPS cap (if set) as a baseline
-- Suggests a target FPS based on the configured refresh rate
-- Displays assistant-only status text
-
-**UI Controls (GPU Driver tab → Frame Cap Assistant):**
-- **Refresh Rate** slider: 30–500 Hz — sets the display refresh rate used for FPS target recommendations
-- **Target FPS** slider: 15–1000 FPS — the FPS value you want to target
-- **Use Recommendation** button — automatically sets the target FPS to a recommended value based on the current refresh rate (e.g., for 60 Hz it recommends 60 FPS; for 144 Hz it may recommend 141 FPS to stay below the tear line with V-Sync off)
-- **Status Text** — read-only label showing assistant status and recommended target
-  - Example: `Assistant only: No active limiter backend. Suggested target: 141 FPS.`
-
-**Note:** The Frame Cap Assistant was moved from the FPS & Performance tab to the GPU Driver tab in v1.6.0 to keep all frame-cap-related controls together.
-
-### NVIDIA Digital Vibrance
-
-NVIDIA Digital Vibrance controls have been moved to the **Display Settings** tab in v1.6.0. See the [Display Settings section](#nvidia-digital-vibrance-gpu-driver) for details.
-
-LightCrosshair can adjust digital vibrance (color saturation) via the NVIDIA driver's Digital Vibrance Control (DVC) API.
-
-**How it works:**
-- Uses `NvAPIWrapper.Native.DisplayApi.GetDVCInfo()` and `SetDVCLevel()`
-- Applies to the primary NVIDIA display
-- Range: 0–100 (mapped to driver's internal min/max range)
-- Default/neutral value: 50
-
-**Limitations:**
-- Applies to primary display only
-- Requires NVIDIA GPU with driver installed
-- Does not require administrator rights
-
-### AMD Color Management
-
-AMD color management (brightness, contrast, saturation, vibrance) uses the existing ADL2 API integration, which is unchanged from previous versions. The GPU driver abstraction layer wraps this existing functionality.
-
-See the **Display Settings** tab for AMD color controls (gamma, contrast, brightness, vibrance sliders).
-
-The status of AMD color management API availability is shown as a read-only indicator in the **GPU Color Management Status** section of the Display Settings tab.
-
-### GPU Status Refresh
-
-- **UI control:** "Refresh GPU Status" button in the GPU Driver tab.
-- **What it does:** Re-detects the GPU vendor, re-queries all capability statuses, and refreshes:
-  - GPU Driver tab controls (NVIDIA FPS cap status, vibrance status)
-  - Display Settings tab status indicators (GPU Color Management Status, Display Sync Technology Status)
-- **When to use:** If you've connected a new GPU, updated drivers, or changed display configuration while LightCrosshair is running.
-
-### Graceful Fallback
-
-If no supported GPU driver API is available (e.g., running on Intel, or NVIDIA/AMD driver not installed), LightCrosshair falls back to a null driver service. All GPU driver features are disabled with explanatory tooltips. The app will not crash.
-
----
-
-## Profiles
-
-The Profiles tab lets you save, load, rename, and delete named profiles. Each profile stores the complete crosshair configuration including shape, size, thickness, gap, colours, outline, and display settings.
-
-### Profile Slots
-
-- Up to **10 profile slots** are available.
-- Slot 1 is always the **Default** profile, which is **immutable** — it cannot be overwritten, renamed, or deleted.
-- Empty slots display as "Slot N: (Empty)" with a "Save Here" button.
-
-### Profile Actions
-
-| Action   | UI Control                          | Description |
-|----------|-------------------------------------|-------------|
-| **Save** | "Save" button on a profile slot     | Overwrites the selected profile with the current settings. Not allowed on the Default profile. |
-| **Load** | "Load" button on a profile slot     | Applies the profile's settings immediately. |
-| **Rename** | "Rename" button                   | Opens a dialog to change the profile name. Names must be unique. |
-| **Delete** | "Delete" button                   | Removes the profile. Not allowed on the Default profile. |
-| **Save to Selected** | "Save Current to Selected" button | Saves the current state to whichever profile is highlighted in the list. Useful for quick overwrites. |
-| **Save Here** (empty slot) | "Save Here" button | Creates a new profile at the empty slot position. |
-
-### What a Profile Stores
-
-Each profile captures:
-- Shape, size, thickness, gap, inner shape, edge thickness.
-- All colour values (inner, outer, edge, fill, inner shape colours).
-- Outline enabled/disabled.
-- Anti-alias setting.
-- Hide-during-screen-recording flag.
-- Display colour settings (gamma, contrast, brightness, vibrance, target process).
-- Hotkey (legacy per-profile — the global hotkey system in CrosshairConfig takes precedence).
-
-### Profile Data Storage
-
-Profiles are stored as JSON files in:
-```
-%APPDATA%\LightCrosshair\Profiles\
-```
-
----
-
-## App Preferences (Not in UI)
-
-These settings are stored in `%APPDATA%\LightCrosshair\prefs.json` and are not directly exposed in the Settings window, but affect the application behaviour:
-
-| Setting               | Description                                      | Default |
-|-----------------------|--------------------------------------------------|---------|
-| Theme                 | Dark or Light theme for the Settings window.     | Dark    |
-| Window X/Y            | Last position of the Settings window.            | Auto    |
-| Window Width/Height   | Last size of the Settings window.                | 1020×500 |
-| First Run Done        | Whether the first-run setup has been completed.  | false   |
-| Overlay Visible       | Whether the crosshair overlay is currently shown. | true   |
-| Last Profile ID       | The last active profile ID for restoration.      | (empty) |
-
-Toggle the theme using the 🌙/☀ button in the top-left corner of the Settings window.
-
----
-
-## Advanced / Troubleshooting
-
-### Crosshair Not Visible
-
-1. **Check the enable checkbox:** Make sure "Enable Custom Crosshair" is checked in the Crosshair Builder tab.
-2. **Check the tray icon:** Right-click the LightCrosshair tray icon and verify "Show Crosshair" is checked.
-3. **Check the default hotkey:** Press `Alt + X` to toggle visibility.
-4. **Fullscreen mode:** Exclusive fullscreen may hide the overlay. Switch to borderless windowed or windowed mode.
-5. **Admin/elevation conflict:** See "App Requires Elevation (Error 740)" below.
-6. **Antivirus/firewall:** Some security software may block overlay windows. Add an exception for LightCrosshair.
-
-### FPS Overlay Not Showing
-
-1. **Enable the overlay:** Check "Enable FPS Overlay" in the FPS & Performance tab.
-2. **Check Display Mode:** Make sure it's set to "Minimal" or "Detailed" (not "Off").
-3. **Check position:** Reset X/Y sliders to 10,10 to ensure the overlay isn't off-screen.
-4. **Launch as administrator:** ETW trace sessions (the primary telemetry source) require administrative privileges. If LightCrosshair is not elevated, the overlay will show `SRC: None` or `SRC: RTSS` (if RTSS is available) and may not have data.
-5. **RTSS fallback:** If ETW is unavailable, LightCrosshair attempts to read RTSS shared memory. Install RivaTuner Statistics Server (RTSS) for an alternative data source.
-6. **No data / `FPS: --`:** If the overlay shows but has no data, the telemetry source may not be capturing present events for the current foreground process. Try switching to a different game or application.
-7. **Ultra-lightweight mode:** If enabled, the overlay updates less frequently (every 500 ms) and hides many details.
-
-### App Requires Elevation (Error 740)
-
-When launching LightCrosshair, if you see an error about elevation (Error 740), the application needs to be run as administrator for certain features:
-
-- **ETW-based FPS telemetry** requires administrative privileges to start an Event Tracing session.
-- **Gamma/vibrance adjustments** via hardware API may require elevation depending on the display driver.
-
-**Solutions:**
-1. Right-click LightCrosshair.exe → "Run as administrator".
-2. If you always want elevation, set the executable's compatibility setting: Right-click → Properties → Compatibility → "Run this program as an administrator".
-3. If you don't need FPS telemetry or display adjustments, LightCrosshair works fine without elevation for the basic crosshair overlay.
-
-### Settings Not Saving
-
-1. **Check file permissions:** LightCrosshair stores settings in `%APPDATA%\LightCrosshair\`. Make sure this directory is writable.
-2. **Reset settings:** Close LightCrosshair, then delete or rename the files in:
-   - `%APPDATA%\LightCrosshair\crosshair_settings.json`
-   - `%APPDATA%\LightCrosshair\prefs.json`
-    
-   The app will create fresh defaults on next launch.
-3. **Antivirus:** Some antivirus software may prevent writing to the AppData folder. Add an exception for LightCrosshair.
-4. **Multiple instances:** Running multiple instances of LightCrosshair may cause settings conflicts. Ensure only one instance is running.
-
-### Display Settings Have No Effect
-
-1. **Hardware compatibility:** See the note under "Enable Gamma/Contrast/Brightness/Vibrance Override" — these settings are experimental and may not work on all hardware configurations.
-2. **HDR:** Windows HDR typically blocks per-application LUT adjustments. Disable HDR for display settings to work.
-3. **Hybrid graphics:** Laptops with Optimus or MUX switches route the display through the integrated GPU, which may not support LUT modifications.
-4. **Night Light / colour filters:** Active colour filters can override gamma adjustments.
-5. **Check the backend info:** The Color Backend info box in the Display Settings tab shows whether the hardware path is active.
-6. **Check GPU status indicators:** The GPU Color Management Status section in the Display Settings tab shows whether the AMD or NVIDIA colour APIs are available. If both show "Unavailable" or "Unsupported", the display LUT path may be blocked.
-
-### Hotkey Issues
-
-1. **Conflict with another app:** If a hotkey combination is already registered globally, LightCrosshair's registration will fail silently. Try a different combination.
-2. **Hotkeys not working after sleep/resume:** Windows may not re-register hotkeys correctly after system resume. Restart LightCrosshair.
-3. **Games block Win32 hotkeys:** Some games in exclusive fullscreen intercept hotkeys. Use borderless windowed mode, or try different modifier combinations.
-
-### Profiles
-
-- **Max 10 profiles:** LightCrosshair supports up to 10 profile slots. Attempting to add more will show an error.
-- **Default profile is immutable:** The first profile slot is a "Default" profile that cannot be overwritten, renamed, or deleted.
-- **Profile names must be unique:** Renaming a profile to an existing name will show a warning.
-
-### Performance Overlay Labels Legend
-
-For a quick reference of every label that can appear in the performance overlay, see the [FPS Overlay Labels Reference](#fps-overlay-labels-reference) section above.
-
----
-
-## Storage Locations
-
-| Data                  | Path                                                |
-|-----------------------|-----------------------------------------------------|
-| Crosshair settings    | `%APPDATA%\LightCrosshair\crosshair_settings.json` |
-| App preferences       | `%APPDATA%\LightCrosshair\prefs.json`              |
-| Profiles              | `%APPDATA%\LightCrosshair\Profiles\*.json`         |
-| Error logs (if any)   | Application event log or debug output              |
-
----
-
-## Related Files
-
-| File | Purpose |
-|------|---------|
-| [`CrosshairConfig.cs`](../LightCrosshair/CrosshairConfig.cs) | Config model: crosshair properties, hotkeys, overlay, display, frame cap assistant |
-| [`PreferencesStore.cs`](../LightCrosshair/PreferencesStore.cs) | App preferences (theme, window position, overlay state) |
-| [`SettingsWindow.xaml`](../LightCrosshair/SettingsWindow.xaml) | WPF settings UI layout |
-| [`SettingsWindow.xaml.cs`](../LightCrosshair/SettingsWindow.xaml.cs) | Settings window code-behind: wiring, save/load, event handlers |
-| [`FpsOverlayForm.cs`](../LightCrosshair/FpsOverlayForm.cs) | FPS overlay rendering and text formatting |
-| [`FpsOverlayRuntimePolicy.cs`](../LightCrosshair/FpsOverlayRuntimePolicy.cs) | Runtime policy logic for overlay display decisions |
-| [`CrosshairProfile.cs`](../LightCrosshair/CrosshairProfile.cs) | Profile data model (shape, colours, display settings) |
-| [`HotkeyManager.cs`](../LightCrosshair/HotkeyManager.cs) | Win32 global hotkey registration |
-| [`CrosshairVisibilityPreset.cs`](../LightCrosshair/CrosshairVisibilityPreset.cs) | High-contrast visibility preset logic |
-| [`SystemFpsMonitor.cs`](../LightCrosshair/SystemFpsMonitor.cs) | FPS telemetry: ETW capture, RTSS fallback, metrics buffer |
-
-
-## Advanced visibility bindings (v1.9.0)
-
-Open **Hotkeys** and click the crosshair visibility binding field. Press a keyboard key, Middle click, Mouse4 (XButton1), Mouse5 (XButton2), Wheel Up, Wheel Down, or Right click. Hold any combination of Ctrl, Alt, Shift, or Win while capturing. Escape cancels. Conflicts with the existing global/profile hotkeys or reserved keyboard shortcuts are reported without replacing the previous binding.
-
-- **Toggle:** each press changes visibility; keyboard auto-repeat is ignored.
-- **Hold to hide:** hide while the matching chord is held, then restore the previous visibility.
-- **Hold to show:** show while the matching chord is held, then restore the previous visibility.
-
-Wheel directions only support Toggle. Releasing the trigger or a required modifier ends Hold; press the trigger again to reactivate it. Recording detection and the profile's crosshair-enabled setting still apply. Temporary Hold state is never persisted.
-
-The current binding is stored in settings and copied with saved profiles. Existing settings migrate from their original keyboard key and modifier flags to Toggle. Older profiles inherit the global binding until explicitly saved with one. Additional gaming-mouse buttons require Windows to expose XButton1/XButton2.
-
-Input hooks run on a dedicated message-loop thread and always pass input onward. A read-only Raw Input watchdog detects activity that no longer reaches an installed hook and reinstalls it after a short grace period. Lost releases are reconciled with the current physical key/button state. Hooks are removed on exit.
-
-**Anti-cheat:** LightCrosshair reads input without injecting or modifying it. This is not a guarantee of approval by any anti-cheat system; check the rules of your game.
+Migration imports supported v1 data without writing the old files, preserving source copies under `backups/migration`. The active v1 master visibility switch becomes the global v2 switch; it does not hide the individual migrated layers. See [Upgrading from 1.9](../README.md#upgrading-from-19).

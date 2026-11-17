@@ -1,0 +1,153 @@
+using System.Text.Json;
+using LightCrosshair.Contracts;
+using LightCrosshair.Core;
+
+namespace LightCrosshair;
+
+internal sealed partial class Form1
+{
+    private readonly InputCapture _capture = new();
+    private System.Windows.Forms.Timer? _captureTimer;
+    private void SetInputCapture(bool active)
+    {
+        _capture.Set(active);
+        _captureTimer?.Stop();
+        if (active)
+        {
+            if (_captureTimer is null)
+            {
+                _captureTimer = new() { Interval = InputCapture.TimeoutMilliseconds };
+                _captureTimer.Tick += (_, _) => SetInputCapture(false);
+            }
+            _captureTimer.Start();
+        }
+        else { _captureTimer?.Dispose(); _captureTimer = null; }
+        _bindingsKey = null; ConfigureInput(); RefreshOverlay(); QueueRuntimeEvent();
+    }
+    private VisibilityInputHook? _input;
+    private List<BoundAction> _bindings = [];
+    private readonly Dictionary<int, VisibilityBindingState> _bindingStates = new();
+    private string? _bindingsKey;
+    private bool? _manualVisibility;
+    private System.Windows.Forms.Timer? _recordingTimer;
+    private bool _recording;
+    private void ConfigureInput()
+    {
+        if (_context is null) return;
+        if (_capture.Active)
+        {
+            HotkeyManager.Instance.UnregisterAll();
+            _input?.Configure([], false);
+            _bindings.Clear(); _bindingStates.Clear(); _holdOverride = null;
+            return;
+        }
+        var bindings = InputBindings.Resolve(Document.Settings, _context);
+        string key = Document.Settings.Language + JsonSerializer.Serialize(bindings.Select(b => new { b.Action, b.Input }), ContractJson.Options);
+        if (_bindingsKey == key) return;
+        _bindingsKey = key; _holdOverride = null; _bindingStates.Clear();
+        _input ??= new(Handle);
+        var manager = HotkeyManager.Instance;
+        manager.SetWindowHandle(Handle); manager.UnregisterAll();
+        Runtime.HotkeyErrors.Clear();
+        var conflicts = InputBindings.Conflicts(bindings);
+        _bindings = [];
+        foreach (var action in bindings)
+        {
+            if (conflicts.Contains(action.HotkeyId))
+            { Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = TextFor("HotkeyConflict") }); continue; }
+            bool systemHotkey = action.Binding.Input == BindingInput.Keyboard && action.Binding.Mode == BindingMode.Toggle;
+            if (systemHotkey && !manager.RegisterHotkeyWithId(action.HotkeyId, action.Binding.Modifiers, action.Binding.Key))
+            { Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = TextFor("HotkeyRegistrationFailed") }); continue; }
+            _bindings.Add(action);
+            var state = new VisibilityBindingState();
+            if (action.Binding.Mode != BindingMode.Toggle) state.CancelUntilRelease(VisibilityInputHook.IsTriggerHeld(action.Binding));
+            _bindingStates[action.HotkeyId] = state;
+        }
+        _input.Configure(_bindings.Where(a => a.Binding.Input != BindingInput.Keyboard || a.Binding.Mode != BindingMode.Toggle).Select(a => a.Binding).ToArray(), false);
+    }
+    private void ConfigureRecording()
+    {
+        if (!Document.Settings.HideDuringScreenRecording)
+        { _recordingTimer?.Dispose(); _recordingTimer = null; _recording = false; return; }
+        if (_recordingTimer is not null) return;
+        _recordingTimer = new() { Interval = 2000 };
+        _recordingTimer.Tick += (_, _) => CheckRecording(); _recordingTimer.Start(); CheckRecording();
+    }
+    private void CheckRecording()
+    {
+        bool recording = false;
+        foreach (string name in new[] { "obs64", "obs32", "bandicam", "XSplit.Core", "NVIDIA Share" })
+        {
+            var processes = System.Diagnostics.Process.GetProcessesByName(name);
+            recording |= processes.Length > 0; foreach (var process in processes) process.Dispose();
+        }
+        if (_recording == recording) return;
+        _recording = recording; RefreshOverlay(); QueueRuntimeEvent();
+    }
+    protected override void WndProc(ref Message m)
+    {
+        if (Program.PerfProbesEnabled)
+        {
+            if (m.Msg == 0x8066) { m.Result = (IntPtr)(_pipe?.IsConnected == true ? 1 : 0); return; }
+            if (m.Msg == 0x8067) { m.Result = (IntPtr)((_fps.Enabled ? 1 : 0) + (_recordingTimer?.Enabled == true ? 1 : 0)); return; }
+            if (m.Msg == 0x8070) { m.Result = (IntPtr)(_input?.ActiveHookMask ?? 0); return; }
+        }
+        if (_capture.Active && m.Msg is 0x312 or VisibilityInputHook.InputMessage or VisibilityInputHook.ResetMessage) return;
+        if (m.Msg == 0x312)
+        {
+            int id = (int)m.WParam;
+            if (_bindings.Any(a => a.HotkeyId == id)) _ = RunInputActionAsync(id);
+            return;
+        }
+        if (m.Msg == VisibilityInputHook.InputMessage && _input is not null && (int)m.LParam == _input.Generation)
+        {
+            int data = (int)m.WParam;
+            var input = (BindingInput)(data & 255); int key = (data >> 8) & 255, modifiers = (data >> 16) & 15;
+            bool down = (data & (1 << 20)) != 0;
+            foreach (var action in _bindings)
+            {
+                if (action.Binding.Input == BindingInput.Keyboard && action.Binding.Mode == BindingMode.Toggle) continue;
+                var state = _bindingStates[action.HotkeyId];
+                if (state.Process(action.Binding, input, key, modifiers, down)) _ = RunInputActionAsync(action.HotkeyId);
+            }
+            _holdOverride = _bindingStates.GetValueOrDefault(9004)?.Override ?? _bindingStates.GetValueOrDefault(9000)?.Override;
+            RefreshOverlay(); QueueRuntimeEvent(); return;
+        }
+        if (m.Msg == VisibilityInputHook.ResetMessage)
+        {
+            foreach (var state in _bindingStates.Values) state.Reset(); _holdOverride = null;
+            if (_input?.Error is { } error)
+                foreach (var action in _bindings.Where(a => a.Binding.Input != BindingInput.Keyboard || a.Binding.Mode != BindingMode.Toggle))
+                    if (!Runtime.HotkeyErrors.Any(e => e.Action == action.Action && e.Message == TextFor("HookRegistrationFailed")))
+                        Runtime.HotkeyErrors.Add(new() { Action = action.Action, Binding = action.Input, Message = TextFor("HookRegistrationFailed") });
+            RefreshOverlay(); QueueRuntimeEvent(); return;
+        }
+        base.WndProc(ref m);
+    }
+    private void ReleaseHolds()
+    {
+        foreach (var state in _bindingStates.Values) state.CancelUntilRelease();
+        _holdOverride = null;
+    }
+    private async Task RunInputActionAsync(int id)
+    {
+        if (_closing || _capture.Active) return;
+        try
+        {
+            switch (id)
+            {
+                case 9000: await ToggleVisibilityAsync(); break;
+                case 9001: case 9002:
+                    await MutateAsync(next => Task.FromResult<object?>(CrosshairCycling.Apply(next, Runtime.ActiveCrosshairId, Runtime.ActiveGameProfileId, id == 9001)));
+                    break;
+                case 9005:
+                    await MutateAsync(next => { next.Settings.FpsOverlay.Enabled = !next.Settings.FpsOverlay.Enabled; return Task.FromResult<object?>(null); });
+                    break;
+                case 9003:
+                    if (_pipe?.IsConnected == true && !UiLaunch.IsParked(_pipe.ClientProcessId)) _pipe.Publish(IpcEvents.CloseRequested, null); else OpenSettings();
+                    break;
+            }
+        }
+        catch (Exception ex) { Program.LogError(ex, "Input action"); }
+    }
+}

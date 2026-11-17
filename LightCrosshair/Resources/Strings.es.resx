@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="ShowCrosshair" xml:space="preserve">
+    <value>Mostrar mira</value>
+  </data>
+  <data name="HideCrosshair" xml:space="preserve">
+    <value>Ocultar mira</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Abrir LightCrosshair</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>Salir</value>
+  </data>
+  <data name="MissingUi" xml:space="preserve">
+    <value>Instala la aplicación de ajustes junto a LightCrosshair.</value>
+  </data>
+  <data name="Recovered" xml:space="preserve">
+    <value>Se ha recuperado tu biblioteca.</value>
+  </data>
+  <data name="SuggestGame" xml:space="preserve">
+    <value>¿Crear un perfil para {0}?</value>
+  </data>
+  <data name="ColorsRestoreFailed" xml:space="preserve">
+    <value>No se han podido restaurar los colores originales. Reinicia LightCrosshair para reintentarlo.</value>
+  </data>
+  <data name="ColorsApplyFailed" xml:space="preserve">
+    <value>No se han podido aplicar los colores de pantalla.</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>Esta combinación está asignada a más de una acción.</value>
+  </data>
+  <data name="HotkeyRegistrationFailed" xml:space="preserve">
+    <value>Windows no ha podido registrar este atajo.</value>
+  </data>
+  <data name="HookRegistrationFailed" xml:space="preserve">
+    <value>Windows no ha podido registrar un enlace de entrada.</value>
+  </data>
+  <data name="LoadFailed" xml:space="preserve"><value>No se pudo cargar la biblioteca. LightCrosshair usa valores temporales; tus archivos no han cambiado. Reinicia para reintentar.</value></data>
+  <data name="FpsNoFrames" xml:space="preserve"><value>Sin fotogramas en los últimos 2 s</value></data>
+  <data name="FpsAccessDenied" xml:space="preserve"><value>La captura FPS necesita permisos</value></data>
+  <data name="FpsUnavailable" xml:space="preserve"><value>Captura FPS no disponible</value></data>
+  <data name="FpsNoForeground" xml:space="preserve"><value>Enfoca la ventana de un juego</value></data>
+</root>

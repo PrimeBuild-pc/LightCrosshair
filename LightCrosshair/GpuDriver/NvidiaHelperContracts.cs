@@ -12,7 +12,11 @@ namespace LightCrosshair.GpuDriver
         public const string SetFpsCap = "set-fps-cap";
         public const string ClearFpsCap = "clear-fps-cap";
         public const string SetVibrance = "set-vibrance";
+        public const string GetVibrance = "get-vibrance";
+        public const string RestoreVibrance = "restore-vibrance";
     }
+
+    public sealed record NvidiaVibranceState(string DisplayName, int RawLevel);
 
     public sealed record NvidiaHelperRequest
     {
@@ -23,6 +27,7 @@ namespace LightCrosshair.GpuDriver
         public uint? SettingId { get; init; }
         public int? TargetFps { get; init; }
         public int? Vibrance { get; init; }
+        public NvidiaVibranceState? VibranceState { get; init; }
         public string LightCrosshairVersion { get; init; } = string.Empty;
 
         public static NvidiaHelperRequest AuditProfile(string targetExePath) =>
@@ -64,6 +69,8 @@ namespace LightCrosshair.GpuDriver
 
     public sealed record NvidiaHelperResponse
     {
+        public NvidiaVibranceState? VibranceState { get; init; }
+        public int? Vibrance { get; init; }
         public bool Success { get; init; }
         public string StatusText { get; init; } = string.Empty;
         public NvidiaProfileAuditResult? AuditResult { get; init; }
@@ -109,6 +116,8 @@ namespace LightCrosshair.GpuDriver
                 NvidiaHelperOperations.SetFpsCap => ValidateSetFpsRequest(request),
                 NvidiaHelperOperations.ClearFpsCap => ValidateTarget(request.TargetExePath, "clearing an NVIDIA driver FPS cap"),
                 NvidiaHelperOperations.SetVibrance => ValidateVibranceRequest(request),
+                NvidiaHelperOperations.GetVibrance => null,
+                NvidiaHelperOperations.RestoreVibrance => request.VibranceState is { DisplayName.Length: > 0 and <= 128 } state && !state.DisplayName.Contains('\0') ? null : NvidiaHelperResponse.Error("Invalid vibrance recovery state."),
                 _ => NvidiaHelperResponse.Error("Unknown NVIDIA helper operation.")
             };
         }

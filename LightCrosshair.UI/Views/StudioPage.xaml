@@ -1,0 +1,245 @@
+<UserControl x:Class="LightCrosshair.UI.Views.StudioPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:LightCrosshair.UI.Localization"
+             xmlns:controls="clr-namespace:LightCrosshair.UI.Controls"
+             UseLayoutRounding="True">
+  <UserControl.Resources>
+    <DrawingBrush x:Key="CheckerBrush" TileMode="Tile" Viewport="0,0,16,16" ViewportUnits="Absolute">
+      <DrawingBrush.Drawing>
+        <DrawingGroup>
+          <GeometryDrawing Brush="#1A1C20">
+            <GeometryDrawing.Geometry>
+              <RectangleGeometry Rect="0,0,16,16"/>
+            </GeometryDrawing.Geometry>
+          </GeometryDrawing>
+          <GeometryDrawing Brush="#2A2D32">
+            <GeometryDrawing.Geometry>
+              <GeometryGroup>
+                <RectangleGeometry Rect="0,0,8,8"/>
+                <RectangleGeometry Rect="8,8,8,8"/>
+              </GeometryGroup>
+            </GeometryDrawing.Geometry>
+          </GeometryDrawing>
+        </DrawingGroup>
+      </DrawingBrush.Drawing>
+    </DrawingBrush>
+  </UserControl.Resources>
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="320"/>
+    </Grid.ColumnDefinitions>
+    <DockPanel Grid.Column="0" Margin="0,0,24,0">
+      <Grid DockPanel.Dock="Top" Margin="0,0,0,12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Ellipse Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center" Fill="{DynamicResource AccentBrush}" Visibility="{Binding IsDirty, Converter={StaticResource Vis}}" AutomationProperties.Name="{loc:Tr Studio_Unsaved}"/>
+        <TextBox Grid.Column="1" Text="{Binding DesignName, UpdateSourceTrigger=LostFocus}" MinHeight="32" AutomationProperties.Name="{loc:Tr Studio_Name}"/>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0">
+          <Button Style="{StaticResource PrimaryButton}" Content="{loc:Tr Save}" Command="{Binding SaveCommand}" Margin="0,0,8,0" AutomationProperties.Name="{loc:Tr Save}"/>
+          <Button Content="{loc:Tr Studio_SaveAs}" Command="{Binding SaveAsNewCommand}" AutomationProperties.Name="{loc:Tr Studio_SaveAs}"/>
+        </StackPanel>
+      </Grid>
+      <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+        <TextBlock Style="{StaticResource WarningText}" Text="{Binding Error}" Visibility="{Binding Error, Converter={StaticResource NullVis}}"/>
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+          <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Studio_Background}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+          <Button Content="{loc:Tr Studio_BgDark}" Command="{Binding SetBackgroundCommand}" CommandParameter="dark" Margin="0,0,4,0" AutomationProperties.Name="{loc:Tr Studio_BgDark}"/>
+          <Button Content="{loc:Tr Studio_BgMid}" Command="{Binding SetBackgroundCommand}" CommandParameter="mid" Margin="0,0,4,0" AutomationProperties.Name="{loc:Tr Studio_BgMid}"/>
+          <Button Content="{loc:Tr Studio_BgLight}" Command="{Binding SetBackgroundCommand}" CommandParameter="light" Margin="0,0,4,0" AutomationProperties.Name="{loc:Tr Studio_BgLight}"/>
+          <Button Content="{loc:Tr Studio_BgChecker}" Command="{Binding SetBackgroundCommand}" CommandParameter="checker" Margin="0,0,4,0" AutomationProperties.Name="{loc:Tr Studio_BgChecker}"/>
+          <Button Content="{loc:Tr Studio_BgCustom}" Command="{Binding SetBackgroundCommand}" CommandParameter="custom" AutomationProperties.Name="{loc:Tr Studio_BgCustom}"/>
+          <controls:ColorField Margin="8,0,0,0" Caption="{loc:Tr Studio_BgCustom}" Value="{Binding CustomBackground}" Visibility="{Binding ShowCustomBackground, Converter={StaticResource Vis}}"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+          <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding LiveInGame}" Content="{loc:Tr Studio_Live}" AutomationProperties.Name="{loc:Tr Studio_Live}" Margin="0,0,16,0"/>
+          <Button Style="{StaticResource IconButton}" Content="{x:Static loc:Icons.Undo}" Command="{Binding UndoCommand}" AutomationProperties.Name="{loc:Tr Studio_Undo}" ToolTip="{loc:Tr Studio_Undo}"/>
+          <Button Style="{StaticResource IconButton}" Content="{x:Static loc:Icons.Redo}" Command="{Binding RedoCommand}" AutomationProperties.Name="{loc:Tr Studio_Redo}" ToolTip="{loc:Tr Studio_Redo}"/>
+          <Button Content="{loc:Tr Studio_CopyCode}" Command="{Binding CopyCodeCommand}" Margin="12,0,8,0" AutomationProperties.Name="{loc:Tr Studio_CopyCode}"/>
+          <Button Content="{loc:Tr Studio_PasteCode}" Command="{Binding PasteCodeCommand}" AutomationProperties.Name="{loc:Tr Studio_PasteCode}"/>
+        </StackPanel>
+      </StackPanel>
+      <Grid>
+        <Border Background="{StaticResource CheckerBrush}" CornerRadius="8" Visibility="{Binding CheckerPreview, Converter={StaticResource Vis}}"/>
+        <Border Background="{Binding PreviewFill, Converter={StaticResource HexBrush}}" CornerRadius="8" Visibility="{Binding CheckerPreview, Converter={StaticResource VisInv}}"/>
+        <ScrollViewer x:Name="PreviewScroll" SizeChanged="OnPreviewSizeChanged" ScrollChanged="OnPreviewScrollChanged" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="Transparent">
+          <!-- Sized and offset in code (StudioPage.UpdatePreviewLayout): one render pixel is exactly Zoom screen pixels
+               and the image starts on a whole screen pixel, so nearest-neighbor scaling never doubles or drops a row. -->
+          <Grid x:Name="PreviewCanvas" Width="256" Height="256" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Grid.RenderTransform>
+              <TranslateTransform x:Name="PreviewShift"/>
+            </Grid.RenderTransform>
+            <Image Source="{Binding PreviewPng, Converter={StaticResource Png}, ConverterParameter=256}" Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+            <Rectangle x:Name="PixelGrid" IsHitTestVisible="False" Visibility="{Binding ShowPixelGrid, Converter={StaticResource Vis}}">
+              <Rectangle.Fill>
+                <DrawingBrush TileMode="Tile" Viewport="0,0,4,4" ViewportUnits="Absolute">
+                  <DrawingBrush.Drawing>
+                    <GeometryDrawing>
+                      <GeometryDrawing.Pen>
+                        <Pen Brush="#33373D" Thickness="1"/>
+                      </GeometryDrawing.Pen>
+                      <GeometryDrawing.Geometry>
+                        <GeometryGroup>
+                          <LineGeometry StartPoint="0,0" EndPoint="4,0"/>
+                          <LineGeometry StartPoint="0,0" EndPoint="0,4"/>
+                        </GeometryGroup>
+                      </GeometryDrawing.Geometry>
+                    </GeometryDrawing>
+                  </DrawingBrush.Drawing>
+                </DrawingBrush>
+              </Rectangle.Fill>
+            </Rectangle>
+          </Grid>
+        </ScrollViewer>
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="6" Padding="12,8" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" Visibility="{Binding AllLayersHidden, Converter={StaticResource Vis}}">
+          <TextBlock Style="{StaticResource BodyText}" Text="{loc:Tr Studio_AllHidden}" AutomationProperties.Name="{loc:Tr Studio_AllHidden}"/>
+        </Border>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8">
+          <Button Content="{loc:Tr Studio_ZoomFit}" Command="{Binding SetZoomCommand}" CommandParameter="fit" Margin="0,0,4,0" AutomationProperties.Name="{loc:Tr Studio_ZoomFit}">
+            <Button.Style>
+              <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding ZoomMode}" Value="fit">
+                    <Setter Property="Background" Value="{DynamicResource AccentSubtleBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </Button.Style>
+          </Button>
+          <Button Content="{loc:Tr Studio_Zoom1}" Command="{Binding SetZoomCommand}" CommandParameter="1" Margin="0,0,4,0" AutomationProperties.Name="{loc:Tr Studio_Zoom1}">
+            <Button.Style>
+              <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding ZoomMode}" Value="1">
+                    <Setter Property="Background" Value="{DynamicResource AccentSubtleBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </Button.Style>
+          </Button>
+          <Button Content="{loc:Tr Studio_Zoom2}" Command="{Binding SetZoomCommand}" CommandParameter="2" Margin="0,0,4,0" AutomationProperties.Name="{loc:Tr Studio_Zoom2}">
+            <Button.Style>
+              <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding ZoomMode}" Value="2">
+                    <Setter Property="Background" Value="{DynamicResource AccentSubtleBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </Button.Style>
+          </Button>
+          <Button Content="{loc:Tr Studio_Zoom4}" Command="{Binding SetZoomCommand}" CommandParameter="4" AutomationProperties.Name="{loc:Tr Studio_Zoom4}">
+            <Button.Style>
+              <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding ZoomMode}" Value="4">
+                    <Setter Property="Background" Value="{DynamicResource AccentSubtleBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </Button.Style>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </DockPanel>
+    <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,0,0" Padding="16,0,0,0">
+      <DockPanel>
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,8">
+          <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Studio_Layers}"/>
+          <ToggleButton HorizontalAlignment="Right" IsChecked="{Binding AddOpen}" Style="{StaticResource IconButton}" Content="{x:Static loc:Icons.Add}" AutomationProperties.Name="{loc:Tr Studio_AddLayer}" FontFamily="{DynamicResource IconFont}"/>
+          <Popup IsOpen="{Binding AddOpen}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+            <Border Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="4" CornerRadius="6">
+              <StackPanel>
+                <Button Content="{loc:Tr Kind_Arms}" Command="{Binding AddLayerCommand}" CommandParameter="Arms" AutomationProperties.Name="{loc:Tr Kind_Arms}"/>
+                <Button Content="{loc:Tr Kind_Dot}" Command="{Binding AddLayerCommand}" CommandParameter="Dot" AutomationProperties.Name="{loc:Tr Kind_Dot}"/>
+                <Button Content="{loc:Tr Kind_Ring}" Command="{Binding AddLayerCommand}" CommandParameter="Ring" AutomationProperties.Name="{loc:Tr Kind_Ring}"/>
+                <Button Content="{loc:Tr Kind_Box}" Command="{Binding AddLayerCommand}" CommandParameter="Box" AutomationProperties.Name="{loc:Tr Kind_Box}"/>
+                <Button Content="{loc:Tr Kind_Image}" Command="{Binding AddLayerCommand}" CommandParameter="Image" AutomationProperties.Name="{loc:Tr Kind_Image}"/>
+              </StackPanel>
+            </Border>
+          </Popup>
+        </Grid>
+        <TextBlock DockPanel.Dock="Top" Style="{StaticResource LabelText}" Text="{loc:Tr Studio_LayerOrder}" Margin="0,0,0,8"/>
+        <ListBox x:Name="LayerList" DockPanel.Dock="Top" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" MinHeight="120" MaxHeight="220"
+                 AllowDrop="True" PreviewMouseLeftButtonDown="OnLayerPress" PreviewMouseMove="OnLayerDrag" Drop="OnLayerDrop"
+                 ItemContainerStyle="{StaticResource NamedItem}"
+                 AutomationProperties.Name="{loc:Tr Studio_Layers}">
+          <ListBox.InputBindings>
+            <KeyBinding Key="Up" Modifiers="Control" Command="{Binding MoveUpCommand}" CommandParameter="{Binding Selected}"/>
+            <KeyBinding Key="Down" Modifiers="Control" Command="{Binding MoveDownCommand}" CommandParameter="{Binding Selected}"/>
+            <KeyBinding Key="Delete" Command="{Binding DeleteLayerCommand}"/>
+          </ListBox.InputBindings>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                  <Button Style="{StaticResource IconButton}" Content="{x:Static loc:Icons.Eye}" Command="{Binding DataContext.ToggleLayerCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" Visibility="{Binding Visible, Converter={StaticResource Vis}}" AutomationProperties.Name="{loc:Tr Studio_HideLayer}"/>
+                  <Button Style="{StaticResource IconButton}" Content="{x:Static loc:Icons.EyeOff}" Command="{Binding DataContext.ToggleLayerCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" Visibility="{Binding Visible, Converter={StaticResource VisInv}}" AutomationProperties.Name="{loc:Tr Studio_ShowLayer}"/>
+                  <Button Style="{StaticResource IconButton}" Content="{x:Static loc:Icons.Up}" Command="{Binding DataContext.MoveUpCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" AutomationProperties.Name="{loc:Tr Studio_MoveUp}"/>
+                  <Button Style="{StaticResource IconButton}" Content="{x:Static loc:Icons.Down}" Command="{Binding DataContext.MoveDownCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" AutomationProperties.Name="{loc:Tr Studio_MoveDown}"/>
+                  <Button Style="{StaticResource IconButton}" Content="{x:Static loc:Icons.Duplicate}" Command="{Binding DataContext.DuplicateLayerCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" AutomationProperties.Name="{loc:Tr Studio_DuplicateLayer}"/>
+                  <Button Style="{StaticResource IconButton}" Content="{x:Static loc:Icons.Delete}" Command="{Binding DataContext.DeleteLayerCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}" AutomationProperties.Name="{loc:Tr Studio_DeleteLayer}"/>
+                </StackPanel>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <ScrollViewer Margin="0,12,0,0" VerticalScrollBarVisibility="Auto">
+          <StackPanel>
+            <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Studio_Properties}"/>
+            <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Studio_NoLayer}" Visibility="{Binding HasLayer, Converter={StaticResource VisInv}}"/>
+            <StackPanel Visibility="{Binding HasLayer, Converter={StaticResource Vis}}">
+              <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Studio_Name}"/>
+              <TextBox Text="{Binding LayerName, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="{loc:Tr Studio_Name}" Margin="0,4,0,8"/>
+              <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Studio_Shape}" Visibility="{Binding ShowShape, Converter={StaticResource Vis}}"/>
+              <controls:NumberSlider Caption="{loc:Tr Studio_Length}" Value="{Binding Length}" Minimum="1" Maximum="256" Unit="{loc:Tr Unit_Px}" Visibility="{Binding ShowShape, Converter={StaticResource Vis}}" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
+              <controls:NumberSlider Caption="{loc:Tr Studio_Thickness}" Value="{Binding Thickness}" Minimum="1" Maximum="64" Unit="{loc:Tr Unit_Px}" Visibility="{Binding ShowThickness, Converter={StaticResource Vis}}" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
+              <controls:NumberSlider Caption="{loc:Tr Studio_Gap}" Value="{Binding Gap}" Minimum="0" Maximum="128" Unit="{loc:Tr Unit_Px}" Visibility="{Binding ShowGap, Converter={StaticResource Vis}}" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
+              <UniformGrid Columns="2" Visibility="{Binding ShowArms, Converter={StaticResource Vis}}" Margin="0,4,0,8">
+                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmTop}" IsChecked="{Binding ArmTop}" Margin="0,4,8,4" AutomationProperties.Name="{loc:Tr Studio_ArmTop}"/>
+                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmRight}" IsChecked="{Binding ArmRight}" Margin="0,4,8,4" AutomationProperties.Name="{loc:Tr Studio_ArmRight}"/>
+                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmBottom}" IsChecked="{Binding ArmBottom}" Margin="0,4,8,4" AutomationProperties.Name="{loc:Tr Studio_ArmBottom}"/>
+                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_ArmLeft}" IsChecked="{Binding ArmLeft}" Margin="0,4,8,4" AutomationProperties.Name="{loc:Tr Studio_ArmLeft}"/>
+              </UniformGrid>
+              <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Studio_ColorGroup}"/>
+              <controls:ColorField Caption="{loc:Tr Studio_Color}" Value="{Binding Color}"/>
+              <StackPanel Visibility="{Binding ShowFill, Converter={StaticResource Vis}}">
+                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_Fill}" IsChecked="{Binding Fill}" Margin="0,8,0,4" AutomationProperties.Name="{loc:Tr Studio_Fill}"/>
+                <controls:ColorField Caption="{loc:Tr Studio_Fill}" Value="{Binding FillColor}" Visibility="{Binding Fill, Converter={StaticResource Vis}}"/>
+              </StackPanel>
+              <controls:NumberSlider Caption="{loc:Tr Studio_Opacity}" Value="{Binding OpacityPercent}" Minimum="0" Maximum="100" Unit="{loc:Tr Unit_Percent}" Integer="False" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
+              <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Studio_Position}"/>
+              <controls:NumberSlider Caption="{loc:Tr Studio_OffsetX}" Value="{Binding OffsetX}" Minimum="-128" Maximum="128" Unit="{loc:Tr Unit_Px}" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
+              <controls:NumberSlider Caption="{loc:Tr Studio_OffsetY}" Value="{Binding OffsetY}" Minimum="-128" Maximum="128" Unit="{loc:Tr Unit_Px}" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
+              <controls:NumberSlider Caption="{loc:Tr Studio_Rotation}" Value="{Binding Rotation}" Minimum="-180" Maximum="180" Unit="{loc:Tr Unit_Deg}" Integer="False" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
+              <StackPanel Visibility="{Binding ShowOutline, Converter={StaticResource Vis}}">
+                <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Studio_OutlineGroup}"/>
+                <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_Outline}" IsChecked="{Binding Outline}" AutomationProperties.Name="{loc:Tr Studio_Outline}" Margin="0,0,0,8"/>
+                <controls:NumberSlider Caption="{loc:Tr Studio_OutlineThickness}" Value="{Binding OutlineThickness}" Minimum="1" Maximum="8" Unit="{loc:Tr Unit_Px}" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
+                <controls:ColorField Caption="{loc:Tr Studio_OutlineColor}" Value="{Binding OutlineColor}"/>
+              </StackPanel>
+              <StackPanel Visibility="{Binding ShowImage, Converter={StaticResource Vis}}">
+                <controls:NumberSlider Caption="{loc:Tr Studio_ImageScale}" Value="{Binding ImageScale}" Minimum="0.1" Maximum="4" Integer="False" DragStartedCommand="{Binding BeginEditCommand}" DragCompletedCommand="{Binding EndEditCommand}"/>
+                <Button Content="{loc:Tr Studio_ImportImage}" Command="{Binding ImportImageCommand}" HorizontalAlignment="Left" AutomationProperties.Name="{loc:Tr Studio_ImportImage}"/>
+              </StackPanel>
+              <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Studio_AntiAlias}" IsChecked="{Binding AntiAlias}" Margin="0,12,0,0" AutomationProperties.Name="{loc:Tr Studio_AntiAlias}"/>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Grid>
+</UserControl>

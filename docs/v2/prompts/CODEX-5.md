@@ -1,0 +1,16 @@
+You are continuing as the Core engineer for LightCrosshair 2.0. Lorenzo tested in game twice; this round fixes what he found. Work autonomously, committing as you go.
+
+Folder `C:\Users\Lorenzo\Documents\Projects\LightCrosshair-core`, branch `v2-core`, fast-forwarded to `v2`. Never switch branches, merge, rebase or push. Same ownership as before (Core, Core tests, scripts, setup, CI, README/CHANGELOG/SETTINGS, `docs/perf/`, `HANDOFF-core.md`).
+
+Read `docs/v2/REVIEW-3.md` (findings G-1…G-11, decisions 1–8) and `docs/v2/CONTRACT.md` §7 (updated: presets are a gallery, cycling, monitor names), plus the contract diff (`RuntimeState.DisplayColorsError`).
+
+Your part:
+1. **Cycling** (decision 3): favorites when ≥ 2, else all user crosshairs; persist into the game profile when a configured game is foreground, else `DefaultCrosshairId`; emit `snapshotChanged`. Tests for each branch.
+2. **FPS overlay numbers** (G-9, decision 7) — highest priority after cycling: in Fortnite (DX12, Easy Anti-Cheat, borderless) 1.9 showed FPS and 2.0 shows an empty box. Compare v2 `Core/FpsOverlay.cs` with v1 `SystemFpsMonitor.cs` on `main` (providers, kernel/DxgKrnl present events, process filtering by pid vs swapchain owner, session lifetime, elevation handling) and restore what made 1.9 work, keeping only FPS, frametime and 1% low. Verify with a DX11 and a DX12 test app (D3D12 sample or a minimal swapchain app you build in `scripts/perf/`), including a borderless full-screen window. When no frames arrive within 2 s, the overlay shows "–" and a short localized reason. Record the test matrix in the handoff.
+3. **Monitor names** (G-10): fill `MonitorInfo.FriendlyName` from `QueryDisplayConfig` + `DisplayConfigGetDeviceInfo(DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME)`; fallback to the adapter string. Test with a fake provider.
+4. **UI launch and render cost** (G-4, decision 4, Core side): start `LightCrosshair.UI.exe` with below-normal CPU priority and low I/O priority when a game profile or a full-screen-sized foreground window is active. Run `render` on one below-normal-priority worker with a queue; drop queued renders when the UI disconnects or parks. If the UI process is parked and connected, `OpenSettings` only sends `focusRequested`. Measure UI open → first frame and Core CPU during the open with a running 3D test window, before/after.
+5. **Display colors** (G-6, decision 5): reproduce the AMD `Color apply failed` on this machine (RX 6950 XT); log the vendor error once, set `RuntimeState.DisplayColorsError`, clear it on success or when leaving the game. Fix our side if it is ours; if the driver refuses, report `unsupported`. Remove message-less log lines (`AmdAdlColorManager` repeated): every log line states what happened.
+6. **Overlay over games** (G-3): with a borderless full-screen 3D test window in the foreground, verify the crosshair stays above it after focus changes and Alt+X toggles it. Keep the probe in `scripts/perf/`.
+7. Update README/CHANGELOG/SETTINGS for the changed behavior (use presets in one click, cycling, mouse bindings, monitor names).
+
+Every commit: Release build of the solution with 0 warnings/errors, all tests green. Repository identity, no AI attribution. Add a "Review 3" section to `docs/v2/HANDOFF-core.md`: one line per item, how it was verified, before/after numbers.

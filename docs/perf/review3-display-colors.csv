@@ -1,0 +1,4 @@
+"Case","Gamma","AmdChannels","FailureLogEntries","RuntimeError","AfterLeaveError","OriginalColorsRestored"
+"before","100","12","1",,,"True"
+"after-neutral","100","12","0",,,"True"
+"after-gamma","115","12","1","unsupported",,"True"

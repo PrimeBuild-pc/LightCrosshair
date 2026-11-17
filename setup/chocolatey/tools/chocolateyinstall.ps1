@@ -1,8 +1,9 @@
 $ErrorActionPreference = 'Stop'
 
 $packageName = 'lightcrosshair'
-$installerUrl = 'https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v1.8.0/LightCrosshair-Setup-1.8.0.exe'
-$checksum = '1F25C2B6DF489568B8E65539DA5F2D82ECE57D65172669616AB45DF7C125B8A7'
+$installerUrl = 'https://github.com/PrimeBuild-pc/LightCrosshair/releases/download/v2.0.0/LightCrosshair-Setup-2.0.0.exe'
+$checksum = 'REPLACE_WITH_FINAL_SHA256'
+if ($checksum -notmatch '^[A-Fa-f0-9]{64}$') { throw 'Finalize the release checksum before packaging' }
 
 $packageArgs = @{
     PackageName    = $packageName

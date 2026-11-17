@@ -21,8 +21,9 @@ namespace LightCrosshair
         bool IsVendorDriverPath,
         string StatusMessage);
 
-    public interface IGpuColorManager
+    public interface IGpuColorManager : IDisposable
     {
+        void IDisposable.Dispose() { }
         string BackendName { get; }
         GpuVendor Vendor { get; }
         string AdapterDescription { get; }
@@ -31,6 +32,8 @@ namespace LightCrosshair
         bool TryCaptureOriginalState(out string? error);
         bool TryApply(ColorAdjustment adjustment, out string? error);
         bool TryRestore(out string? error);
+        ColorRecoverySnapshot CaptureRecovery() => throw new NotSupportedException();
+        void LoadRecovery(ColorRecoverySnapshot snapshot) => throw new NotSupportedException();
     }
 
     internal readonly record struct GpuDetectionResult(GpuVendor Vendor, string AdapterDescription);
@@ -139,273 +142,91 @@ namespace LightCrosshair
 
     internal sealed class Win32GammaColorManager : IGpuColorManager
     {
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        internal interface IDevices
+        {
+            IEnumerable<string> Names { get; }
+            bool Read(string name, out GammaRamp ramp);
+            bool Write(string name, GammaRamp ramp);
+        }
+        private sealed class Devices : IDevices
+        {
+            public IEnumerable<string> Names => System.Windows.Forms.Screen.AllScreens.Select(s => s.DeviceName);
+            [DllImport("gdi32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr CreateDC(string driver, string? device, string? output, IntPtr init);
+            [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr dc);
+            [DllImport("gdi32.dll")] private static extern bool GetDeviceGammaRamp(IntPtr dc, out GammaRamp ramp);
+            [DllImport("gdi32.dll")] private static extern bool SetDeviceGammaRamp(IntPtr dc, ref GammaRamp ramp);
+            public bool Read(string name, out GammaRamp ramp)
+            {
+                var dc = CreateDC("DISPLAY", name.Length == 0 ? null : name, null, IntPtr.Zero);
+                try { return GetDeviceGammaRamp(dc, out ramp); } finally { if (dc != IntPtr.Zero) DeleteDC(dc); }
+            }
+            public bool Write(string name, GammaRamp ramp)
+            {
+                var dc = CreateDC("DISPLAY", name.Length == 0 ? null : name, null, IntPtr.Zero);
+                try { return SetDeviceGammaRamp(dc, ref ramp); } finally { if (dc != IntPtr.Zero) DeleteDC(dc); }
+            }
+        }
+        [StructLayout(LayoutKind.Sequential)]
         public struct GammaRamp
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)]
-            public ushort[] Red;
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)]
-            public ushort[] Green;
-
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)]
-            public ushort[] Blue;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)] public ushort[] Red;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)] public ushort[] Green;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)] public ushort[] Blue;
         }
-
-        [DllImport("gdi32.dll", SetLastError = true)]
-        private static extern bool SetDeviceGammaRamp(IntPtr hDC, ref GammaRamp lpRamp);
-
-        [DllImport("gdi32.dll", SetLastError = true)]
-        private static extern bool GetDeviceGammaRamp(IntPtr hDC, out GammaRamp lpRamp);
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetDC(IntPtr hWnd);
-
-        [DllImport("user32.dll")]
-        private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
-
-        [DllImport("gdi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern IntPtr CreateDC(string lpszDriver, string? lpszDevice, string? lpszOutput, IntPtr lpInitData);
-
-        [DllImport("gdi32.dll", SetLastError = true)]
-        private static extern bool DeleteDC(IntPtr hdc);
-
-        [DllImport("gdi32.dll")]
-        private static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
-
-        [DllImport("user32.dll")]
-        private static extern int GetSystemMetrics(int nIndex);
-
-        private const int RASTERCAPS = 38;
-        private const int RC_GAMMA_RAMP = 0x00000100;
-        private const int SM_REMOTESESSION = 0x1000;
-
         private readonly GpuDetectionResult _detection;
-        private readonly object _sync = new();
-        private GammaRamp _originalRamp;
-        private bool _hasOriginalRamp;
-
-        public Win32GammaColorManager(GpuDetectionResult detection)
-        {
-            _detection = detection;
-        }
-
-        public string BackendName => "Win32 Gamma Ramp";
+        private readonly IDevices _devices;
+        private readonly Dictionary<string, GammaRamp> _originals = new();
+        public Win32GammaColorManager(GpuDetectionResult detection, IDevices? devices = null)
+        { _detection = detection; _devices = devices ?? new Devices(); }
+        public string BackendName => "Win32 per-display gamma ramp";
         public GpuVendor Vendor => _detection.Vendor;
         public string AdapterDescription => _detection.AdapterDescription;
         public bool IsVendorDriverPath => false;
-        public string StatusMessage => "Global display color path active (SetDeviceGammaRamp).";
-
+        public string StatusMessage => "Named display gamma ramps (SetDeviceGammaRamp).";
+        public ColorRecoverySnapshot CaptureRecovery() => new()
+        {
+            Global = _originals.TryGetValue("", out var legacy) ? RampSnapshot.From(legacy) : null,
+            Displays = _originals.Where(p => p.Key.Length != 0).ToDictionary(p => p.Key, p => RampSnapshot.From(p.Value))
+        };
+        public void LoadRecovery(ColorRecoverySnapshot snapshot)
+        {
+            _originals.Clear();
+            foreach (var pair in snapshot.Displays) _originals.Add(pair.Key, pair.Value.ToRamp());
+            if (snapshot.Global is not null) _originals[""] = snapshot.Global.ToRamp();
+        }
         public bool TryCaptureOriginalState(out string? error)
         {
-            lock (_sync)
+            if (_originals.Count != 0) { error = null; return true; }
+            // Capture every attached output before the first write. A generic desktop
+            // DC cannot expose ramps on several modern multi-monitor AMD drivers.
+            var captured = new Dictionary<string, GammaRamp>();
+            foreach (string name in _devices.Names)
             {
-                if (_hasOriginalRamp)
-                {
-                    error = null;
-                    return true;
-                }
-
-                IntPtr desktopDc = GetDC(IntPtr.Zero);
-                if (TryCaptureOnDc(desktopDc, releaseWithUser32: true, releaseAfter: true, out error))
-                {
-                    return true;
-                }
-
-                IntPtr displayDc = CreateDC("DISPLAY", null, null, IntPtr.Zero);
-                if (TryCaptureOnDc(displayDc, releaseWithUser32: false, releaseAfter: true, out var displayError))
-                {
-                    return true;
-                }
-
-                error = string.IsNullOrWhiteSpace(displayError)
-                    ? error ?? "Failed to capture original gamma ramp."
-                    : displayError;
-                return false;
+                if (!_devices.Read(name, out var ramp)) { error = $"GetDeviceGammaRamp refused {name}."; return false; }
+                captured.Add(name, ramp);
             }
+            foreach (var pair in captured) _originals.Add(pair.Key, pair.Value);
+            error = captured.Count == 0 ? "No attached gamma display." : null;
+            return error is null;
         }
-
         public bool TryApply(ColorAdjustment adjustment, out string? error)
         {
-            lock (_sync)
+            if (!TryCaptureOriginalState(out error)) return false;
+            var ramp = BuildRamp(adjustment);
+            foreach (var name in _originals.Keys)
             {
-                // Prefer desktop DC first, then fallback to a generic DISPLAY DC.
-                IntPtr desktopDc = GetDC(IntPtr.Zero);
-                if (TryApplyOnDc(desktopDc, releaseWithUser32: true, adjustment, out error))
-                {
-                    return true;
-                }
-
-                IntPtr displayDc = CreateDC("DISPLAY", null, null, IntPtr.Zero);
-                if (TryApplyOnDc(displayDc, releaseWithUser32: false, adjustment, out var displayError))
-                {
-                    return true;
-                }
-
-                error = string.IsNullOrWhiteSpace(displayError)
-                    ? error ?? "SetDeviceGammaRamp returned false on available display contexts."
-                    : displayError;
-                return false;
+                Core.ColorWriteGuard.BeforeWrite?.Invoke();
+                if (!_devices.Write(name, ramp)) { error = $"SetDeviceGammaRamp refused {name}."; return false; }
             }
+            error = null; return true;
         }
-
-        private bool TryApplyOnDc(IntPtr dc, bool releaseWithUser32, ColorAdjustment adjustment, out string? error)
-        {
-            if (dc == IntPtr.Zero)
-            {
-                error = "Cannot access display device context.";
-                return false;
-            }
-
-            try
-            {
-                int rasterCaps = GetDeviceCaps(dc, RASTERCAPS);
-                bool hasGammaCap = (rasterCaps & RC_GAMMA_RAMP) != 0;
-                bool isRemoteSession = GetSystemMetrics(SM_REMOTESESSION) != 0;
-                if (!hasGammaCap)
-                {
-                    Program.LogDebug(
-                        $"Win32 gamma capability bit missing (RASTERCAPS=0x{rasterCaps:X}, remoteSession={isRemoteSession}); attempting SetDeviceGammaRamp anyway.",
-                        nameof(Win32GammaColorManager));
-                }
-
-                if (!_hasOriginalRamp)
-                {
-                    _ = TryCaptureOnDc(dc, releaseWithUser32: false, releaseAfter: false, out _);
-                }
-
-                var ramp = BuildRamp(adjustment);
-                if (!SetDeviceGammaRamp(dc, ref ramp))
-                {
-                    int win32 = Marshal.GetLastWin32Error();
-                    error = win32 == 0
-                        ? $"SetDeviceGammaRamp returned false (RASTERCAPS=0x{rasterCaps:X}, remoteSession={isRemoteSession})."
-                        : $"SetDeviceGammaRamp failed (Win32: {win32}, RASTERCAPS=0x{rasterCaps:X}, remoteSession={isRemoteSession}).";
-                    return false;
-                }
-
-                error = null;
-                return true;
-            }
-            finally
-            {
-                ReleaseDc(dc, releaseWithUser32);
-            }
-        }
-
         public bool TryRestore(out string? error)
         {
-            lock (_sync)
-            {
-                if (!_hasOriginalRamp)
-                {
-                    error = null;
-                    return true;
-                }
-
-                IntPtr desktopDc = GetDC(IntPtr.Zero);
-                if (TryRestoreOnDc(desktopDc, releaseWithUser32: true, out error))
-                {
-                    return true;
-                }
-
-                IntPtr displayDc = CreateDC("DISPLAY", null, null, IntPtr.Zero);
-                if (TryRestoreOnDc(displayDc, releaseWithUser32: false, out var displayError))
-                {
-                    return true;
-                }
-
-                error = string.IsNullOrWhiteSpace(displayError)
-                    ? error ?? "Failed to restore original gamma ramp."
-                    : displayError;
-                return false;
-            }
-        }
-
-        private bool TryCaptureOnDc(IntPtr dc, bool releaseWithUser32, bool releaseAfter, out string? error)
-        {
-            if (dc == IntPtr.Zero)
-            {
-                error = "Cannot access display device context while capturing baseline.";
-                return false;
-            }
-
-            try
-            {
-                if (!GetDeviceGammaRamp(dc, out var original))
-                {
-                    int win32 = Marshal.GetLastWin32Error();
-                    error = win32 == 0
-                        ? "GetDeviceGammaRamp returned false while capturing baseline."
-                        : $"GetDeviceGammaRamp failed while capturing baseline (Win32: {win32}).";
-                    return false;
-                }
-
-                _originalRamp = original;
-                _hasOriginalRamp = true;
-                error = null;
-                return true;
-            }
-            finally
-            {
-                if (releaseAfter)
-                {
-                    ReleaseDc(dc, releaseWithUser32);
-                }
-            }
-        }
-
-        private bool TryRestoreOnDc(IntPtr dc, bool releaseWithUser32, out string? error)
-        {
-            if (dc == IntPtr.Zero)
-            {
-                error = "Cannot access display device context while restoring.";
-                return false;
-            }
-
-            try
-            {
-                var ramp = _originalRamp;
-                if (!SetDeviceGammaRamp(dc, ref ramp))
-                {
-                    int win32 = Marshal.GetLastWin32Error();
-                    error = win32 == 0
-                        ? "Failed to restore original gamma ramp."
-                        : $"Failed to restore original gamma ramp (Win32: {win32}).";
-                    return false;
-                }
-
-                error = null;
-                return true;
-            }
-            finally
-            {
-                ReleaseDc(dc, releaseWithUser32);
-            }
-        }
-
-        private static void ReleaseDc(IntPtr dc, bool releaseWithUser32)
-        {
-            try
-            {
-                if (dc == IntPtr.Zero)
-                {
-                    return;
-                }
-
-                if (releaseWithUser32)
-                {
-                    _ = ReleaseDC(IntPtr.Zero, dc);
-                }
-                else
-                {
-                    _ = DeleteDC(dc);
-                }
-            }
-            catch
-            {
-                // Best-effort cleanup.
-            }
+            var failures = new List<string>();
+            foreach (var pair in _originals)
+                if (!_devices.Write(pair.Key, pair.Value)) failures.Add(pair.Key);
+            error = failures.Count == 0 ? null : "Gamma restoration refused: " + string.Join(", ", failures);
+            return error is null;
         }
 
         public static GammaRamp BuildRamp(ColorAdjustment adjustment)
@@ -472,6 +293,9 @@ namespace LightCrosshair
 
     internal abstract class DelegatingGpuColorManager : IGpuColorManager
     {
+        public virtual void Dispose() => _fallback.Dispose();
+        public virtual ColorRecoverySnapshot CaptureRecovery() => _fallback.CaptureRecovery();
+        public virtual void LoadRecovery(ColorRecoverySnapshot snapshot) => _fallback.LoadRecovery(snapshot);
         private readonly IGpuColorManager _fallback;
 
         protected DelegatingGpuColorManager(IGpuColorManager fallback)
@@ -494,6 +318,19 @@ namespace LightCrosshair
 
     internal sealed class NvidiaColorManager : DelegatingGpuColorManager
     {
+        public override ColorRecoverySnapshot CaptureRecovery()
+        {
+            var snapshot = base.CaptureRecovery();
+            foreach (var entry in _originalRampsByDisplay) snapshot.Displays[entry.Key] = RampSnapshot.From(entry.Value);
+            return snapshot;
+        }
+        public override void LoadRecovery(ColorRecoverySnapshot snapshot)
+        {
+            base.LoadRecovery(snapshot);
+            _originalRampsByDisplay.Clear();
+            foreach (var entry in snapshot.Displays) _originalRampsByDisplay[entry.Key] = entry.Value.ToRamp();
+            _win32FallbackPathTouched = true;
+        }
         private const int NVAPI_OK = 0;
         private const int DISPLAY_DEVICE_ATTACHED_TO_DESKTOP = 0x00000001;
         private const int RASTERCAPS = 38;
@@ -717,6 +554,7 @@ namespace LightCrosshair
                         try
                         {
                             var endpointRamp = ramp;
+                            Core.ColorWriteGuard.BeforeWrite?.Invoke();
                             result = NvAPI_Disp_SetGammaRamp(endpoint.NvapiDisplayId, ref endpointRamp);
                         }
                         catch (Exception ex)
@@ -1039,6 +877,7 @@ namespace LightCrosshair
                         nameof(NvidiaColorManager));
                 }
 
+                Core.ColorWriteGuard.BeforeWrite?.Invoke();
                 if (!SetDeviceGammaRamp(dc, ref ramp))
                 {
                     int win32 = Marshal.GetLastWin32Error();
@@ -1076,6 +915,13 @@ namespace LightCrosshair
 
     internal sealed class AmdColorManager : DelegatingGpuColorManager
     {
+        public override void Dispose() { _adlColorManager.Dispose(); base.Dispose(); }
+        public override ColorRecoverySnapshot CaptureRecovery()
+        {
+            var snapshot = base.CaptureRecovery(); snapshot.AmdChannels = _adlColorManager.CaptureRecovery(); return snapshot;
+        }
+        public override void LoadRecovery(ColorRecoverySnapshot snapshot)
+        { base.LoadRecovery(snapshot); _adlColorManager.LoadRecovery(snapshot.AmdChannels); _win32FallbackPathTouched = true; }
         private readonly GpuDetectionResult _detection;
         private readonly bool _adlxRuntimeAvailable;
         private readonly AmdAdlColorManager _adlColorManager;
@@ -1138,6 +984,17 @@ namespace LightCrosshair
             {
                 _lastAppliedViaDriverPath = true;
 
+                // A neutral gamma must preserve the existing calibration and needs
+                // no Win32 gamma support. Some modern AMD outputs expose ADL color
+                // controls but reject gamma ramps entirely.
+                if (adjustment.Gamma == 100)
+                {
+                    // A live change from another gamma back to neutral puts the captured ramp back.
+                    if (_win32FallbackPathTouched && !Fallback.TryRestore(out string? neutralError))
+                    { error = $"AMD driver path OK, but the neutral gamma ramp could not be restored: {neutralError}"; return false; }
+                    _win32FallbackPathTouched = false;
+                    error = null; return true;
+                }
                 // ADL natively lacks Gamma handling via this API; it only sets brightness/contrast/saturation.
                 // We MUST delegate the Gamma curve to the Win32 fall-back to actually apply the Gamma value.
                 // We pass standard neutral values (100, 100, 50) so we don't multiply the already applied ADL values.
@@ -1148,7 +1005,7 @@ namespace LightCrosshair
                 }
                 else
                 {
-                    Program.LogDebug($"AMD ADL applied brightness/contrast/saturation, but the Win32 fallback for Gamma failed: {win32GammaError}", nameof(AmdColorManager));
+                    // The transaction owner logs the returned vendor error once.
                     error = $"AMD driver path OK, but Win32 Gamma fallback failed: {win32GammaError}";
                     return false;
                 }
@@ -1179,61 +1036,12 @@ namespace LightCrosshair
 
         public override bool TryRestore(out string? error)
         {
-            bool adlRestoreOk = true;
-            bool win32RestoreOk = true;
-            string? adlError = null;
-            string? win32Error = null;
-            bool hasAdlState = _adlColorManager.HasCapturedOriginalState;
-            bool usedFallbackPath = _win32FallbackPathTouched;
-
-            if (hasAdlState)
-            {
-                adlRestoreOk = _adlColorManager.TryRestore(out adlError);
-            }
-
-            if (usedFallbackPath)
-            {
-                win32RestoreOk = Fallback.TryRestore(out win32Error);
-            }
-
-            // One restore attempt should consume the fallback flag to avoid repeated stale failures.
-            _win32FallbackPathTouched = false;
-
-            if (adlRestoreOk)
-            {
-                error = null;
-                return true;
-            }
-
-            if (!hasAdlState && usedFallbackPath && win32RestoreOk)
-            {
-                error = null;
-                return true;
-            }
-
-            if (hasAdlState && !adlRestoreOk && !usedFallbackPath)
-            {
-                error = $"AMD restore failed: {adlError}";
-                return false;
-            }
-
-            if (hasAdlState && !adlRestoreOk && usedFallbackPath && !win32RestoreOk)
-            {
-                error = $"AMD restore failed: {adlError} | Win32 restore failed: {win32Error}";
-                return false;
-            }
-
-            if (hasAdlState && !adlRestoreOk && usedFallbackPath && win32RestoreOk)
-            {
-                // Keep app functional even if AMD restore is partially unsupported on this driver/output.
-                error = null;
-                return true;
-            }
-
-            error = string.IsNullOrWhiteSpace(win32Error)
-                ? adlError
-                : win32Error;
-            return false;
+            string? adlError = null, gammaError = null;
+            bool adl = !_adlColorManager.HasCapturedOriginalState || _adlColorManager.TryRestore(out adlError);
+            bool gamma = !_win32FallbackPathTouched || Fallback.TryRestore(out gammaError);
+            if (gamma) _win32FallbackPathTouched = false;
+            error = adl && gamma ? null : $"Original display colors could not be fully restored. ADL: {adlError ?? "OK"}; gamma: {gammaError ?? "OK"}";
+            return adl && gamma;
         }
 
         private static bool IsAdlxRuntimeAvailable()

@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="ShowCrosshair" xml:space="preserve">
+    <value>Показать прицел</value>
+  </data>
+  <data name="HideCrosshair" xml:space="preserve">
+    <value>Скрыть прицел</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Открыть LightCrosshair</value>
+  </data>
+  <data name="Exit" xml:space="preserve">
+    <value>Выход</value>
+  </data>
+  <data name="MissingUi" xml:space="preserve">
+    <value>Установите приложение настроек рядом с LightCrosshair.</value>
+  </data>
+  <data name="Recovered" xml:space="preserve">
+    <value>Библиотека восстановлена.</value>
+  </data>
+  <data name="SuggestGame" xml:space="preserve">
+    <value>Создать профиль для {0}?</value>
+  </data>
+  <data name="ColorsRestoreFailed" xml:space="preserve">
+    <value>Не удалось восстановить исходные цвета. Перезапустите LightCrosshair для повторной попытки.</value>
+  </data>
+  <data name="ColorsApplyFailed" xml:space="preserve">
+    <value>Не удалось применить цвета экрана.</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>Это сочетание назначено нескольким действиям.</value>
+  </data>
+  <data name="HotkeyRegistrationFailed" xml:space="preserve">
+    <value>Windows не удалось зарегистрировать это сочетание клавиш.</value>
+  </data>
+  <data name="HookRegistrationFailed" xml:space="preserve">
+    <value>Windows не удалось зарегистрировать перехватчик ввода.</value>
+  </data>
+  <data name="LoadFailed" xml:space="preserve"><value>Не удалось загрузить библиотеку. LightCrosshair использует временные настройки; ваши файлы не изменены. Перезапустите для повтора.</value></data>
+  <data name="FpsNoFrames" xml:space="preserve"><value>Нет кадров за последние 2 с</value></data>
+  <data name="FpsAccessDenied" xml:space="preserve"><value>Для FPS нужны права доступа</value></data>
+  <data name="FpsUnavailable" xml:space="preserve"><value>Захват FPS недоступен</value></data>
+  <data name="FpsNoForeground" xml:space="preserve"><value>Переключитесь на окно игры</value></data>
+</root>

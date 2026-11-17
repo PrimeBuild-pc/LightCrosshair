@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="AppName" xml:space="preserve"><value>LightCrosshair</value></data>
+  <data name="Retry" xml:space="preserve"><value>Reintentar</value></data>
+  <data name="Ok" xml:space="preserve"><value>Aceptar</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="Save" xml:space="preserve"><value>Guardar</value></data>
+  <data name="Discard" xml:space="preserve"><value>Descartar</value></data>
+  <data name="Delete" xml:space="preserve"><value>Eliminar</value></data>
+  <data name="Close" xml:space="preserve"><value>Cerrar</value></data>
+  <data name="Edit" xml:space="preserve"><value>Editar</value></data>
+  <data name="Duplicate" xml:space="preserve"><value>Duplicar</value></data>
+  <data name="Export" xml:space="preserve"><value>Exportar</value></data>
+  <data name="Import" xml:space="preserve"><value>Importar</value></data>
+  <data name="Copy" xml:space="preserve"><value>Copiar</value></data>
+  <data name="Paste" xml:space="preserve"><value>Pegar</value></data>
+  <data name="Apply" xml:space="preserve"><value>Aplicar</value></data>
+  <data name="Search" xml:space="preserve"><value>Buscar</value></data>
+  <data name="On" xml:space="preserve"><value>Activado</value></data>
+  <data name="Off" xml:space="preserve"><value>Desactivado</value></data>
+  <data name="Browse" xml:space="preserve"><value>Examinar</value></data>
+  <data name="Add" xml:space="preserve"><value>Añadir</value></data>
+  <data name="None" xml:space="preserve"><value>Ninguno</value></data>
+  <data name="Default" xml:space="preserve"><value>Predeterminado</value></data>
+  <data name="Nav_Studio" xml:space="preserve"><value>Estudio</value></data>
+  <data name="Nav_Library" xml:space="preserve"><value>Biblioteca</value></data>
+  <data name="Nav_Games" xml:space="preserve"><value>Juegos</value></data>
+  <data name="Nav_Hotkeys" xml:space="preserve"><value>Atajos</value></data>
+  <data name="Nav_Settings" xml:space="preserve"><value>Ajustes</value></data>
+  <data name="Nav_Visibility" xml:space="preserve"><value>Mostrar mira</value></data>
+  <data name="Status_Connected" xml:space="preserve"><value>Conectado</value></data>
+  <data name="Status_Reconnecting" xml:space="preserve"><value>Reconectando</value></data>
+  <data name="Status_Offline" xml:space="preserve"><value>Sin conexión</value></data>
+  <data name="Window_Minimize" xml:space="preserve"><value>Minimizar</value></data>
+  <data name="Window_Maximize" xml:space="preserve"><value>Maximizar</value></data>
+  <data name="Window_Restore" xml:space="preserve"><value>Restaurar</value></data>
+  <data name="Window_Close" xml:space="preserve"><value>Cerrar</value></data>
+  <data name="Error_BadRequest" xml:space="preserve"><value>No se entendió la solicitud.</value></data>
+  <data name="Error_NotFound" xml:space="preserve"><value>Ese elemento ya no existe.</value></data>
+  <data name="Error_Validation" xml:space="preserve"><value>No se pudieron guardar algunos valores.</value></data>
+  <data name="Error_Unsupported" xml:space="preserve"><value>Esta acción no está disponible.</value></data>
+  <data name="Error_ProtocolMismatch" xml:space="preserve"><value>Hay que reinstalar LightCrosshair. La app de ajustes y la app en segundo plano son de versiones distintas.</value></data>
+  <data name="Error_Internal" xml:space="preserve"><value>Algo ha fallado. Inténtalo de nuevo.</value></data>
+  <data name="Error_Timeout" xml:space="preserve"><value>La app en segundo plano no respondió a tiempo.</value></data>
+  <data name="Error_Disconnected" xml:space="preserve"><value>Se perdió la conexión con LightCrosshair.</value></data>
+  <data name="Error_CoreMissing" xml:space="preserve"><value>LightCrosshair no está en ejecución. Inícialo e inténtalo de nuevo.</value></data>
+  <data name="Unsaved_Title" xml:space="preserve"><value>Cambios sin guardar</value></data>
+  <data name="Unsaved_Message" xml:space="preserve"><value>¿Guardar la mira antes de salir del Estudio?</value></data>
+  <data name="DeleteCrosshair_Title" xml:space="preserve"><value>Eliminar mira</value></data>
+  <data name="DeleteCrosshair_Message" xml:space="preserve"><value>¿Eliminar {0}? No se puede deshacer.</value></data>
+  <data name="DeleteGame_Title" xml:space="preserve"><value>Eliminar perfil de juego</value></data>
+  <data name="DeleteGame_Message" xml:space="preserve"><value>¿Eliminar el perfil de {0}?</value></data>
+  <data name="Exit_Title" xml:space="preserve"><value>Salir de LightCrosshair</value></data>
+  <data name="Exit_Message" xml:space="preserve"><value>Se cerrarán la mira y la ventana de ajustes.</value></data>
+  <data name="Studio_Name" xml:space="preserve"><value>Nombre</value></data>
+  <data name="Studio_SaveAs" xml:space="preserve"><value>Guardar como nuevo</value></data>
+  <data name="Studio_Live" xml:space="preserve"><value>En vivo en el juego</value></data>
+  <data name="Studio_AllHidden" xml:space="preserve"><value>Todas las capas están ocultas</value></data>
+  <data name="Studio_Undo" xml:space="preserve"><value>Deshacer</value></data>
+  <data name="Studio_Redo" xml:space="preserve"><value>Rehacer</value></data>
+  <data name="Studio_CopyCode" xml:space="preserve"><value>Copiar código</value></data>
+  <data name="Studio_PasteCode" xml:space="preserve"><value>Pegar código</value></data>
+  <data name="Studio_ZoomFit" xml:space="preserve"><value>Ajustar</value></data>
+  <data name="Studio_Zoom1" xml:space="preserve"><value>1×</value></data>
+  <data name="Studio_Zoom2" xml:space="preserve"><value>2×</value></data>
+  <data name="Studio_Zoom4" xml:space="preserve"><value>4×</value></data>
+  <data name="Studio_Background" xml:space="preserve"><value>Fondo</value></data>
+  <data name="Studio_BgDark" xml:space="preserve"><value>Oscuro</value></data>
+  <data name="Studio_BgMid" xml:space="preserve"><value>Medio</value></data>
+  <data name="Studio_BgLight" xml:space="preserve"><value>Claro</value></data>
+  <data name="Studio_BgChecker" xml:space="preserve"><value>Damero</value></data>
+  <data name="Studio_BgCustom" xml:space="preserve"><value>Color</value></data>
+  <data name="Studio_Layers" xml:space="preserve"><value>Capas</value></data>
+  <data name="Studio_AddLayer" xml:space="preserve"><value>Añadir capa</value></data>
+  <data name="Studio_LayerOrder" xml:space="preserve"><value>El primero de la lista se dibuja encima.</value></data>
+  <data name="Studio_ShowLayer" xml:space="preserve"><value>Mostrar capa</value></data>
+  <data name="Studio_HideLayer" xml:space="preserve"><value>Ocultar capa</value></data>
+  <data name="Studio_DuplicateLayer" xml:space="preserve"><value>Duplicar capa</value></data>
+  <data name="Studio_DeleteLayer" xml:space="preserve"><value>Eliminar capa</value></data>
+  <data name="Studio_MoveUp" xml:space="preserve"><value>Subir</value></data>
+  <data name="Studio_MoveDown" xml:space="preserve"><value>Bajar</value></data>
+  <data name="Studio_Properties" xml:space="preserve"><value>Propiedades de la capa</value></data>
+  <data name="Studio_Shape" xml:space="preserve"><value>Forma</value></data>
+  <data name="Studio_ColorGroup" xml:space="preserve"><value>Color</value></data>
+  <data name="Studio_Position" xml:space="preserve"><value>Posición</value></data>
+  <data name="Studio_OutlineGroup" xml:space="preserve"><value>Contorno</value></data>
+  <data name="Studio_Length" xml:space="preserve"><value>Longitud</value></data>
+  <data name="Studio_Diameter" xml:space="preserve"><value>Diámetro</value></data>
+  <data name="Studio_Side" xml:space="preserve"><value>Lado</value></data>
+  <data name="Studio_Thickness" xml:space="preserve"><value>Grosor</value></data>
+  <data name="Studio_Gap" xml:space="preserve"><value>Separación</value></data>
+  <data name="Studio_Arms" xml:space="preserve"><value>Brazos</value></data>
+  <data name="Studio_ArmTop" xml:space="preserve"><value>Arriba</value></data>
+  <data name="Studio_ArmRight" xml:space="preserve"><value>Derecha</value></data>
+  <data name="Studio_ArmBottom" xml:space="preserve"><value>Abajo</value></data>
+  <data name="Studio_ArmLeft" xml:space="preserve"><value>Izquierda</value></data>
+  <data name="Studio_Color" xml:space="preserve"><value>Color</value></data>
+  <data name="Studio_Fill" xml:space="preserve"><value>Relleno</value></data>
+  <data name="Studio_Opacity" xml:space="preserve"><value>Opacidad</value></data>
+  <data name="Studio_OffsetX" xml:space="preserve"><value>Desplazamiento X</value></data>
+  <data name="Studio_OffsetY" xml:space="preserve"><value>Desplazamiento Y</value></data>
+  <data name="Studio_Rotation" xml:space="preserve"><value>Rotación</value></data>
+  <data name="Studio_Outline" xml:space="preserve"><value>Contorno</value></data>
+  <data name="Studio_OutlineThickness" xml:space="preserve"><value>Grosor del contorno</value></data>
+  <data name="Studio_OutlineColor" xml:space="preserve"><value>Color del contorno</value></data>
+  <data name="Studio_ImageScale" xml:space="preserve"><value>Escala de imagen</value></data>
+  <data name="Studio_ImportImage" xml:space="preserve"><value>Importar PNG</value></data>
+  <data name="Studio_AntiAlias" xml:space="preserve"><value>Bordes suaves</value></data>
+  <data name="Studio_MaxLayers" xml:space="preserve"><value>Una mira puede tener hasta 8 capas.</value></data>
+  <data name="Studio_NoLayer" xml:space="preserve"><value>Añade una capa para editarla.</value></data>
+  <data name="Studio_Unsaved" xml:space="preserve"><value>Cambios sin guardar</value></data>
+  <data name="Studio_Hex" xml:space="preserve"><value>Color hexadecimal</value></data>
+  <data name="Kind_Arms" xml:space="preserve"><value>Brazos</value></data>
+  <data name="Kind_Dot" xml:space="preserve"><value>Punto</value></data>
+  <data name="Kind_Ring" xml:space="preserve"><value>Anillo</value></data>
+  <data name="Kind_Box" xml:space="preserve"><value>Caja</value></data>
+  <data name="Kind_Image" xml:space="preserve"><value>Imagen</value></data>
+  <data name="Name_NewCrosshair" xml:space="preserve"><value>Mira</value></data>
+  <data name="Name_Layer" xml:space="preserve"><value>Capa</value></data>
+  <data name="Unit_Px" xml:space="preserve"><value>px</value></data>
+  <data name="Unit_Deg" xml:space="preserve"><value>grados</value></data>
+  <data name="Unit_Percent" xml:space="preserve"><value>%</value></data>
+  <data name="Library_Mine" xml:space="preserve"><value>Mis miras</value></data>
+  <data name="Library_Presets" xml:space="preserve"><value>Preajustes</value></data>
+  <data name="Library_Empty" xml:space="preserve"><value>Aún no hay miras.</value></data>
+  <data name="Library_NoMatches" xml:space="preserve"><value>Sin resultados.</value></data>
+  <data name="Library_Favorite" xml:space="preserve"><value>Añadir a favoritos</value></data>
+  <data name="Library_Unfavorite" xml:space="preserve"><value>Quitar de favoritos</value></data>
+  <data name="Library_EditCopy" xml:space="preserve"><value>Editar una copia</value></data>
+  <data name="Library_ApplyDefault" xml:space="preserve"><value>Usar como predeterminada</value></data>
+  <data name="Library_PasteCode" xml:space="preserve"><value>Pegar código</value></data>
+  <data name="Library_ImportFile" xml:space="preserve"><value>Importar archivo</value></data>
+  <data name="Library_Actions" xml:space="preserve"><value>Acciones</value></data>
+  <data name="Library_TagAll" xml:space="preserve"><value>Todos</value></data>
+  <data name="Tag_dot" xml:space="preserve"><value>Punto</value></data>
+  <data name="Tag_cross" xml:space="preserve"><value>Cruz</value></data>
+  <data name="Tag_t" xml:space="preserve"><value>T</value></data>
+  <data name="Tag_x" xml:space="preserve"><value>X</value></data>
+  <data name="Tag_circle" xml:space="preserve"><value>Círculo</value></data>
+  <data name="Tag_box" xml:space="preserve"><value>Caja</value></data>
+  <data name="Tag_minimal" xml:space="preserve"><value>Mínimo</value></data>
+  <data name="Tag_outlined" xml:space="preserve"><value>Contorno</value></data>
+  <data name="Tag_highvisibility" xml:space="preserve"><value>Alta visibilidad</value></data>
+  <data name="Library_Imported" xml:space="preserve"><value>Se importaron {0} miras. Se omitieron {1}.</value></data>
+  <data name="Library_Search" xml:space="preserve"><value>Buscar miras</value></data>
+  <data name="Games_Add" xml:space="preserve"><value>Añadir juego</value></data>
+  <data name="Games_Empty" xml:space="preserve"><value>Aún no hay perfiles de juego.</value></data>
+  <data name="Games_Enabled" xml:space="preserve"><value>Activado</value></data>
+  <data name="Games_Process" xml:space="preserve"><value>Proceso</value></data>
+  <data name="Games_Crosshair" xml:space="preserve"><value>Mira</value></data>
+  <data name="Games_VisibilityOverride" xml:space="preserve"><value>Atajo de visibilidad</value></data>
+  <data name="Games_UseGlobal" xml:space="preserve"><value>Usar el atajo global</value></data>
+  <data name="Games_FpsOverlay" xml:space="preserve"><value>Overlay de FPS</value></data>
+  <data name="Games_FollowGlobal" xml:space="preserve"><value>Seguir el global</value></data>
+  <data name="Games_DisplayColors" xml:space="preserve"><value>Colores de pantalla</value></data>
+  <data name="Games_UseColors" xml:space="preserve"><value>Ajustar colores para este juego</value></data>
+  <data name="Games_Gamma" xml:space="preserve"><value>Gamma</value></data>
+  <data name="Games_Contrast" xml:space="preserve"><value>Contraste</value></data>
+  <data name="Games_Brightness" xml:space="preserve"><value>Brillo</value></data>
+  <data name="Games_Vibrance" xml:space="preserve"><value>Intensidad</value></data>
+  <data name="Games_NvidiaVibrance" xml:space="preserve"><value>Intensidad digital de NVIDIA</value></data>
+  <data name="Games_FpsCap" xml:space="preserve"><value>Límite de FPS de NVIDIA</value></data>
+  <data name="Games_NoCap" xml:space="preserve"><value>Sin límite gestionado por LightCrosshair</value></data>
+  <data name="Games_Save" xml:space="preserve"><value>Guardar perfil</value></data>
+  <data name="Games_Running" xml:space="preserve"><value>En ejecución</value></data>
+  <data name="Games_Suggest" xml:space="preserve"><value>¿Crear un perfil para {0}?</value></data>
+  <data name="Games_Create" xml:space="preserve"><value>Crear</value></data>
+  <data name="Games_NotNow" xml:space="preserve"><value>Ahora no</value></data>
+  <data name="Games_Never" xml:space="preserve"><value>Nunca para este juego</value></data>
+  <data name="Games_ReasonGamma" xml:space="preserve"><value>Los controles de color no están disponibles en este PC.</value></data>
+  <data name="Games_ReasonNvidiaColor" xml:space="preserve"><value>La intensidad digital de NVIDIA no está disponible en este PC.</value></data>
+  <data name="Games_ReasonNvidiaCap" xml:space="preserve"><value>El límite de FPS de NVIDIA no está disponible en este PC.</value></data>
+  <data name="Games_ReasonAmd" xml:space="preserve"><value>Los controles de color de AMD no están disponibles en este PC.</value></data>
+  <data name="Games_PickProcess" xml:space="preserve"><value>Elige un programa en ejecución o busca un exe.</value></data>
+  <data name="Games_NoProcesses" xml:space="preserve"><value>No hay programas con ventana.</value></data>
+  <data name="Games_ProfileName" xml:space="preserve"><value>Nombre del perfil</value></data>
+  <data name="Games_CapValue" xml:space="preserve"><value>Límite</value></data>
+  <data name="Games_Delete" xml:space="preserve"><value>Eliminar perfil</value></data>
+  <data name="Hotkeys_Help" xml:space="preserve"><value>Haz clic en un atajo y pulsa una tecla o un botón del ratón</value></data>
+  <data name="Hotkeys_ToggleVisibility" xml:space="preserve"><value>Mostrar u ocultar la mira</value></data>
+  <data name="Hotkeys_Next" xml:space="preserve"><value>Mira siguiente</value></data>
+  <data name="Hotkeys_Previous" xml:space="preserve"><value>Mira anterior</value></data>
+  <data name="Hotkeys_OpenSettings" xml:space="preserve"><value>Abrir o cerrar ajustes</value></data>
+  <data name="Hotkeys_Press" xml:space="preserve"><value>Pulsa una tecla o un botón del ratón</value></data>
+  <data name="Hotkeys_Mode" xml:space="preserve"><value>Modo</value></data>
+  <data name="Hotkeys_Toggle" xml:space="preserve"><value>Alternar</value></data>
+  <data name="Hotkeys_HoldHide" xml:space="preserve"><value>Mantener para ocultar</value></data>
+  <data name="Hotkeys_HoldShow" xml:space="preserve"><value>Mantener para mostrar</value></data>
+  <data name="Hotkeys_Unbound" xml:space="preserve"><value>Sin asignar</value></data>
+  <data name="Hotkeys_Conflict" xml:space="preserve"><value>Entra en conflicto con {0}.</value></data>
+  <data name="Hotkeys_Reserved" xml:space="preserve"><value>Este atajo está reservado por Windows u otra aplicación.</value></data>
+  <data name="Hotkeys_WheelOnly" xml:space="preserve"><value>La rueda solo admite alternar.</value></data>
+  <data name="Hotkeys_RegisterFailed" xml:space="preserve"><value>No se pudo registrar este atajo.</value></data>
+  <data name="Hotkeys_Clear" xml:space="preserve"><value>Borrar atajo</value></data>
+  <data name="Key_MiddleClick" xml:space="preserve"><value>Clic central</value></data>
+  <data name="Key_RightClick" xml:space="preserve"><value>Clic derecho</value></data>
+  <data name="Key_Mouse4" xml:space="preserve"><value>Ratón 4</value></data>
+  <data name="Key_Mouse5" xml:space="preserve"><value>Ratón 5</value></data>
+  <data name="Key_WheelUp" xml:space="preserve"><value>Rueda arriba</value></data>
+  <data name="Key_WheelDown" xml:space="preserve"><value>Rueda abajo</value></data>
+  <data name="Key_Ctrl" xml:space="preserve"><value>Ctrl</value></data>
+  <data name="Key_Alt" xml:space="preserve"><value>Alt</value></data>
+  <data name="Key_Shift" xml:space="preserve"><value>Mayús</value></data>
+  <data name="Key_Win" xml:space="preserve"><value>Win</value></data>
+  <data name="Settings_Display" xml:space="preserve"><value>Pantalla</value></data>
+  <data name="Settings_Monitor" xml:space="preserve"><value>Monitor</value></data>
+  <data name="Settings_Primary" xml:space="preserve"><value>Principal</value></data>
+  <data name="Settings_Position" xml:space="preserve"><value>Posición</value></data>
+  <data name="Settings_OffsetX" xml:space="preserve"><value>Desplazamiento horizontal</value></data>
+  <data name="Settings_OffsetY" xml:space="preserve"><value>Desplazamiento vertical</value></data>
+  <data name="Settings_Behavior" xml:space="preserve"><value>Comportamiento</value></data>
+  <data name="Settings_OnlyGames" xml:space="preserve"><value>Mostrar solo en los juegos configurados</value></data>
+  <data name="Settings_HideRecording" xml:space="preserve"><value>Ocultar al grabar la pantalla</value></data>
+  <data name="Settings_StartWindows" xml:space="preserve"><value>Iniciar con Windows</value></data>
+  <data name="Settings_Suggestions" xml:space="preserve"><value>Sugerir perfiles para juegos conocidos</value></data>
+  <data name="Settings_Fps" xml:space="preserve"><value>Overlay de FPS</value></data>
+  <data name="Settings_FpsOn" xml:space="preserve"><value>Mostrar overlay de FPS</value></data>
+  <data name="Settings_FpsMonitor" xml:space="preserve"><value>Monitor del overlay</value></data>
+  <data name="Settings_SameMonitor" xml:space="preserve"><value>El mismo que la mira</value></data>
+  <data name="Settings_Scale" xml:space="preserve"><value>Escala</value></data>
+  <data name="Settings_Frametime" xml:space="preserve"><value>Mostrar frametime</value></data>
+  <data name="Settings_Low" xml:space="preserve"><value>Mostrar 1% low</value></data>
+  <data name="Settings_TextColor" xml:space="preserve"><value>Color del texto</value></data>
+  <data name="Settings_BackgroundColor" xml:space="preserve"><value>Color de fondo</value></data>
+  <data name="Settings_BackgroundOpacity" xml:space="preserve"><value>Opacidad del fondo</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>Idioma</value></data>
+  <data name="Settings_LangAuto" xml:space="preserve"><value>Como Windows</value></data>
+  <data name="Settings_LangEn" xml:space="preserve"><value>Inglés</value></data>
+  <data name="Settings_LangIt" xml:space="preserve"><value>Italiano</value></data>
+  <data name="Settings_LangEs" xml:space="preserve"><value>Español</value></data>
+  <data name="Settings_LangZh" xml:space="preserve"><value>Chino simplificado</value></data>
+  <data name="Settings_LangRu" xml:space="preserve"><value>Ruso</value></data>
+  <data name="Settings_LangJa" xml:space="preserve"><value>Japonés</value></data>
+  <data name="Settings_Updates" xml:space="preserve"><value>Actualizaciones</value></data>
+  <data name="Settings_CheckAuto" xml:space="preserve"><value>Buscar actualizaciones</value></data>
+  <data name="Settings_CheckNow" xml:space="preserve"><value>Buscar ahora</value></data>
+  <data name="Settings_Checking" xml:space="preserve"><value>Buscando actualizaciones</value></data>
+  <data name="Settings_UpToDate" xml:space="preserve"><value>Tienes la última versión ({0}).</value></data>
+  <data name="Settings_UpdateAvailable" xml:space="preserve"><value>Hay una versión más reciente: {0}.</value></data>
+  <data name="Settings_LocalNewer" xml:space="preserve"><value>Esta compilación ({0}) es más nueva que la última publicación ({1}).</value></data>
+  <data name="Settings_CheckFailed" xml:space="preserve"><value>No se pudo buscar actualizaciones. Inténtalo más tarde.</value></data>
+  <data name="Settings_CompareFailed" xml:space="preserve"><value>No se pudo comparar la última publicación ({0}) con esta compilación ({1}).</value></data>
+  <data name="Settings_About" xml:space="preserve"><value>Acerca de</value></data>
+  <data name="Settings_Version" xml:space="preserve"><value>Versión {0}</value></data>
+  <data name="Settings_Website" xml:space="preserve"><value>Sitio web</value></data>
+  <data name="Settings_Source" xml:space="preserve"><value>Código fuente</value></data>
+  <data name="Settings_License" xml:space="preserve"><value>Licencia</value></data>
+  <data name="Settings_LicenseText" xml:space="preserve"><value>Licencia MIT. Copyright 2024 LightCrosshair.</value></data>
+  <data name="Settings_Exit" xml:space="preserve"><value>Salir de LightCrosshair</value></data>
+  <data name="Settings_OpenReleases" xml:space="preserve"><value>Abrir publicaciones</value></data>
+  <data name="File_Png" xml:space="preserve"><value>Imagen PNG|*.png</value></data>
+  <data name="File_Exe" xml:space="preserve"><value>Programa|*.exe</value></data>
+  <data name="File_Export" xml:space="preserve"><value>Miras de LightCrosshair|*.lcx.json</value></data>
+  <data name="File_Import" xml:space="preserve"><value>Importar miras de LightCrosshair|*.lcx.json</value></data>
+  <data name="Toast_Copied" xml:space="preserve"><value>Código copiado.</value></data>
+  <data name="Toast_Saved" xml:space="preserve"><value>Guardado.</value></data>
+  <data name="Toast_NoClipboard" xml:space="preserve"><value>El portapapeles está vacío.</value></data>
+  <data name="Boot_Connecting" xml:space="preserve"><value>Conectando con LightCrosshair</value></data>
+  <data name="Color_Presets" xml:space="preserve"><value>Colores predefinidos</value></data>
+  <data name="Common_More" xml:space="preserve"><value>Más</value></data>
+  <data name="Library_UseTitle" xml:space="preserve"><value>Usar esta mira</value></data>
+  <data name="Library_AlreadySaved" xml:space="preserve"><value>Ya está en Mis miras</value></data>
+  <data name="Library_Use" xml:space="preserve"><value>Usar</value></data>
+  <data name="Library_UseExisting" xml:space="preserve"><value>Usar existente</value></data>
+  <data name="Library_SaveCopy" xml:space="preserve"><value>Guardar otra copia</value></data>
+  <data name="Library_InUse" xml:space="preserve"><value>En uso</value></data>
+  <data name="Library_UseMenu" xml:space="preserve"><value>Usar…</value></data>
+  <data name="Library_Rename" xml:space="preserve"><value>Renombrar</value></data>
+  <data name="Hotkeys_MouseButton" xml:space="preserve"><value>Botón del ratón</value></data>
+  <data name="Settings_MonitorName" xml:space="preserve"><value>{0} · Pantalla {1}</value></data>
+  <data name="Games_UsePreset" xml:space="preserve"><value>Usar un preajuste</value></data>
+  <data name="Games_ColorApplyFailed" xml:space="preserve"><value>No se pudieron aplicar los colores de la pantalla. El controlador gráfico rechazó el cambio.</value></data>
+  <data name="Games_ColorRestoreFailed" xml:space="preserve"><value>No se pudieron restaurar los colores anteriores de la pantalla.</value></data>
+  <data name="Games_ColorUnsupported" xml:space="preserve"><value>Esta pantalla no admite ajustes de color.</value></data>
+  <data name="Library_SetDefaultAll" xml:space="preserve"><value>Establecer como predeterminado para todas las apps</value></data>
+  <data name="Library_Default" xml:space="preserve"><value>Predeterminado</value></data>
+  <data name="Library_InUseGame" xml:space="preserve"><value>En uso · {0}</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>Mientras se mantiene</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Elige una tecla o botón para mantener pulsado.</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>Mientras se mantiene en este juego</value></data>
+  <data name="Games_HoldOff" xml:space="preserve"><value>Desactivado en este juego</value></data>
+  <data name="Games_HoldOwn" xml:space="preserve"><value>Atajo propio</value></data>
+  <data name="Nav_FpsOverlay" xml:space="preserve"><value>Superposición FPS</value></data>
+  <data name="Nav_FpsVisible" xml:space="preserve"><value>Mostrar superposición FPS</value></data>
+  <data name="Fps_Graph" xml:space="preserve"><value>Gráfico de tiempo de fotograma</value></data>
+  <data name="Fps_Help" xml:space="preserve"><value>FPS, tiempo de fotograma y mínimo del 1%. Los perfiles pueden modificar el ajuste global.</value></data>
+  <data name="Settings_ColorsHelp" xml:space="preserve"><value>Se aplica al escritorio y a las aplicaciones. Un perfil de juego habilitado tiene prioridad. Los cambios se ven al instante y se guardan al soltar el control.</value></data>
+  <data name="Settings_UseColors" xml:space="preserve"><value>Ajustar los colores de pantalla</value></data>
+  <data name="Hotkeys_ToggleFps" xml:space="preserve"><value>Mostrar u ocultar overlay de FPS</value></data>
+  <data name="Override_Global" xml:space="preserve"><value>Usar global</value></data>
+  <data name="Override_Custom" xml:space="preserve"><value>Personalizado</value></data>
+  <data name="Games_GlobalBinding" xml:space="preserve"><value>Atajo global: {0}</value></data>
+  <data name="Fps_GraphOwnColor" xml:space="preserve"><value>Usar otro color para el gráfico</value></data>
+  <data name="Fps_GraphColor" xml:space="preserve"><value>Color del gráfico</value></data>
+  <data name="Settings_CloseTitle" xml:space="preserve"><value>Al cerrar la ventana</value></data>
+  <data name="Settings_CloseKeep" xml:space="preserve"><value>Seguir en la bandeja del sistema</value></data>
+  <data name="Settings_CloseExit" xml:space="preserve"><value>Salir de LightCrosshair</value></data>
+  <data name="Settings_CloseHelp" xml:space="preserve"><value>En la bandeja, la mira y el overlay de FPS siguen en pantalla.</value></data>
+  <data name="Dialog_Close" xml:space="preserve"><value>Cerrar el cuadro de diálogo</value></data>
+</root>
