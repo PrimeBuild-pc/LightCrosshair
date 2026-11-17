@@ -13,15 +13,15 @@
        Identity Name            = "Package/Identity/Name"
        Identity Publisher       = "Package/Identity/Publisher"        (starts with CN=)
        PublisherDisplayName     = "Package/Properties/PublisherDisplayName"
-       The placeholders below are valid for local sideload tests only; the Store rejects them. -->
+       Filled from Partner Center for Store ID 9MZ2872MWBJL. -->
   <Identity
-    Name="LightCrosshair.PartnerCenterPlaceholder"
-    Publisher="CN=LightCrosshair Partner Center Placeholder"
+    Name="LorenzoMassafra.LightCrosshair"
+    Publisher="CN=ACD03D0F-7A52-4C93-ADF8-A07702180E72"
     Version="0.0.0.0"
     ProcessorArchitecture="x64" />
   <Properties>
     <DisplayName>LightCrosshair</DisplayName>
-    <PublisherDisplayName>LightCrosshair Partner Center Placeholder</PublisherDisplayName>
+    <PublisherDisplayName>Prime Build</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   <!-- ===== END OF EDIT ===== -->
