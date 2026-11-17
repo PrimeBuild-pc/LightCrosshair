@@ -16,7 +16,7 @@ Choose the 2.0 release on the [releases page](https://github.com/PrimeBuild-pc/L
 | Portable ZIP, x64 | `LightCrosshair-v2.0.0-win-x64.zip` | TBD |
 | Portable ZIP, ARM64 | `LightCrosshair-v2.0.0-win-arm64.zip` | TBD |
 
-For a ZIP, extract the whole folder and keep `LightCrosshair.exe` and `LightCrosshair.UI.exe` together. Start `LightCrosshair.exe`; open settings from the tray or with Alt+L. Closing the settings window with × leaves the Core running and parks the settings process for up to five minutes for quick reopening. Use **Exit LightCrosshair** to stop both processes and restore display colors.
+For a ZIP, extract the whole folder and keep `LightCrosshair.exe` and `LightCrosshair.UI.exe` together. Start `LightCrosshair.exe`; open settings from the tray or with Alt+L. Closing the settings window with × leaves the Core running and parks the settings process for up to five minutes for quick reopening; Settings → Behavior → **When I close the window** can make × exit everything instead. Use **Exit LightCrosshair** to stop both processes and restore display colors.
 
 WinGet and Chocolatey packages may follow the GitHub release. Once the 2.0 packages are published:
 
@@ -45,9 +45,9 @@ The [Chocolatey package page](https://community.chocolatey.org/packages/lightcro
 - Next/previous cycling uses favorites when at least two exist, otherwise all saved crosshairs, and saves the choice for the active game or as the default.
 - `LC2:` share codes for vector designs and `.lcx.json` import/export with embedded images.
 - Game profiles for crosshairs, display colors, visibility bindings and FPS overlay overrides. Optional suggestions for recognized games.
-- Global and per-game gamma, contrast, brightness and vibrance, with live slider preview and recovery of original display values; AMD color support; NVIDIA Digital Vibrance and per-app driver FPS caps on supported hardware.
-- A dedicated FPS overlay page and sidebar switch, with FPS, frametime, 1% low and an optional two-second frametime graph. Capture runs only while enabled; the graph draws at most 20 times per second.
-- Separate Toggle and While held bindings: hold right mouse to hide the crosshair while aiming, then release to restore it. Games can follow the global hold, disable it or use their own. Keyboard and mouse input continues to reach the game.
+- Global and per-game gamma, contrast, brightness and vibrance, applied live without flicker while you drag, kept when you release and applied immediately when saved (also with the game running), with recovery of original display values; AMD color support; NVIDIA Digital Vibrance and per-app driver FPS caps on supported hardware.
+- A dedicated FPS overlay page, sidebar switch and Alt+F hotkey, with FPS, frametime, 1% low and an optional two-second frametime graph in the text color or its own color. Capture runs only while enabled; the graph draws at most 20 times per second.
+- Separate Toggle and While held bindings: hold right mouse to hide the crosshair while aiming (also while sprinting or crouching with Shift/Ctrl), then release to restore it. Mouse buttons are read from raw input, the same stream games use. Each game can Use global, turn it Off or use a Custom binding; these choices save immediately. Keyboard and mouse input continues to reach the game.
 - Monitor selection by model name, position offsets, startup with Windows, automatic backups and display-color recovery after a crash.
 - English, Italian, Spanish, Simplified Chinese, Russian and Japanese.
 
@@ -79,8 +79,9 @@ Charts use decimal MB and CPU as a percentage of one logical core; a sampled zer
 | Alt+C | Next favorite when at least two exist; otherwise next saved crosshair |
 | Alt+V | Previous favorite when at least two exist; otherwise previous saved crosshair |
 | Alt+L | Open or close settings |
+| Alt+F | Show or hide the FPS overlay |
 
-Cycling follows Library order and saves the selection into the active configured game profile, or the default when no configured game is active. Presets enter the cycle after you save a copy. Bindings can be changed or cleared in Hotkeys, including an independent, initially unbound While held action (Hold to hide / Hold to show). Wheel bindings are toggle-only. Input continues to reach the game; conflicts and registration failures are shown in the UI.
+Cycling follows Library order and saves the selection into the active configured game profile, or the default when no configured game is active. Presets enter the cycle after you save a copy. Bindings can be changed or cleared in Hotkeys, including an independent, initially unbound While held action (Hold to hide / Hold to show). Each binding is one field: click it and press a key or mouse button, or pick a mouse button from its ▾ menu. Wheel bindings are toggle-only. Input continues to reach the game; conflicts and registration failures are shown in the UI.
 
 ## Limitations and safety
 

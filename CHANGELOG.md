@@ -14,6 +14,8 @@
 - Independent While held visibility binding, with per-game inherit/off/own policies and click pass-through.
 - A dedicated FPS overlay page and sidebar switch, plus an optional bounded two-second frametime graph (off by default, at most 20 redraws/s).
 - Global display colors and live slider previews in Settings and Games; game colors take precedence over globals.
+- Show/hide FPS overlay hotkey (Alt+F; left unbound when a migrated 1.9 binding already uses it) and an optional separate frametime graph color.
+- Settings → Behavior → When I close the window: keep running in the tray (default) or exit LightCrosshair.
 - A v2 data store with atomic saves, automatic backups, corrupt-file recovery and a display-color recovery journal.
 
 ### Changed
@@ -30,6 +32,10 @@
 - Decode DXGI/D3D9 present events without requiring registered ETW payload decoders, include MPO presents, track swapchains independently and retry failed capture sessions. Show a localized reason after two seconds without frames and stop native sessions when disabled.
 - Launch settings below normal CPU priority with low I/O priority during games/fullscreen foreground windows; queue IPC thumbnails on one below-normal worker and discard obsolete queued work.
 - Focus a parked connected settings process instead of closing it or launching a replacement.
+- Each binding is one control: a capture field with a ▾ menu of mouse buttons, on every hotkey row and in Games. Game overrides are Use global / Off in this game / Custom and save immediately.
+- Read mouse bindings from raw input instead of a low-level mouse hook, and let a hold match while extra modifiers are held (sprint/crouch while aiming).
+- Switch display colors in place: slider previews no longer flash the previous colors, the released value stays, saved colors apply immediately while the game runs, and colors are re-applied on every foreground change.
+- Confirmations and errors use the in-app dialog (keyboard accessible, localized); no Windows message boxes remain.
 - Apply and recover AMD gamma through named display contexts, preserving each monitor's original ramp alongside ADL values. Report driver failures inline and keep the recovery journal until restoration succeeds.
 
 ### Removed

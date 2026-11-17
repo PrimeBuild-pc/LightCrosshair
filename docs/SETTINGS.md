@@ -1,6 +1,6 @@
 # Settings guide — LightCrosshair 2.0
 
-Open settings from the tray or with Alt+L. Closing this window leaves the Core and overlay running. **Exit LightCrosshair** on the Settings page stops both processes and restores display colors.
+Open settings from the tray or with Alt+L. By default closing this window leaves the Core and overlay running (Settings → Behavior → **When I close the window** can make it exit everything). **Exit LightCrosshair** on the Settings page stops both processes and restores display colors. Confirmations and errors appear inside the window; Tab moves between their buttons, Enter chooses, Esc cancels.
 
 ## Visibility and saving
 
@@ -58,13 +58,13 @@ Next/previous hotkeys cycle favorites only when at least two exist. With zero or
 
 Use **Add game** to choose a running windowed process or browse to an `.exe`. A profile matches the executable file name, not a particular window title or full path. One profile is allowed per executable name.
 
-Select a profile to edit its name and crosshair, then Save. The list's enable switch controls whether its foreground overrides are used. Deleting a profile removes its game association, leaving its saved crosshair in Library.
+Select a profile to edit its name, colors and other options, then **Save profile**. The crosshair choice and the two binding overrides save immediately. The list's enable switch controls whether its foreground overrides are used. Deleting a profile removes its game association, leaving its saved crosshair in Library.
 
 | Control | Behavior |
 |---|---|
 | Crosshair | Saved design to use while the configured executable is in the foreground |
-| Visibility override | Use a game-specific visibility binding and mode, or inherit the global binding |
-| While held | Follow global, off in this game, or an independent Hold to hide / Hold to show keyboard or mouse-button binding |
+| Visibility shortcut | **Use global** (the global shortcut is shown below), **Off in this game**, or **Custom**: one binding field plus Toggle / Hold to hide / Hold to show. Saves immediately |
+| While held | **Use global**, **Off in this game**, or **Custom**: one binding field plus Hold to hide / Hold to show. Saves immediately |
 | FPS overlay | Follow the global setting, force On or force Off |
 | Use display colors | Apply saved values while this game is active; switching off retains the values |
 | Gamma / Contrast / Brightness | Display adjustments, 50–150; 100 is neutral |
@@ -76,7 +76,7 @@ Display colors affect the display, not just the crosshair. Leaving a game restor
 
 AMD uses driver brightness, contrast and vibrance plus a per-display GDI gamma ramp. Gamma 100 preserves the existing calibration. Unsupported driver requests are reported inline and logged with the vendor's reason. Success clears an apply error; a failed restoration keeps its recovery journal for retry. NVIDIA features remain hardware-dependent.
 
-Drag a color slider to preview the current working values, including unsaved Games edits. Preview requests are limited to 20 per second and always drain the final value. Releasing, leaving the page, parking or disconnecting ends the preview and restores the active game/global context. Games edits still require Save; Settings saves automatically.
+Moving a color slider previews the value live, without flashing the old colors in between. Preview requests are limited to 20 per second and always send the final value. In Games the released value stays on screen until you **Save profile**, pick another profile, leave the page, close the window or disconnect; Save then applies the saved colors at once in the current context (the game, if it is the last foreground app), no game restart needed. Settings saves automatically on release. Colors are re-applied whenever the foreground app changes, so a game that resets the display on focus gets them back.
 
 A driver cap is written when the profile is saved and persists in the driver's application profile. Turning off the profile's foreground enable switch does not clear that cap: switch off the cap and Save, or delete the managed profile, to remove it. Old driver caps that were never managed by 2.0 are left untouched.
 
@@ -90,10 +90,11 @@ Known-game suggestions offer **Create**, **Not now** and **Never for this game**
 | Alt+C | Next favorite when at least two exist; otherwise next saved crosshair |
 | Alt+V | Previous favorite when at least two exist; otherwise previous saved crosshair |
 | Alt+L | Open or close settings |
+| Alt+F | Show or hide the FPS overlay (same setting as the sidebar switch; a game's FPS override still wins) |
 
-Click a capture field and press the desired keyboard key; Esc cancels. For a mouse binding, use the explicit picker for Middle click, Right click, Mouse4, Mouse5, Wheel up or Wheel down, then choose the Alt, Ctrl, Shift or Win modifiers alongside it. Mouse input can also be captured while the capture field is active. **Clear** removes a binding.
+Every binding is one field. Click it and press a key, a key with Alt/Ctrl/Shift/Win, or a mouse button (Middle, Right, Mouse4, Mouse5, wheel); Esc cancels. Or open the field's ▾ menu (Alt+Down) and pick a mouse button; the current modifiers stay. **Clear** removes a binding.
 
-**While held** is a separate action, unbound initially, with Hold to hide / Hold to show modes. For example, select Right click without modifiers and Hold to hide to hide while aiming. The visibility toggle keeps Alt+X. A game can inherit, disable or replace the global hold binding. Other actions and all wheel bindings use Toggle. Releasing a hold, losing focus or starting binding capture restores the underlying visibility state; the temporary hold is never saved. Core actions are paused during binding capture and resume when it ends. Input still reaches other applications; a bound mouse button keeps its normal game behavior.
+**While held** is a separate action, unbound initially, with Hold to hide / Hold to show modes. For example, select Right click without modifiers and Hold to hide to hide while aiming. A hold also works while other modifiers are held (sprinting with Shift, crouching with Ctrl); toggles need their exact chord. Mouse buttons are read from raw input, the same stream games read, so a game's own raw-input mode does not hide them. The visibility toggle keeps Alt+X. A game can inherit, disable or replace the global hold binding. Other actions and all wheel bindings use Toggle. Releasing a hold, losing focus or starting binding capture restores the underlying visibility state; the temporary hold is never saved. Core actions are paused during binding capture and resume when it ends. Input still reaches other applications; a bound mouse button keeps its normal game behavior.
 
 Conflicts and Core registration failures appear under the affected action. Choose another binding if Windows or another application already owns it.
 
@@ -105,7 +106,7 @@ Choose the overlay monitor by model name, for example **DELL S2721DGF · Display
 
 ### Display colors
 
-Enable **Adjust display colors** in Settings to apply gamma, contrast, brightness and vibrance on the desktop and in apps. Controls and ranges match Games. Optional NVIDIA Digital Vibrance is enabled only when the GPU reports support. An active game's enabled, configured colors override globals. With neither enabled, original display values are restored. Global settings save automatically; slider preview ends on release and returns to that precedence. These changes affect the whole display, including other apps.
+Enable **Adjust display colors** in Settings to apply gamma, contrast, brightness and vibrance on the desktop and in apps. Controls and ranges match Games. Optional NVIDIA Digital Vibrance is enabled only when the GPU reports support. An active game's enabled, configured colors override globals. With neither enabled, original display values are restored. Global settings save automatically; the released value is saved and stays applied unless an enabled game profile has priority. These changes affect the whole display, including other apps.
 
 ### Behavior
 
@@ -115,6 +116,7 @@ Enable **Adjust display colors** in Settings to apply gamma, contrast, brightnes
 | Hide during screen recording | Check for recorder processes only while enabled; an open recorder can hide the crosshair even when it is not recording |
 | Start with Windows | Start the Core for the current user at sign-in |
 | Suggest known games | Offer local profile suggestions for recognized foreground executables |
+| When I close the window | **Keep running in the tray** (default: the window hides, crosshair and FPS overlay stay) or **Exit LightCrosshair** (× quits settings and Core, restoring display colors). Tray → Exit always quits both |
 
 ### Language, updates and exit
 
@@ -136,6 +138,7 @@ Open **FPS overlay** in the sidebar (between Hotkeys and Settings). Use **Show F
 | Frametime / 1% low | Show or hide the additional values |
 | Frametime graph | Off by default. Show about two seconds of peak frametimes under the numbers, at at most 20 redraws/s. With the graph off, unchanged numbers cause no redraw; with the overlay off, capture and its timer stop. |
 | Text color / Background color | Hexadecimal RGB colors |
+| Use a different color for the graph | Off: the graph uses the text color. On: choose a graph color |
 | Background opacity | Background transparency, 0–100% |
 
 ## Storage and recovery
