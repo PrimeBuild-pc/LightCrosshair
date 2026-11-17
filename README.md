@@ -2,8 +2,6 @@
 
 <img src="readme-banner.svg" alt="LightCrosshair — Lightweight crosshair overlay for Windows" width="100%">
 
-<h1>LightCrosshair 2.0</h1>
-
 <p><strong>A lightweight crosshair overlay for Windows</strong><br>
 Layered crosshair editor · per-game profiles · about 15 MB of memory and no measurable CPU while you play</p>
 
