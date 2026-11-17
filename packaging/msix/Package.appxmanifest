@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- LightCrosshair MSIX manifest. Built by scripts/build-msix.ps1, which fills Version and ProcessorArchitecture.
+     One package, two executables: LightCrosshair.exe (entry point, tray + overlay) starts LightCrosshair.UI.exe
+     from the same folder. See docs/STORE.md. -->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap desktop rescap">
+
+  <!-- ===== EDIT HERE: copy these three values from Partner Center > your app > Product identity. =====
+       Identity Name            = "Package/Identity/Name"
+       Identity Publisher       = "Package/Identity/Publisher"        (starts with CN=)
+       PublisherDisplayName     = "Package/Properties/PublisherDisplayName"
+       The placeholders below are valid for local sideload tests only; the Store rejects them. -->
+  <Identity
+    Name="LightCrosshair.PartnerCenterPlaceholder"
+    Publisher="CN=LightCrosshair Partner Center Placeholder"
+    Version="0.0.0.0"
+    ProcessorArchitecture="x64" />
+  <Properties>
+    <DisplayName>LightCrosshair</DisplayName>
+    <PublisherDisplayName>LightCrosshair Partner Center Placeholder</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+  <!-- ===== END OF EDIT ===== -->
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-US" />
+    <Resource Language="it-IT" />
+    <Resource Language="es-ES" />
+    <Resource Language="zh-Hans" />
+    <Resource Language="ru-RU" />
+    <Resource Language="ja-JP" />
+  </Resources>
+
+  <Applications>
+    <Application Id="LightCrosshair" Executable="LightCrosshair.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="LightCrosshair"
+        Description="Crosshair overlay for games"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile
+          Wide310x150Logo="Assets\Wide310x150Logo.png"
+          Square71x71Logo="Assets\Square71x71Logo.png"
+          Square310x310Logo="Assets\Square310x310Logo.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- Start with Windows. Off until the user turns it on in Settings; Task Manager can turn it off. -->
+        <desktop:Extension Category="windows.startupTask" Executable="LightCrosshair.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="LightCrosshairStartup" Enabled="false" DisplayName="LightCrosshair" />
+        </desktop:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
