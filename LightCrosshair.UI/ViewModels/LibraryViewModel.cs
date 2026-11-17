@@ -139,9 +139,15 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     public void ReleaseCaches()
     {
+        ClearThumbnails();
+        _minimized = true;
+    }
+
+    /// <summary>Drop thumbnails so they are remade (e.g. at a new screen DPI); unlike ReleaseCaches it does not park the page.</summary>
+    public void ClearThumbnails()
+    {
         _thumbs.Clear();
         foreach (var card in _mine.Concat(_presets)) card.Png = null;
-        _minimized = true;
     }
 
     public async Task LoadThumbAsync(LibraryCard? card)

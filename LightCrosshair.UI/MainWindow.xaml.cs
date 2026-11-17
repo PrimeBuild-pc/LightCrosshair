@@ -68,7 +68,8 @@ public partial class MainWindow : Window
         {
             UiScale.Dpi = e.NewDpi.DpiScaleX;
             if (DataContext is not MainViewModel viewModel) return;
-            viewModel.Library.ReleaseCaches();
+            if (UiScale.Dpi == e.OldDpi.DpiScaleX) return;
+            viewModel.Library.ClearThumbnails();
             FindChild<LibraryPage>(this)?.ReloadVisible();
         };
         SourceInitialized += (_, _) =>
