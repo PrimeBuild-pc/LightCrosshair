@@ -81,9 +81,9 @@
           </ComboBox>
           <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Games_VisibilityOverride}"/>
           <StackPanel Orientation="Horizontal" Margin="0,0,0,4" KeyboardNavigation.DirectionalNavigation="Cycle" AutomationProperties.Name="{loc:Tr Games_VisibilityOverride}">
-            <RadioButton Style="{StaticResource Segment}" GroupName="VisibilityPolicy" Content="{loc:Tr Override_Global}" AutomationProperties.Name="{loc:Tr Override_Global}" IsChecked="{Binding VisibilityPolicy, Converter={StaticResource Eq}, ConverterParameter=follow}"/>
-            <RadioButton Style="{StaticResource Segment}" GroupName="VisibilityPolicy" Content="{loc:Tr Games_HoldOff}" AutomationProperties.Name="{loc:Tr Games_HoldOff}" IsChecked="{Binding VisibilityPolicy, Converter={StaticResource Eq}, ConverterParameter=off}"/>
-            <RadioButton Style="{StaticResource Segment}" GroupName="VisibilityPolicy" Content="{loc:Tr Override_Custom}" AutomationProperties.Name="{loc:Tr Override_Custom}" IsChecked="{Binding VisibilityPolicy, Converter={StaticResource Eq}, ConverterParameter=custom}"/>
+            <RadioButton Style="{StaticResource Segment}" GroupName="VisibilityPolicy" AutomationProperties.AutomationId="VisibilityPolicy-follow" Content="{loc:Tr Override_Global}" AutomationProperties.Name="{loc:Tr Override_Global}" IsChecked="{Binding VisibilityPolicy, Converter={StaticResource Eq}, ConverterParameter=follow}"/>
+            <RadioButton Style="{StaticResource Segment}" GroupName="VisibilityPolicy" AutomationProperties.AutomationId="VisibilityPolicy-off" Content="{loc:Tr Games_HoldOff}" AutomationProperties.Name="{loc:Tr Games_HoldOff}" IsChecked="{Binding VisibilityPolicy, Converter={StaticResource Eq}, ConverterParameter=off}"/>
+            <RadioButton Style="{StaticResource Segment}" GroupName="VisibilityPolicy" AutomationProperties.AutomationId="VisibilityPolicy-custom" Content="{loc:Tr Override_Custom}" AutomationProperties.Name="{loc:Tr Override_Custom}" IsChecked="{Binding VisibilityPolicy, Converter={StaticResource Eq}, ConverterParameter=custom}"/>
           </StackPanel>
           <TextBlock Style="{StaticResource LabelText}" Text="{Binding GlobalVisibilityText}" Margin="0,0,0,8"/>
           <Grid Visibility="{Binding HasOwnVisibility, Converter={StaticResource Vis}}" Margin="0,0,0,12">
@@ -101,9 +101,9 @@
           </Grid>
           <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Hotkeys_WhileHeld}"/>
           <StackPanel Orientation="Horizontal" Margin="0,0,0,4" KeyboardNavigation.DirectionalNavigation="Cycle" AutomationProperties.Name="{loc:Tr Games_HoldPolicy}">
-            <RadioButton Style="{StaticResource Segment}" GroupName="HoldPolicy" Content="{loc:Tr Override_Global}" AutomationProperties.Name="{loc:Tr Override_Global}" IsChecked="{Binding HoldPolicy, Converter={StaticResource Eq}, ConverterParameter=follow}"/>
-            <RadioButton Style="{StaticResource Segment}" GroupName="HoldPolicy" Content="{loc:Tr Games_HoldOff}" AutomationProperties.Name="{loc:Tr Games_HoldOff}" IsChecked="{Binding HoldPolicy, Converter={StaticResource Eq}, ConverterParameter=off}"/>
-            <RadioButton Style="{StaticResource Segment}" GroupName="HoldPolicy" Content="{loc:Tr Override_Custom}" AutomationProperties.Name="{loc:Tr Override_Custom}" IsChecked="{Binding HoldPolicy, Converter={StaticResource Eq}, ConverterParameter=custom}"/>
+            <RadioButton Style="{StaticResource Segment}" GroupName="HoldPolicy" AutomationProperties.AutomationId="HoldPolicy-follow" Content="{loc:Tr Override_Global}" AutomationProperties.Name="{loc:Tr Override_Global}" IsChecked="{Binding HoldPolicy, Converter={StaticResource Eq}, ConverterParameter=follow}"/>
+            <RadioButton Style="{StaticResource Segment}" GroupName="HoldPolicy" AutomationProperties.AutomationId="HoldPolicy-off" Content="{loc:Tr Games_HoldOff}" AutomationProperties.Name="{loc:Tr Games_HoldOff}" IsChecked="{Binding HoldPolicy, Converter={StaticResource Eq}, ConverterParameter=off}"/>
+            <RadioButton Style="{StaticResource Segment}" GroupName="HoldPolicy" AutomationProperties.AutomationId="HoldPolicy-custom" Content="{loc:Tr Override_Custom}" AutomationProperties.Name="{loc:Tr Override_Custom}" IsChecked="{Binding HoldPolicy, Converter={StaticResource Eq}, ConverterParameter=custom}"/>
           </StackPanel>
           <TextBlock Style="{StaticResource LabelText}" Text="{Binding GlobalHoldText}" Margin="0,0,0,8"/>
           <Grid Visibility="{Binding HasOwnHold, Converter={StaticResource Vis}}" Margin="0,0,0,12">

@@ -288,7 +288,7 @@
   <data name="Nav_FpsVisible" xml:space="preserve"><value>Mostra overlay FPS</value></data>
   <data name="Fps_Graph" xml:space="preserve"><value>Grafico dei tempi frame</value></data>
   <data name="Fps_Help" xml:space="preserve"><value>FPS, tempo frame e minimo 1%. I profili gioco possono modificare lo stato globale.</value></data>
-  <data name="Settings_ColorsHelp" xml:space="preserve"><value>Si applica al desktop e alle app. Un profilo di gioco abilitato ha priorità. Trascina per provare; al rilascio viene ripristinato il contesto attuale.</value></data>
+  <data name="Settings_ColorsHelp" xml:space="preserve"><value>Si applica al desktop e alle app. Un profilo di gioco abilitato ha priorità. Le modifiche si vedono subito e vengono salvate quando rilasci il cursore.</value></data>
   <data name="Settings_UseColors" xml:space="preserve"><value>Regola i colori dello schermo</value></data>
   <data name="Hotkeys_ToggleFps" xml:space="preserve"><value>Mostra o nascondi overlay FPS</value></data>
   <data name="Override_Global" xml:space="preserve"><value>Usa globale</value></data>

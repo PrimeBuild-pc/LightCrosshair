@@ -27,7 +27,7 @@
                     </MultiBinding>
                   </TextBlock.Text>
                 </TextBlock>
-                <controls:BindingCaptureBox Grid.Column="1" Margin="0,0,12,0" Binding="{Binding Binding}" Prompt="{loc:Tr Hotkeys_Press}" AllowWheel="{Binding AllowWheel}"
+                <controls:BindingCaptureBox Grid.Column="1" MinWidth="200" Margin="0,0,12,0" Binding="{Binding Binding}" Prompt="{loc:Tr Hotkeys_Press}" AllowWheel="{Binding AllowWheel}"
                                              CapturedCommand="{Binding DataContext.CommitCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                              CaptureChangedCommand="{Binding DataContext.SetCaptureCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                              CommandParameter="{Binding Action}"/>

@@ -359,6 +359,12 @@ public class BindingCaptureBox : Border
         _text.Text = HotkeyRules.Format(Binding);
         System.Windows.Automation.AutomationProperties.SetName(this, _text.Text);
         System.Windows.Automation.AutomationProperties.SetName(_menuButton, Loc.Instance["Hotkeys_MouseButton"]);
+        if (CommandParameter is string action)
+        {
+            // Rows repeat the same names; the action keeps each field and its ▾ addressable.
+            System.Windows.Automation.AutomationProperties.SetAutomationId(this, action);
+            System.Windows.Automation.AutomationProperties.SetAutomationId(_menuButton, action + "-mouse");
+        }
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)

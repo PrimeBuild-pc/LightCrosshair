@@ -288,7 +288,7 @@
   <data name="Nav_FpsVisible" xml:space="preserve"><value>Show FPS overlay</value></data>
   <data name="Fps_Graph" xml:space="preserve"><value>Frametime graph</value></data>
   <data name="Fps_Help" xml:space="preserve"><value>FPS, frametime and 1% low. Game profiles can override the global switch.</value></data>
-  <data name="Settings_ColorsHelp" xml:space="preserve"><value>Applies on the desktop and in apps. An enabled game profile takes priority. Drag to preview; releasing restores the current context.</value></data>
+  <data name="Settings_ColorsHelp" xml:space="preserve"><value>Applies on the desktop and in apps. An enabled game profile takes priority. Changes show live and are saved when you release the slider.</value></data>
   <data name="Settings_UseColors" xml:space="preserve"><value>Adjust display colors</value></data>
   <data name="Hotkeys_ToggleFps" xml:space="preserve"><value>Show or hide FPS overlay</value></data>
   <data name="Override_Global" xml:space="preserve"><value>Use global</value></data>
