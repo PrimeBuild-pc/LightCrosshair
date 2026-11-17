@@ -35,6 +35,14 @@ public class StorePackagingTests
     }
 
     [Fact]
+    public async Task StartupTaskAbiFailsCleanlyWithoutAPackage()
+    {
+        // Activation and the GetAsync vtable call run for real; Windows refuses because the test host has no package.
+        var error = await Assert.ThrowsAnyAsync<Exception>(() => StartupTaskAbi.RunAsync(StartupRegistration.TaskId, StartupTaskAbi.Action.Read));
+        Assert.True(error.HResult < 0, error.ToString());
+    }
+
+    [Fact]
     public void ManifestMatchesTheCode()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

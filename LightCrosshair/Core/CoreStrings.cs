@@ -30,30 +30,15 @@ internal static class StartupRegistration
             else run.DeleteValue("LightCrosshair", false);
             return enabled;
         }
-#if STORE
         // Packaged HKCU writes are virtualized, so a Run key would never be seen by Windows.
-        var task = await Windows.ApplicationModel.StartupTask.GetAsync(TaskId);
-        if (enabled) await task.RequestEnableAsync();
-        else if (task.State == Windows.ApplicationModel.StartupTaskState.Enabled) task.Disable();
-        return IsOn((int)task.State);
-#else
-        await Task.CompletedTask;
-        Program.WriteLog("Packaged without the Store build: start with Windows is unavailable.");
-        return false;
-#endif
+        return IsOn(await StartupTaskAbi.RunAsync(TaskId, enabled ? StartupTaskAbi.Action.Enable : StartupTaskAbi.Action.Disable));
     }
 
     /// <summary>The real StartupTask state when packaged (the user can change it in Task Manager); null otherwise.</summary>
     public static async Task<bool?> PackagedStateAsync()
     {
         if (!AppPackage.IsPackaged) return null;
-#if STORE
-        var task = await Windows.ApplicationModel.StartupTask.GetAsync(TaskId);
-        return IsOn((int)task.State);
-#else
-        await Task.CompletedTask;
-        return false;
-#endif
+        return IsOn(await StartupTaskAbi.RunAsync(TaskId, StartupTaskAbi.Action.Read));
     }
 
     /// <summary>StartupTaskState: Disabled 0, DisabledByUser 1, Enabled 2, DisabledByPolicy 3, EnabledByPolicy 4.</summary>
