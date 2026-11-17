@@ -18,6 +18,13 @@ static LRESULT CALLBACK windowProc(HWND h, UINT msg, WPARAM w, LPARAM l) {
     if (msg == WM_DESTROY) { PostQuitMessage(0); return 0; }
     if (msg == WM_APP + 100) return static_cast<LRESULT>(frames);
     if (msg == WM_RBUTTONDOWN) { ++rightClicks; return 0; }
+    // --raw-nolegacy: games like Fortnite read the mouse through raw input without legacy messages.
+    if (msg == WM_INPUT) {
+        RAWINPUT raw{}; UINT size = sizeof(raw);
+        if (GetRawInputData(reinterpret_cast<HRAWINPUT>(l), RID_INPUT, &raw, &size, sizeof(RAWINPUTHEADER)) != static_cast<UINT>(-1) &&
+            raw.header.dwType == RIM_TYPEMOUSE && (raw.data.mouse.usButtonFlags & RI_MOUSE_RIGHT_BUTTON_DOWN)) ++rightClicks;
+        return DefWindowProcW(h, msg, w, l);
+    }
     if (msg == WM_APP + 102) return static_cast<LRESULT>(rightClicks);
     // Explicit focus-change test: the foreground probe transfers activation to
     // another test window, avoiding background callers' foreground-lock race.
@@ -25,7 +32,7 @@ static LRESULT CALLBACK windowProc(HWND h, UINT msg, WPARAM w, LPARAM l) {
     return DefWindowProcW(h, msg, w, l);
 }
 int wmain(int argc, wchar_t** argv) {
-    int api = 12, seconds = 30, pauseAfter = 0; bool borderless = false;
+    int api = 12, seconds = 30, pauseAfter = 0; bool borderless = false, rawNoLegacy = false;
     std::wstring output, ready;
     for (int i = 1; i < argc; ++i) {
         std::wstring arg = argv[i];
@@ -33,6 +40,7 @@ int wmain(int argc, wchar_t** argv) {
         else if (arg == L"--seconds" && i + 1 < argc) seconds = _wtoi(argv[++i]);
         else if (arg == L"--pause-after" && i + 1 < argc) pauseAfter = _wtoi(argv[++i]);
         else if (arg == L"--borderless") borderless = true;
+        else if (arg == L"--raw-nolegacy") rawNoLegacy = true;
         else if (arg == L"--output" && i + 1 < argc) output = argv[++i];
         else if (arg == L"--ready" && i + 1 < argc) ready = argv[++i];
         else { fwprintf(stderr, L"Unknown or incomplete argument: %s\n", arg.c_str()); return 2; }
@@ -51,6 +59,10 @@ int wmain(int argc, wchar_t** argv) {
         // The launcher hides the console. Its startup show flag may override the
         // first ShowWindow call; the interactive probe itself must be visible.
         ShowWindow(window, SW_SHOW); ShowWindow(window, SW_SHOW); SetForegroundWindow(window);
+        if (rawNoLegacy) {
+            RAWINPUTDEVICE device{1, 2, RIDEV_NOLEGACY, window};
+            if (!RegisterRawInputDevices(&device, 1, sizeof(device))) throw HRESULT_FROM_WIN32(GetLastError());
+        }
         RECT client{}; GetClientRect(window, &client);
         ComPtr<IDXGIFactory4> factory; check(CreateDXGIFactory1(IID_PPV_ARGS(&factory)));
         ComPtr<ID3D11Device> device11; ComPtr<ID3D11DeviceContext> context11; ComPtr<ID3D11RenderTargetView> target11;

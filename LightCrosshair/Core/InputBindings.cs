@@ -20,6 +20,7 @@ internal static class InputBindings
         Add("OpenSettings", settings.Hotkeys.OpenSettings, 9003);
         Add(context.Game?.HoldVisibility is null ? "HoldVisibility" : "GameHold:" + context.Game.Id,
             context.Game?.HoldVisibility ?? settings.Hotkeys.HoldVisibility, 9004);
+        Add("ToggleFpsOverlay", settings.Hotkeys.ToggleFpsOverlay, 9005);
         return actions;
         void Add(string action, InputBinding input, int id)
         { if (!string.IsNullOrEmpty(input.Key)) actions.Add(new(action, input, Convert(input), id)); }

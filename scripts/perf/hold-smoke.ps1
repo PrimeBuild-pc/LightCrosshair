@@ -1,4 +1,4 @@
-param([string]$Executable="$PSScriptRoot/../../releases/LightCrosshair-v2.0.0-win-x64/LightCrosshair.exe", [int]$IdleBeforePressSeconds = 0)
+param([string]$Executable="$PSScriptRoot/../../releases/LightCrosshair-v2.0.0-win-x64/LightCrosshair.exe", [int]$IdleBeforePressSeconds = 0, [switch]$RawInput)
 . "$PSScriptRoot/ReviewProbe.ps1"
 $root=Join-Path ([IO.Path]::GetTempPath()) ('lc-final-hold-'+[guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $root | Out-Null
@@ -16,7 +16,7 @@ try {
     $snapshot.store.settings.hotkeys.holdVisibility=@{key='RightClick';modifiers='none';mode='holdToHide'}
     Invoke-ProbeCore $session saveSettings $snapshot.store.settings | Out-Null
     $ready=Join-Path $root 'game.ready'
-    $game=Start-Process -FilePath ([IO.Path]::GetFullPath("$PSScriptRoot/results-review3/probe/SwapchainProbe.exe")) -ArgumentList "--api 12 --borderless --seconds 30 --ready `"$ready`"" -PassThru -WindowStyle Normal
+    $game=Start-Process -FilePath ([IO.Path]::GetFullPath("$PSScriptRoot/results-review3/probe/SwapchainProbe.exe")) -ArgumentList ("--api 12 --borderless --seconds 30 --ready `"$ready`"" + $(if($RawInput){' --raw-nolegacy'})) -PassThru -WindowStyle Normal
     $deadline=[DateTime]::UtcNow.AddSeconds(5)
     while(!(Test-Path -LiteralPath $ready) -and [DateTime]::UtcNow -lt $deadline){Start-Sleep -Milliseconds 25}
     $handle=[IntPtr][long]((Get-Content $ready).Split(',')[1])

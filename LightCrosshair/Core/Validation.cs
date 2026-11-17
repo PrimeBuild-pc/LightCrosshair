@@ -82,9 +82,11 @@ internal static partial class Validation
         settings.Hotkeys.PreviousCrosshair = Binding(settings.Hotkeys.PreviousCrosshair, false);
         settings.Hotkeys.OpenSettings = Binding(settings.Hotkeys.OpenSettings, false);
         settings.Hotkeys.HoldVisibility = HoldBinding(settings.Hotkeys.HoldVisibility);
+        settings.Hotkeys.ToggleFpsOverlay = Binding(settings.Hotkeys.ToggleFpsOverlay ?? new(), false);
         var fps = settings.FpsOverlay;
         fps.Scale = Range(fps.Scale, .5, 3); fps.BackgroundOpacity = Range(fps.BackgroundOpacity, 0, 1);
         fps.TextColor = Color(fps.TextColor); fps.BackgroundColor = Color(fps.BackgroundColor);
+        if (fps.GraphColor is not null) fps.GraphColor = Color(fps.GraphColor);
         fps.OffsetX = Math.Clamp(fps.OffsetX, 0, 16384); fps.OffsetY = Math.Clamp(fps.OffsetY, 0, 16384);
         settings.DismissedSuggestions = settings.DismissedSuggestions.Select(ProcessName).Distinct().Take(1000).ToList();
         if (settings.MonitorDeviceName?.Length > 128 || fps.MonitorDeviceName?.Length > 128) throw Invalid("Invalid monitor.");

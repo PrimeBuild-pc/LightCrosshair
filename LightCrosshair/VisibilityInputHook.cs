@@ -6,6 +6,8 @@ using System.Windows.Forms;
 namespace LightCrosshair;
 
 // Callbacks only decode input and post a message. All actions run on the main UI thread.
+// Mouse bindings come from raw input (RIDEV_INPUTSINK): the stream games read themselves, so neither a
+// game's raw-input registration nor another app's low-level mouse hook can starve them.
 internal sealed class VisibilityInputHook : IDisposable
 {
     internal const int InputMessage = 0x8000 + 30, ResetMessage = 0x8000 + 31;
@@ -16,13 +18,14 @@ internal sealed class VisibilityInputHook : IDisposable
     private readonly IntPtr _target;
     private readonly Thread _thread;
     private HookWindow? _window;
-    private IntPtr _mouseHook, _keyboardHook;
-    private readonly HookProc _mouseProc, _keyboardProc;
-    private HookHealth _mouseHealth = new(), _keyboardHealth = new();
-    private bool _wantMouse, _wantKeyboard;
+    private IntPtr _keyboardHook;
+    private readonly HookProc _keyboardProc;
+    private HookHealth _keyboardHealth = new();
+    private volatile bool _wantMouse;
+    private bool _wantKeyboard;
     private volatile bool _disposed;
     internal int Generation { get; private set; }
-    internal int ActiveHookMask => (Volatile.Read(ref _mouseHook) != IntPtr.Zero ? 1 : 0) | (Volatile.Read(ref _keyboardHook) != IntPtr.Zero ? 2 : 0);
+    internal int ActiveHookMask => (_wantMouse ? 1 : 0) | (Volatile.Read(ref _keyboardHook) != IntPtr.Zero ? 2 : 0);
     internal static bool IsTriggerHeld(VisibilityBinding binding)
     {
         int key = binding.Input switch { BindingInput.Keyboard => binding.Key, BindingInput.RightClick => 2, BindingInput.MiddleClick => 4, BindingInput.Mouse4 => 5, BindingInput.Mouse5 => 6, _ => 0 };
@@ -32,7 +35,6 @@ internal sealed class VisibilityInputHook : IDisposable
     public VisibilityInputHook(IntPtr target)
     {
         _target = target;
-        _mouseProc = MouseCallback;
         _keyboardProc = KeyboardCallback;
         _thread = new Thread(Run) { IsBackground = true, Name = "Visibility input" };
         _thread.SetApartmentState(ApartmentState.STA);
@@ -75,12 +77,6 @@ internal sealed class VisibilityInputHook : IDisposable
 
     private void InstallMissingHooks()
     {
-        if (_wantMouse && _mouseHook == IntPtr.Zero)
-        {
-            _mouseHealth = new(); _mouseHealth.HookCalled(Environment.TickCount64);
-            _mouseHook = SetWindowsHookEx(14, _mouseProc, GetModuleHandle(null), 0);
-            if (_mouseHook == IntPtr.Zero) ReportError("Mouse hook registration failed.");
-        }
         if (_wantKeyboard && _keyboardHook == IntPtr.Zero)
         {
             _keyboardHealth = new(); _keyboardHealth.HookCalled(Environment.TickCount64);
@@ -92,10 +88,6 @@ internal sealed class VisibilityInputHook : IDisposable
     private void CheckHealth()
     {
         bool reset = false;
-        if (_wantMouse && _mouseHealth.NeedsReinstall(Environment.TickCount64))
-        {
-            UnhookWindowsHookEx(_mouseHook); _mouseHook = IntPtr.Zero; reset = true;
-        }
         if (_wantKeyboard && _keyboardHealth.NeedsReinstall(Environment.TickCount64))
         {
             UnhookWindowsHookEx(_keyboardHook); _keyboardHook = IntPtr.Zero; reset = true;
@@ -126,29 +118,6 @@ internal sealed class VisibilityInputHook : IDisposable
     {
         Error = message;
         PostMessage(_target, ResetMessage, IntPtr.Zero, IntPtr.Zero);
-    }
-
-    private IntPtr MouseCallback(int code, IntPtr message, IntPtr data)
-    {
-        try
-        {
-            if (code >= 0)
-            {
-                _mouseHealth.HookCalled(Environment.TickCount64);
-                int msg = (int)message;
-                BindingInput? input = msg switch
-                {
-                    0x204 or 0x205 => BindingInput.RightClick,
-                    0x207 or 0x208 => BindingInput.MiddleClick,
-                    0x20B or 0x20C => (Marshal.ReadInt32(data, 8) >> 16) == 1 ? BindingInput.Mouse4 : BindingInput.Mouse5,
-                    0x20A => (short)(Marshal.ReadInt32(data, 8) >> 16) > 0 ? BindingInput.WheelUp : BindingInput.WheelDown,
-                    _ => null
-                };
-                if (input.HasValue) Forward(input.Value, 0, msg is not (0x205 or 0x208 or 0x20C));
-            }
-        }
-        catch { /* Never let a managed exception escape into the hook chain. */ }
-        return CallNextHookEx(IntPtr.Zero, code, message, data);
     }
 
     private IntPtr KeyboardCallback(int code, IntPtr message, IntPtr data)
@@ -206,14 +175,16 @@ internal sealed class VisibilityInputHook : IDisposable
         [new() { Page = 1, Usage = 2, Flags = mouse ? 0x100u : 1u, Target = mouse ? _window!.Handle : IntPtr.Zero },
          new() { Page = 1, Usage = 6, Flags = keyboard ? 0x100u : 1u, Target = keyboard ? _window!.Handle : IntPtr.Zero }];
         if (!RegisterRawInputDevices(devices, 2, (uint)Marshal.SizeOf<RawDevice>()))
-            Program.LogError(new Win32Exception(), "Register input hook health monitor");
+        {
+            Program.LogError(new Win32Exception(), "Register raw input");
+            if (mouse) ReportError("Raw mouse input registration failed.");
+        }
     }
 
     private void RemoveHooks()
     {
-        if (_mouseHook != IntPtr.Zero) UnhookWindowsHookEx(_mouseHook);
         if (_keyboardHook != IntPtr.Zero) UnhookWindowsHookEx(_keyboardHook);
-        _mouseHook = _keyboardHook = IntPtr.Zero;
+        _keyboardHook = IntPtr.Zero;
     }
 
     public void Dispose()
@@ -242,12 +213,14 @@ internal sealed class VisibilityInputHook : IDisposable
             }
             else if (m.Msg == 0xFF)
             {
-                uint size = (uint)Marshal.SizeOf<RawHeader>();
-                if (GetRawInputData(m.LParam, 0x10000005, out var header, ref size, size) != uint.MaxValue)
+                uint size = (uint)Marshal.SizeOf<RawInputData>();
+                if (GetRawInputData(m.LParam, 0x10000003, out var raw, ref size, (uint)Marshal.SizeOf<RawHeader>()) != uint.MaxValue)
                 {
-                    if (header.Type == 0) _owner._mouseHealth.RawInput(Environment.TickCount64);
-                    if (header.Type == 1) _owner._keyboardHealth.RawInput(Environment.TickCount64);
+                    if (raw.Header.Type == 1) _owner._keyboardHealth.RawInput(Environment.TickCount64);
+                    // Health first: its lost-release recovery must never land after this packet's press.
                     _owner.CheckHealth();
+                    if (raw.Header.Type == 0 && raw.ButtonFlags != 0 && _owner._wantMouse)
+                        foreach (var (input, down) in RawMouse.Decode(raw.ButtonFlags, (short)raw.ButtonData)) _owner.Forward(input, 0, down);
                 }
             }
             base.WndProc(ref m);
@@ -256,6 +229,8 @@ internal sealed class VisibilityInputHook : IDisposable
 
     [StructLayout(LayoutKind.Sequential)] private struct RawDevice { public ushort Page, Usage; public uint Flags; public IntPtr Target; }
     [StructLayout(LayoutKind.Sequential)] private struct RawHeader { public uint Type, Size; public IntPtr Device, Param; }
+    // RAWINPUT with its RAWMOUSE member (usFlags, padding, usButtonFlags, usButtonData, ...); also large enough for RAWKEYBOARD.
+    [StructLayout(LayoutKind.Sequential)] private struct RawInputData { public RawHeader Header; public ushort Flags, Padding, ButtonFlags, ButtonData; public uint RawButtons; public int LastX, LastY; public uint Extra; }
     private delegate IntPtr HookProc(int code, IntPtr message, IntPtr data);
     [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SetWindowsHookEx(int id, HookProc proc, IntPtr module, uint thread);
     [DllImport("user32.dll")] private static extern bool UnhookWindowsHookEx(IntPtr hook);
@@ -263,6 +238,6 @@ internal sealed class VisibilityInputHook : IDisposable
     [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr target, int message, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
     [DllImport("user32.dll", SetLastError = true)] private static extern bool RegisterRawInputDevices(RawDevice[] devices, uint count, uint size);
-    [DllImport("user32.dll")] private static extern uint GetRawInputData(IntPtr input, uint command, out RawHeader data, ref uint size, uint headerSize);
+    [DllImport("user32.dll")] private static extern uint GetRawInputData(IntPtr input, uint command, out RawInputData data, ref uint size, uint headerSize);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr GetModuleHandle(string? name);
 }

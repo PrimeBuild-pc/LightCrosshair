@@ -104,6 +104,11 @@ internal static class LegacyMigration
             s.Hotkeys.NextCrosshair = Key(config.CycleProfileHotkeyKey, config.CycleProfileHotkeyUseAlt, config.CycleProfileHotkeyUseControl, config.CycleProfileHotkeyUseShift, config.CycleProfileHotkeyUseWin);
             s.Hotkeys.PreviousCrosshair = Key(config.CycleProfilePrevHotkeyKey, config.CycleProfilePrevHotkeyUseAlt, config.CycleProfilePrevHotkeyUseControl, config.CycleProfilePrevHotkeyUseShift, config.CycleProfilePrevHotkeyUseWin);
             s.Hotkeys.OpenSettings = Key(config.SettingsWindowHotkeyKey, config.SettingsWindowHotkeyUseAlt, config.SettingsWindowHotkeyUseControl, config.SettingsWindowHotkeyUseShift, config.SettingsWindowHotkeyUseWin);
+            // 2.0 adds Alt+F for the FPS overlay; never let the new default break a migrated 1.9 binding.
+            var fps = s.Hotkeys.ToggleFpsOverlay;
+            if (new[] { s.Hotkeys.ToggleVisibility, s.Hotkeys.HoldVisibility, s.Hotkeys.NextCrosshair, s.Hotkeys.PreviousCrosshair, s.Hotkeys.OpenSettings }
+                .Concat(store.GameProfiles.SelectMany(g => new[] { g.VisibilityBinding, g.HoldVisibility }).OfType<InputBinding>())
+                .Any(b => b.Key == fps.Key && b.Modifiers == fps.Modifiers)) s.Hotkeys.ToggleFpsOverlay = new();
             if (string.IsNullOrWhiteSpace(config.TargetProcessName))
             {
                 s.DisplayColorsEnabled = config.EnableGammaOverride;

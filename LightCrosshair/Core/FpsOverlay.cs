@@ -53,7 +53,7 @@ internal sealed class FpsOverlay : IDisposable
         Rectangle monitor = OverlayMonitorSelector.ResolveBounds(_monitor);
         int textHeight = 12 + 16 * (1 + (_settings.ShowFrametime ? 1 : 0) + (_settings.Show1PercentLow ? 1 : 0) + (!sample.HasData ? 1 : 0));
         var bounds = new Rectangle(monitor.Left + _settings.OffsetX, monitor.Top + _settings.OffsetY, (int)(270 * _settings.Scale), (int)((textHeight + (graph ? 56 : 0)) * _settings.Scale));
-        string key = text + bounds + _settings.TextColor + _settings.BackgroundColor + _settings.BackgroundOpacity;
+        string key = text + bounds + _settings.TextColor + _settings.GraphColor + _settings.BackgroundColor + _settings.BackgroundOpacity;
         if (!graph && key == _last) return;
         var points = graph ? _capture.Graph() : [];
         _window.Present(bounds, g =>
@@ -67,13 +67,14 @@ internal sealed class FpsOverlay : IDisposable
             {
                 float left = (float)(6 * _settings.Scale), top = (float)(textHeight * _settings.Scale);
                 float width = bounds.Width - left * 2, height = (float)(44 * _settings.Scale);
-                using var grid = new Pen(Color.FromArgb(60, ColorTranslator.FromHtml(_settings.TextColor)));
+                var graphColor = ColorTranslator.FromHtml(_settings.GraphColor ?? _settings.TextColor);
+                using var grid = new Pen(Color.FromArgb(60, graphColor));
                 g.DrawLine(grid, left, top + height, left + width, top + height);
                 double maximum = Math.Max(16.667, points.Length == 0 ? 0 : points.Max(p => p.Frametime) * 1.1);
                 if (points.Length > 1)
                 {
                     var line = points.Select(p => new PointF(left + (float)((2000 - p.AgeMilliseconds) / 2000 * width), top + height - (float)(Math.Clamp(p.Frametime / maximum, 0, 1) * height))).ToArray();
-                    using var pen = new Pen(ColorTranslator.FromHtml(_settings.TextColor), (float)_settings.Scale);
+                    using var pen = new Pen(graphColor, (float)_settings.Scale);
                     g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                     g.DrawLines(pen, line);
                 }

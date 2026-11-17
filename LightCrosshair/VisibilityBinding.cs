@@ -84,10 +84,26 @@ internal sealed class VisibilityBindingState
         if (_blocked) return false;
         if (!trigger || _down) return false;
         _down = !binding.IsWheel;
-        if (!binding.Matches(input, key, modifiers)) return false;
+        // A hold only needs its own modifiers: players sprint or crouch (Shift/Ctrl) while aiming.
+        if (binding.Mode == BindingMode.Toggle ? !binding.Matches(input, key, modifiers) : (binding.Modifiers & ~modifiers) != 0) return false;
         if (binding.Mode == BindingMode.Toggle) return true;
         Override = binding.Mode == BindingMode.HoldToShow;
         return false;
+    }
+}
+
+internal static class RawMouse
+{
+    private static readonly (int Flag, BindingInput Input, bool Down)[] Buttons =
+    [(0x4, BindingInput.RightClick, true), (0x8, BindingInput.RightClick, false), (0x10, BindingInput.MiddleClick, true), (0x20, BindingInput.MiddleClick, false),
+     (0x40, BindingInput.Mouse4, true), (0x80, BindingInput.Mouse4, false), (0x100, BindingInput.Mouse5, true), (0x200, BindingInput.Mouse5, false)];
+    /// <summary>RAWMOUSE usButtonFlags/usButtonData to binding transitions in packet order. Wheel notches are presses only.</summary>
+    internal static List<(BindingInput Input, bool Down)> Decode(int flags, short wheel)
+    {
+        var events = new List<(BindingInput, bool)>(2);
+        foreach (var button in Buttons) if ((flags & button.Flag) != 0) events.Add((button.Input, button.Down));
+        if ((flags & 0x400) != 0 && wheel != 0) events.Add((wheel > 0 ? BindingInput.WheelUp : BindingInput.WheelDown, true));
+        return events;
     }
 }
 

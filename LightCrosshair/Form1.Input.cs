@@ -140,6 +140,9 @@ internal sealed partial class Form1
                 case 9001: case 9002:
                     await MutateAsync(next => Task.FromResult<object?>(CrosshairCycling.Apply(next, Runtime.ActiveCrosshairId, Runtime.ActiveGameProfileId, id == 9001)));
                     break;
+                case 9005:
+                    await MutateAsync(next => { next.Settings.FpsOverlay.Enabled = !next.Settings.FpsOverlay.Enabled; return Task.FromResult<object?>(null); });
+                    break;
                 case 9003:
                     if (_pipe?.IsConnected == true && !UiLaunch.IsParked(_pipe.ClientProcessId)) _pipe.Publish(IpcEvents.CloseRequested, null); else OpenSettings();
                     break;

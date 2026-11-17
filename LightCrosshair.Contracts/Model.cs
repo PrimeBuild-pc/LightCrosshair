@@ -117,6 +117,8 @@ public sealed class HotkeySettings
     public InputBinding OpenSettings { get; set; } = new() { Key = "L", Modifiers = KeyModifiers.Alt };
     /// <summary>Optional "while held" visibility, e.g. RightClick + HoldToHide to hide the crosshair while aiming. Mode must be HoldToHide or HoldToShow. Empty Key = unbound (default).</summary>
     public InputBinding HoldVisibility { get; set; } = new() { Key = "", Mode = BindingMode.HoldToHide };
+    /// <summary>Toggles AppSettings.FpsOverlay.Enabled (the same setting as the UI's "Show FPS overlay" switch). Toggle only.</summary>
+    public InputBinding ToggleFpsOverlay { get; set; } = new() { Key = "F", Modifiers = KeyModifiers.Alt };
 }
 
 public sealed class FpsOverlaySettings
@@ -134,6 +136,8 @@ public sealed class FpsOverlaySettings
     /// <summary>Small frametime graph (last ~2 s). Off by default; only this option makes the overlay redraw continuously.</summary>
     public bool ShowFrametimeGraph { get; set; }
     public string TextColor { get; set; } = "#FFFFFF";
+    /// <summary>Frametime graph color "#RRGGBB"; null = same as TextColor.</summary>
+    public string? GraphColor { get; set; }
     public string BackgroundColor { get; set; } = "#000000";
     public double BackgroundOpacity { get; set; } = 0.5;
 }
@@ -197,6 +201,8 @@ public sealed class AppSettings
     public List<string> DismissedSuggestions { get; set; } = [];
     public bool StartWithWindows { get; set; }
     public bool CheckForUpdates { get; set; } = true;
+    /// <summary>Window close button: false = keep running in the tray (the UI parks, overlays stay); true = exit the UI and Core.</summary>
+    public bool CloseButtonExits { get; set; }
 }
 
 /// <summary>Root of %AppData%\LightCrosshair\v2\store.json. Core is the only writer.</summary>
@@ -210,7 +216,7 @@ public sealed class StoreDocument
 
 public sealed class HotkeyError
 {
-    /// <summary>"ToggleVisibility", "NextCrosshair", "PreviousCrosshair", "OpenSettings" or "GameProfile:{id}".</summary>
+    /// <summary>"ToggleVisibility", "NextCrosshair", "PreviousCrosshair", "OpenSettings", "HoldVisibility", "ToggleFpsOverlay", "GameProfile:{id}" or "GameHold:{id}".</summary>
     public string Action { get; set; } = "";
     public InputBinding Binding { get; set; } = new();
     public string Message { get; set; } = "";
