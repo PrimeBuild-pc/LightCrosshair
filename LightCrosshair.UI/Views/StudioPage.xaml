@@ -65,7 +65,7 @@
       <Grid>
         <Border Background="{StaticResource CheckerBrush}" CornerRadius="8" Visibility="{Binding CheckerPreview, Converter={StaticResource Vis}}"/>
         <Border Background="{Binding PreviewFill, Converter={StaticResource HexBrush}}" CornerRadius="8" Visibility="{Binding CheckerPreview, Converter={StaticResource VisInv}}"/>
-        <ScrollViewer x:Name="PreviewScroll" SizeChanged="OnPreviewSizeChanged" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="Transparent">
+        <ScrollViewer x:Name="PreviewScroll" SizeChanged="OnPreviewSizeChanged" ScrollChanged="OnPreviewScrollChanged" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="Transparent">
           <Grid Width="{Binding Zoom, Converter={StaticResource Zoom}, ConverterParameter=256}" Height="{Binding Zoom, Converter={StaticResource Zoom}, ConverterParameter=256}" HorizontalAlignment="Left" VerticalAlignment="Top">
             <Grid.RenderTransform>
               <TranslateTransform>

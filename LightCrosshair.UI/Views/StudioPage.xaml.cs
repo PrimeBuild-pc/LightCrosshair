@@ -18,6 +18,14 @@ public partial class StudioPage : UserControl
             studio.SetPreviewSize(e.NewSize.Width, e.NewSize.Height);
     }
 
+    // A zoom that overflows the preview starts centered on the crosshair, not at the top-left corner.
+    private void OnPreviewScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        if (e.ExtentWidthChange == 0 && e.ExtentHeightChange == 0 && e.ViewportWidthChange == 0 && e.ViewportHeightChange == 0) return;
+        PreviewScroll.ScrollToHorizontalOffset(Math.Max(0, (PreviewScroll.ExtentWidth - PreviewScroll.ViewportWidth) / 2));
+        PreviewScroll.ScrollToVerticalOffset(Math.Max(0, (PreviewScroll.ExtentHeight - PreviewScroll.ViewportHeight) / 2));
+    }
+
     private void OnLayerPress(object sender, MouseButtonEventArgs e)
     {
         if (e.OriginalSource is DependencyObject source && FindAncestor<Button>(source) != null) return;
