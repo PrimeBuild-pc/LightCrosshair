@@ -62,6 +62,15 @@ public partial class MainWindow : Window
             if (IsVisible) FindChild<LibraryPage>(this)?.ReloadVisible();
         };
         Closing += OnClosing;
+        // Library thumbnails are made at the screen's real pixels; a DPI change (another monitor) remakes them.
+        SourceInitialized += (_, _) => UiScale.Dpi = VisualTreeHelper.GetDpi(this).DpiScaleX;
+        DpiChanged += (_, e) =>
+        {
+            UiScale.Dpi = e.NewDpi.DpiScaleX;
+            if (DataContext is not MainViewModel viewModel) return;
+            viewModel.Library.ReleaseCaches();
+            FindChild<LibraryPage>(this)?.ReloadVisible();
+        };
         SourceInitialized += (_, _) =>
         {
             var source = (HwndSource?)PresentationSource.FromVisual(this);

@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:LightCrosshair.UI.Localization"
-             xmlns:controls="clr-namespace:LightCrosshair.UI.Controls">
+             xmlns:controls="clr-namespace:LightCrosshair.UI.Controls"
+             UseLayoutRounding="True">
   <UserControl.Resources>
     <DataTemplate x:Key="Card">
       <Border Width="120" Height="172" Margin="8" Background="{DynamicResource SurfaceBrush}" BorderThickness="1" CornerRadius="8" controls:ThumbLoader.Card="{Binding}">
@@ -40,7 +41,7 @@
           </StackPanel>
           <Grid Height="72">
             <Border Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="4" Visibility="{Binding Png, Converter={StaticResource NullVisInv}}"/>
-            <Image Source="{Binding Png, Converter={StaticResource Png}, ConverterParameter=96}" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform" Visibility="{Binding Png, Converter={StaticResource NullVis}}"/>
+            <Image Source="{Binding Png, Converter={StaticResource Png}, ConverterParameter=screen}" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="None" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding Png, Converter={StaticResource NullVis}}"/>
           </Grid>
         </DockPanel>
       </Border>

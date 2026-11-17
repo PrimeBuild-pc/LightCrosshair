@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:loc="clr-namespace:LightCrosshair.UI.Localization"
-             xmlns:controls="clr-namespace:LightCrosshair.UI.Controls">
+             xmlns:controls="clr-namespace:LightCrosshair.UI.Controls"
+             UseLayoutRounding="True">
   <UserControl.Resources>
     <DrawingBrush x:Key="CheckerBrush" TileMode="Tile" Viewport="0,0,16,16" ViewportUnits="Absolute">
       <DrawingBrush.Drawing>
@@ -66,25 +67,14 @@
         <Border Background="{StaticResource CheckerBrush}" CornerRadius="8" Visibility="{Binding CheckerPreview, Converter={StaticResource Vis}}"/>
         <Border Background="{Binding PreviewFill, Converter={StaticResource HexBrush}}" CornerRadius="8" Visibility="{Binding CheckerPreview, Converter={StaticResource VisInv}}"/>
         <ScrollViewer x:Name="PreviewScroll" SizeChanged="OnPreviewSizeChanged" ScrollChanged="OnPreviewScrollChanged" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="Transparent">
-          <Grid Width="{Binding Zoom, Converter={StaticResource Zoom}, ConverterParameter=256}" Height="{Binding Zoom, Converter={StaticResource Zoom}, ConverterParameter=256}" HorizontalAlignment="Left" VerticalAlignment="Top">
+          <!-- Sized and offset in code (StudioPage.UpdatePreviewLayout): one render pixel is exactly Zoom screen pixels
+               and the image starts on a whole screen pixel, so nearest-neighbor scaling never doubles or drops a row. -->
+          <Grid x:Name="PreviewCanvas" Width="256" Height="256" HorizontalAlignment="Left" VerticalAlignment="Top">
             <Grid.RenderTransform>
-              <TranslateTransform>
-                <TranslateTransform.X>
-                  <MultiBinding Converter="{StaticResource CenterOffset}">
-                    <Binding ElementName="PreviewScroll" Path="ViewportWidth"/>
-                    <Binding Path="Zoom" Converter="{StaticResource Zoom}" ConverterParameter="256"/>
-                  </MultiBinding>
-                </TranslateTransform.X>
-                <TranslateTransform.Y>
-                  <MultiBinding Converter="{StaticResource CenterOffset}">
-                    <Binding ElementName="PreviewScroll" Path="ViewportHeight"/>
-                    <Binding Path="Zoom" Converter="{StaticResource Zoom}" ConverterParameter="256"/>
-                  </MultiBinding>
-                </TranslateTransform.Y>
-              </TranslateTransform>
+              <TranslateTransform x:Name="PreviewShift"/>
             </Grid.RenderTransform>
             <Image Source="{Binding PreviewPng, Converter={StaticResource Png}, ConverterParameter=256}" Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
-            <Rectangle IsHitTestVisible="False" Visibility="{Binding ShowPixelGrid, Converter={StaticResource Vis}}">
+            <Rectangle x:Name="PixelGrid" IsHitTestVisible="False" Visibility="{Binding ShowPixelGrid, Converter={StaticResource Vis}}">
               <Rectangle.Fill>
                 <DrawingBrush TileMode="Tile" Viewport="0,0,4,4" ViewportUnits="Absolute">
                   <DrawingBrush.Drawing>

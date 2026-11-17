@@ -10,20 +10,72 @@ public partial class StudioPage : UserControl
 {
     private Point? _dragStart;
 
-    public StudioPage() => InitializeComponent();
+    private StudioViewModel? _studio;
+
+    public StudioPage()
+    {
+        InitializeComponent();
+        DataContextChanged += (_, _) =>
+        {
+            if (_studio != null) _studio.PropertyChanged -= OnStudioChanged;
+            _studio = DataContext as StudioViewModel;
+            if (_studio != null) _studio.PropertyChanged += OnStudioChanged;
+            UpdatePreviewLayout();
+        };
+    }
+
+    protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+    {
+        base.OnDpiChanged(oldDpi, newDpi);
+        ReportPreviewSize();
+        UpdatePreviewLayout();
+    }
+
+    private void OnStudioChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(StudioViewModel.Zoom)) UpdatePreviewLayout();
+    }
+
+    private double Dpi => VisualTreeHelper.GetDpi(this).DpiScaleX;
+
+    // Fit compares the 256 px render against the preview in screen pixels.
+    private void ReportPreviewSize() => _studio?.SetPreviewSize(PreviewScroll.ActualWidth * Dpi, PreviewScroll.ActualHeight * Dpi);
 
     private void OnPreviewSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (DataContext is StudioViewModel studio)
-            studio.SetPreviewSize(e.NewSize.Width, e.NewSize.Height);
+        ReportPreviewSize();
+        UpdatePreviewLayout();
+    }
+
+    /// <summary>
+    /// One render pixel = Zoom screen pixels at any DPI, and the image starts on a whole screen pixel.
+    /// A half-pixel centering offset (odd free space) made nearest-neighbor scaling double or drop rows,
+    /// so the preview looked crooked at some window sizes while the overlay was exact.
+    /// </summary>
+    internal void UpdatePreviewLayout()
+    {
+        if (_studio == null) return;
+        double dpi = Dpi, size = 256d * Math.Max(1, _studio.Zoom) / dpi;
+        PreviewCanvas.Width = PreviewCanvas.Height = size;
+        PreviewShift.X = Math.Floor(Math.Max(0, PreviewScroll.ViewportWidth - size) * dpi / 2) / dpi;
+        PreviewShift.Y = Math.Floor(Math.Max(0, PreviewScroll.ViewportHeight - size) * dpi / 2) / dpi;
+        if (PixelGrid.Fill is DrawingBrush grid && !grid.IsFrozen) grid.Viewport = new Rect(0, 0, 4 / dpi, 4 / dpi);
     }
 
     // A zoom that overflows the preview starts centered on the crosshair, not at the top-left corner.
     private void OnPreviewScrollChanged(object sender, ScrollChangedEventArgs e)
     {
-        if (e.ExtentWidthChange == 0 && e.ExtentHeightChange == 0 && e.ViewportWidthChange == 0 && e.ViewportHeightChange == 0) return;
-        PreviewScroll.ScrollToHorizontalOffset(Math.Max(0, (PreviewScroll.ExtentWidth - PreviewScroll.ViewportWidth) / 2));
-        PreviewScroll.ScrollToVerticalOffset(Math.Max(0, (PreviewScroll.ExtentHeight - PreviewScroll.ViewportHeight) / 2));
+        double dpi = Dpi;
+        double Snap(double value) => Math.Round(value * dpi) / dpi; // scroll by whole screen pixels only
+        if (e.ExtentWidthChange != 0 || e.ExtentHeightChange != 0 || e.ViewportWidthChange != 0 || e.ViewportHeightChange != 0)
+        {
+            if (e.ViewportWidthChange != 0 || e.ViewportHeightChange != 0) UpdatePreviewLayout();
+            PreviewScroll.ScrollToHorizontalOffset(Snap(Math.Max(0, (PreviewScroll.ExtentWidth - PreviewScroll.ViewportWidth) / 2)));
+            PreviewScroll.ScrollToVerticalOffset(Snap(Math.Max(0, (PreviewScroll.ExtentHeight - PreviewScroll.ViewportHeight) / 2)));
+            return;
+        }
+        if (Math.Abs(Snap(e.HorizontalOffset) - e.HorizontalOffset) > 1e-6) PreviewScroll.ScrollToHorizontalOffset(Snap(e.HorizontalOffset));
+        if (Math.Abs(Snap(e.VerticalOffset) - e.VerticalOffset) > 1e-6) PreviewScroll.ScrollToVerticalOffset(Snap(e.VerticalOffset));
     }
 
     private void OnLayerPress(object sender, MouseButtonEventArgs e)

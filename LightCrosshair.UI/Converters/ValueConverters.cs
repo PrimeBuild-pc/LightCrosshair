@@ -92,12 +92,26 @@ public sealed class Base64ImageConverter : IValueConverter
                 image.DecodePixelWidth = edge;
             image.EndInit();
             image.Freeze();
+            if ("screen".Equals(parameter)) return AtScreenDpi(image);
             return image;
         }
         catch (Exception)
         {
             return null;
         }
+    }
+
+    // PNG stores DPI as whole pixels per meter (96 reads back as 95.987); retag exactly so
+    // Stretch="None" draws one bitmap pixel per screen pixel.
+    private static BitmapSource AtScreenDpi(BitmapSource image)
+    {
+        var converted = new FormatConvertedBitmap(image, PixelFormats.Pbgra32, null, 0);
+        var pixels = new int[converted.PixelWidth * converted.PixelHeight];
+        converted.CopyPixels(pixels, converted.PixelWidth * 4, 0);
+        var dpi = 96 * LightCrosshair.UI.Services.UiScale.Dpi;
+        var exact = BitmapSource.Create(converted.PixelWidth, converted.PixelHeight, dpi, dpi, PixelFormats.Pbgra32, null, pixels, converted.PixelWidth * 4);
+        exact.Freeze();
+        return exact;
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -118,34 +132,6 @@ public sealed class HexBrushConverter : IValueConverter
         {
             return Brushes.Transparent;
         }
-    }
-
-    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotSupportedException();
-}
-
-public sealed class CenterOffsetConverter : IMultiValueConverter
-{
-    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-    {
-        var viewport = values.Length > 0 && values[0] is double available && !double.IsNaN(available) && !double.IsInfinity(available) ? available : 0;
-        var content = values.Length > 1 && values[1] is double size && !double.IsNaN(size) && !double.IsInfinity(size) ? size : 0;
-        return Math.Max(0, (viewport - content) / 2);
-    }
-
-    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-        => throw new NotSupportedException();
-}
-
-public sealed class ZoomConverter : IValueConverter
-{
-    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        var zoom = value is int z ? z : 1;
-        var factor = 256d;
-        if (parameter != null && double.TryParse(parameter.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
-            factor = parsed;
-        return Math.Max(1, zoom) * factor;
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

@@ -194,6 +194,35 @@ public class ReleaseBlockerUiTests
             Assert.Contains(hex, LightCrosshair.UI.Controls.ColorField.Presets);
     }
 
+    [Theory]
+    [InlineData(1.0)] [InlineData(1.25)] [InlineData(1.5)]
+    public void LibraryThumbnailsKeepTheRealPixelsAtScreenDpi(double dpi)
+    {
+        static string Png(Action<uint[]> draw)
+        {
+            var pixels = new uint[256 * 256]; draw(pixels);
+            var source = System.Windows.Media.Imaging.BitmapSource.Create(256, 256, 96, 96, System.Windows.Media.PixelFormats.Pbgra32, null, pixels, 256 * 4);
+            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder(); encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(source));
+            using var stream = new MemoryStream(); encoder.Save(stream); return Convert.ToBase64String(stream.ToArray());
+        }
+        static uint[] Read(string png, out System.Windows.Media.Imaging.BitmapFrame frame)
+        {
+            frame = System.Windows.Media.Imaging.BitmapDecoder.Create(new MemoryStream(Convert.FromBase64String(png)), System.Windows.Media.Imaging.BitmapCreateOptions.PreservePixelFormat, System.Windows.Media.Imaging.BitmapCacheOption.OnLoad).Frames[0];
+            var pixels = new uint[frame.PixelWidth * frame.PixelHeight]; frame.CopyPixels(pixels, frame.PixelWidth * 4, 0); return pixels;
+        }
+        // A 2 px cross with a 4 px gap, as Core renders it: thumbnail = the same pixels, 1:1, centered.
+        string cross = Png(p => { for (int i = 0; i < 10; i++) foreach (int k in new[] { 128, 129 }) { p[k * 256 + 124 - i] = p[k * 256 + 133 + i] = p[(124 - i) * 256 + k] = p[(133 + i) * 256 + k] = 0xFF00FF00; } });
+        int box = (int)Math.Round(72 * dpi);
+        var thumb = Read(PixelThumb.Fit(cross, box, dpi), out var frame);
+        Assert.Equal(box, frame.PixelWidth); Assert.InRange(Math.Abs(frame.DpiX - 96 * dpi), 0, 0.05);
+        Assert.Equal(80, thumb.Count(p => p == 0xFF00FF00));
+        Assert.Equal(0, thumb.Count(p => p != 0 && p != 0xFF00FF00));
+        for (int y = 0; y < box; y++) for (int x = 0; x < box; x++) Assert.Equal(thumb[y * box + x], thumb[y * box + (box - 1 - x)]);
+        // Larger than the card: reduced by a whole factor so it still fits.
+        var large = Read(PixelThumb.Fit(Png(p => { for (int y = 20; y < 236; y++) for (int x = 20; x < 236; x++) p[y * 256 + x] = 0xFFFFFFFF; }), box, dpi), out _);
+        Assert.Equal(0u, large[0]); Assert.Equal(0xFFFFFFFF, large[(box / 2) * box + box / 2]);
+    }
+
     [Fact]
     public void NoWindowsMessageBoxesAnywhere()
     {

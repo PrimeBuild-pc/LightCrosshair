@@ -70,7 +70,8 @@ public static class WindowPlacementStore
         window.Top = place.Bounds.Top;
         window.Width = Math.Max(window.MinWidth, place.Bounds.Width);
         window.Height = Math.Max(window.MinHeight, place.Bounds.Height);
-        return place.Maximized;
+        // Always open as a normal window at its last normal size (1180x740 the first time), never maximized.
+        return false;
     }
 
     private static Point Cursor()

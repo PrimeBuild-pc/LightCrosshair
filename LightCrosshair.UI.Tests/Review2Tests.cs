@@ -82,7 +82,7 @@ public class Review2Tests
                 Settle(window);
                 var scroll = Preview(window);
                 Assert.Equal("fit", main.Studio.ZoomMode);
-                Assert.Equal(StudioViewModel.FitZoom(scroll.ActualWidth, scroll.ActualHeight), main.Studio.Zoom);
+                { var dpi = System.Windows.Media.VisualTreeHelper.GetDpi(scroll).DpiScaleX; Assert.Equal(StudioViewModel.FitZoom(scroll.ActualWidth * dpi, scroll.ActualHeight * dpi), main.Studio.Zoom); }
                 Assert.NotEqual(Visibility.Visible, scroll.ComputedVerticalScrollBarVisibility);
                 Assert.NotEqual(Visibility.Visible, scroll.ComputedHorizontalScrollBarVisibility);
             }
@@ -185,7 +185,7 @@ public class Review2Tests
         Settle(window);
         var scroll = Preview(window);
         Assert.Equal("fit", main.Studio.ZoomMode);
-        Assert.Equal(StudioViewModel.FitZoom(scroll.ActualWidth, scroll.ActualHeight), main.Studio.Zoom);
+        { var dpi = System.Windows.Media.VisualTreeHelper.GetDpi(scroll).DpiScaleX; Assert.Equal(StudioViewModel.FitZoom(scroll.ActualWidth * dpi, scroll.ActualHeight * dpi), main.Studio.Zoom); }
         Assert.NotEqual(Visibility.Visible, scroll.ComputedVerticalScrollBarVisibility);
         Assert.NotEqual(Visibility.Visible, scroll.ComputedHorizontalScrollBarVisibility);
     }
@@ -209,6 +209,15 @@ public class Review2Tests
         var center = image.TranslatePoint(new Point(image.ActualWidth / 2, image.ActualHeight / 2), scroll);
         if (!horizontal) Assert.InRange(Math.Abs(center.X - scroll.ViewportWidth / 2), 0, 2);
         if (!vertical) Assert.InRange(Math.Abs(center.Y - scroll.ViewportHeight / 2), 0, 2);
+        // Pixel-exact preview: one render pixel is `zoom` screen pixels and the image starts on a whole screen pixel.
+        var dpi = VisualTreeHelper.GetDpi(scroll).DpiScaleX;
+        Assert.InRange(Math.Abs(image.ActualWidth * dpi - 256 * zoom), 0, 0.01);
+        var origin = image.TranslatePoint(new Point(0, 0), Window.GetWindow(scroll)!);
+        var so = scroll.TranslatePoint(new Point(0, 0), Window.GetWindow(scroll)!);
+        var at = $"{detail} dpi {dpi} image {origin} scroll {so} offsets {scroll.HorizontalOffset},{scroll.VerticalOffset} canvas {image.TranslatePoint(new Point(0, 0), scroll)}";
+        Assert.True(Math.Abs(origin.X * dpi - Math.Round(origin.X * dpi)) <= 0.01, at);
+        Assert.True(Math.Abs(origin.Y * dpi - Math.Round(origin.Y * dpi)) <= 0.01, at);
+        Assert.InRange(Math.Abs(origin.Y * dpi - Math.Round(origin.Y * dpi)), 0, 0.01);
     }
 
     private static void Settle(FrameworkElement element)

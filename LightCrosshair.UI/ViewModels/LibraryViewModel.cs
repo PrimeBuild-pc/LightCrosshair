@@ -149,7 +149,8 @@ public sealed partial class LibraryViewModel : ObservableObject
         if (card == null || _minimized || card.Png != null) return;
         try
         {
-            card.Png = await _thumbs.GetAsync(_core, card.Design, 96).ConfigureAwait(true);
+            // The card's 72 px thumbnail area, in screen pixels, at the overlay's 1:1 scale.
+            card.Png = await _thumbs.GetAsync(_core, card.Design, (int)Math.Round(72 * UiScale.Dpi), UiScale.Dpi).ConfigureAwait(true);
         }
         catch (CoreException) { /* the card stays blank; the page error is for actions */ }
     }
@@ -425,11 +426,12 @@ public sealed class ThumbnailCache
     private readonly Dictionary<string, string> _png = new();
     private readonly List<string> _order = new();
 
-    public async Task<string> GetAsync(ICoreClient core, CrosshairDesign design, int size, CancellationToken cancellationToken = default)
+    public async Task<string> GetAsync(ICoreClient core, CrosshairDesign design, int box, double dpi, CancellationToken cancellationToken = default)
     {
-        var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonClone.Text(design)))) + ":" + size;
+        var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonClone.Text(design)))) + ":" + box + ":" + dpi.ToString(System.Globalization.CultureInfo.InvariantCulture);
         if (_png.TryGetValue(key, out var cached)) return cached;
-        var png = await core.RenderPngAsync(new RenderRequest { Design = design, CanvasSize = size, Background = "#16181B" }, cancellationToken).ConfigureAwait(false);
+        var render = await core.RenderPngAsync(new RenderRequest { Design = design, CanvasSize = 256 }, cancellationToken).ConfigureAwait(false);
+        var png = await Task.Run(() => PixelThumb.Fit(render, box, dpi), cancellationToken).ConfigureAwait(false);
         _png[key] = png;
         _order.Remove(key);
         _order.Add(key);
