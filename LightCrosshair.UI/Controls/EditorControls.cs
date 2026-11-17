@@ -111,10 +111,13 @@ public class NumberSlider : StackPanel
 
 public class ColorField : StackPanel
 {
+    // High-contrast crosshair colors (saturated, rare in game scenes, readable on light and dark backgrounds):
+    // neon green, neon yellow, cyan, fuchsia, red, electric blue, chartreuse, hot pink, neon orange,
+    // electric purple, plus white and black for outlines.
     public static readonly string[] Presets =
     [
-        "#FFFFFF", "#000000", "#FF4D4D", "#3DDC97", "#4D8DFF", "#FFD24D",
-        "#00E5FF", "#E85DFF", "#FF8A3D", "#9AA0A6", "#E8EAED", "#F26D6D",
+        "#00FF00", "#FFFF00", "#00FFFF", "#FF00FF", "#FF0000", "#0096FF",
+        "#7FFF00", "#FF1493", "#FF6600", "#BF00FF", "#FFFFFF", "#000000",
     ];
 
     public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(
@@ -153,6 +156,7 @@ public class ColorField : StackPanel
                 Content = new Border { Width = 22, Height = 22, Background = swatch, CornerRadius = new CornerRadius(4) },
             };
             System.Windows.Automation.AutomationProperties.SetName(button, color);
+            button.ToolTip = color;
             button.Click += (_, _) => Value = color;
             presets.Children.Add(button);
         }

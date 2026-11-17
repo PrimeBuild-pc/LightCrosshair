@@ -25,6 +25,17 @@ public sealed partial class MainViewModel : ObservableObject
         Settings = new SettingsViewModel(core, ui);
         FpsOverlay = new(Settings);
         Library.GameCrosshairChanged = Games.NoteExternalCrosshair;
+        // Pencil / Edit / double-click in Library open that crosshair in Studio.
+        Library.BeforeEdit = async () =>
+        {
+            if (!Studio.IsDirty) return true;
+            var choice = await _ui.AskUnsavedAsync().ConfigureAwait(true);
+            if (choice == UnsavedChoice.Cancel) return false;
+            if (choice == UnsavedChoice.Save) return await Studio.SaveCoreAsync(newId: false).ConfigureAwait(true);
+            Studio.Revert();
+            return true;
+        };
+        Library.EditOpened = () => NavigateAsync(UiPages.Studio);
         Games.NoteLaunchSuggest(options.Suggest);
         Page = options.Page;
         _core.StateChanged += (_, state) =>

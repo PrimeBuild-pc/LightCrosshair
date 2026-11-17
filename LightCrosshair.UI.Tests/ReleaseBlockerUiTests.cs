@@ -168,6 +168,33 @@ public class ReleaseBlockerUiTests
     }
 
     [Fact]
+    public async Task PencilOpensThatCrosshairInStudio()
+    {
+        var core = new FakeCoreClient(new InlineMarshaler());
+        var ui = new FakeUi { UnsavedAnswer = UnsavedChoice.Cancel };
+        var main = new MainViewModel(core, ui, LaunchOptions.Parse(["--fake-core", "--page", "library"])); await main.StartAsync();
+        Assert.True(main.Library.Mine.Count >= 2);
+        var target = main.Library.Mine.Last();
+        await main.Library.EditCommand.ExecuteAsync(target);
+        Assert.Equal(UiPages.Studio, main.Page);
+        Assert.Equal(target.Design.Id, main.Studio.Current!.Id);
+        // With unsaved Studio changes, Cancel keeps the current design and page.
+        main.Studio.DesignName = "edited"; Assert.True(main.Studio.IsDirty);
+        await main.NavigateCommand.ExecuteAsync(UiPages.Library);
+        Assert.Equal(UiPages.Studio, main.Page);
+        await main.Library.EditCommand.ExecuteAsync(main.Library.Mine.First());
+        Assert.Equal(target.Design.Id, main.Studio.Current!.Id); Assert.Equal("edited", main.Studio.DesignName);
+    }
+
+    [Fact]
+    public void ColorSwatchesAreHighContrastCrosshairColors()
+    {
+        Assert.Equal(12, LightCrosshair.UI.Controls.ColorField.Presets.Length);
+        foreach (var hex in new[] { "#00FF00", "#FFFF00", "#00FFFF", "#FF00FF", "#FF0000", "#0096FF", "#FFFFFF", "#000000" })
+            Assert.Contains(hex, LightCrosshair.UI.Controls.ColorField.Presets);
+    }
+
+    [Fact]
     public void NoWindowsMessageBoxesAnywhere()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

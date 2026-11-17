@@ -249,10 +249,21 @@ public sealed partial class LibraryViewModel : ObservableObject
         await SaveDesignAsync(copy).ConfigureAwait(true);
     }
 
+    /// <summary>Set by the shell: resolve unsaved Studio edits (false = cancel), then show Studio.</summary>
+    public Func<Task<bool>>? BeforeEdit { get; set; }
+    public Func<Task>? EditOpened { get; set; }
+
     [RelayCommand]
-    private void Edit(LibraryCard? card)
+    private async Task EditAsync(LibraryCard? card)
     {
         if (card == null) return;
+        if (BeforeEdit != null && !await BeforeEdit().ConfigureAwait(true)) return;
+        Open(card);
+        if (EditOpened != null) await EditOpened().ConfigureAwait(true);
+    }
+
+    private void Open(LibraryCard card)
+    {
         if (card.IsPreset)
         {
             var copy = JsonClone.Clone(card.Design);
