@@ -12,6 +12,7 @@ internal sealed class FpsOverlay : IDisposable
     private string? _last;
     private string _language = "auto";
     private long _lastGraphPaint;
+    private const double GraphDelay = 200; // above the measured worst ETW delivery delay (~180 ms)
     internal bool Enabled => _timer.Enabled;
     internal FpsOverlay()
     {
@@ -28,6 +29,9 @@ internal sealed class FpsOverlay : IDisposable
             if (Program.PerfProbesEnabled && m.Msg == 0x806B)
             { m.Result = (IntPtr)(capture.Snapshot().HasData ? 0 : 1); return; }
             if (Program.PerfProbesEnabled && m.Msg == 0x8072) { m.Result = (IntPtr)(graph() ? 1 : 0); return; }
+            // Freshness probe: age in ms of the newest graph sample (-1 when none).
+            if (Program.PerfProbesEnabled && m.Msg == 0x8073)
+            { var points = capture.Graph(); m.Result = (IntPtr)(points.Length == 0 ? -1 : (int)points.Min(p => p.AgeMilliseconds)); return; }
             base.WndProc(ref m);
         }
     }
@@ -73,7 +77,10 @@ internal sealed class FpsOverlay : IDisposable
                 double maximum = Math.Max(16.667, points.Length == 0 ? 0 : points.Max(p => p.Frametime) * 1.1);
                 if (points.Length > 1)
                 {
-                    var line = points.Select(p => new PointF(left + (float)((2000 - p.AgeMilliseconds) / 2000 * width), top + height - (float)(Math.Clamp(p.Frametime / maximum, 0, 1) * height))).ToArray();
+                    // Draw up to GraphDelay ago: the newest samples are always delivered by then, so the line scrolls
+                    // smoothly instead of its right end jumping as each batch of present events arrives.
+                    var line = points.Where(p => p.AgeMilliseconds >= GraphDelay)
+                        .Select(p => new PointF(left + (float)((2000 - p.AgeMilliseconds) / (2000 - GraphDelay) * width), top + height - (float)(Math.Clamp(p.Frametime / maximum, 0, 1) * height))).ToArray();
                     using var pen = new Pen(graphColor, (float)_settings.Scale);
                     g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                     g.DrawLines(pen, line);

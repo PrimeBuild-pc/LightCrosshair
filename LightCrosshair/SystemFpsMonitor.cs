@@ -107,6 +107,9 @@ internal sealed class SystemFpsMonitor
             if (!TryReadPresent(data.ProviderGuid == Dxgi, data.PointerSize, data.EventData(), out ulong swapchain)) return;
             present(data.ProcessID, swapchain, data.TimeStamp);
         };
+        // A real-time session otherwise delivers its buffers about once a second, so the graph
+        // grew in one-second chunks. Flushing every 50 ms keeps it continuous (capture runs only while enabled).
+        using var flusher = new System.Threading.Timer(_ => { try { session.Flush(); } catch (Exception) { } }, null, 50, 50);
         session.Source.Process();
     }
     internal static bool IsPresentStart(Guid provider, int id) => (provider == Dxgi && id is 42 or 55) || (provider == D3D9 && id == 1);
