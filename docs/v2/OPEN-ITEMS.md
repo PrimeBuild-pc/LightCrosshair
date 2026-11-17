@@ -69,6 +69,14 @@ Lorenzo confirmed: hide while aiming on right mouse, display colors (vibrance an
 - **Smooth edges did nothing on crosses.** Now (Lorenzo's choice) it rounds and antialiases arm ends and outline corners; rings, dots and rotations stay antialiased; off = crisp square pixels.
 - Also: the 4× Studio preview opened at its top-left corner; it now opens centered on the crosshair.
 
+## Third in-game check (2026-11-17)
+
+- **Studio preview crooked in a normal-size window.** Cause: the preview was centered with a half-pixel offset whenever the free space was odd, so nearest-neighbor scaling doubled or dropped rows. Fix: the image is sized so one render pixel is exactly Zoom screen pixels at any DPI, placed and scrolled on whole screen pixels. A UI test asserts both at every zoom.
+- **Library thumbnails not faithful.** Cause: a 96 px render squeezed into 72 px dropped every fourth row and column. Fix: thumbnails are the overlay's own pixels, cropped 1:1 into a box the size of the card area in screen pixels and tagged with the exact screen DPI; only designs larger than the card shrink, by a whole factor. Verified in the published UI; a test checks 100/125/150 % scale.
+- **Window opened maximized.** It now always opens normal-size (last normal bounds, or 1180×740 centered the first time).
+
+Lorenzo confirmed the result ("molto meglio, mi sembra perfetto").
+
 ## After the fixes
 
 Build for the retest: `releases/LightCrosshair-v2.0.0-win-x64/LightCrosshair.exe` and `setup/Output/LightCrosshair-Setup-2.0.0.exe` (2026-11-17). Not checked here: Fortnite/EAC itself, NVIDIA hardware, HDR.

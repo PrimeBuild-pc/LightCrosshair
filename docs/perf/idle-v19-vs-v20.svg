@@ -120,8 +120,8 @@ z
    <g id="patch_6">
     <path d="M 275.909642 302.4
 L 381.46352 302.4
-L 381.46352 181.622906
-L 275.909642 181.622906
+L 381.46352 183.903029
+L 275.909642 183.903029
 z
 " clip-path="url(#p67e5802ffd)" style="fill: #3ddc97"/>
    </g>
@@ -129,7 +129,7 @@ z
     <text style="font-weight: 600; font-size: 16px; font-family: 'Segoe UI'; text-anchor: middle; fill: #9aa0a6" x="136.77044" y="130.569231" transform="rotate(-0 136.77044 130.569231)">21.13</text>
    </g>
    <g id="text_9">
-    <text style="font-weight: 600; font-size: 16px; font-family: 'Segoe UI'; text-anchor: middle; fill: #3ddc97" x="328.686581" y="172.622906" transform="rotate(-0 328.686581 172.622906)">15.68</text>
+    <text style="font-weight: 600; font-size: 16px; font-family: 'Segoe UI'; text-anchor: middle; fill: #3ddc97" x="328.686581" y="174.903029" transform="rotate(-0 328.686581 174.903029)">15.38</text>
    </g>
    <g id="text_10">
     <text style="font-size: 15px; font-family: 'Segoe UI'; text-anchor: start; fill: #e8eaed" x="69.12" y="73.72" transform="rotate(-0 69.12 73.72)">Private memory</text>
@@ -259,10 +259,10 @@ L -12 -0
    <text style="font-weight: 600; font-size: 23px; font-family: 'Segoe UI'; text-anchor: start; fill: #e8eaed" x="69.12" y="30.24" transform="rotate(-0 69.12 30.24)">Idle resident process · LightCrosshair</text>
   </g>
   <g id="text_22">
-   <text style="font-size: 10.5px; font-family: 'Segoe UI'; text-anchor: start; fill: #9aa0a6" x="69.12" y="354.24" transform="rotate(-0 69.12 354.24)">AMD Ryzen 7 5800X3D · Windows 11 build 26200 · 2026-11-16</text>
+   <text style="font-size: 10.5px; font-family: 'Segoe UI'; text-anchor: start; fill: #9aa0a6" x="69.12" y="354.24" transform="rotate(-0 69.12 354.24)">AMD Ryzen 7 5800X3D · Windows 11 build 26200 · 2026-11-17</text>
   </g>
   <g id="text_23">
-   <text style="font-size: 10.5px; font-family: 'Segoe UI'; text-anchor: start; fill: #9aa0a6" x="69.12" y="373.68" transform="rotate(-0 69.12 373.68)">Release x64 · 1.9: .NET 8 target (72a3ed8) · 2.0: .NET 10 (767c3b1)</text>
+   <text style="font-size: 10.5px; font-family: 'Segoe UI'; text-anchor: start; fill: #9aa0a6" x="69.12" y="373.68" transform="rotate(-0 69.12 373.68)">Release x64 · 1.9: .NET 8 target (72a3ed8) · 2.0: .NET 10 (094877a)</text>
   </g>
   <g id="text_24">
    <text style="font-size: 10.5px; font-family: 'Segoe UI'; text-anchor: start; fill: #9aa0a6" x="69.12" y="393.12" transform="rotate(-0 69.12 393.12)">10 s warmup · 60 × 1 s samples · static crosshair · FPS off · settings closed</text>

@@ -6,7 +6,7 @@ These are measurements of local Release x64 pre-release builds on Windows 11 bui
 
 | File | Contents | Original local source |
 |---|---|---|
-| [idle-samples.csv](idle-samples.csv) | All idle private-byte and CPU samples for 1.9 and 2.0 | `scripts/perf/results-v1/idle.csv`, `scripts/perf/results-final/idle-final/idle.csv` |
+| [idle-samples.csv](idle-samples.csv) | All idle private-byte and CPU samples for 1.9 and 2.0 | `scripts/perf/results-v1/idle.csv`, `scripts/perf/results-release/idle.csv` |
 | [library-soak.csv](library-soak.csv) | Initial memory and every session in the before/after Library soak; original MiB and converted MB | `scripts/perf/results-library-50-before/summary.json`, `scripts/perf/results-library-50-final/summary.json` |
 | [ui-cycles.csv](ui-cycles.csv) | Initial memory and verified UI open/close cycles on the default page | `scripts/perf/results-review-final/summary.json` |
 | [runs.csv](runs.csv) | Machine, builds, dates, timing, methods and source paths | Original run summaries and Core handoff |
@@ -35,7 +35,7 @@ The [Core handoff](../v2/HANDOFF-core.md#review-3) records the full methods, bef
 
 [Final UI cycles](final-ui-cycles.csv) verify twenty real open/window-close/park cycles with `measure.ps1` (Core 767c3b1); private memory is explicitly MiB in that CSV. The five-second pre-cycle sample is a lifecycle sanity check, not the idle chart source.
 
-[Final idle counters](final-idle.csv) are recorded separately from the raw idle samples; the idle chart now uses this final Core run.
+[Final idle counters](final-idle.csv) are recorded separately from the raw idle samples; the idle chart now uses the v2.0.0 release package (commit 094877a, measured 2026-11-17).
 
 The Final round supersedes Review 3's gamma limitation and warm-start deferral. The native GDI probe found that generic desktop contexts fail while named display contexts work on both monitors. The fixed path reads and writes named outputs and journals their individual originals. [Gamma contexts](final-gamma-contexts.csv) compare STA/MTA readback; [color readbacks](final-color-readback.csv) record global, slider preview, release, disconnect, crash recovery and exit. Full original snapshots matched exactly after restoration, including both RGB ramps and all ADL channels. All final tests use temporary data roots; none uses the real app-data directory or its former placement exception.
 

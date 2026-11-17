@@ -36,7 +36,7 @@ The controls shown depend on the selected kind. Every shape is drawn symmetric a
 
 ### Preview
 
-Zoom at Fit, 1×, 2× or 4× (a zoom larger than the preview opens centered on the crosshair) and choose dark, mid, light, checkerboard or a custom background. Background and zoom are preview aids; they do not change the in-game background or crosshair size. Preview uses the same renderer as the overlay.
+Zoom at Fit, 1×, 2× or 4× (one crosshair pixel is exactly 1, 2 or 4 screen pixels at any window size and screen scale; a zoom larger than the preview opens centered on the crosshair) and choose dark, mid, light, checkerboard or a custom background. Background and zoom are preview aids; they do not change the in-game background or crosshair size. Preview uses the same renderer as the overlay.
 
 **Live in game** sends the current editable design to the overlay, temporarily overriding global visibility. It does not save the design. Turning it off, disconnecting settings or leaving it without an update for ten minutes ends the temporary preview. Use Save to retain edits.
 
@@ -44,7 +44,7 @@ PNG import accepts a PNG file up to 2 MiB and 512 pixels on either side. It is c
 
 ## Library and sharing
 
-**My crosshairs** contains saved designs; **Presets** is a gallery of 30 bundled designs. Search by name and use tag filters to narrow the lists. Click a preset to **Use** it: accept or change the suggested name and press Enter to save and activate your copy; Esc cancels. The bundled original stays unchanged. If a copy of that preset already exists, you can reuse it.
+Card thumbnails show each crosshair at its real in-game size, pixel for pixel (very large designs are reduced to fit). **My crosshairs** contains saved designs; **Presets** is a gallery of 30 bundled designs. Search by name and use tag filters to narrow the lists. Click a preset to **Use** it: accept or change the suggested name and press Enter to save and activate your copy; Esc cancels. The bundled original stays unchanged. If a copy of that preset already exists, you can reuse it.
 
 Click a saved crosshair to use it in the current context; cards show **In use · game name** and **Default** assignments. **Set as default for all apps** deliberately changes the default even while a game is active. The pencil, Edit in the menu, or a double-click opens that crosshair in Studio (asking first if Studio has unsaved changes). The saved-card menu offers Use, Set as default for all apps, Edit, Duplicate, Favorite, Export and Delete. A crosshair used as the default or assigned to a game cannot be deleted until its assignments are changed.
 

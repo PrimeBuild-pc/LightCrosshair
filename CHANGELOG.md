@@ -38,6 +38,7 @@
 - Draw the frametime graph as a continuous line: present events are flushed every 50 ms instead of arriving in one-second batches.
 - Draw every crosshair shape exactly symmetric (even-width arms were one pixel closer on the right/bottom; small dots, rings and antialiased edges were lopsided). Smooth edges now rounds arm ends and outline corners.
 - The Library pencil opens that crosshair in Studio; color swatches are high-contrast crosshair colors; the zoomed Studio preview opens centered.
+- Show the Studio preview and Library thumbnails pixel for pixel at any window size and screen scale; the settings window always opens normal-size.
 - Confirmations and errors use the in-app dialog (keyboard accessible, localized); no Windows message boxes remain.
 - Apply and recover AMD gamma through named display contexts, preserving each monitor's original ramp alongside ADL values. Report driver failures inline and keep the recovery journal until restoration succeeds.
 

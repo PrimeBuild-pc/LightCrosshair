@@ -4,6 +4,8 @@
 
 LightCrosshair is a crosshair overlay for Windows with a layered editor, a local library and executable-based game profiles. Build and preview your design in the settings app; the separate, click-through Core keeps the overlay running when you close it. Crosshairs, profiles and sharing stay local.
 
+It is built to stay out of the way: with settings closed, the resident process uses about 15 MB of memory, no measurable CPU and redraws nothing while the crosshair is static. See [Performance](#performance).
+
 ## Download
 
 Requires [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for your package's architecture. Use Windows 11 or a [Windows edition supported by .NET 10](https://learn.microsoft.com/en-us/dotnet/core/install/windows#supported-versions).
@@ -12,9 +14,9 @@ Choose the 2.0 release on the [releases page](https://github.com/PrimeBuild-pc/L
 
 | Package | File | SHA256 |
 |---|---|---|
-| Installer, x64 | `LightCrosshair-Setup-2.0.0.exe` | TBD |
-| Portable ZIP, x64 | `LightCrosshair-v2.0.0-win-x64.zip` | TBD |
-| Portable ZIP, ARM64 | `LightCrosshair-v2.0.0-win-arm64.zip` | TBD |
+| Installer, x64 | `LightCrosshair-Setup-2.0.0.exe` | `C487EDA25CF54B360490EC160EEF87978B70050DCCED4F9CA5A6B95A39BBB215` |
+| Portable ZIP, x64 | `LightCrosshair-v2.0.0-win-x64.zip` | `38AAEDC0D9D118190D1344DD1D0FAD3D2A77EB57F02B9BCD0BF156332B3D1156` |
+| Portable ZIP, ARM64 | `LightCrosshair-v2.0.0-win-arm64.zip` | `A2E0DB6CCD4D7EDA12F46D131CE7D32CC07A20EC6B45C3B9E7F114320CBCAE35` |
 
 For a ZIP, extract the whole folder and keep `LightCrosshair.exe` and `LightCrosshair.UI.exe` together. Start `LightCrosshair.exe`; open settings from the tray or with Alt+L. Closing the settings window with × leaves the Core running and parks the settings process for up to five minutes for quick reopening; Settings → Behavior → **When I close the window** can make × exit everything instead. Use **Exit LightCrosshair** to stop both processes and restore display colors.
 
@@ -40,7 +42,7 @@ The [Chocolatey package page](https://community.chocolatey.org/packages/lightcro
 ## Features
 
 - Up to eight editable layers: arms, dots, rings, boxes, corner brackets and PNG images, with position, rotation, opacity and outlines. Rings and boxes can have a separate fill.
-- Shared rendering for the editor and overlay, live in-game preview, undo/redo and pixel-based geometry.
+- One renderer for the overlay, the editor preview and the Library thumbnails: every shape is drawn symmetric around its center, and the preview and thumbnails show the in-game pixels exactly at any window size and screen scale. Smooth edges rounds arm ends and outline corners. Live in-game preview and undo/redo.
 - A local gallery with 30 original presets: choose one, name the saved copy and use it immediately. Saved crosshairs support favorites, search and tag filters. Use applies to the active game; the card menu can explicitly set the all-apps default.
 - Next/previous cycling uses favorites when at least two exist, otherwise all saved crosshairs, and saves the choice for the active game or as the default.
 - `LC2:` share codes for vector designs and `.lcx.json` import/export with embedded images.
@@ -59,6 +61,21 @@ Frame Cap Assistant, Detailed FPS mode, the old diagnostic graphs and pacing ana
 
 ## Performance
 
+LightCrosshair 2.0 runs as two processes: a small resident Core that draws the overlay, and a settings app that only runs while you use it.
+
+| v2.0.0 release package, Ryzen 7 5800X3D, Windows 11 | Result |
+|---|---|
+| Resident Core, private memory at idle | **15.4 MB** (1.9: 21.1 MB) |
+| Resident Core, CPU at idle (60 × 1 s samples) | **0.00 %** of one core, below sampling resolution (1.9: 0.57 %) |
+| Overlay redraws while the crosshair is static | **0** per second |
+| Repeating timers with the FPS overlay off | **0** |
+| Settings window closed (parked, then exits after 5 minutes) | about **5 MB** working set |
+| Reopening the parked settings window | **16–29 ms** to the first frame |
+| Settings window cold start | about **0.5 s** |
+| Rendering a heavy four-layer crosshair | **3.5 ms** median |
+| FPS overlay | runs only while enabled; the frametime graph redraws at most 20 times per second |
+| Download | **6.1 MB** ZIP or installer |
+
 ![Idle private memory and CPU comparison between 1.9 and 2.0](docs/perf/idle-v19-vs-v20.svg)
 
 Idle values are means of 60 one-second samples after a 10-second warmup, with a static crosshair, FPS off and settings closed, on the machine and Release builds shown in the chart.
@@ -69,7 +86,7 @@ The historical Library soak opens and closes the real UI 50 times, scrolls throu
 
 The final [cold/parked UI test](docs/perf/final-ui-open.csv) records one cold launch and 20 reopens during a hardware DX12 borderless probe; warm first frames range from 16.0 to 28.9 ms on this machine.
 
-Charts use decimal MB and CPU as a percentage of one logical core; a sampled zero is below measurement resolution. The shaded growth target applies after five sessions. These are recorded pre-release measurements; [CSV data, build identities and methods](docs/perf/README.md) include the separate [20-session UI open/close run](docs/perf/ui-cycles.csv).
+Charts and the table use decimal MB and CPU as a percentage of one logical core; a sampled zero is below measurement resolution. The shaded growth target applies after five sessions. The idle chart and the first four rows of the table come from the v2.0.0 release package; the other rows come from the final test rounds. [CSV data, build identities and methods](docs/perf/README.md) include the separate [20-session UI open/close run](docs/perf/ui-cycles.csv).
 
 ## Default hotkeys
 
@@ -97,6 +114,14 @@ Cycling follows Library order and saves the selection into the active configured
 [Settings guide](docs/SETTINGS.md) · [Changelog](CHANGELOG.md) · [Performance data](docs/perf/README.md) · [Third-party notices](docs/THIRD_PARTY_NOTICES.md)
 
 To build, install the .NET 10 SDK and run `dotnet build -c Release`, `dotnet test -c Release`, then `pwsh scripts/build-release.ps1` for both architectures.
+
+## Support
+
+If LightCrosshair is useful to you, consider supporting the project.
+
+[![Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?style=plastic&logo=ko-fi&logoColor=white)](https://ko-fi.com/primebuild) [![PayPal](https://img.shields.io/badge/Support-PayPal-0070BA?style=plastic&logo=paypal&logoColor=white)](https://paypal.me/PrimeBuildOfficial?country.x=IT&locale.x=it_IT)
+[![Report Bug](https://img.shields.io/badge/Report-Bug-red?logo=github)](../../issues)
+[![Request Feature](https://img.shields.io/badge/Request-Feature-blue?logo=github)](../../issues)
 
 ## License
 
