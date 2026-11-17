@@ -90,6 +90,8 @@ Status for 2.0.0: not yet run. The Hyper-V test VM rejected the stored credentia
 
 ## Partner Center submission
 
+Product: **LightCrosshair**, Store ID `9MZ2872MWBJL` (<https://apps.microsoft.com/detail/9MZ2872MWBJL>). The manifest already carries its identity: `LorenzoMassafra.LightCrosshair`, publisher `CN=ACD03D0F-7A52-4C93-ADF8-A07702180E72`, display name `Prime Build`.
+
 1. **Account.** Sign in at <https://partner.microsoft.com/dashboard> with the developer account (individual is enough).
 2. **Reserve the name.** Apps and games > New product > MSIX or PWA app > name `LightCrosshair`.
 3. **Fill the identity.** Product management > Product identity. Copy the three values into the marked block at the top of `packaging/msix/Package.appxmanifest`:
