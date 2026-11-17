@@ -15,12 +15,65 @@ internal static class CoreStrings
     }
 }
 
+/// <summary>Start with Windows: a Run key for the ZIP/installer build, the manifest StartupTask when packaged (MSIX).</summary>
 internal static class StartupRegistration
 {
-    public static void Apply(bool enabled)
+    internal const string TaskId = "LightCrosshairStartup";
+
+    /// <summary>Applies the request and returns whether Windows will start the app at sign-in.</summary>
+    public static async Task<bool> ApplyAsync(bool enabled)
     {
-        using var run = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
-        if (enabled) run.SetValue("LightCrosshair", $"\"{Environment.ProcessPath}\"");
-        else run.DeleteValue("LightCrosshair", false);
+        if (!AppPackage.IsPackaged)
+        {
+            using var run = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
+            if (enabled) run.SetValue("LightCrosshair", $"\"{Environment.ProcessPath}\"");
+            else run.DeleteValue("LightCrosshair", false);
+            return enabled;
+        }
+#if STORE
+        // Packaged HKCU writes are virtualized, so a Run key would never be seen by Windows.
+        var task = await Windows.ApplicationModel.StartupTask.GetAsync(TaskId);
+        if (enabled) await task.RequestEnableAsync();
+        else if (task.State == Windows.ApplicationModel.StartupTaskState.Enabled) task.Disable();
+        return IsOn((int)task.State);
+#else
+        await Task.CompletedTask;
+        Program.WriteLog("Packaged without the Store build: start with Windows is unavailable.");
+        return false;
+#endif
     }
+
+    /// <summary>The real StartupTask state when packaged (the user can change it in Task Manager); null otherwise.</summary>
+    public static async Task<bool?> PackagedStateAsync()
+    {
+        if (!AppPackage.IsPackaged) return null;
+#if STORE
+        var task = await Windows.ApplicationModel.StartupTask.GetAsync(TaskId);
+        return IsOn((int)task.State);
+#else
+        await Task.CompletedTask;
+        return false;
+#endif
+    }
+
+    /// <summary>StartupTaskState: Disabled 0, DisabledByUser 1, Enabled 2, DisabledByPolicy 3, EnabledByPolicy 4.</summary>
+    internal static bool IsOn(int state) => state is 2 or 4;
+
+    /// <summary>True when the stored switch must change to match Windows.</summary>
+    internal static bool NeedsSync(bool stored, bool? actual) => actual is bool on && on != stored;
+}
+
+internal static class AppPackage
+{
+    internal static readonly bool IsPackaged = Detect();
+
+    private static bool Detect()
+    {
+        int length = 0;
+        return GetCurrentPackageFullName(ref length, null) != AppModelErrorNoPackage;
+    }
+
+    private const int AppModelErrorNoPackage = 15700;
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int GetCurrentPackageFullName(ref int length, char[]? name);
 }

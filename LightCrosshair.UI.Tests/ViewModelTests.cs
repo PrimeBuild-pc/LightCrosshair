@@ -190,6 +190,26 @@ public class ViewModelTests
     }
 
     [Fact]
+    public async Task PackagedBuildHidesTheGitHubUpdateCheck()
+    {
+        var core = await ConnectedAsync();
+        var feed = new StubFeed { Tag = "9.0.0" };
+        var ui = new FakeUi();
+        var store = new SettingsViewModel(core, ui, feed, TimeSpan.Zero, packaged: true);
+        store.Apply(core.Snapshot!);
+        Assert.True(store.IsPackaged);
+        Assert.False(store.ShowUpdates);
+        await store.CheckUpdatesCommand.ExecuteAsync(null);
+        Assert.Equal("", store.UpdateMessage);
+        Assert.Empty(ui.OpenedUrls);
+
+        var zip = new SettingsViewModel(core, ui, feed, TimeSpan.Zero, packaged: false);
+        Assert.True(zip.ShowUpdates);
+        // The test host itself has no package identity.
+        Assert.False(AppPackage.IsPackaged);
+    }
+
+    [Fact]
     public async Task SettingsApplyLanguageAndUpdateMessages()
     {
         var core = await ConnectedAsync();
