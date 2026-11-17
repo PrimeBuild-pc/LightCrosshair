@@ -43,14 +43,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
 
-  <!-- MSIX/Store build (scripts/build-msix.ps1 passes -p:StoreBuild=true): the Windows SDK projection is
-       needed only for the packaged StartupTask, so the ZIP/installer build keeps the plain TFM and its size. -->
-  <PropertyGroup Condition="'$(StoreBuild)'=='true'">
-    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
-    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
-    <DefineConstants>$(DefineConstants);STORE</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <Content Include="assets\icon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
