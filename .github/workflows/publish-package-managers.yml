@@ -163,8 +163,11 @@ jobs:
           if ([version]$env:PACKAGE_VERSION -ge [version]'2.0.0') {
             $manifestDir = Join-Path $env:RUNNER_TEMP 'winget-v2'
             ./scripts/prepare-winget.ps1 -Version $env:PACKAGE_VERSION -InstallerUrl $env:INSTALLER_URL -Sha256 $env:INSTALLER_SHA256 -ReleaseDate $env:RELEASE_DATE -OutputDirectory $manifestDir
-            winget validate --manifest $manifestDir
-            if ($LASTEXITCODE -ne 0) { throw 'WinGet v2 manifest validation failed.' }
+            # GitHub's Windows runners have no winget CLI; wingetcreate submit validates the manifests itself.
+            if (Get-Command winget -ErrorAction SilentlyContinue) {
+              winget validate --manifest $manifestDir
+              if ($LASTEXITCODE -ne 0) { throw 'WinGet v2 manifest validation failed.' }
+            }
             & $wingetCreate submit $manifestDir --token $env:WINGET_TOKEN --prtitle "Update PrimeBuild.LightCrosshair to $env:PACKAGE_VERSION" --no-open
           } else {
           & $wingetCreate update PrimeBuild.LightCrosshair `
