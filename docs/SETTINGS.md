@@ -23,20 +23,20 @@ The layer list supports adding, selecting, hiding, duplicating, deleting and reo
 | Thickness | Stroke width for Arms, Ring and Box, 1–64 px |
 | Gap | Empty center for Arms; open sections of a Box create corner brackets, 0–128 px |
 | Arms | Enable Top, Right, Bottom and Left independently; rotation can produce an X |
-| Color | Vector fill/stroke color in hexadecimal RGB; images retain their PNG colors |
+| Color | Vector fill/stroke color in hexadecimal RGB; images retain their PNG colors. The 12 swatches are high-contrast crosshair colors (neon green, neon yellow, cyan, fuchsia, red, electric blue, chartreuse, hot pink, neon orange, electric purple, white, black) |
 | Fill | Optional independent interior color for Ring and Box |
 | Opacity | Whole layer opacity, 0–100%, including its outline and fill |
 | Offset X / Y | Layer position relative to the crosshair center; editor range −128 to +128 px |
 | Rotation | Layer rotation; editor range −180° to +180° |
 | Outline | Enable an outline, choose its color and thickness, 1–8 px |
 | Image scale / Import image | Scale a PNG from 0.1× to 4×, or choose its source image |
-| Anti-alias | Smooth edges for the whole design; disable for crisp integer-pixel geometry |
+| Smooth edges | Rounds and antialiases arm ends and outline corners, and antialiases rings, dots and rotated shapes. Off: crisp, square integer-pixel geometry |
 
-The controls shown depend on the selected kind. An odd-width stroke centers on the center pixel; an even-width stroke uses its extra pixel down/right. Imported designs are validated by Core; the table describes the editor's controls.
+The controls shown depend on the selected kind. Every shape is drawn symmetric around its center: an odd width or size centers on the center pixel, an even one on the corner between the four center pixels, and arms keep the same gap on every side. Imported designs are validated by Core; the table describes the editor's controls.
 
 ### Preview
 
-Zoom at 1×, 2× or 4× and choose dark, mid, light, checkerboard or a custom background. Background and zoom are preview aids; they do not change the in-game background or crosshair size. Preview uses the same renderer as the overlay.
+Zoom at Fit, 1×, 2× or 4× (a zoom larger than the preview opens centered on the crosshair) and choose dark, mid, light, checkerboard or a custom background. Background and zoom are preview aids; they do not change the in-game background or crosshair size. Preview uses the same renderer as the overlay.
 
 **Live in game** sends the current editable design to the overlay, temporarily overriding global visibility. It does not save the design. Turning it off, disconnecting settings or leaving it without an update for ten minutes ends the temporary preview. Use Save to retain edits.
 
@@ -46,7 +46,7 @@ PNG import accepts a PNG file up to 2 MiB and 512 pixels on either side. It is c
 
 **My crosshairs** contains saved designs; **Presets** is a gallery of 30 bundled designs. Search by name and use tag filters to narrow the lists. Click a preset to **Use** it: accept or change the suggested name and press Enter to save and activate your copy; Esc cancels. The bundled original stays unchanged. If a copy of that preset already exists, you can reuse it.
 
-Click a saved crosshair to use it in the current context; cards show **In use · game name** and **Default** assignments. **Set as default for all apps** deliberately changes the default even while a game is active. Choose Edit, or double-click, to open Studio. The saved-card menu offers Use, Set as default for all apps, Edit, Duplicate, Favorite, Export and Delete. A crosshair used as the default or assigned to a game cannot be deleted until its assignments are changed.
+Click a saved crosshair to use it in the current context; cards show **In use · game name** and **Default** assignments. **Set as default for all apps** deliberately changes the default even while a game is active. The pencil, Edit in the menu, or a double-click opens that crosshair in Studio (asking first if Studio has unsaved changes). The saved-card menu offers Use, Set as default for all apps, Edit, Duplicate, Favorite, Export and Delete. A crosshair used as the default or assigned to a game cannot be deleted until its assignments are changed.
 
 Next/previous hotkeys cycle favorites only when at least two exist. With zero or one favorite, they cycle all saved crosshairs. The order matches Library (most recently updated first); gallery presets are included only after a copy is saved. Cycling persists into the active enabled game profile or, outside a configured game, the default. Leaving a game restores the default selection without losing that game's saved choice.
 
@@ -136,7 +136,7 @@ Open **FPS overlay** in the sidebar (between Hotkeys and Settings). Use **Show F
 | Offset X / Y | Position from that monitor's top-left corner; editor range 0–2000 px |
 | Scale | Text/overlay scale, 0.5×–3× |
 | Frametime / 1% low | Show or hide the additional values |
-| Frametime graph | Off by default. Show about two seconds of peak frametimes under the numbers, at at most 20 redraws/s. With the graph off, unchanged numbers cause no redraw; with the overlay off, capture and its timer stop. |
+| Frametime graph | Off by default. Show about two seconds of peak frametimes under the numbers as a continuous scrolling line, drawn 0.2 s behind real time, at most 20 redraws/s. With the graph off, unchanged numbers cause no redraw; with the overlay off, capture and its timer stop. |
 | Text color / Background color | Hexadecimal RGB colors |
 | Use a different color for the graph | Off: the graph uses the text color. On: choose a graph color |
 | Background opacity | Background transparency, 0–100% |

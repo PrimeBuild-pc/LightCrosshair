@@ -35,6 +35,9 @@
 - Each binding is one control: a capture field with a ▾ menu of mouse buttons, on every hotkey row and in Games. Game overrides are Use global / Off in this game / Custom and save immediately.
 - Read mouse bindings from raw input instead of a low-level mouse hook, and let a hold match while extra modifiers are held (sprint/crouch while aiming).
 - Switch display colors in place: slider previews no longer flash the previous colors, the released value stays, saved colors apply immediately while the game runs, and colors are re-applied on every foreground change.
+- Draw the frametime graph as a continuous line: present events are flushed every 50 ms instead of arriving in one-second batches.
+- Draw every crosshair shape exactly symmetric (even-width arms were one pixel closer on the right/bottom; small dots, rings and antialiased edges were lopsided). Smooth edges now rounds arm ends and outline corners.
+- The Library pencil opens that crosshair in Studio; color swatches are high-contrast crosshair colors; the zoomed Studio preview opens centered.
 - Confirmations and errors use the in-app dialog (keyboard accessible, localized); no Windows message boxes remain.
 - Apply and recover AMD gamma through named display contexts, preserving each monitor's original ramp alongside ADL values. Report driver failures inline and keep the recovery journal until restoration succeeds.
 

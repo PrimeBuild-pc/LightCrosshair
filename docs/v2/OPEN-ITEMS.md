@@ -58,6 +58,17 @@ Everything else in [TODO.md](TODO.md) and [RELEASE-CHECKLIST.md](RELEASE-CHECKLI
 - Expected: smooth live preview while dragging (no flicker), the released value stays applied, and saving applies it immediately in the current context (game in foreground or global), without restarting the game.
 - Likely areas: `previewDisplayColors` ending/restoring between throttled updates, the recovery journal capture racing with the preview, apply only on foreground change. Compare with how 1.9 applied changes from the settings window.
 
+## Second in-game test (2026-11-17)
+
+Lorenzo confirmed: hide while aiming on right mouse, display colors (vibrance and others), FPS overlay and monitor change work. New items, all fixed:
+
+- **Frametime graph drawn in chunks.** Cause: the ETW real-time session delivered present events about once a second. Fix: flush every 50 ms while capturing; draw 200 ms behind real time. `scripts/perf/fps-graph-freshness-smoke.ps1` on a DX12 window: newest sample up to 1999 ms old without the flush, at most 177 ms (average 116 ms) with it. Lorenzo: check the line looks continuous.
+- **Library pencil did nothing.** It loaded the design into Studio but stayed on Library. Now pencil, menu Edit and double-click open Studio on that crosshair (asking first about unsaved Studio edits). Verified in the published UI (pencil → Studio with that design) and a UI test.
+- **High-contrast default colors.** The 12 swatches are now neon green, neon yellow, cyan, fuchsia, red, electric blue, chartreuse, hot pink, neon orange, electric purple, white and black (presets already used pure colors).
+- **Crosshairs not perfectly centered.** Causes: even-width arms started one pixel closer on the right/bottom, and GDI+ rasterized small curves and antialiased edges unevenly. Fix: symmetric arm placement and an own signed-distance rasterizer for upright shapes (GDI+ kept for images and free rotations). A test mirrors every shape for widths 1–6, gaps 0–7, four sizes, crisp and smooth; render time 3.5 ms median for a heavy four-layer design.
+- **Smooth edges did nothing on crosses.** Now (Lorenzo's choice) it rounds and antialiases arm ends and outline corners; rings, dots and rotations stay antialiased; off = crisp square pixels.
+- Also: the 4× Studio preview opened at its top-left corner; it now opens centered on the crosshair.
+
 ## After the fixes
 
 Build for the retest: `releases/LightCrosshair-v2.0.0-win-x64/LightCrosshair.exe` and `setup/Output/LightCrosshair-Setup-2.0.0.exe` (2026-11-17). Not checked here: Fortnite/EAC itself, NVIDIA hardware, HDR.
