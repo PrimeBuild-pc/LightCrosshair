@@ -216,6 +216,7 @@
   <data name="Settings_OnlyGames" xml:space="preserve"><value>仅在已配置的游戏中显示</value></data>
   <data name="Settings_HideRecording" xml:space="preserve"><value>录屏时隐藏</value></data>
   <data name="Settings_StartWindows" xml:space="preserve"><value>开机启动</value></data>
+  <data name="Settings_StartupStoreHelp" xml:space="preserve"><value>如果 Windows 未启动 LightCrosshair，请在“任务管理器 > 启动应用”中启用它。</value></data>
   <data name="Settings_Suggestions" xml:space="preserve"><value>为已知游戏建议配置</value></data>
   <data name="Settings_Fps" xml:space="preserve"><value>FPS 叠加</value></data>
   <data name="Settings_FpsOn" xml:space="preserve"><value>显示 FPS 叠加</value></data>
