@@ -987,7 +987,14 @@ namespace LightCrosshair
                 // A neutral gamma must preserve the existing calibration and needs
                 // no Win32 gamma support. Some modern AMD outputs expose ADL color
                 // controls but reject gamma ramps entirely.
-                if (adjustment.Gamma == 100) { error = null; return true; }
+                if (adjustment.Gamma == 100)
+                {
+                    // A live change from another gamma back to neutral puts the captured ramp back.
+                    if (_win32FallbackPathTouched && !Fallback.TryRestore(out string? neutralError))
+                    { error = $"AMD driver path OK, but the neutral gamma ramp could not be restored: {neutralError}"; return false; }
+                    _win32FallbackPathTouched = false;
+                    error = null; return true;
+                }
                 // ADL natively lacks Gamma handling via this API; it only sets brightness/contrast/saturation.
                 // We MUST delegate the Gamma curve to the Win32 fall-back to actually apply the Gamma value.
                 // We pass standard neutral values (100, 100, 50) so we don't multiply the already applied ADL values.

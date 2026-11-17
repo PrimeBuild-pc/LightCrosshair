@@ -45,6 +45,7 @@ namespace Core
         private readonly object _gate = new();
         private IGpuColorManager? _manager;
         private ColorRecoverySnapshot? _original;
+        private DisplayColorSettings? _applied;
         private string? _lastFailure;
         private sealed class BackendFailure(string code, string message) : Exception(message) { internal string Code { get; } = code; }
         private readonly Func<IGpuColorManager> _create = create ?? GpuColorManagerFactory.CreateDefault;
@@ -71,8 +72,13 @@ namespace Core
             bool restoring = colors is null;
             try
             {
-                if (File.Exists(Marker))
+                // A live session writes new values straight over its kept baseline. Restoring the
+                // original first made every preview step flash the old colors.
+                bool live = colors is not null && _manager is not null && _original is not null && _applied is not null &&
+                    _applied.NvidiaDigitalVibrance.HasValue == colors.NvidiaDigitalVibrance.HasValue && File.Exists(Marker);
+                if (!live && File.Exists(Marker))
                 {
+                    _applied = null;
                     restoring = true;
                     _manager ??= _create();
                     _original ??= JsonSerializer.Deserialize<ColorRecoverySnapshot>(File.ReadAllText(Marker), ContractJson.Options) ?? throw new InvalidDataException();
@@ -91,43 +97,49 @@ namespace Core
                     return;
                 }
                 restoring = false;
-                _manager?.Dispose();
-                _manager = _create();
-                if (!_manager.TryCaptureOriginalState(out string? captureError)) throw new BackendFailure("unsupported", $"{_manager.BackendName}: Color baseline unavailable: {captureError ?? "driver returned no details"}");
-                _original = _manager.CaptureRecovery(); _original.Vendor = _manager.Vendor.ToString();
-                if (colors.NvidiaDigitalVibrance.HasValue)
-                {
-                    var baseline = _helper(new() { Operation = NvidiaHelperOperations.GetVibrance });
-                    if (!baseline.Success || baseline.VibranceState is null) throw new BackendFailure("unsupported", "NVIDIA vibrance baseline unavailable");
-                    _original.NvidiaVibranceState = baseline.VibranceState;
-                }
-                Directory.CreateDirectory(directory);
                 string temp = Marker + ".tmp";
-                using (var output = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
-                { JsonSerializer.Serialize(output, _original, ContractJson.Options); output.Flush(true); }
-                File.Move(temp, Marker, true);
+                if (!live)
+                {
+                    _manager?.Dispose();
+                    _manager = _create();
+                    if (!_manager.TryCaptureOriginalState(out string? captureError)) throw new BackendFailure("unsupported", $"{_manager.BackendName}: Color baseline unavailable: {captureError ?? "driver returned no details"}");
+                    _original = _manager.CaptureRecovery(); _original.Vendor = _manager.Vendor.ToString();
+                    if (colors.NvidiaDigitalVibrance.HasValue)
+                    {
+                        var baseline = _helper(new() { Operation = NvidiaHelperOperations.GetVibrance });
+                        if (!baseline.Success || baseline.VibranceState is null) throw new BackendFailure("unsupported", "NVIDIA vibrance baseline unavailable");
+                        _original.NvidiaVibranceState = baseline.VibranceState;
+                    }
+                    Directory.CreateDirectory(directory);
+                    using (var output = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
+                    { JsonSerializer.Serialize(output, _original, ContractJson.Options); output.Flush(true); }
+                    File.Move(temp, Marker, true);
+                }
+                var manager = _manager!;
                 ColorWriteGuard.BeforeWrite = () =>
                 {
                     // Some legacy backends capture extra endpoints lazily. Refresh the journal
                     // immediately before each hardware write, including those extra baselines.
-                    var updated = _manager.CaptureRecovery();
-                    updated.Vendor = _original.Vendor; updated.NvidiaVibrance = _original.NvidiaVibrance; updated.NvidiaVibranceState = _original.NvidiaVibranceState;
+                    var updated = manager.CaptureRecovery();
+                    updated.Vendor = _original!.Vendor; updated.NvidiaVibrance = _original.NvidiaVibrance; updated.NvidiaVibranceState = _original.NvidiaVibranceState;
                     using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
                     { JsonSerializer.Serialize(stream, updated, ContractJson.Options); stream.Flush(true); }
                     File.Move(temp, Marker, true); _original = updated;
                 };
                 try
                 {
-                    if (!_manager.TryApply(new(colors.Gamma, colors.Contrast, colors.Brightness, colors.Vibrance), out string? applyError))
-                        throw new BackendFailure("unsupported", $"{_manager.BackendName}: Color apply failed: {applyError ?? "driver refused the request without details"}");
+                    if (!manager.TryApply(new(colors.Gamma, colors.Contrast, colors.Brightness, colors.Vibrance), out string? applyError))
+                        throw new BackendFailure("unsupported", $"{manager.BackendName}: Color apply failed: {applyError ?? "driver refused the request without details"}");
                     if (colors.NvidiaDigitalVibrance.HasValue && !_helper(NvidiaHelperRequest.SetVibrance(colors.NvidiaDigitalVibrance.Value)).Success)
                         throw new BackendFailure("unsupported", "NVIDIA vibrance apply failed");
                 }
                 finally { ColorWriteGuard.BeforeWrite = null; }
+                _applied = colors;
                 _lastFailure = null; Notify(revision, null);
             }
             catch (Exception ex)
             {
+                _applied = null;
                 string code = restoring ? "restore_failed" : ex is BackendFailure backend ? backend.Code : "apply_failed";
                 string signature = code + ":" + ex.Message;
                 if (_lastFailure != signature) { Program.LogError(ex, "Display color transaction (" + code + ")", directory); _lastFailure = signature; }

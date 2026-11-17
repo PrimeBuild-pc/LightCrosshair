@@ -7,6 +7,24 @@ internal static class GammaReadback
  [DllImport("gdi32.dll",CharSet=CharSet.Unicode)] static extern nint CreateDC(string driver,string? device,string? output,nint init);
  [DllImport("gdi32.dll")] static extern bool DeleteDC(nint dc);
  [DllImport("gdi32.dll",SetLastError=true)] static extern bool GetDeviceGammaRamp(nint dc,[Out] ushort[] ramp);
+ // Samples Red[128] of each named display as fast as GDI allows, to catch a ramp briefly returning to its original value.
+ public static void Watch(double seconds, string output, string[] displays)
+ {
+  var lines=new List<string>{"Ms,"+string.Join(",",displays)};
+  var dcs=displays.Select(d=>CreateDC("DISPLAY",d,null,0)).ToArray();
+  var ramp=new ushort[768]; var watch=System.Diagnostics.Stopwatch.StartNew();
+  try
+  {
+   while(watch.Elapsed.TotalSeconds<seconds)
+   {
+    var row=new List<string>{watch.Elapsed.TotalMilliseconds.ToString("F1",System.Globalization.CultureInfo.InvariantCulture)};
+    foreach(var dc in dcs) row.Add(GetDeviceGammaRamp(dc,ramp)?ramp[128].ToString():"-1");
+    lines.Add(string.Join(",",row)); Thread.Sleep(1);
+   }
+  }
+  finally { foreach(var dc in dcs) DeleteDC(dc); }
+  File.WriteAllLines(output,lines);
+ }
  public static void Read(string output)
  {
   var rows=new List<object>();

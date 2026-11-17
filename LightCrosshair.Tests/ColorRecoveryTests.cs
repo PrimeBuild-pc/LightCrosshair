@@ -84,6 +84,7 @@ public sealed class ColorRecoveryTests : IDisposable
     {
         var fake = new FakeColors(); var session = new ColorSession(_directory, () => fake);
         await session.SetAsync(new()); fake.RestoreSucceeds = false;
+        await session.SetAsync(null);
         await session.SetAsync(new() { Gamma = 140 });
         Assert.Equal(1, fake.Applies); Assert.True(File.Exists(Path.Combine(_directory, "colors-applied.json")));
         fake.RestoreSucceeds = true; await session.SetAsync(null);
@@ -121,6 +122,36 @@ public sealed class ColorRecoveryTests : IDisposable
         Assert.Equal(1, fake.Applies); Assert.Equal(1, fake.Restores);
         Assert.False(File.Exists(Path.Combine(_directory, "colors-applied.json")));
     }
+    [Fact]
+    public async Task LiveChangesWriteOverTheKeptBaselineWithoutRestoringBetweenValues()
+    {
+        string marker = Path.Combine(_directory, "colors-applied.json");
+        var fake = new FakeColors(); int created = 0;
+        var session = new ColorSession(_directory, () => { created++; return fake; });
+        foreach (int gamma in new[] { 110, 120, 130, 120 }) await session.SetAsync(new() { Gamma = gamma });
+        Assert.Equal(4, fake.Applies); Assert.Equal(0, fake.Restores); Assert.Equal(1, created);
+        Assert.Equal(130 - 10, fake.Last?.Gamma);
+        Assert.True(File.Exists(marker));
+        await session.SetAsync(null);
+        Assert.Equal(1, fake.Restores); Assert.False(File.Exists(marker));
+    }
+    [Fact]
+    public async Task DroppingNvidiaVibranceRestoresTheBaselineBeforeTheNextValues()
+    {
+        int vibranceRestores = 0;
+        NvidiaHelperResponse Helper(NvidiaHelperRequest request)
+        {
+            if (request.Operation == NvidiaHelperOperations.GetVibrance) return new() { Success = true, VibranceState = new("display", 512) };
+            if (request.Operation == NvidiaHelperOperations.RestoreVibrance) vibranceRestores++;
+            return new() { Success = true };
+        }
+        var fake = new FakeColors(); var session = new ColorSession(_directory, () => fake, Helper);
+        await session.SetAsync(new() { NvidiaDigitalVibrance = 70 });
+        await session.SetAsync(new() { NvidiaDigitalVibrance = 80 });
+        Assert.Equal(0, vibranceRestores);
+        await session.SetAsync(new() { Gamma = 110 });
+        Assert.Equal(1, vibranceRestores); Assert.Equal(1, fake.Restores);
+    }
     private sealed class FakeColors : IGpuColorManager
     {
         public string BackendName => "Fake"; public GpuVendor Vendor => GpuVendor.Unknown;
@@ -128,7 +159,8 @@ public sealed class ColorRecoveryTests : IDisposable
         public Action? BeforeApply; public bool RestoreSucceeds = true, ApplySucceeds = true; public string? ApplyError; public int Applies, Restores;
         public ColorRecoverySnapshot? Loaded;
         public bool TryCaptureOriginalState(out string? error) { error = null; return true; }
-        public bool TryApply(ColorAdjustment adjustment, out string? error) { ColorWriteGuard.BeforeWrite?.Invoke(); BeforeApply?.Invoke(); Applies++; error = ApplyError; return ApplySucceeds; }
+        public ColorAdjustment? Last;
+        public bool TryApply(ColorAdjustment adjustment, out string? error) { ColorWriteGuard.BeforeWrite?.Invoke(); BeforeApply?.Invoke(); Applies++; Last = adjustment; error = ApplyError; return ApplySucceeds; }
         public bool TryRestore(out string? error) { Restores++; error = RestoreSucceeds ? null : "ADL restore returned -3"; return RestoreSucceeds; }
         public ColorRecoverySnapshot CaptureRecovery() => new() { Global = new() { Red = new ushort[256], Green = new ushort[256], Blue = new ushort[256] } };
         public void LoadRecovery(ColorRecoverySnapshot snapshot) => Loaded = snapshot;

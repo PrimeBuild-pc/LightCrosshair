@@ -14,6 +14,7 @@ internal sealed partial class Form1
     private int _foregroundPid;
     private DisplayColorSettings? _colorPreview;
     private bool? _holdOverride;
+    private bool _reapplyColors;
     private readonly HashSet<string> _suggested = new();
     private bool _closing, _allowClose;
     internal event Action? RuntimeUpdated;
@@ -38,6 +39,8 @@ internal sealed partial class Form1
         if (process == "lightcrosshair.ui.exe") { RefreshOverlay(); RuntimeUpdated?.Invoke(); return; }
         if (process != _contextProcess) _holdOverride = null;
         _contextProcess = process; _foregroundPid = pid;
+        // Re-apply on every focus change: some games reset the ramp when they regain focus. A live session makes this flicker-free.
+        _reapplyColors = true;
         RefreshContext();
         if (process is not null && Document.Settings.SuggestKnownGames && KnownGames.Entries.TryGetValue(process, out string? name) &&
             !Document.GameProfiles.Any(g => g.ProcessName == process) && !Document.Settings.DismissedSuggestions.Contains(process) && _suggested.Add(process))
@@ -58,6 +61,8 @@ internal sealed partial class Form1
         var colors = _colorPreview ?? _context.DisplayColors;
         string colorsKey = (_context.Game?.Id ?? "") + ":" + System.Text.Json.JsonSerializer.Serialize(colors, ContractJson.Options);
         if (_colorsKey != colorsKey) { _colorsKey = colorsKey; Runtime.DisplayColorsError = null; _ = _colors.SetAsync(colors); }
+        else if (_reapplyColors && colors is not null) _ = _colors.SetAsync(colors);
+        _reapplyColors = false;
         _fps.Configure(_context.FpsEnabled, _foregroundPid, Document.Settings.FpsOverlay, Document.Settings.MonitorDeviceName, Document.Settings.Language);
         ConfigureInput(); ConfigureRecording(); UpdateTrayText();
         RefreshOverlay(); RuntimeUpdated?.Invoke();
