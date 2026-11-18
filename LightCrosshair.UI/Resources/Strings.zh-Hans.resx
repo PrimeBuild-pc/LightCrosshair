@@ -280,9 +280,9 @@
   <data name="Library_SetDefaultAll" xml:space="preserve"><value>设为所有应用的默认准星</value></data>
   <data name="Library_Default" xml:space="preserve"><value>默认</value></data>
   <data name="Library_InUseGame" xml:space="preserve"><value>使用中 · {0}</value></data>
-  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>按住时</value></data>
-  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>请选择可按住的按键或鼠标按钮。</value></data>
-  <data name="Games_HoldPolicy" xml:space="preserve"><value>此游戏中按住时</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>瞄准时隐藏</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>请选择用于瞄准的按键或鼠标按钮（不能是滚轮）。</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>在此游戏中瞄准时隐藏</value></data>
   <data name="Games_HoldOff" xml:space="preserve"><value>在此游戏中禁用</value></data>
   <data name="Games_HoldOwn" xml:space="preserve"><value>独立绑定</value></data>
   <data name="Nav_FpsOverlay" xml:space="preserve"><value>FPS叠加层</value></data>
@@ -302,4 +302,6 @@
   <data name="Settings_CloseExit" xml:space="preserve"><value>退出 LightCrosshair</value></data>
   <data name="Settings_CloseHelp" xml:space="preserve"><value>在托盘中时，准星和 FPS 叠加层仍显示在屏幕上。</value></data>
   <data name="Dialog_Close" xml:space="preserve"><value>关闭对话框</value></data>
+  <data name="Hotkeys_PressHide" xml:space="preserve"><value>按下隐藏 / 显示</value></data>
+  <data name="Hotkeys_AimHint" xml:space="preserve"><value>分配按钮前保持关闭，通常为鼠标右键。如果游戏使用切换式瞄准，请选择“按下隐藏 / 显示”。</value></data>
 </root>

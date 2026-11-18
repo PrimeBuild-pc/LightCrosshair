@@ -49,6 +49,8 @@ public static class HotkeyRules
         foreach (var (other, binding) in All(hotkeys, gameOverrides))
         {
             if (other == action) continue;
+            // A game's own show/hide shortcut replaces the global one in that game; they are never active together.
+            if (action == "ToggleVisibility" && other.StartsWith("GameProfile:", StringComparison.Ordinal)) continue;
             if (Same(candidate, binding)) return other;
         }
         return null;

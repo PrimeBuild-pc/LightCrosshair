@@ -246,4 +246,24 @@ public class ReleaseBlockerUiTests
         timer.Start();
         Dispatcher.PushFrame(frame);
     }
+    [Fact]
+    public async Task GlobalShowHideCanReuseTheChordOfAGamesOwnShowHide()
+    {
+        // Reported: global show/hide was Alt+Right click, a game had its own Alt+X, and Alt+X could not be set back.
+        var core = new FakeCoreClient(new InlineMarshaler()); await core.ConnectAsync();
+        var game = core.Snapshot!.Store.GameProfiles[0];
+        game.VisibilityBinding = new() { Key = "X", Modifiers = KeyModifiers.Alt };
+        await core.SaveGameProfileAsync(game);
+        var hotkeys = new HotkeysViewModel(core, new FakeUi()); hotkeys.Apply(core.Snapshot!);
+        await hotkeys.CommitCommand.ExecuteAsync(new HotkeyCommit { Action = "ToggleVisibility", Binding = new() { Key = "RightClick", Modifiers = KeyModifiers.Alt, Mode = BindingMode.HoldToHide } });
+        Assert.Equal(BindingMode.Toggle, core.Snapshot!.Store.Settings.Hotkeys.ToggleVisibility.Mode);
+        await hotkeys.CommitCommand.ExecuteAsync(new HotkeyCommit { Action = "ToggleVisibility", Binding = new() { Key = "X", Modifiers = KeyModifiers.Alt } });
+        var row = hotkeys.Rows.Single(item => item.Action == "ToggleVisibility");
+        Assert.Equal("", row.Warning);
+        Assert.Equal("X", core.Snapshot!.Store.Settings.Hotkeys.ToggleVisibility.Key);
+        Assert.False(row.AllowsHold);
+        // Other actions still may not take a chord a game uses for show/hide.
+        await hotkeys.CommitCommand.ExecuteAsync(new HotkeyCommit { Action = "NextCrosshair", Binding = new() { Key = "X", Modifiers = KeyModifiers.Alt } });
+        Assert.Equal("C", core.Snapshot!.Store.Settings.Hotkeys.NextCrosshair.Key);
+    }
 }

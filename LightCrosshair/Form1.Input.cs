@@ -108,9 +108,9 @@ internal sealed partial class Form1
             {
                 if (action.Binding.Input == BindingInput.Keyboard && action.Binding.Mode == BindingMode.Toggle) continue;
                 var state = _bindingStates[action.HotkeyId];
-                if (state.Process(action.Binding, input, key, modifiers, down)) _ = RunInputActionAsync(action.HotkeyId);
+                if (state.Process(action.Binding, input, key, modifiers, down, action.HotkeyId == 9004)) _ = RunInputActionAsync(action.HotkeyId);
             }
-            _holdOverride = _bindingStates.GetValueOrDefault(9004)?.Override ?? _bindingStates.GetValueOrDefault(9000)?.Override;
+            _holdOverride = HoldOverride();
             RefreshOverlay(); QueueRuntimeEvent(); return;
         }
         if (m.Msg == VisibilityInputHook.ResetMessage)
@@ -124,6 +124,7 @@ internal sealed partial class Form1
         }
         base.WndProc(ref m);
     }
+    private bool? HoldOverride() => _bindingStates.GetValueOrDefault(9004)?.Override ?? _bindingStates.GetValueOrDefault(9000)?.Override;
     private void ReleaseHolds()
     {
         foreach (var state in _bindingStates.Values) state.CancelUntilRelease();
@@ -139,6 +140,10 @@ internal sealed partial class Form1
                 case 9000: await ToggleVisibilityAsync(); break;
                 case 9001: case 9002:
                     await MutateAsync(next => Task.FromResult<object?>(CrosshairCycling.Apply(next, Runtime.ActiveCrosshairId, Runtime.ActiveGameProfileId, id == 9001)));
+                    break;
+                case 9004: // aim binding in toggle mode
+                    if (_bindingStates.TryGetValue(9004, out var aim)) aim.Flip();
+                    _holdOverride = HoldOverride(); RefreshOverlay(); QueueRuntimeEvent();
                     break;
                 case 9005:
                     await MutateAsync(next => { next.Settings.FpsOverlay.Enabled = !next.Settings.FpsOverlay.Enabled; return Task.FromResult<object?>(null); });

@@ -115,7 +115,7 @@ public sealed class HotkeySettings
     public InputBinding PreviousCrosshair { get; set; } = new() { Key = "V", Modifiers = KeyModifiers.Alt };
     /// <summary>Opens the UI, or closes it when already open.</summary>
     public InputBinding OpenSettings { get; set; } = new() { Key = "L", Modifiers = KeyModifiers.Alt };
-    /// <summary>Optional "while held" visibility, e.g. RightClick + HoldToHide to hide the crosshair while aiming. Mode must be HoldToHide or HoldToShow. Empty Key = unbound (default).</summary>
+    /// <summary>Optional "hide while aiming", e.g. RightClick + HoldToHide. Toggle = press to hide, press again to show (games with toggle aim). Never the wheel. Empty Key = off (default).</summary>
     public InputBinding HoldVisibility { get; set; } = new() { Key = "", Mode = BindingMode.HoldToHide };
     /// <summary>Toggles AppSettings.FpsOverlay.Enabled (the same setting as the UI's "Show FPS overlay" switch). Toggle only.</summary>
     public InputBinding ToggleFpsOverlay { get; set; } = new() { Key = "F", Modifiers = KeyModifiers.Alt };

@@ -280,9 +280,9 @@
   <data name="Library_SetDefaultAll" xml:space="preserve"><value>Imposta come predefinito per tutte le app</value></data>
   <data name="Library_Default" xml:space="preserve"><value>Predefinito</value></data>
   <data name="Library_InUseGame" xml:space="preserve"><value>In uso · {0}</value></data>
-  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>Mentre premi</value></data>
-  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Scegli un tasto o pulsante del mouse da tenere premuto.</value></data>
-  <data name="Games_HoldPolicy" xml:space="preserve"><value>Mentre premi in questo gioco</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>Nascondi mentre miri</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Scegli un tasto o un pulsante del mouse per la mira (non la rotella).</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>Nascondi mentre miri in questo gioco</value></data>
   <data name="Games_HoldOff" xml:space="preserve"><value>Disattivato in questo gioco</value></data>
   <data name="Games_HoldOwn" xml:space="preserve"><value>Combinazione dedicata</value></data>
   <data name="Nav_FpsOverlay" xml:space="preserve"><value>Overlay FPS</value></data>
@@ -302,4 +302,6 @@
   <data name="Settings_CloseExit" xml:space="preserve"><value>Esci da LightCrosshair</value></data>
   <data name="Settings_CloseHelp" xml:space="preserve"><value>Nell'area di notifica mirino e overlay FPS restano a schermo.</value></data>
   <data name="Dialog_Close" xml:space="preserve"><value>Chiudi finestra di dialogo</value></data>
+  <data name="Hotkeys_PressHide" xml:space="preserve"><value>Premi per nascondere / mostrare</value></data>
+  <data name="Hotkeys_AimHint" xml:space="preserve"><value>Disattivata finché non assegni un pulsante, di solito il tasto destro del mouse. Usa "Premi per nascondere / mostrare" se nel gioco la mira è a interruttore.</value></data>
 </root>

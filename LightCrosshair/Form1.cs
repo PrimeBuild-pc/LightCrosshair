@@ -18,14 +18,15 @@ internal sealed partial class Form1 : LayeredWindow
     internal Form1()
     {
         Renderer = new(Store.ImagesDirectory);
-        var menu = new ContextMenuStrip();
-        menu.Items.Add(CoreStrings.Get("auto", "HideCrosshair"), null, async (_, _) =>
+        var menu = TrayMenu.Create();
+        menu.Items.Add(TrayMenu.Item(CoreStrings.Get("auto", "HideCrosshair"), async (_, _) =>
         {
             try { await ToggleVisibilityAsync(); }
             catch (Exception ex) { Program.LogError(ex, "Toggle visibility"); }
-        });
-        menu.Items.Add(CoreStrings.Get("auto", "Open"), null, (_, _) => OpenSettings());
-        menu.Items.Add(CoreStrings.Get("auto", "Exit"), null, (_, _) => Close());
+        }));
+        menu.Items.Add(TrayMenu.Item(CoreStrings.Get("auto", "Open"), (_, _) => OpenSettings()));
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(TrayMenu.Item(CoreStrings.Get("auto", "Exit"), (_, _) => Close()));
         _tray = new() { Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? SystemIcons.Application, Text = "LightCrosshair", ContextMenuStrip = menu, Visible = true };
         _tray.DoubleClick += (_, _) => OpenSettings();
         _colors.StatusChanged += (revision, code) =>
@@ -115,7 +116,7 @@ internal sealed partial class Form1 : LayeredWindow
     {
         var items = _tray.ContextMenuStrip!.Items;
         items[0].Text = TextFor(Document.Settings.CrosshairVisible ? "HideCrosshair" : "ShowCrosshair");
-        items[1].Text = TextFor("Open"); items[2].Text = TextFor("Exit");
+        items[1].Text = TextFor("Open"); items[3].Text = TextFor("Exit");
     }
     protected override void Dispose(bool disposing)
     {
