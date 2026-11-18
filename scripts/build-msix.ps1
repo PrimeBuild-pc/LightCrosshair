@@ -71,7 +71,9 @@ foreach ($runtime in $Runtimes) {
     $identity.Version = $packageVersion
     $identity.ProcessorArchitecture = $arch
     $manifest.Save((Join-Path $layout 'AppxManifest.xml'))
-    Copy-Item -LiteralPath (Join-Path $source 'Assets') -Destination (Join-Path $layout 'Assets') -Recurse -Force
+    # Copy the contents: publish already created Assets (icon.ico), and copying the folder itself would nest it as Assets\Assets.
+    New-Item -ItemType Directory -Path (Join-Path $layout 'Assets') -Force | Out-Null
+    Copy-Item -Path (Join-Path $source 'Assets\*') -Destination (Join-Path $layout 'Assets') -Recurse -Force
     # Index only the logos: indexing the whole layout would treat the satellite-assembly folders (it, ja, ...) as languages.
     $priRoot = Join-Path $out "pri-$arch"
     New-Item -ItemType Directory -Path $priRoot -Force | Out-Null
