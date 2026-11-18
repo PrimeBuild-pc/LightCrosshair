@@ -36,6 +36,7 @@
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_OnlyGames}" IsChecked="{Binding ShowOnlyInConfiguredGames}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_OnlyGames}"/>
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_HideRecording}" IsChecked="{Binding HideDuringScreenRecording}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_HideRecording}"/>
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_StartWindows}" IsChecked="{Binding StartWithWindows}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_StartWindows}"/>
+      <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Settings_StartupStoreHelp}" TextWrapping="Wrap" Margin="0,0,0,8" Visibility="{Binding IsPackaged, Converter={StaticResource Vis}}"/>
       <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_Suggestions}" IsChecked="{Binding SuggestKnownGames}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_Suggestions}"/>
       <TextBlock Style="{StaticResource LabelText}" Text="{loc:Tr Settings_CloseTitle}" Margin="0,8,0,4"/>
       <WrapPanel KeyboardNavigation.DirectionalNavigation="Cycle" AutomationProperties.Name="{loc:Tr Settings_CloseTitle}">
@@ -60,12 +61,14 @@
         </ComboBox.ItemTemplate>
       </ComboBox>
 
-      <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_Updates}"/>
-      <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_CheckAuto}" IsChecked="{Binding CheckForUpdates}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_CheckAuto}"/>
-      <StackPanel Orientation="Horizontal" Margin="0,8,0,4">
-        <Button Content="{loc:Tr Settings_CheckNow}" Command="{Binding CheckUpdatesCommand}" AutomationProperties.Name="{loc:Tr Settings_CheckNow}"/>
+      <StackPanel Visibility="{Binding ShowUpdates, Converter={StaticResource Vis}}">
+        <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_Updates}"/>
+        <CheckBox Style="{StaticResource Switch}" Content="{loc:Tr Settings_CheckAuto}" IsChecked="{Binding CheckForUpdates}" Margin="0,4" AutomationProperties.Name="{loc:Tr Settings_CheckAuto}"/>
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,4">
+          <Button Content="{loc:Tr Settings_CheckNow}" Command="{Binding CheckUpdatesCommand}" AutomationProperties.Name="{loc:Tr Settings_CheckNow}"/>
+        </StackPanel>
+        <TextBlock Style="{StaticResource BodyText}" Text="{Binding UpdateMessage}" Margin="0,4,0,12"/>
       </StackPanel>
-      <TextBlock Style="{StaticResource BodyText}" Text="{Binding UpdateMessage}" Margin="0,4,0,12"/>
 
       <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Settings_About}"/>
       <TextBlock Style="{StaticResource BodyText}" Text="{Binding VersionText}" Margin="0,0,0,8"/>

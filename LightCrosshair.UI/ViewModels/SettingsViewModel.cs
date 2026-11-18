@@ -37,8 +37,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     private int _savedGeneration;
     private Task _pending = Task.CompletedTask;
 
-    public SettingsViewModel(ICoreClient core, IUiServices ui, IReleaseFeed? feed = null, TimeSpan? debounce = null)
+    public SettingsViewModel(ICoreClient core, IUiServices ui, IReleaseFeed? feed = null, TimeSpan? debounce = null, bool? packaged = null)
     {
+        IsPackaged = packaged ?? AppPackage.IsPackaged;
         _core = core;
         _colorPreview = new(core);
         _colorPreview.Failed += () => Error = ErrorText.For(null);
@@ -70,6 +71,10 @@ public sealed partial class SettingsViewModel : ObservableObject
     ];
 
     public string VersionLabel { get; }
+
+    /// <summary>Store (MSIX) build: the Store updates the app and Windows owns the startup task.</summary>
+    public bool IsPackaged { get; }
+    public bool ShowUpdates => !IsPackaged;
 
     [ObservableProperty] private string _error = "";
     [ObservableProperty] private string _updateMessage = "";
@@ -159,7 +164,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task CheckUpdatesAsync()
     {
-        if (Checking) return;
+        if (Checking || IsPackaged) return;
         Checking = true;
         UpdateMessage = Loc.Instance["Settings_Checking"];
         try

@@ -97,7 +97,12 @@ internal sealed partial class Form1
         switch (request.Method)
         {
             case IpcMethods.SetInputCapture: SetInputCapture(Payload<InputCaptureRequest>(request).Active); return null;
-            case IpcMethods.GetSnapshot: return Snapshot();
+            case IpcMethods.GetSnapshot:
+                // Packaged: the user can turn the startup task off in Task Manager; show the real state.
+                bool? startup = await StartupRegistration.PackagedStateAsync();
+                if (StartupRegistration.NeedsSync(Document.Settings.StartWithWindows, startup))
+                    await MutateAsync(next => { next.Settings.StartWithWindows = startup!.Value; return Task.FromResult<object?>(null); });
+                return Snapshot();
             case IpcMethods.SaveCrosshair:
                 var design = Validation.Design(Payload<CrosshairDesign>(request), Store.ImagesDirectory);
                 design.UpdatedAt = DateTimeOffset.UtcNow;
@@ -140,17 +145,17 @@ internal sealed partial class Form1
                 object? savedSettings;
                 try
                 {
-                    savedSettings = await MutateAsync(next =>
+                    savedSettings = await MutateAsync(async next =>
                     {
                         next.Settings = Validation.Settings(Payload<AppSettings>(request), next.Crosshairs);
                         if (next.Settings.StartWithWindows != previousSettings.StartWithWindows)
-                        { startupTouched = true; StartupRegistration.Apply(next.Settings.StartWithWindows); }
-                        return Task.FromResult<object?>(next.Settings);
+                        { startupTouched = true; next.Settings.StartWithWindows = await StartupRegistration.ApplyAsync(next.Settings.StartWithWindows); }
+                        return next.Settings;
                     }, resetInput: true);
                 }
                 catch
                 {
-                    try { if (startupTouched) StartupRegistration.Apply(previousSettings.StartWithWindows); }
+                    try { if (startupTouched) await StartupRegistration.ApplyAsync(previousSettings.StartWithWindows); }
                     catch (Exception ex) { Program.LogError(ex, "Restore autostart registration"); }
                     throw;
                 }
