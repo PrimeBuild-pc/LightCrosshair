@@ -129,7 +129,7 @@ internal sealed class PipeServer : IDisposable
                     var greeting = payload.Value.Deserialize<HelloRequest>(ContractJson.Options);
                     if (greeting?.Client is null || greeting.Client.Length > 128) throw new CoreException(IpcErrorCodes.BadRequest, "Invalid client.");
                     hello = true; close = false; Volatile.Write(ref _connected, 1);
-                    result = new HelloResponse { CoreVersion = "2.0.0" };
+                    result = new HelloResponse { CoreVersion = "2.0.1" };
                 }
                 else if (request.Method == IpcMethods.Hello) throw new CoreException(IpcErrorCodes.BadRequest, "Already initialized.");
                 else result = await _dispatch(request).ConfigureAwait(false);

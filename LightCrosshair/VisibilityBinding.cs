@@ -67,25 +67,30 @@ internal sealed class VisibilityBindingState
     public bool? Override { get; private set; }
     public void Reset() { _down = false; _blocked = false; Override = null; }
     public void CancelUntilRelease(bool held = false) { _blocked |= _down || held; _down = false; Override = null; }
+    /// <summary>Aim in toggle mode: one press hides, the next restores. Still a transient override, never persisted.</summary>
+    public void Flip() => Override = Override is null ? false : null;
 
-    public bool Process(VisibilityBinding binding, BindingInput input, int key, int modifiers, bool down)
+    /// <param name="anyModifiers">Let a toggle fire with extra modifiers held, like holds do (aim toggle while sprinting or crouching).</param>
+    public bool Process(VisibilityBinding binding, BindingInput input, int key, int modifiers, bool down, bool anyModifiers = false)
     {
         bool trigger = binding.Input == input && (input != BindingInput.Keyboard || binding.Key == key);
+        bool hold = binding.Mode != BindingMode.Toggle;
         if (!down && trigger)
         {
-            Reset();
+            _down = false; _blocked = false;
+            if (hold) Override = null;
             return false;
         }
         if (!down)
         {
-            if ((binding.Modifiers & modifiers) != binding.Modifiers) Override = null;
+            if (hold && (binding.Modifiers & modifiers) != binding.Modifiers) Override = null;
             return false;
         }
         if (_blocked) return false;
         if (!trigger || _down) return false;
         _down = !binding.IsWheel;
         // A hold only needs its own modifiers: players sprint or crouch (Shift/Ctrl) while aiming.
-        if (binding.Mode == BindingMode.Toggle ? !binding.Matches(input, key, modifiers) : (binding.Modifiers & ~modifiers) != 0) return false;
+        if (hold || anyModifiers ? (binding.Modifiers & ~modifiers) != 0 : !binding.Matches(input, key, modifiers)) return false;
         if (binding.Mode == BindingMode.Toggle) return true;
         Override = binding.Mode == BindingMode.HoldToShow;
         return false;

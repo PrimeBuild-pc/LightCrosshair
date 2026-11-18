@@ -1,4 +1,4 @@
-param([string]$ExpectedVersion = '2.0.0', [switch]$CoreOnly)
+param([string]$ExpectedVersion = '2.0.1', [switch]$CoreOnly)
 $ErrorActionPreference = 'Stop'
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 [xml]$project = Get-Content -LiteralPath "$repo/LightCrosshair/LightCrosshair.csproj"

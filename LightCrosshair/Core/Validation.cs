@@ -97,7 +97,7 @@ internal static partial class Validation
     {
         var result = Binding(binding);
         if (result.Key.Length == 0) result.Mode = Contracts.BindingMode.HoldToHide;
-        if (result.Mode == Contracts.BindingMode.Toggle || result.Key is "WheelUp" or "WheelDown") throw Invalid("While held requires a key or button in a hold mode.");
+        if (result.Key is "WheelUp" or "WheelDown") throw Invalid("Hide while aiming requires a key or button.");
         return result;
     }
     public static GameProfile Game(GameProfile? game, StoreDocument store)

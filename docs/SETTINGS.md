@@ -63,8 +63,8 @@ Select a profile to edit its name, colors and other options, then **Save profile
 | Control | Behavior |
 |---|---|
 | Crosshair | Saved design to use while the configured executable is in the foreground |
-| Visibility shortcut | **Use global** (the global shortcut is shown below), **Off in this game**, or **Custom**: one binding field plus Toggle / Hold to hide / Hold to show. Saves immediately |
-| While held | **Use global**, **Off in this game**, or **Custom**: one binding field plus Hold to hide / Hold to show. Saves immediately |
+| Visibility shortcut | **Use global** (the global shortcut is shown below), **Off in this game**, or **Custom**: one binding field; it toggles the crosshair. Saves immediately |
+| Hide while aiming | **Use global**, **Off in this game**, or **Custom**: one binding field plus Hold to hide / Press to hide / show / Hold to show. Saves immediately |
 | FPS overlay | Follow the global setting, force On or force Off |
 | Use display colors | Apply saved values while this game is active; switching off retains the values |
 | Gamma / Contrast / Brightness | Display adjustments, 50–150; 100 is neutral |
@@ -94,7 +94,7 @@ Known-game suggestions offer **Create**, **Not now** and **Never for this game**
 
 Every binding is one field. Click it and press a key, a key with Alt/Ctrl/Shift/Win, or a mouse button (Middle, Right, Mouse4, Mouse5, wheel); Esc cancels. Or open the field's ▾ menu (Alt+Down) and pick a mouse button; the current modifiers stay. **Clear** removes a binding.
 
-**While held** is a separate action, unbound initially, with Hold to hide / Hold to show modes. For example, select Right click without modifiers and Hold to hide to hide while aiming. A hold also works while other modifiers are held (sprinting with Shift, crouching with Ctrl); toggles need their exact chord. Mouse buttons are read from raw input, the same stream games read, so a game's own raw-input mode does not hide them. The visibility toggle keeps Alt+X. A game can inherit, disable or replace the global hold binding. Other actions and all wheel bindings use Toggle. Releasing a hold, losing focus or starting binding capture restores the underlying visibility state; the temporary hold is never saved. Core actions are paused during binding capture and resume when it ends. Input still reaches other applications; a bound mouse button keeps its normal game behavior.
+**Hide while aiming** is a separate action, off (unbound) initially, with Hold to hide / Press to hide / show / Hold to show modes. For example, select Right click and Hold to hide to hide while aiming; if your game uses toggle aim, choose Press to hide / show: one press hides the crosshair, the next brings it back. Aiming also works while other modifiers are held (sprinting with Shift, crouching with Ctrl); other toggles need their exact chord. **Show or hide crosshair** is always a toggle. Mouse buttons are read from raw input, the same stream games read, so a game's own raw-input mode does not hide them. The visibility toggle keeps Alt+X. A game can inherit, disable or replace the global hold binding. Other actions and all wheel bindings use Toggle. Releasing a hold, losing focus, switching windows or starting binding capture restores the underlying visibility state; the temporary hold is never saved. Core actions are paused during binding capture and resume when it ends. Input still reaches other applications; a bound mouse button keeps its normal game behavior.
 
 Conflicts and Core registration failures appear under the affected action. Choose another binding if Windows or another application already owns it.
 
@@ -149,6 +149,6 @@ Store backups are made at most once per hour when changes occur; the newest ten 
 
 The display-color recovery journal is cleared only after original values are restored. If restoration fails, restart Core to retry; keep the journal rather than deleting it.
 
-V1 Hold bindings migrate to While held while retaining Alt+X for Toggle. V1 global colors migrate when no target process was configured.
+V1 Hold bindings migrate to Hide while aiming while retaining Alt+X for Toggle. V1 global colors migrate when no target process was configured.
 
 Migration imports supported v1 data without writing the old files, preserving source copies under `backups/migration`. The active v1 master visibility switch becomes the global v2 switch; it does not hide the individual migrated layers. See [Upgrading from 1.9](../README.md#upgrading-from-19).

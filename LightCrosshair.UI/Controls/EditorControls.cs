@@ -281,8 +281,8 @@ public class BindingCaptureBox : Border
 
     internal IEnumerable<string> MenuKeys => MouseKeys.Where(key => AllowWheel || !HotkeyRules.IsWheel(key));
 
-    /// <summary>Same commit path as a capture; the current modifiers and mode stay.</summary>
-    internal void PickMouse(string key) => Finish(key, Binding?.Modifiers ?? LightCrosshair.Contracts.KeyModifiers.None);
+    /// <summary>Same commit path as a capture; the mode stays. A plain button: Alt+X picking Right click must not become Alt+Right click.</summary>
+    internal void PickMouse(string key) => Finish(key, LightCrosshair.Contracts.KeyModifiers.None);
 
     private void OpenMouseMenu()
     {

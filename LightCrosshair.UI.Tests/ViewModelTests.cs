@@ -185,8 +185,7 @@ public class ViewModelTests
         Assert.Equal("WheelUp", row.Binding.Key);
 
         await hotkeys.SetModeCommand.ExecuteAsync(new ModeChange { Action = "ToggleVisibility", Mode = BindingMode.HoldToHide });
-        Assert.Equal(BindingMode.Toggle, row.Binding.Mode);
-        Assert.Equal(Loc.Instance["Hotkeys_WheelOnly"], row.Warning);
+        Assert.Equal(BindingMode.Toggle, row.Binding.Mode); // show/hide is toggle only; holds live in "Hide while aiming"
     }
 
     [Fact]

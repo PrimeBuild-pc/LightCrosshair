@@ -1,9 +1,9 @@
 ; LightCrosshair Installer (requires .NET 10 Desktop Runtime installed)
 #ifndef AppVersion
-  #define AppVersion "2.0.0"
+  #define AppVersion "2.0.1"
 #endif
 #ifndef SourceDir
-  #define SourceDir "..\releases\LightCrosshair-v2.0.0-win-x64"
+  #define SourceDir "..\releases\LightCrosshair-v2.0.1-win-x64"
 #endif
 [Setup]
 AppId=LightCrosshair

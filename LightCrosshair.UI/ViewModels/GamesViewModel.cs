@@ -43,7 +43,7 @@ public sealed partial class GamesViewModel : ObservableObject
     public BindingMode HoldMode
     {
         get => HoldBinding.Mode;
-        set { if (!_suspend && HasOwnHold && value != BindingMode.Toggle && value != HoldBinding.Mode) SetHold(new() { Key = HoldBinding.Key, Modifiers = HoldBinding.Modifiers, Mode = value }); }
+        set { if (!_suspend && HasOwnHold && value != HoldBinding.Mode) SetHold(new() { Key = HoldBinding.Key, Modifiers = HoldBinding.Modifiers, Mode = value }); }
     }
     // Binding overrides are three plain choices and save at once, like the Hotkeys page: an unsaved
     // "own binding" looked active in the UI while the game still used the stored one.
@@ -74,9 +74,7 @@ public sealed partial class GamesViewModel : ObservableObject
     {
         if (commit is null || Selected is null) return;
         if (HotkeyRules.IsWheel(commit.Binding.Key)) { Error = Loc.Instance["Hotkeys_HoldButtonsOnly"]; return; }
-        var copy = HotkeyRules.Copy(commit.Binding);
-        if (copy.Mode == BindingMode.Toggle) copy.Mode = BindingMode.HoldToHide;
-        SetHold(copy);
+        SetHold(HotkeyRules.Copy(commit.Binding));
     }
     private void SetHold(InputBinding? binding)
     {
@@ -95,7 +93,7 @@ public sealed partial class GamesViewModel : ObservableObject
         _suspend = true;
         VisibilityPolicy = PolicyOf(binding);
         _suspend = false;
-        OnPropertyChanged(nameof(HasOwnVisibility)); OnPropertyChanged(nameof(Visibility)); OnPropertyChanged(nameof(VisibilityMode));
+        OnPropertyChanged(nameof(HasOwnVisibility)); OnPropertyChanged(nameof(Visibility));
         Touch();
         var copy = _working.VisibilityBinding == null ? null : HotkeyRules.Copy(_working.VisibilityBinding);
         _ = PersistAsync(Selected?.Id, profile => profile.VisibilityBinding = copy == null ? null : HotkeyRules.Copy(copy));
@@ -129,24 +127,6 @@ public sealed partial class GamesViewModel : ObservableObject
     public InputBinding Visibility => _working.VisibilityBinding ?? new InputBinding();
 
     public string SuggestionText => Suggestion == null ? "" : Loc.Instance.Format("Games_Suggest", Suggestion.DisplayName);
-
-    public BindingMode VisibilityMode
-    {
-        get => _working.VisibilityBinding?.Mode ?? BindingMode.Toggle;
-        set
-        {
-            if (_suspend || _working.VisibilityBinding == null) return;
-            var copy = HotkeyRules.Copy(_working.VisibilityBinding);
-            if (HotkeyRules.IsWheel(copy.Key) && value != BindingMode.Toggle)
-            {
-                Error = Loc.Instance["Hotkeys_WheelOnly"];
-                OnPropertyChanged(nameof(VisibilityMode));
-                return;
-            }
-            copy.Mode = value;
-            SetVisibility(copy);
-        }
-    }
 
     public GamesViewModel(ICoreClient core, IUiServices ui)
     {
@@ -394,7 +374,7 @@ public sealed partial class GamesViewModel : ObservableObject
     {
         if (commit == null || Selected == null) return;
         var binding = HotkeyRules.Copy(commit.Binding);
-        binding.Mode = HotkeyRules.IsWheel(binding.Key) ? BindingMode.Toggle : VisibilityMode;
+        binding.Mode = BindingMode.Toggle;
         SetVisibility(binding);
     }
 
@@ -481,7 +461,6 @@ public sealed partial class GamesViewModel : ObservableObject
         OnPropertyChanged(nameof(HasOwnVisibility));
         OnPropertyChanged(nameof(GlobalVisibilityText));
         OnPropertyChanged(nameof(GlobalHoldText));
-        OnPropertyChanged(nameof(VisibilityMode));
         OnPropertyChanged(nameof(SuggestionText));
     }
 }

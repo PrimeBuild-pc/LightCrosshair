@@ -280,9 +280,9 @@
   <data name="Library_SetDefaultAll" xml:space="preserve"><value>Establecer como predeterminado para todas las apps</value></data>
   <data name="Library_Default" xml:space="preserve"><value>Predeterminado</value></data>
   <data name="Library_InUseGame" xml:space="preserve"><value>En uso · {0}</value></data>
-  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>Mientras se mantiene</value></data>
-  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Elige una tecla o botón para mantener pulsado.</value></data>
-  <data name="Games_HoldPolicy" xml:space="preserve"><value>Mientras se mantiene en este juego</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>Ocultar al apuntar</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Elige una tecla o botón del ratón para apuntar (no la rueda).</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>Ocultar al apuntar en este juego</value></data>
   <data name="Games_HoldOff" xml:space="preserve"><value>Desactivado en este juego</value></data>
   <data name="Games_HoldOwn" xml:space="preserve"><value>Atajo propio</value></data>
   <data name="Nav_FpsOverlay" xml:space="preserve"><value>Superposición FPS</value></data>
@@ -302,4 +302,6 @@
   <data name="Settings_CloseExit" xml:space="preserve"><value>Salir de LightCrosshair</value></data>
   <data name="Settings_CloseHelp" xml:space="preserve"><value>En la bandeja, la mira y el overlay de FPS siguen en pantalla.</value></data>
   <data name="Dialog_Close" xml:space="preserve"><value>Cerrar el cuadro de diálogo</value></data>
+  <data name="Hotkeys_PressHide" xml:space="preserve"><value>Pulsar para ocultar / mostrar</value></data>
+  <data name="Hotkeys_AimHint" xml:space="preserve"><value>Desactivado hasta que asignes un botón, normalmente el botón derecho del ratón. Usa "Pulsar para ocultar / mostrar" si el juego apunta en modo alternar.</value></data>
 </root>

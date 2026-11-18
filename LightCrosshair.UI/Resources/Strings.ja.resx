@@ -280,9 +280,9 @@
   <data name="Library_SetDefaultAll" xml:space="preserve"><value>すべてのアプリの既定に設定</value></data>
   <data name="Library_Default" xml:space="preserve"><value>既定</value></data>
   <data name="Library_InUseGame" xml:space="preserve"><value>使用中 · {0}</value></data>
-  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>押している間</value></data>
-  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>保持するキーまたはマウスボタンを選択してください。</value></data>
-  <data name="Games_HoldPolicy" xml:space="preserve"><value>このゲームで押している間</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>エイム中は隠す</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>エイム用のキーまたはマウスボタンを選択してください（ホイール以外）。</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>このゲームでエイム中は隠す</value></data>
   <data name="Games_HoldOff" xml:space="preserve"><value>このゲームでは無効</value></data>
   <data name="Games_HoldOwn" xml:space="preserve"><value>独自の割り当て</value></data>
   <data name="Nav_FpsOverlay" xml:space="preserve"><value>FPSオーバーレイ</value></data>
@@ -302,4 +302,6 @@
   <data name="Settings_CloseExit" xml:space="preserve"><value>LightCrosshair を終了</value></data>
   <data name="Settings_CloseHelp" xml:space="preserve"><value>トレイでは照準と FPS オーバーレイが画面に残ります。</value></data>
   <data name="Dialog_Close" xml:space="preserve"><value>ダイアログを閉じる</value></data>
+  <data name="Hotkeys_PressHide" xml:space="preserve"><value>押して隠す / 表示</value></data>
+  <data name="Hotkeys_AimHint" xml:space="preserve"><value>ボタンを割り当てるまでオフです（通常はマウスの右ボタン）。ゲームのエイムが切り替え式なら「押して隠す / 表示」を使います。</value></data>
 </root>

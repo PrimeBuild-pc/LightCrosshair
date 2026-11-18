@@ -93,11 +93,6 @@
             </Grid.ColumnDefinitions>
             <controls:BindingCaptureBox Binding="{Binding Visibility}" Prompt="{loc:Tr Hotkeys_Press}"
                                          CapturedCommand="{Binding CommitVisibilityCommand}" CaptureChangedCommand="{Binding SetCaptureCommand}" CommandParameter="VisibilityBinding"/>
-            <ComboBox Grid.Column="1" MinWidth="160" Margin="8,0,0,0" SelectedValue="{Binding VisibilityMode}" SelectedValuePath="Tag" AutomationProperties.Name="{loc:Tr Hotkeys_Mode}">
-              <ComboBoxItem Tag="{x:Static contracts:BindingMode.Toggle}" Content="{loc:Tr Hotkeys_Toggle}"/>
-              <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToHide}" Content="{loc:Tr Hotkeys_HoldHide}"/>
-              <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToShow}" Content="{loc:Tr Hotkeys_HoldShow}"/>
-            </ComboBox>
           </Grid>
           <TextBlock Style="{StaticResource SectionTitle}" Text="{loc:Tr Hotkeys_WhileHeld}"/>
           <StackPanel Orientation="Horizontal" Margin="0,0,0,4" KeyboardNavigation.DirectionalNavigation="Cycle" AutomationProperties.Name="{loc:Tr Games_HoldPolicy}">
@@ -114,6 +109,7 @@
             <controls:BindingCaptureBox Binding="{Binding HoldBinding}" Prompt="{loc:Tr Hotkeys_Press}" AllowWheel="False" CapturedCommand="{Binding CommitHoldCommand}" CaptureChangedCommand="{Binding SetCaptureCommand}" CommandParameter="HoldVisibility"/>
             <ComboBox Grid.Column="1" MinWidth="160" Margin="8,0,0,0" SelectedValue="{Binding HoldMode}" SelectedValuePath="Tag" AutomationProperties.Name="{loc:Tr Hotkeys_Mode}">
               <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToHide}" Content="{loc:Tr Hotkeys_HoldHide}"/>
+              <ComboBoxItem Tag="{x:Static contracts:BindingMode.Toggle}" Content="{loc:Tr Hotkeys_PressHide}"/>
               <ComboBoxItem Tag="{x:Static contracts:BindingMode.HoldToShow}" Content="{loc:Tr Hotkeys_HoldShow}"/>
             </ComboBox>
           </Grid>

@@ -280,9 +280,9 @@
   <data name="Library_SetDefaultAll" xml:space="preserve"><value>По умолчанию для всех приложений</value></data>
   <data name="Library_Default" xml:space="preserve"><value>По умолчанию</value></data>
   <data name="Library_InUseGame" xml:space="preserve"><value>Используется · {0}</value></data>
-  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>При удержании</value></data>
-  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Выберите клавишу или кнопку мыши для удержания.</value></data>
-  <data name="Games_HoldPolicy" xml:space="preserve"><value>При удержании в этой игре</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>Скрывать при прицеливании</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Выберите клавишу или кнопку мыши для прицеливания (не колесо).</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>Скрывать при прицеливании в этой игре</value></data>
   <data name="Games_HoldOff" xml:space="preserve"><value>Выключено в этой игре</value></data>
   <data name="Games_HoldOwn" xml:space="preserve"><value>Своя комбинация</value></data>
   <data name="Nav_FpsOverlay" xml:space="preserve"><value>Оверлей FPS</value></data>
@@ -302,4 +302,6 @@
   <data name="Settings_CloseExit" xml:space="preserve"><value>Выйти из LightCrosshair</value></data>
   <data name="Settings_CloseHelp" xml:space="preserve"><value>В трее прицел и оверлей FPS остаются на экране.</value></data>
   <data name="Dialog_Close" xml:space="preserve"><value>Закрыть диалог</value></data>
+  <data name="Hotkeys_PressHide" xml:space="preserve"><value>Нажать, чтобы скрыть / показать</value></data>
+  <data name="Hotkeys_AimHint" xml:space="preserve"><value>Выключено, пока не назначена кнопка (обычно правая кнопка мыши). Если в игре прицел переключается нажатием, выберите «Нажать, чтобы скрыть / показать».</value></data>
 </root>

@@ -43,9 +43,24 @@ public class HoldVisibilityTests
     }
     [Theory]
     [InlineData("WheelUp", Contracts.BindingMode.HoldToHide)]
-    [InlineData("RightClick", Contracts.BindingMode.Toggle)]
-    public void HoldRejectsWheelAndToggle(string key, Contracts.BindingMode mode)
+    [InlineData("WheelDown", Contracts.BindingMode.Toggle)]
+    public void HoldRejectsWheel(string key, Contracts.BindingMode mode)
         => Assert.Throws<CoreException>(() => Validation.HoldBinding(new() { Key = key, Mode = mode }));
+    [Fact]
+    public void AimToggleHidesOnOnePressRestoresOnTheNextAndToleratesSprintModifiers()
+    {
+        Assert.Equal(Contracts.BindingMode.Toggle, Validation.HoldBinding(new() { Key = "RightClick", Mode = Contracts.BindingMode.Toggle }).Mode);
+        var state = new VisibilityBindingState();
+        var binding = new VisibilityBinding { Input = BindingInput.RightClick, Key = 0, Modifiers = 0, Mode = BindingMode.Toggle };
+        // Shift held (sprint) still counts for the aim toggle; Form1 flips on a true result.
+        Assert.True(state.Process(binding, BindingInput.RightClick, 0, 4, true, anyModifiers: true)); state.Flip();
+        Assert.False(state.Process(binding, BindingInput.RightClick, 0, 4, false)); Assert.Equal(false, state.Override);
+        Assert.True(state.Process(binding, BindingInput.RightClick, 0, 0, true, anyModifiers: true)); state.Flip();
+        state.Process(binding, BindingInput.RightClick, 0, 0, false); Assert.Null(state.Override);
+        Assert.False(state.Process(binding, BindingInput.RightClick, 0, 4, true)); // other toggles keep the exact chord
+        state.Process(binding, BindingInput.RightClick, 0, 4, false);
+        state.Flip(); state.CancelUntilRelease(); Assert.Null(state.Override); // focus change restores the crosshair
+    }
     [Fact]
     public async Task LegacyHoldMovesToItsOwnBindingAndKeepsAltXToggle()
     {

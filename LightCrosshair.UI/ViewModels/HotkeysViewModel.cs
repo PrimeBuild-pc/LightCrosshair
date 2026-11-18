@@ -45,7 +45,7 @@ public sealed partial class HotkeysViewModel : ObservableObject
         _ui = ui;
         Rows =
         [
-            new HotkeyRow { Action = "ToggleVisibility", LabelKey = "Hotkeys_ToggleVisibility", AllowsHold = true },
+            new HotkeyRow { Action = "ToggleVisibility", LabelKey = "Hotkeys_ToggleVisibility" },
             new HotkeyRow { Action = "HoldVisibility", LabelKey = "Hotkeys_WhileHeld", AllowsHold = true, HoldOnly = true },
             new HotkeyRow { Action = "NextCrosshair", LabelKey = "Hotkeys_Next" },
             new HotkeyRow { Action = "PreviousCrosshair", LabelKey = "Hotkeys_Previous" },
@@ -83,7 +83,6 @@ public sealed partial class HotkeysViewModel : ObservableObject
         var row = Rows.First(item => item.Action == commit.Action);
         if (row.HoldOnly && HotkeyRules.IsWheel(commit.Binding.Key)) { row.Warning = Loc.Instance["Hotkeys_HoldButtonsOnly"]; return; }
         var binding = HotkeyRules.Copy(commit.Binding);
-        if (row.HoldOnly && binding.Mode == BindingMode.Toggle) binding.Mode = row.Binding.Mode == BindingMode.HoldToShow ? BindingMode.HoldToShow : BindingMode.HoldToHide;
         if (!row.AllowsHold) binding.Mode = BindingMode.Toggle;
         if (HotkeyRules.IsWheel(binding.Key) && binding.Mode != BindingMode.Toggle)
         {
@@ -132,7 +131,6 @@ public sealed partial class HotkeysViewModel : ObservableObject
     {
         if (change == null) return;
         var row = Rows.First(item => item.Action == change.Action);
-        if (row.HoldOnly && change.Mode == BindingMode.Toggle) return;
         if (!row.AllowsHold && change.Mode != BindingMode.Toggle) return;
         if (HotkeyRules.IsWheel(row.Binding.Key) && change.Mode != BindingMode.Toggle)
         {

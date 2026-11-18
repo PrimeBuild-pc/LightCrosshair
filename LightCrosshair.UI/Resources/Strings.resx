@@ -280,9 +280,9 @@
   <data name="Library_SetDefaultAll" xml:space="preserve"><value>Set as default for all apps</value></data>
   <data name="Library_Default" xml:space="preserve"><value>Default</value></data>
   <data name="Library_InUseGame" xml:space="preserve"><value>In use · {0}</value></data>
-  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>While held</value></data>
-  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Choose a key or mouse button for a hold binding.</value></data>
-  <data name="Games_HoldPolicy" xml:space="preserve"><value>While held in this game</value></data>
+  <data name="Hotkeys_WhileHeld" xml:space="preserve"><value>Hide while aiming</value></data>
+  <data name="Hotkeys_HoldButtonsOnly" xml:space="preserve"><value>Choose a key or mouse button for aiming (not the wheel).</value></data>
+  <data name="Games_HoldPolicy" xml:space="preserve"><value>Hide while aiming in this game</value></data>
   <data name="Games_HoldOff" xml:space="preserve"><value>Off in this game</value></data>
   <data name="Games_HoldOwn" xml:space="preserve"><value>Own binding</value></data>
   <data name="Nav_FpsOverlay" xml:space="preserve"><value>FPS overlay</value></data>
@@ -302,4 +302,6 @@
   <data name="Settings_CloseExit" xml:space="preserve"><value>Exit LightCrosshair</value></data>
   <data name="Settings_CloseHelp" xml:space="preserve"><value>In the tray the crosshair and FPS overlay stay on screen.</value></data>
   <data name="Dialog_Close" xml:space="preserve"><value>Close dialog</value></data>
+  <data name="Hotkeys_PressHide" xml:space="preserve"><value>Press to hide / show</value></data>
+  <data name="Hotkeys_AimHint" xml:space="preserve"><value>Off until you assign a button, usually the right mouse button. Use "Press to hide / show" if your game uses toggle aim.</value></data>
 </root>
