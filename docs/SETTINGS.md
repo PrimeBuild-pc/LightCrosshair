@@ -151,4 +151,4 @@ The display-color recovery journal is cleared only after original values are res
 
 V1 Hold bindings migrate to Hide while aiming while retaining Alt+X for Toggle. V1 global colors migrate when no target process was configured.
 
-Migration imports supported v1 data without writing the old files, preserving source copies under `backups/migration`. The active v1 master visibility switch becomes the global v2 switch; it does not hide the individual migrated layers. See [Upgrading from 1.9](../README.md#upgrading-from-19).
+Migration imports supported v1 data without writing the old files, preserving source copies under `backups/migration`. The active v1 master visibility switch becomes the global v2 switch; it does not hide the individual migrated layers. See [Installation](../README.md#installation).
