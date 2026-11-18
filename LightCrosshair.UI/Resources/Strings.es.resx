@@ -216,6 +216,7 @@
   <data name="Settings_OnlyGames" xml:space="preserve"><value>Mostrar solo en los juegos configurados</value></data>
   <data name="Settings_HideRecording" xml:space="preserve"><value>Ocultar al grabar la pantalla</value></data>
   <data name="Settings_StartWindows" xml:space="preserve"><value>Iniciar con Windows</value></data>
+  <data name="Settings_StartupStoreHelp" xml:space="preserve"><value>Si Windows no inicia LightCrosshair, actívalo en Administrador de tareas > Aplicaciones de arranque.</value></data>
   <data name="Settings_Suggestions" xml:space="preserve"><value>Sugerir perfiles para juegos conocidos</value></data>
   <data name="Settings_Fps" xml:space="preserve"><value>Overlay de FPS</value></data>
   <data name="Settings_FpsOn" xml:space="preserve"><value>Mostrar overlay de FPS</value></data>

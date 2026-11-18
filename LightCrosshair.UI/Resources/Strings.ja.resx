@@ -216,6 +216,7 @@
   <data name="Settings_OnlyGames" xml:space="preserve"><value>設定したゲームでのみ表示</value></data>
   <data name="Settings_HideRecording" xml:space="preserve"><value>画面録画中は隠す</value></data>
   <data name="Settings_StartWindows" xml:space="preserve"><value>Windows と一緒に起動</value></data>
+  <data name="Settings_StartupStoreHelp" xml:space="preserve"><value>Windows で LightCrosshair が起動しない場合は、タスク マネージャー > スタートアップ アプリで有効にしてください。</value></data>
   <data name="Settings_Suggestions" xml:space="preserve"><value>既知のゲームにプロファイルを提案</value></data>
   <data name="Settings_Fps" xml:space="preserve"><value>FPS 表示</value></data>
   <data name="Settings_FpsOn" xml:space="preserve"><value>FPS を表示</value></data>
