@@ -16,7 +16,7 @@
   ./scripts/build-msix.ps1 -Version 2.0.0 -Sign    # sideload test bundle + LightCrosshair-test.cer
 #>
 param(
-    [string]$Version = '2.0.0',
+    [string]$Version = '2.0.1',
     [ValidateSet('win-x64', 'win-arm64')][string[]]$Runtimes = @('win-x64', 'win-arm64'),
     [switch]$Sign
 )

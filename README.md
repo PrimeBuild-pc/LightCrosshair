@@ -50,21 +50,21 @@ It is built to stay out of the way: with settings closed, the resident process u
 
 Requires [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) for your package's architecture. Use Windows 11 or a [Windows edition supported by .NET 10](https://learn.microsoft.com/en-us/dotnet/core/install/windows#supported-versions).
 
-Choose the 2.0 release on the [releases page](https://github.com/PrimeBuild-pc/LightCrosshair/releases):
+Choose the 2.0.1 release on the [releases page](https://github.com/PrimeBuild-pc/LightCrosshair/releases):
 
 | Package | File | SHA256 |
 |---|---|---|
-| Installer, x64 | `LightCrosshair-Setup-2.0.0.exe` | `C487EDA25CF54B360490EC160EEF87978B70050DCCED4F9CA5A6B95A39BBB215` |
-| Portable ZIP, x64 | `LightCrosshair-v2.0.0-win-x64.zip` | `38AAEDC0D9D118190D1344DD1D0FAD3D2A77EB57F02B9BCD0BF156332B3D1156` |
-| Portable ZIP, ARM64 | `LightCrosshair-v2.0.0-win-arm64.zip` | `A2E0DB6CCD4D7EDA12F46D131CE7D32CC07A20EC6B45C3B9E7F114320CBCAE35` |
+| Installer, x64 | `LightCrosshair-Setup-2.0.1.exe` | `D798736DD32841C0C0E480BD2F4C4C0998C63549FA9A4BFDC8AB151A1B646CCD` |
+| Portable ZIP, x64 | `LightCrosshair-v2.0.1-win-x64.zip` | `1BBA46E353CFFFD0A20EA83C7E013A149261577FBAA3BCF930F6936F8C7A4388` |
+| Portable ZIP, ARM64 | `LightCrosshair-v2.0.1-win-arm64.zip` | `A5C6A239F8675948C8CB3D03BDFC0AC6F5D7B31AB4748295873DA8F77E05BAA7` |
 
 For a ZIP, extract the whole folder and keep `LightCrosshair.exe` and `LightCrosshair.UI.exe` together. Start `LightCrosshair.exe`; open settings from the tray or with Alt+L. Closing the settings window with × leaves the Core running and parks the settings process for up to five minutes for quick reopening; Settings → Behavior → **When I close the window** can make × exit everything instead. Use **Exit LightCrosshair** to stop both processes and restore display colors.
 
-WinGet and Chocolatey packages may follow the GitHub release. Once the 2.0 packages are published:
+WinGet and Chocolatey packages may follow the GitHub release. Once the 2.0.1 packages are published:
 
 ```powershell
-winget install --id PrimeBuild.LightCrosshair --exact --version 2.0.0
-choco install lightcrosshair --version=2.0.0
+winget install --id PrimeBuild.LightCrosshair --exact --version 2.0.1
+choco install lightcrosshair --version=2.0.1
 ```
 
 The [Chocolatey package page](https://community.chocolatey.org/packages/lightcrosshair) and package-manager listings show which version is available.
@@ -89,7 +89,7 @@ The [Chocolatey package page](https://community.chocolatey.org/packages/lightcro
 - Game profiles for crosshairs, display colors, visibility bindings and FPS overlay overrides. Optional suggestions for recognized games.
 - Global and per-game gamma, contrast, brightness and vibrance, applied live without flicker while you drag, kept when you release and applied immediately when saved (also with the game running), with recovery of original display values; AMD color support; NVIDIA Digital Vibrance and per-app driver FPS caps on supported hardware.
 - A dedicated FPS overlay page, sidebar switch and Alt+F hotkey, with FPS, frametime, 1% low and an optional two-second frametime graph in the text color or its own color. Capture runs only while enabled; the graph draws at most 20 times per second.
-- Separate Toggle and While held bindings: hold right mouse to hide the crosshair while aiming (also while sprinting or crouching with Shift/Ctrl), then release to restore it. Mouse buttons are read from raw input, the same stream games use. Each game can Use global, turn it Off or use a Custom binding; these choices save immediately. Keyboard and mouse input continues to reach the game.
+- Separate show/hide and Hide while aiming bindings: hold right mouse to hide the crosshair while aiming (also while sprinting or crouching with Shift/Ctrl), then release to restore it, or press once to hide and again to show for games with toggle aim. Mouse buttons are read from raw input, the same stream games use. Each game can Use global, turn it Off or use a Custom binding; these choices save immediately. Keyboard and mouse input continues to reach the game.
 - Monitor selection by model name, position offsets, startup with Windows, automatic backups and display-color recovery after a crash.
 - English, Italian, Spanish, Simplified Chinese, Russian and Japanese.
 
@@ -138,7 +138,7 @@ Charts and the table use decimal MB and CPU as a percentage of one logical core;
 | Alt+L | Open or close settings |
 | Alt+F | Show or hide the FPS overlay |
 
-Cycling follows Library order and saves the selection into the active configured game profile, or the default when no configured game is active. Presets enter the cycle after you save a copy. Bindings can be changed or cleared in Hotkeys, including an independent, initially unbound While held action (Hold to hide / Hold to show). Each binding is one field: click it and press a key or mouse button, or pick a mouse button from its ▾ menu. Wheel bindings are toggle-only. Input continues to reach the game; conflicts and registration failures are shown in the UI.
+Cycling follows Library order and saves the selection into the active configured game profile, or the default when no configured game is active. Presets enter the cycle after you save a copy. Bindings can be changed or cleared in Hotkeys, including an independent, initially off Hide while aiming action (Hold to hide / Press to hide / show / Hold to show). Each binding is one field: click it and press a key or mouse button, or pick a mouse button from its ▾ menu. Wheel bindings are toggle-only. Input continues to reach the game; conflicts and registration failures are shown in the UI.
 
 ## Limitations and safety
 

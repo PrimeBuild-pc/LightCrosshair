@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '2.0.0',
+    [string]$Version = '2.0.1',
     [ValidateSet('win-x64', 'win-arm64')][string]$Runtime = 'win-x64',
     [string]$UiProject,
     [ValidateSet('dist', 'releases')][string]$OutputRoot = 'dist',

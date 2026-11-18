@@ -10,7 +10,7 @@ internal sealed partial class Form1 : LayeredWindow
     private readonly NotifyIcon _tray;
     internal readonly CoreStore Store = new(Program.DataRoot);
     internal StoreDocument Document = LegacyMigration.Defaults();
-    internal RuntimeState Runtime = new() { CoreVersion = "2.0.0" };
+    internal RuntimeState Runtime = new() { CoreVersion = "2.0.1" };
     internal readonly LayerRenderer Renderer;
     internal CrosshairDesign? PreviewDesign;
     private string? _renderKey;

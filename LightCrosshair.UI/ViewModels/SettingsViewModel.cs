@@ -313,7 +313,7 @@ public static class AppVersion
         get
         {
             var version = typeof(AppVersion).Assembly.GetName().Version;
-            if (version == null) return "2.0.0";
+            if (version == null) return "2.0.1";
             return new Version(version.Major, version.Minor, version.Build < 0 ? 0 : version.Build).ToString();
         }
     }

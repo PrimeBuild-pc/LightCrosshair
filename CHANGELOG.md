@@ -1,6 +1,20 @@
 # Changelog
 
-## v2.0.0 — Unreleased
+## v2.0.1 — 2026-11-18
+
+### Changed
+
+- **Show or hide crosshair** is a plain toggle again (default Alt+X) and accepts any key, mouse button or combination. Hold modes moved to the separate action below.
+- **While held** is now **Hide while aiming**: still off until you assign a button (usually right click), with a new **Press to hide / show** mode for games that use toggle aim: one press hides the crosshair, the next brings it back. It also works while sprinting or crouching and resets when you switch windows. The same modes are available per game in Games.
+- Picking a mouse button from the ▾ menu assigns the plain button instead of keeping the previous modifiers (Alt+X no longer turns into Alt+Right click).
+- The tray menu uses the app's dark design.
+
+### Fixed
+
+- The global show/hide shortcut could not be set to a chord that a game profile uses for its own show/hide shortcut (for example Alt+X), although the two are never active at the same time.
+- Hotkey warnings and errors were drawn over the row's controls instead of below them.
+
+## v2.0.0 — 2026-11-17
 
 ### Added
 
