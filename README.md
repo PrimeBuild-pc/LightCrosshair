@@ -1,6 +1,46 @@
-![LightCrosshair — Lightweight crosshair overlay for Windows](readme-banner.svg)
+<div align="center">
 
-# LightCrosshair 2.0
+<img src="readme-banner.svg" alt="LightCrosshair — Lightweight crosshair overlay for Windows" width="100%">
+
+<p><strong>A lightweight crosshair overlay for Windows</strong><br>
+Layered crosshair editor · per-game profiles · about 15 MB of memory and no measurable CPU while you play</p>
+
+<p>
+  <a href="https://github.com/PrimeBuild-pc/LightCrosshair/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/PrimeBuild-pc/LightCrosshair?style=flat-square&label=release&color=3DDC97"></a>
+  <a href="https://github.com/PrimeBuild-pc/LightCrosshair/releases"><img alt="Total downloads" src="https://img.shields.io/github/downloads/PrimeBuild-pc/LightCrosshair/total?style=flat-square&label=downloads&color=3DDC97"></a>
+  <a href="https://github.com/PrimeBuild-pc/LightCrosshair/actions/workflows/build-and-test.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/PrimeBuild-pc/LightCrosshair/build-and-test.yml?branch=main&style=flat-square&label=build&logo=githubactions&logoColor=white"></a>
+  <a href="LICENSE.md"><img alt="License" src="https://img.shields.io/github/license/PrimeBuild-pc/LightCrosshair?style=flat-square"></a>
+  <a href="https://github.com/PrimeBuild-pc/LightCrosshair/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/PrimeBuild-pc/LightCrosshair?style=flat-square&logo=github"></a>
+</p>
+
+<p>
+  <img alt=".NET 10" src="https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet&logoColor=white">
+  <img alt="C# 14" src="https://img.shields.io/badge/C%23-14-239120?style=flat-square">
+  <img alt="WPF settings app" src="https://img.shields.io/badge/UI-WPF%20%C2%B7%20MVVM-5C2D91?style=flat-square">
+  <img alt="WinForms overlay" src="https://img.shields.io/badge/overlay-WinForms%20%C2%B7%20GDI%2B-0078D4?style=flat-square">
+  <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square">
+  <img alt="x64 and ARM64" src="https://img.shields.io/badge/arch-x64%20%7C%20ARM64-555?style=flat-square">
+  <img alt="Six languages" src="https://img.shields.io/badge/languages-6-555?style=flat-square">
+</p>
+
+<p>
+  <a href="https://github.com/PrimeBuild-pc/LightCrosshair/releases/latest"><img alt="Download on GitHub Releases" src="https://img.shields.io/badge/GitHub-Releases-181717?style=flat-square&logo=github"></a>
+  <a href="https://github.com/microsoft/winget-pkgs/tree/master/manifests/p/PrimeBuild/LightCrosshair"><img alt="WinGet" src="https://img.shields.io/winget/v/PrimeBuild.LightCrosshair?style=flat-square&label=winget&color=0078D4"></a>
+  <a href="https://community.chocolatey.org/packages/lightcrosshair"><img alt="Chocolatey version" src="https://img.shields.io/chocolatey/v/lightcrosshair?style=flat-square&logo=chocolatey&logoColor=white&label=chocolatey&color=80B5E3"></a>
+  <a href="https://community.chocolatey.org/packages/lightcrosshair"><img alt="Chocolatey downloads" src="https://img.shields.io/chocolatey/dt/lightcrosshair?style=flat-square&logo=chocolatey&logoColor=white&label=choco%20downloads&color=80B5E3"></a>
+</p>
+
+<p>
+  <a href="#download"><b>Download</b></a> ·
+  <a href="#features">Features</a> ·
+  <a href="#performance">Performance</a> ·
+  <a href="docs/SETTINGS.md">Settings guide</a> ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
+
+</div>
+
+---
 
 LightCrosshair is a crosshair overlay for Windows with a layered editor, a local library and executable-based game profiles. Build and preview your design in the settings app; the separate, click-through Core keeps the overlay running when you close it. Crosshairs, profiles and sharing stay local.
 
