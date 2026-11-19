@@ -26,6 +26,7 @@ Layered crosshair editor · per-game profiles · about 15 MB of memory and no me
 </p>
 
 <p>
+  <a href="https://apps.microsoft.com/detail/9MZ2872MWBJL"><img alt="Get it from the Microsoft Store" src="https://img.shields.io/badge/Microsoft%20Store-Get%20it-0078D4?style=plastic"></a>
   <a href="https://github.com/PrimeBuild-pc/LightCrosshair/releases/latest"><img alt="Download on GitHub Releases" src="https://img.shields.io/badge/GitHub-Releases-181717?style=plastic&logo=github"></a>
   <a href="https://github.com/microsoft/winget-pkgs/tree/master/manifests/p/PrimeBuild/LightCrosshair"><img alt="WinGet" src="https://img.shields.io/winget/v/PrimeBuild.LightCrosshair?style=plastic&label=winget&color=0078D4"></a>
   <a href="https://community.chocolatey.org/packages/lightcrosshair"><img alt="Chocolatey version" src="https://img.shields.io/chocolatey/v/lightcrosshair?style=plastic&logo=chocolatey&logoColor=white&label=chocolatey&color=80B5E3"></a>
@@ -99,7 +100,7 @@ The overlay runs in a tiny resident process that is separate from the settings w
 
 ## Installation
 
-Download the installer or the portable ZIP from the [latest release](https://github.com/PrimeBuild-pc/LightCrosshair/releases/latest), or use a package manager:
+Get it from the [Microsoft Store](https://apps.microsoft.com/detail/9MZ2872MWBJL) (includes the .NET runtime, updates automatically), download the installer or the portable ZIP from the [latest release](https://github.com/PrimeBuild-pc/LightCrosshair/releases/latest), or use a package manager:
 
 ```powershell
 winget install --id PrimeBuild.LightCrosshair --exact
