@@ -1,0 +1,66 @@
+name: Validate Microsoft Store package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    if: github.repository == 'PrimeBuild-pc/LightCrosshair' && github.ref == 'refs/heads/main' && github.actor_id == '162145141'
+    runs-on: windows-2025
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build and check the unsigned Store bundle
+        shell: pwsh
+        run: |
+          $version = dotnet msbuild ./LightCrosshair/LightCrosshair.csproj -getProperty:Version --nologo
+          if ($LASTEXITCODE -or "$version" -cnotmatch '\A[1-9][0-9]*\.[0-9]+\.[0-9]+\z') {
+            throw 'A stable project version is required for a Store candidate.'
+          }
+          ./scripts/build-msix.ps1 -Version $version
+          $bundle = Get-Item -LiteralPath "releases/msix/LightCrosshair_$version.0.msixbundle"
+          $makeAppx = Get-ChildItem "${env:ProgramFiles(x86)}/Windows Kits/10/bin/*/x64/makeappx.exe" |
+            Sort-Object { [version]$_.Directory.Parent.Name } -Descending | Select-Object -First 1
+          if (!$makeAppx) { throw 'MakeAppx is unavailable.' }
+          $unbundled = Join-Path $env:RUNNER_TEMP 'lightcrosshair-unbundled'
+          $output = & $makeAppx.FullName unbundle /p $bundle.FullName /d $unbundled 2>&1
+          if ($LASTEXITCODE) { $output | Out-Host; throw 'Could not validate the MSIX bundle.' }
+          $packages = @(Get-ChildItem -LiteralPath $unbundled -File -Filter '*.msix')
+          if ($packages.Count -ne 2) { throw 'Expected two architecture packages.' }
+          $architectures = foreach ($package in $packages) {
+            $layout = Join-Path $unbundled $package.BaseName
+            $output = & $makeAppx.FullName unpack /p $package.FullName /d $layout 2>&1
+            if ($LASTEXITCODE) { $output | Out-Host; throw "Could not validate $($package.Name)." }
+            [xml]$manifest = Get-Content -LiteralPath (Join-Path $layout 'AppxManifest.xml') -Raw
+            $identity = $manifest.Package.Identity
+            if ($identity.Name -cne 'LorenzoMassafra.LightCrosshair' -or
+                $identity.Publisher -cne 'CN=ACD03D0F-7A52-4C93-ADF8-A07702180E72' -or
+                $identity.Version -cne "$version.0") {
+              throw "Wrong Store identity or version in $($package.Name)."
+            }
+            foreach ($file in 'LightCrosshair.exe', 'LightCrosshair.UI.exe') {
+              if (!(Test-Path -LiteralPath (Join-Path $layout $file) -PathType Leaf)) { throw "Missing $file." }
+            }
+            $identity.ProcessorArchitecture
+          }
+          if ((($architectures | Sort-Object) -join ' ') -cne 'arm64 x64') {
+            throw 'Expected x64 and arm64.'
+          }
+          $hash = (Get-FileHash -LiteralPath $bundle.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $($bundle.Name)" | Set-Content -LiteralPath releases/msix/SHA256SUMS.txt -Encoding ascii
+          "Store candidate $version.0 from $env:GITHUB_SHA for product 9MZ2872MWBJL. Bundle verified." >> $env:GITHUB_STEP_SUMMARY
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lightcrosshair-store-${{ github.sha }}
+          path: |
+            releases/msix/*.msixbundle
+            releases/msix/SHA256SUMS.txt
+          if-no-files-found: error

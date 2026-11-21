@@ -1,0 +1,59 @@
+name: Verify Microsoft Store access
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  access:
+    if: >-
+      github.repository == 'PrimeBuild-pc/LightCrosshair' && github.ref == 'refs/heads/main'
+      && github.actor_id == '162145141' && github.triggering_actor == github.repository_owner
+    runs-on: ubuntu-latest
+    environment: microsoft-store
+    timeout-minutes: 5
+    steps:
+      - name: Authenticate with Entra and verify the Store product
+        shell: pwsh
+        env:
+          STORE_TENANT_ID: ${{ vars.MICROSOFT_STORE_TENANT_ID }}
+          STORE_CLIENT_ID: ${{ vars.MICROSOFT_STORE_CLIENT_ID }}
+          STORE_CLIENT_SECRET: ${{ secrets.MICROSOFT_STORE_CLIENT_SECRET }}
+        run: |
+          $id = '9MZ2872MWBJL'
+          $tenant = [guid]::Empty
+          $client = [guid]::Empty
+          if (![guid]::TryParse($env:STORE_TENANT_ID, [ref]$tenant) -or
+              ![guid]::TryParse($env:STORE_CLIENT_ID, [ref]$client) -or
+              [string]::IsNullOrWhiteSpace($env:STORE_CLIENT_SECRET)) {
+            throw 'Configure the Store Entra tenant, client and client secret in the microsoft-store environment.'
+          }
+          $store = 'https://manage.devcenter.microsoft.com'
+          $auth = Invoke-WebRequest -Method Post -Uri "https://login.microsoftonline.com/$tenant/oauth2/token" `
+            -ContentType 'application/x-www-form-urlencoded' -Body @{
+              grant_type = 'client_credentials'
+              client_id = $client.ToString()
+              client_secret = $env:STORE_CLIENT_SECRET
+              resource = $store
+            } -MaximumRedirection 0 -TimeoutSec 30 -SkipHttpErrorCheck
+          if ($auth.StatusCode -ne 200) { throw "Entra token request failed with HTTP $($auth.StatusCode)." }
+          $token = ($auth.Content | ConvertFrom-Json).access_token
+          if ([string]::IsNullOrWhiteSpace($token)) { throw 'Entra returned no access token.' }
+          Write-Host "::add-mask::$token"
+          $response = Invoke-WebRequest -Uri "$store/v1.0/my/applications/$id" `
+            -Headers @{ Authorization = "Bearer $token" } -MaximumRedirection 0 -TimeoutSec 30 -SkipHttpErrorCheck
+          if ($response.StatusCode -ne 200) { throw "Partner Center request failed with HTTP $($response.StatusCode)." }
+          $app = $response.Content | ConvertFrom-Json
+          if ($app.id -cne $id -or $app.packageIdentityName -cne 'LorenzoMassafra.LightCrosshair' -or
+              $app.publisherName -cne 'CN=ACD03D0F-7A52-4C93-ADF8-A07702180E72') {
+            throw 'The Partner Center product does not match the package identity.'
+          }
+          if (!$app.lastPublishedApplicationSubmission.id) { throw 'There is no previously published submission for this product.' }
+          $pending = if ($app.pendingApplicationSubmission.id) { 'yes' } else { 'no' }
+          @(
+            '### Microsoft Store access verified'
+            "- Product: $id"
+            "- Pending submission: $pending"
+            '- Operation: read-only product verification'
+          ) >> $env:GITHUB_STEP_SUMMARY
