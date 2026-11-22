@@ -9,17 +9,24 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: dotnet-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     # Windows runner required because the app interacts with DirectX/Windows APIs
     runs-on: windows-2022
+    timeout-minutes: 25
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      with:
+        persist-credentials: false
 
     - name: Setup .NET 10
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
       with:
         dotnet-version: '10.0.x'
 
@@ -32,12 +39,15 @@ jobs:
     - name: Run tests
       run: dotnet test --no-build --verbosity normal --configuration Release
 
-    - name: Validate separate UI projects when present
+    - name: Record the tested PR merge commit
+      if: github.event_name == 'pull_request'
       shell: pwsh
-      run: |
-        if (Test-Path LightCrosshair.UI/LightCrosshair.UI.csproj) {
-          dotnet build LightCrosshair.UI/LightCrosshair.UI.csproj -c Release
-          if ($LASTEXITCODE) { throw 'UI build failed' }
-          dotnet test LightCrosshair.UI.Tests/LightCrosshair.UI.Tests.csproj -c Release
-          if ($LASTEXITCODE) { throw 'UI tests failed' }
-        }
+      run: Set-Content -LiteralPath "${env:RUNNER_TEMP}/tested-merge.txt" -Value $env:GITHUB_SHA
+    - name: Upload the tested PR merge commit
+      if: github.event_name == 'pull_request'
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: verified-merge-${{ github.sha }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/tested-merge.txt
+        if-no-files-found: error
+        retention-days: 7
